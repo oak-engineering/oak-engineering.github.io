@@ -186,5 +186,5 @@ footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 8vw;disp
 
 @media(max-width:860px){
   .sub-layout{grid-template-columns:1fr;gap:2rem;}
-  .tools-col{position:static;order:-1;}
+  .tools-col{position:static;}
 }
