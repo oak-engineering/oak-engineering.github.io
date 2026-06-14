@@ -79,3 +79,16 @@ document.addEventListener('click', e => {
   // optional: andere offen lassen (kein Auto-Close) – Klavier-Stil mit Mehrfach-Öffnen
   item.classList.toggle('open', !open);
 });
+
+/* ── 3) Mobiles Menü (Burger) ────────────────────────── */
+document.addEventListener('click', e => {
+  const burger = e.target.closest('.nav-burger');
+  if(burger){
+    const links = burger.closest('nav').querySelector('.nav-links');
+    if(links) links.classList.toggle('open');
+    return;
+  }
+  // Menü schließen, wenn ein Navigationslink geklickt wird (nicht beim Tippen in die Suche)
+  const link = e.target.closest('.nav-links a');
+  if(link){ const l = link.closest('.nav-links'); if(l) l.classList.remove('open'); }
+});

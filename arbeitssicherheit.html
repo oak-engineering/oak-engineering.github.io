@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="favicon.png">
-<title>Arbeitssicherheit – OAK engineering | EHS &amp; Compliance</title>
+<title>Arbeitssicherheit – OAK engineering | EHS-Management &amp; Digitalisierung</title>
 <meta name="description" content="Arbeitssicherheit von OAK engineering: externe Fachkraft für Arbeitssicherheit, Gefahrstoffe, psychische Gefährdungsbeurteilung, Sicherheitskultur und Schulungen.">
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="site.css">
@@ -13,12 +13,18 @@
 <nav>
   <a class="nav-logo" href="index.html" aria-label="OAK engineering – zur Startseite">
     <img src="assets/oak-logo.png" alt="OAK engineering">
-    <span class="nav-wordmark">OAK engineering<small>EHS &amp; Compliance</small></span>
+    <span class="nav-wordmark">OAK engineering<small>EHS-Management &amp; Digitalisierung</small></span>
   </a>
+  <button class="nav-burger" aria-label="Menü"><span></span><span></span><span></span></button>
   <div class="nav-links">
+    <form class="nav-search" role="search" action="suche.html" method="get">
+      <input type="search" name="q" placeholder="Suche …" aria-label="Suche auf der Website">
+      <button type="submit" aria-label="Suchen"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+    </form>
     <a href="arbeitssicherheit.html">Arbeitssicherheit</a>
     <a href="umweltschutz.html">Umweltschutz</a>
     <a href="ki-digitalisierung.html">KI &amp; Digitalisierung</a>
+    <a href="about.html">Über uns</a>
     <a href="kontakt.html" class="nav-cta">Kontakt</a>
   </div>
 </nav>
@@ -26,7 +32,6 @@
 <header class="sub-hero">
   <canvas id="gridCanvas" aria-hidden="true"></canvas>
   <div class="sub-overlay"></div>
-  <a class="back-link" href="index.html">← Zur Startseite</a>
   <div class="sub-eyebrow">Leistungsfeld</div>
   <h1>Arbeits&shy;sicherheit</h1>
   <p>Rechtssichere Betreuung für den Schutz Ihrer Beschäftigten – von der gesetzlich
@@ -41,18 +46,18 @@
       <div class="acc-item open">
         <button class="acc-head" type="button">Externe Fachkraft für Arbeitssicherheit <span class="acc-ico">+</span></button>
         <div class="acc-body"><div class="acc-body-inner">
-          <p>Jeder Betrieb mit Beschäftigten benötigt eine sicherheitstechnische Betreuung. Als externe Fachkraft für Arbeitssicherheit übernehme ich diese Aufgabe – ohne dass Sie eine eigene Stelle schaffen müssen.</p>
+          <p>Jeder Betrieb mit Beschäftigten benötigt eine sicherheitstechnische Betreuung. Als externe Fachkraft für Arbeitssicherheit übernehmen wir diese Aufgabe – ohne dass Sie eine eigene Stelle schaffen müssen.</p>
           <p>Leistungen u. a.: Erstellung und Fortschreibung der Gefährdungsbeurteilungen, regelmäßige Begehungen, Unterweisungen, Begleitung des Arbeitsschutzausschusses und Beratung von Führungskräften.</p>
-          <span class="law">ArbSchG</span><span class="law">DGUV Vorschrift 2</span><span class="law">ASiG</span>
+          <span class="law">ArbSchG</span><span class="law">DGUV Vorschrift 2</span><span class="law">ASiG</span><span class="law">BetrSichV</span><span class="law">§§ 5/6 ArbSchG</span>
         </div></div>
       </div>
 
       <div class="acc-item">
         <button class="acc-head" type="button">Gefahrstoffe <span class="acc-ico">+</span></button>
         <div class="acc-body"><div class="acc-body-inner">
-          <p>Wo mit Chemikalien gearbeitet wird, gelten besondere Pflichten. Ich baue Ihr Gefahrstoffkataster auf, erstelle Betriebsanweisungen und prüfe Ersatzstoffe und -verfahren (Substitution).</p>
+          <p>Wo mit Chemikalien gearbeitet wird, gelten besondere Pflichten. Wir bauen Ihr Gefahrstoffkataster auf, erstellen Betriebsanweisungen und prüfen Ersatzstoffe und -verfahren (Substitution).</p>
           <p>Grundlage sind Ihre Sicherheitsdatenblätter und die tätigkeitsbezogene Gefährdungsbeurteilung – inklusive Schutzmaßnahmen nach dem TOP-Prinzip.</p>
-          <span class="law">GefStoffV</span><span class="law">TRGS</span>
+          <span class="law">GefStoffV</span><span class="law">TRGS 510/900</span><span class="law">REACH/CLP</span><span class="law">SDB</span>
         </div></div>
       </div>
 
@@ -60,17 +65,17 @@
         <button class="acc-head" type="button">Psychische Gefährdungsbeurteilung <span class="acc-ico">+</span></button>
         <div class="acc-body"><div class="acc-body-inner">
           <p>Die Beurteilung psychischer Belastungen ist seit 2013 ausdrücklich Teil der Gefährdungsbeurteilung nach § 5 ArbSchG – und wird bei Prüfungen zunehmend eingefordert.</p>
-          <p>Ich begleite den gesamten Prozess: Auswahl des Verfahrens (Befragung oder moderierte Workshops), Auswertung, Ableitung wirksamer Maßnahmen und Wirksamkeitskontrolle.</p>
-          <span class="law">§ 5 ArbSchG</span><span class="law">GDA-Leitlinie</span>
+          <p>Wir begleiten den gesamten Prozess: Auswahl des Verfahrens (Befragung oder moderierte Workshops), Auswertung, Ableitung wirksamer Maßnahmen und Wirksamkeitskontrolle.</p>
+          <span class="law">§ 5 ArbSchG</span><span class="law">GDA-Leitlinie</span><span class="law">ISO 10075</span><span class="law">Belastungsanalyse</span>
         </div></div>
       </div>
 
       <div class="acc-item">
         <button class="acc-head" type="button">Sicherheitskultur <span class="acc-ico">+</span></button>
         <div class="acc-body"><div class="acc-body-inner">
-          <p>Technik und Regeln allein verhindern keine Unfälle – entscheidend ist das Verhalten. Ich helfe Ihnen, Ihre Sicherheitskultur weiterzuentwickeln: vom reinen Reagieren hin zu einem Team, das aufeinander achtet.</p>
+          <p>Technik und Regeln allein verhindern keine Unfälle – entscheidend ist das Verhalten. Wir helfen Ihnen, Ihre Sicherheitskultur weiterzuentwickeln: vom reinen Reagieren hin zu einem Team, das aufeinander achtet.</p>
           <p>Bausteine sind u. a. ein einfaches Meldesystem für Beinaheunfälle, Führungskräfte-Coaching und eine Vision-Zero-Ausrichtung. Wo Sie stehen, zeigt Ihnen der Sicherheitskultur-Check rechts.</p>
-          <span class="law">Vision Zero</span><span class="law">Behavioral Safety</span>
+          <span class="law">Vision Zero</span><span class="law">Behavioral Safety</span><span class="law">Near-Miss</span><span class="law">DGUV Vorschrift 1</span>
         </div></div>
       </div>
 
@@ -79,7 +84,25 @@
         <div class="acc-body"><div class="acc-body-inner">
           <p>Praxisnahe Unterweisungen und Weiterbildungen – von der jährlichen Pflichtunterweisung bis zu Spezialthemen wie Gefahrstoffe, Sicherheitskultur oder Führung im Arbeitsschutz.</p>
           <p>Wahlweise online oder vor Ort, individuell auf Ihre Tätigkeiten und Ihr Team zugeschnitten. Auf Wunsch mit digitalem Nachweis der Teilnahme.</p>
-          <span class="law">§ 12 ArbSchG</span><span class="law">DGUV Vorschrift 1</span>
+          <span class="law">§ 12 ArbSchG</span><span class="law">DGUV Vorschrift 1</span><span class="law">Unterweisung</span><span class="law">E-Learning</span>
+        </div></div>
+      </div>
+
+      <div class="acc-item">
+        <button class="acc-head" type="button">Sicherheitskampagne entwickeln <span class="acc-ico">+</span></button>
+        <div class="acc-body"><div class="acc-body-inner">
+          <p>Einzelne Maßnahmen verpuffen – Wirkung entsteht durch eine durchdachte, kontinuierliche Kampagne. Wir entwickeln mit Ihnen eine vollumfängliche Sicherheitskampagne: vom Leitthema über die Jahresplanung bis zur Erfolgsmessung.</p>
+          <p>Bausteine sind u. a. regelmäßige Sicherheits-Newsletter, ein „Thema des Monats", Aushänge und Aktionen vor Ort sowie gezielte Kulturentwicklung mit Führungskräften und Beschäftigten – damit Arbeitssicherheit sichtbar und Teil des Alltags wird.</p>
+          <span class="law">Newsletter</span><span class="law">Thema des Monats</span><span class="law">Kulturentwicklung</span><span class="law">Vision Zero</span><span class="law">Mitarbeiterbeteiligung</span>
+        </div></div>
+      </div>
+
+      <div class="acc-item">
+        <button class="acc-head" type="button">Digitalisierung &amp; KI-Potenzial <span class="acc-ico">+</span></button>
+        <div class="acc-body"><div class="acc-body-inner">
+          <p>Arbeitssicherheit lässt sich spürbar effizienter organisieren: Gefährdungsbeurteilungen, Unterweisungs-Nachweise und Prüf-/Wiederholungsfristen digital führen statt in Excel – mit automatischer Erinnerung und revisionssicherer Ablage.</p>
+          <p>Wo es sinnvoll ist, kommt KI dazu: automatisierte Auswertung von Beinaheunfällen (Mustererkennung über Bereiche und Schichten), KI-gestützte Recherche in Vorschriften und schlanke Web-Tools für wiederkehrende Aufgaben. Die kostenlosen Mini-Tools rechts (SiFa-Rechner, Sicherheitskultur-Check) sind ein Vorgeschmack.</p>
+          <span class="law">Digitale GBU</span><span class="law">Fristenmanagement</span><span class="law">KI-Analytics</span><span class="law">Automatisierung</span><span class="law">EHS 4.0</span>
         </div></div>
       </div>
 

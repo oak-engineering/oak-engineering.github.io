@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="favicon.png">
-<title>Kontakt – OAK engineering | EHS &amp; Compliance</title>
-<meta name="description" content="Kontakt zu OAK engineering – Nikolai Krawielitzki, EHS & Compliance, Augsburg. Schreiben Sie mir oder nutzen Sie meine digitale Visitenkarte.">
+<title>Kontakt – OAK engineering | EHS-Management &amp; Digitalisierung</title>
+<meta name="description" content="Kontakt zu OAK engineering – EHS-Management & Digitalisierung, Augsburg. Schreiben Sie uns oder nutzen Sie unsere digitale Visitenkarte.">
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="site.css">
 </head>
@@ -13,21 +13,26 @@
 <nav>
   <a class="nav-logo" href="index.html" aria-label="OAK engineering – zur Startseite">
     <img src="assets/oak-logo.png" alt="OAK engineering">
-    <span class="nav-wordmark">OAK engineering<small>EHS &amp; Compliance</small></span>
+    <span class="nav-wordmark">OAK engineering<small>EHS-Management &amp; Digitalisierung</small></span>
   </a>
+  <button class="nav-burger" aria-label="Menü"><span></span><span></span><span></span></button>
   <div class="nav-links">
+    <form class="nav-search" role="search" action="suche.html" method="get">
+      <input type="search" name="q" placeholder="Suche …" aria-label="Suche auf der Website">
+      <button type="submit" aria-label="Suchen"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+    </form>
     <a href="arbeitssicherheit.html">Arbeitssicherheit</a>
     <a href="umweltschutz.html">Umweltschutz</a>
     <a href="ki-digitalisierung.html">KI &amp; Digitalisierung</a>
+    <a href="about.html">Über uns</a>
     <a href="kontakt.html" class="nav-cta">Kontakt</a>
   </div>
 </nav>
 
 <header class="sub-hero">
-  <a class="back-link" href="index.html">← Zur Startseite</a>
   <div class="sub-eyebrow">Kontakt</div>
   <h1>Bereit für den <em>ersten Schritt?</em></h1>
-  <p>Schreiben Sie mir oder rufen Sie an – ich melde mich in der Regel innerhalb von 24&nbsp;Stunden.
+  <p>Schreiben Sie uns oder rufen Sie an – wir melden uns in der Regel innerhalb von 24&nbsp;Stunden.
      Das Erstgespräch ist selbstverständlich kostenlos und unverbindlich.</p>
 </header>
 
@@ -73,8 +78,10 @@
         <option>Sicherheitskultur</option>
         <option>Schulungen</option>
         <option>Immissionsschutz</option>
+        <option>Störfallrecht</option>
         <option>Gefahrgut / ADR</option>
         <option>Gewässerschutz</option>
+        <option>Umweltmanagement / ISO 14001</option>
         <option>KI &amp; Digitalisierung im EHS</option>
         <option>Allgemeine Anfrage</option>
       </select>
@@ -88,7 +95,7 @@
   </div>
   <div class="form-success" id="form-success">
     ✓ Vielen Dank für Ihre Anfrage!<br>
-    <span style="font-family:var(--sans);font-size:.9rem;color:var(--muted)">Ich melde mich innerhalb von 24&nbsp;Stunden bei Ihnen.</span>
+    <span style="font-family:var(--sans);font-size:.9rem;color:var(--muted)">Wir melden uns innerhalb von 24&nbsp;Stunden bei Ihnen.</span>
   </div>
 </main>
 
