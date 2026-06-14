@@ -164,7 +164,7 @@ nav .nav-logo img{height:38px;width:auto;}
 <nav>
   <a class="nav-logo" href="../index.html" aria-label="OAK engineering – zur Startseite">
     <img src="../assets/oak-logo.png" alt="OAK engineering">
-    <span class="nav-wordmark">OAK engineering<small>EHS-Management &amp; Digitalisierung</small></span>
+    <span class="nav-wordmark">OAK Engineering<small>EHS-Management &amp; Digitalisierung</small></span>
   </a>
   <button class="nav-burger" aria-label="Menü"><span></span><span></span><span></span></button>
   <div class="nav-links">
@@ -265,7 +265,12 @@ nav .nav-logo img{height:38px;width:auto;}
           <div class="res-k">SiFa-Stunden gesamt</div>
           <div class="res-v"><span id="rTotalH">–</span> <small>h / Jahr</small></div>
         </div>
+        <div class="res-card span" style="background:var(--oak-mid);color:#fff;">
+          <div class="res-k" style="opacity:1;font-weight:600;">Erforderliche Vollzeit-SiFa <small style="font-weight:400;opacity:.85;">· Basis 1.500&nbsp;h/Jahr je VZÄ</small></div>
+          <div class="res-v"><span id="rFte">–</span> <small>VZÄ (Vollzeitäquivalente)</small></div>
+        </div>
       </div>
+      <p class="res-note" id="fteNote"></p>
 
       <!-- SiFa-Anteil Slider -->
       <div style="margin-top:1.2rem;background:rgba(255,255,255,.07);padding:1rem 1.1rem;border-radius:10px;">
@@ -287,6 +292,7 @@ nav .nav-logo img{height:38px;width:auto;}
 
   <footer class="wx-foot">
     <strong>Hinweis:</strong> Unverbindliche Orientierungsrechnung auf Basis der Grundbetreuung nach DGUV&nbsp;Vorschrift&nbsp;2 (Anlage&nbsp;2). Maßgeblich sind die tatsächliche Einstufung und der betriebsspezifische Leistungskatalog. Das individuelle Angebot erhalten Sie auf Anfrage. Keine Rechtsberatung. · <a href="https://www.oak-engineering.de">oak-engineering.de</a>
+    <div style="margin-top:.7rem;padding-top:.7rem;border-top:1px solid var(--border);"><strong>Feedback &amp; Verbesserungsvorschläge?</strong> Schreiben Sie uns gern an <a href="mailto:info@oak-engineering.de?subject=Feedback%3A%20SiFa-Einsatzzeiten-Rechner">info@oak-engineering.de</a> – wir entwickeln die Tools laufend weiter.</div>
   </footer>
 
 </div>
@@ -307,7 +313,9 @@ nav .nav-logo img{height:38px;width:auto;}
 (function(){
   const $ = id => document.getElementById(id);
   const fmtH = n => n.toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:1});
+  const fmtFte = n => n.toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 
+  const FTE_HOURS = 1500;  // angenommene produktive SiFa-Jahresstunden je Vollzeitstelle
   let bsPerEmp = 0; // betriebsspezifische Schätzung h/MA
 
   function calc(){
@@ -318,7 +326,8 @@ nav .nav-logo img{height:38px;width:auto;}
     $('rSharePct').textContent = '('+sharePct+'%)';
 
     if(!grpEl || emp<=0){
-      ['rGrund','rSifa','rBs','rTotalH'].forEach(i=>$(i).textContent='–');
+      ['rGrund','rSifa','rBs','rTotalH','rFte'].forEach(i=>$(i).textContent='–');
+      $('fteNote').textContent='';
       return;
     }
     const perEmp = parseFloat(grpEl.value);
@@ -326,11 +335,24 @@ nav .nav-logo img{height:38px;width:auto;}
     const sifaGrund = grund * sharePct/100;     // SiFa-Anteil der Grundbetreuung
     const bs = bsPerEmp * emp;                   // betriebsspezifisch (Schätzung, SiFa)
     const totalSifa = sifaGrund + bs;
+    const fte = totalSifa / FTE_HOURS;           // Vollzeitäquivalente
 
     $('rGrund').textContent  = fmtH(grund);
     $('rSifa').textContent   = fmtH(sifaGrund);
     $('rBs').textContent     = fmtH(bs);
     $('rTotalH').textContent = fmtH(totalSifa);
+    $('rFte').textContent    = fmtFte(fte);
+
+    // Einordnung der Vollzeit-SiFa
+    let note;
+    if(fte < 0.5){
+      note = 'Das entspricht deutlich weniger als einer halben Vollzeitstelle – eine externe oder anteilige SiFa-Betreuung ist hier in der Regel die wirtschaftlichste Lösung.';
+    } else if(fte < 1){
+      note = 'Das liegt unter einer Vollzeitstelle – eine externe oder Teilzeit-SiFa deckt den Bedarf meist vollständig ab.';
+    } else {
+      note = 'Das entspricht rechnerisch rund '+fmtFte(fte)+' Vollzeitstellen – sinnvoll ist oft eine Kombination aus interner und externer Betreuung. Sprechen Sie uns an.';
+    }
+    $('fteNote').textContent = note;
 
     // mailto vorbefüllen
     const subj = encodeURIComponent('Anfrage externe SiFa – Einsatzzeiten & Angebot');
@@ -339,7 +361,8 @@ nav .nav-logo img{height:38px;width:auto;}
       +'• Beschäftigte: '+emp+'\n'
       +'• Grundbetreuung gesamt: '+fmtH(grund)+' h/Jahr\n'
       +'• SiFa-Anteil ('+sharePct+'%): '+fmtH(sifaGrund)+' h/Jahr\n'
-      +'• inkl. betriebsspezifischer Schätzung: '+fmtH(totalSifa)+' h/Jahr\n\n'
+      +'• inkl. betriebsspezifischer Schätzung: '+fmtH(totalSifa)+' h/Jahr\n'
+      +'• rechnerisch erforderliche Vollzeit-SiFa: '+fmtFte(fte)+' VZÄ\n\n'
       +'Bitte senden Sie mir ein individuelles Angebot für die externe SiFa-Betreuung.\n\nViele Grüße');
     $('ctaMail').href = 'mailto:info@oak-engineering.de?subject='+subj+'&body='+body;
   }

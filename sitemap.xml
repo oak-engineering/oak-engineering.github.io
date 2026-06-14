@@ -8,8 +8,12 @@
   <url><loc>https://www.oak-engineering.de/kontakt.html</loc><priority>0.8</priority></url>
   <url><loc>https://www.oak-engineering.de/tools/OAK_SiFa-Einsatzzeiten-Rechner.html</loc><priority>0.6</priority></url>
   <url><loc>https://www.oak-engineering.de/tools/OAK_Bradley-Kurve.html</loc><priority>0.6</priority></url>
-  <url><loc>https://www.oak-engineering.de/tools/OAK_Compliance-Check.html</loc><priority>0.6</priority></url>
   <url><loc>https://www.oak-engineering.de/tools/OAK_AwSV-Check.html</loc><priority>0.6</priority></url>
   <url><loc>https://www.oak-engineering.de/tools/OAK_BImSchV-Check.html</loc><priority>0.6</priority></url>
   <url><loc>https://www.oak-engineering.de/tools/OAK_Digitalisierungs-Check.html</loc><priority>0.6</priority></url>
+  <url><loc>https://www.oak-engineering.de/tools/OAK_CO2-Rechner.html</loc><priority>0.6</priority></url>
+  <url><loc>https://www.oak-engineering.de/tools/OAK_ADR-Punkte-Rechner.html</loc><priority>0.6</priority></url>
+  <url><loc>https://www.oak-engineering.de/tools/OAK_EMKG-Helfer.html</loc><priority>0.6</priority></url>
+  <url><loc>https://www.oak-engineering.de/tools/OAK_Substitutions-Checker.html</loc><priority>0.6</priority></url>
+  <url><loc>https://www.oak-engineering.de/tools/OAK_Helfer-Aushang.html</loc><priority>0.6</priority></url>
 </urlset>

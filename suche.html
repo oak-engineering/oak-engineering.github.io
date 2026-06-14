@@ -24,7 +24,7 @@
 <nav>
   <a class="nav-logo" href="index.html" aria-label="OAK engineering – zur Startseite">
     <img src="assets/oak-logo.png" alt="OAK engineering">
-    <span class="nav-wordmark">OAK engineering<small>EHS-Management &amp; Digitalisierung</small></span>
+    <span class="nav-wordmark">OAK Engineering<small>EHS-Management &amp; Digitalisierung</small></span>
   </a>
   <button class="nav-burger" aria-label="Menü"><span></span><span></span><span></span></button>
   <div class="nav-links">
@@ -80,14 +80,22 @@
      k:"sifa einsatzzeiten rechner grundbetreuung dguv v2 betreuungsstunden fachkraft unternehmermodell tool"},
     {t:"Sicherheitskultur-Check (Bradley-Kurve)", u:"tools/OAK_Bradley-Kurve.html", d:"In 5 Fragen den Reifegrad Ihrer Sicherheitskultur auf der Bradley-Kurve bestimmen.",
      k:"sicherheitskultur bradley kurve check reifegrad vision zero verhalten tool"},
-    {t:"EHS-Compliance-Schnellcheck", u:"tools/OAK_Compliance-Check.html", d:"Welche EHS-Pflichten und Beauftragten betreffen Ihren Betrieb?",
-     k:"compliance pflichten beauftragte schnellcheck asa sifa betriebsarzt tool beta"},
     {t:"AwSV-Anlagen-Check", u:"tools/OAK_AwSV-Check.html", d:"Gefährdungsstufe (A–D) Ihrer Anlage mit wassergefährdenden Stoffen nach § 39 AwSV.",
      k:"awsv anlagen gefährdungsstufe wassergefährdende stoffe wgk § 39 gewässerschutz tool"},
     {t:"BImSchV-Anlagen-Check", u:"tools/OAK_BImSchV-Check.html", d:"Ist Ihre Anlage genehmigungsbedürftig nach der 4. BImSchV?",
      k:"bimschv anlagen genehmigungsbedürftig 4. bimschv immissionsschutz tool beta"},
     {t:"Digitalisierungs-Check (EHS 4.0)", u:"tools/OAK_Digitalisierungs-Check.html", d:"Digitaler Reifegrad Ihres EHS-Managements und Optimierungspotenzial in 5 Fragen.",
-     k:"digitalisierung check ehs 4.0 reifegrad optimierungspotenzial tool"}
+     k:"digitalisierung check ehs 4.0 reifegrad optimierungspotenzial tool"},
+    {t:"CO₂-Bilanz-Rechner", u:"tools/OAK_CO2-Rechner.html", d:"CO₂-Fußabdruck (Scope 1 & 2) aus Strom, Gas, Heizöl und Kraftstoffen schätzen.",
+     k:"co2 co₂ bilanz rechner treibhausgas ghg scope 1 2 klima emissionen csrd strom gas heizöl diesel tool"},
+    {t:"ADR-1.000-Punkte-Rechner", u:"tools/OAK_ADR-Punkte-Rechner.html", d:"Gefahrgut-Freistellung nach ADR 1.1.3.6 (1.000-Punkte-Regel) prüfen.",
+     k:"adr gefahrgut 1000 punkte freistellung 1.1.3.6 beförderungskategorie begrenzte mengen transport tool"},
+    {t:"EMKG-Helfer (Beta)", u:"tools/OAK_EMKG-Helfer.html", d:"Maßnahmenstufe und BAuA-Schutzleitfäden aus den H-Sätzen ableiten (EMKG).",
+     k:"emkg einfaches maßnahmenkonzept gefahrstoffe h-sätze schutzleitfaden baua maßnahmenstufe einatmen gefstoffv tool beta"},
+    {t:"Substitutions-Checker (Beta)", u:"tools/OAK_Substitutions-Checker.html", d:"Gefahrstoffe nach dem GHS-Spaltenmodell vergleichen (TRGS 600).",
+     k:"substitution ersatzstoff spaltenmodell ghs trgs 600 gefstoffv vergleich gefahrstoffe h-sätze tool beta"},
+    {t:"Helfer-Aushänge", u:"tools/OAK_Helfer-Aushang.html", d:"Aushänge für Ersthelfer, Brandschutz- und Sicherheitsbeauftragte erzeugen.",
+     k:"helfer aushang ersthelfer brandschutzhelfer sicherheitsbeauftragte aushänge generator vorlage tool"}
   ];
 
   function getQ(){ var m=location.search.match(/[?&]q=([^&]*)/); return m?decodeURIComponent(m[1].replace(/\+/g," ")):""; }

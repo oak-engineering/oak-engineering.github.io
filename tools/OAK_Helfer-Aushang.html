@@ -36,9 +36,49 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
   :root{
     --gruen:#2D6A4F; --dunkel:#1B4332; --hell:#52B788; --akzent:#D8F3DC;
     --grau:#5b6b63; --linie:#cdd8d2; --text:#1f2a25; --bg:#eef2f0;
+    /* OAK-Website-CI */
+    --oak:#2D6A4F; --oak-deep:#1B4332; --oak-mid:#40916C; --oak-light:#74C69D; --oak-pale:#D8F3DC; --oak-ghost:#F0FAF3;
+    --ink:#111A14; --ink-2:#2C3A30; --muted:#6B7C70; --border:#D6E4DA; --white:#FDFCFA;
+    --serif:'Cormorant Garamond',Georgia,serif; --sans:'Jost',sans-serif;
   }
   *{box-sizing:border-box;}
-  body{font-family:"Segoe UI",system-ui,Arial,sans-serif;color:var(--text);background:var(--bg);margin:0;font-size:14px;line-height:1.45;}
+  body{font-family:var(--sans);color:var(--ink);background:var(--oak-ghost);margin:0;font-size:14px;line-height:1.5;}
+
+  /* ---------- OAK Website-Chrome ---------- */
+  nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 5vw;height:68px;background:rgba(253,252,250,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+  nav .nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;}
+  nav .nav-logo img{height:38px;width:auto;}
+  .nav-wordmark{display:flex;flex-direction:column;line-height:1;font-family:var(--serif);font-size:1.25rem;font-weight:600;color:var(--oak-deep);letter-spacing:.02em;}
+  .nav-wordmark small{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-top:3px;}
+  .nav-links{display:flex;align-items:center;gap:1.7rem;font-size:.78rem;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);}
+  .nav-links a{transition:color .2s;text-decoration:none;color:var(--muted);}
+  .nav-links a:hover{color:var(--oak);}
+  .nav-cta{background:var(--oak-deep);color:#fff !important;padding:.5rem 1.25rem;border-radius:3px;letter-spacing:.04em;}
+  .nav-cta:hover{background:var(--oak);}
+  .nav-burger{display:none;flex-direction:column;gap:5px;background:none;border:none;cursor:pointer;padding:8px;}
+  .nav-burger span{width:24px;height:2px;background:var(--oak-deep);display:block;}
+  @media(max-width:880px){
+    .nav-burger{display:flex;}
+    .nav-links{position:absolute;top:68px;right:0;left:0;flex-direction:column;align-items:flex-start;background:var(--white);border-bottom:1px solid var(--border);padding:1rem 5vw;gap:1rem;display:none;}
+    .nav-links.open{display:flex;}
+  }
+  @media(max-width:700px){.nav-wordmark small{display:none;}}
+
+  .tool-head{background:linear-gradient(135deg,var(--oak-deep),var(--oak));color:#fff;padding:1.8rem 5vw;}
+  .tool-head .th-inner{max-width:1080px;margin:0 auto;}
+  .tool-head h1{font-family:var(--serif);font-weight:300;font-size:clamp(1.6rem,4vw,2.2rem);line-height:1.1;margin:0 0 .5rem;display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;}
+  .beta{font-family:var(--sans);font-size:.62rem;font-weight:700;letter-spacing:.12em;background:#fff;color:var(--oak-deep);padding:.22rem .6rem;border-radius:99px;text-transform:uppercase;}
+  .tool-head p{font-size:.9rem;opacity:.92;font-weight:300;max-width:64ch;margin:0 0 1.1rem;}
+  .tool-head .th-actions{display:flex;gap:.6rem;flex-wrap:wrap;}
+  .tool-head .th-actions button{font-family:var(--sans);font-size:.82rem;font-weight:500;border:none;border-radius:6px;padding:.6rem 1.2rem;cursor:pointer;}
+  .th-actions .b-print{background:#fff;color:var(--oak-deep);}
+  .th-actions .b-demo{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.45);}
+
+  .site-footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 5vw;display:flex;justify-content:space-between;align-items:center;font-size:.78rem;flex-wrap:wrap;gap:1rem;}
+  .site-footer .footer-brand{font-family:var(--serif);font-size:1rem;color:rgba(255,255,255,.7);}
+  .site-footer .footer-links{display:flex;gap:1.5rem;}
+  .site-footer a{color:inherit;text-decoration:none;}
+  .site-footer .footer-links a:hover{color:var(--oak-light);}
 
   /* ---------- Steuerung (Bildschirm) ---------- */
   .topbar{position:sticky;top:0;z-index:10;background:var(--dunkel);color:#fff;padding:10px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
@@ -113,7 +153,7 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 
   @media print{
     body{background:#fff;}
-    .topbar,.wrap{display:none!important;}
+    nav,.tool-head,.wrap,.site-footer{display:none!important;}
     #posters{padding:0;max-width:none;}
     .poster{box-shadow:none;border-radius:0;margin:0;width:auto;min-height:auto;break-after:page;}
     .poster:last-child{break-after:auto;}
@@ -126,13 +166,31 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
 </head>
 <body>
 
-<div class="topbar">
-  <h1>🪧 OAK Helfer-Aushang</h1>
-  <span class="muted" style="color:#bfe3cf;">Ersthelfer · Sicherheitsbeauftragte · Brandschutzhelfer</span>
-  <span class="sp"></span>
-  <button class="ghost" onclick="loadDemo()">Beispieldaten laden</button>
-  <button onclick="window.print()">🖨 Drucken / als PDF</button>
-</div>
+<nav>
+  <a class="nav-logo" href="../index.html" aria-label="OAK engineering – zur Startseite">
+    <img src="../assets/oak-logo.png" alt="OAK engineering">
+    <span class="nav-wordmark">OAK Engineering<small>EHS-Management &amp; Digitalisierung</small></span>
+  </a>
+  <button class="nav-burger" aria-label="Menü"><span></span><span></span><span></span></button>
+  <div class="nav-links">
+    <a href="../arbeitssicherheit.html">Arbeitssicherheit</a>
+    <a href="../umweltschutz.html">Umweltschutz</a>
+    <a href="../ki-digitalisierung.html">KI &amp; Digitalisierung</a>
+    <a href="../about.html">Über uns</a>
+    <a href="../kontakt.html" class="nav-cta">Kontakt</a>
+  </div>
+</nav>
+
+<header class="tool-head">
+  <div class="th-inner">
+    <h1>Helfer-Aushang erstellen <span class="beta">Beta</span></h1>
+    <p>Excel-Liste der benannten Personen hochladen – das Tool erzeugt je Gebäude farbige Aushänge für Ersthelfer (grün), Sicherheitsbeauftragte (blau) und Brandschutzhelfer (rot). Die Verarbeitung erfolgt ausschließlich lokal in Ihrem Browser.</p>
+    <div class="th-actions">
+      <button class="b-print" onclick="window.print()">🖨 Drucken / als PDF</button>
+      <button class="b-demo" onclick="loadDemo()">Beispieldaten laden</button>
+    </div>
+  </div>
+</header>
 
 <div class="wrap" id="controls">
 
@@ -172,15 +230,27 @@ var o=[];var l=Array.isArray(e);for(f=n.s.c;f<=n.e.c;++f)s[f]=ya(f);for(var c=n.
     <div id="genWarn"></div>
   </div>
 
-  <div style="font-size:12px;color:var(--grau);background:#fff;border:1px solid var(--linie);border-radius:10px;padding:12px 16px;display:flex;gap:10px;align-items:flex-start;">
-    <span style="font-size:16px;">🔒</span>
+  <div style="font-size:12px;color:var(--grau);background:#fff;border:1px solid var(--linie);border-radius:10px;padding:12px 16px;">
     <span><b style="color:var(--dunkel);">Datenschutz:</b> Die hochgeladene Liste wird <b>ausschließlich lokal in Ihrem Browser</b> verarbeitet.
     Es werden <b>keine Daten gespeichert</b> (kein Cookie, kein Speicher) und <b>nichts an einen Server übertragen</b>.
     Mit dem Schließen oder Neuladen der Seite sind alle Daten gelöscht. Diese Datei funktioniert vollständig offline.</span>
   </div>
+  <div style="font-size:12px;color:var(--grau);text-align:center;margin-top:12px;"><b style="color:var(--dunkel);">Feedback &amp; Verbesserungsvorschläge?</b> Schreiben Sie uns gern an <a href="mailto:info@oak-engineering.de?subject=Feedback%3A%20Helfer-Aushaenge" style="color:#2D6A4F;font-weight:500;">info@oak-engineering.de</a> – wir entwickeln die Tools laufend weiter.</div>
 </div>
 
 <div id="posters"></div>
+
+<footer class="site-footer">
+  <div class="footer-brand">OAK engineering · Nikolai Krawielitzki</div>
+  <div>© 2026 OAK engineering</div>
+  <div class="footer-links">
+    <a href="../kontakt.html">Kontakt</a>
+    <a href="../impressum.html">Impressum</a>
+    <a href="../datenschutz.html">Datenschutz</a>
+    <a href="../agb.html">AGB</a>
+    <a href="https://www.linkedin.com/company/115144306/" target="_blank" rel="noopener">LinkedIn</a>
+  </div>
+</footer>
 
 <script>
 /* ======================= Zustand ======================= */
@@ -490,5 +560,6 @@ function loadDemo(){
 }
 renderIfReady();
 </script>
+<script src="../site.js"></script>
 </body>
 </html>
