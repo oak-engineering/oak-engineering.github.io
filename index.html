@@ -217,10 +217,11 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
   opacity: 0; animation: fadeUp .8s var(--ease) .6s forwards;
 }
 .hero-cards {
-  display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;
-  max-width: 640px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
+  max-width: 1120px;
   opacity: 0; animation: fadeUp .8s var(--ease) .8s forwards;
 }
+@media (max-width: 1024px) { .hero-cards { grid-template-columns: repeat(2, 1fr); max-width: 560px; } }
 .hero-card {
   pointer-events: auto;
   display: flex; flex-direction: column;
