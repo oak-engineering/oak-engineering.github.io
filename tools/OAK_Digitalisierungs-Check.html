@@ -7,6 +7,7 @@
 <title>Digitalisierungs-Check EHS 4.0 – Wie digital ist Ihr Arbeitsschutz? | OAK engineering</title>
 <meta name="description" content="5 Fragen zum digitalen Reifegrad Ihres EHS-Managements – mit Reifegrad-Einstufung und konkretem Optimierungspotenzial.">
 <link rel="stylesheet" href="../fonts.css">
+<link rel="stylesheet" href="../nav-dd.css">
 <style>
 :root{
   --oak:#2D6A4F; --oak-deep:#1B4332; --oak-mid:#40916C; --oak-light:#74C69D;
@@ -98,7 +99,13 @@ nav .nav-logo img{height:38px;width:auto;}
 .site-footer .footer-links{display:flex;gap:1.5rem;}
 .site-footer a{color:inherit;text-decoration:none;}
 .site-footer .footer-links a:hover{color:var(--oak-light);}
-@media(max-width:880px){.nav-links a:not(.nav-cta){display:none;}}
+.nav-burger{display:none;background:none;border:none;cursor:pointer;padding:6px;}
+.nav-burger span{display:block;width:22px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;}
+@media(max-width:880px){
+  .nav-burger{display:block;}
+  .nav-links{display:none;position:fixed;top:68px;left:0;right:0;flex-direction:column;align-items:flex-start;background:var(--white);border-bottom:1px solid var(--border);padding:1rem 5vw;gap:1rem;z-index:99;text-transform:none;letter-spacing:0;font-size:.95rem;}
+  .nav-links.open{display:flex;}
+}
 @media(max-width:700px){.nav-wordmark small{display:none;}}
 .wx-head{position:relative;overflow:hidden;}
 .wx-head #gridCanvas{position:absolute;inset:0;z-index:0;width:100%;height:100%;display:block;}
@@ -113,9 +120,15 @@ nav .nav-logo img{height:38px;width:auto;}
   </a>
   <button class="nav-burger" aria-label="Menü"><span></span><span></span><span></span></button>
   <div class="nav-links">
-    <a href="../arbeitssicherheit.html">Arbeitssicherheit</a>
-    <a href="../umweltschutz.html">Umweltschutz</a>
-    <a href="../ki-digitalisierung.html">KI &amp; Digitalisierung</a>
+    <div class="nav-dd">
+      <button type="button" class="nav-dd-btn">Leistungen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div class="nav-dd-menu">
+        <a href="../arbeitssicherheit.html">Arbeitssicherheit</a>
+        <a href="../umweltschutz.html">Umweltschutz</a>
+        <a href="../ki-digitalisierung.html">KI &amp; Digitalisierung</a>
+        <a href="../schulungen.html">Schulungen</a>
+      </div>
+    </div>
     <a href="../about.html">Über uns</a>
     <a href="../kontakt.html" class="nav-cta">Kontakt</a>
   </div>

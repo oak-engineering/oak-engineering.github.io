@@ -80,14 +80,19 @@ document.addEventListener('click', e => {
   item.classList.toggle('open', !open);
 });
 
-/* ── 3) Mobiles Menü (Burger) ────────────────────────── */
+/* ── 3) Mobiles Menü (Burger) + Dropdown „Leistungen" ── */
 document.addEventListener('click', e => {
+  // Dropdown „Leistungen" auf-/zuklappen (Klick/Touch)
+  const ddBtn = e.target.closest('.nav-dd-btn');
+  if(ddBtn){ ddBtn.closest('.nav-dd').classList.toggle('open'); return; }
   const burger = e.target.closest('.nav-burger');
   if(burger){
     const links = burger.closest('nav').querySelector('.nav-links');
     if(links) links.classList.toggle('open');
     return;
   }
+  // Klick außerhalb schließt offene Dropdowns
+  if(!e.target.closest('.nav-dd')) document.querySelectorAll('.nav-dd.open').forEach(d => d.classList.remove('open'));
   // Menü schließen, wenn ein Navigationslink geklickt wird (nicht beim Tippen in die Suche)
   const link = e.target.closest('.nav-links a');
   if(link){ const l = link.closest('.nav-links'); if(l) l.classList.remove('open'); }
