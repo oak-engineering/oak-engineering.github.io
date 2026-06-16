@@ -32,11 +32,13 @@
 .kurs-grid{display:flex;flex-wrap:wrap;gap:.4rem;margin:.2rem 0 .6rem;}
 .kurs-foot{display:flex;flex-wrap:wrap;gap:1.2rem;font-size:.82rem;color:var(--muted);border-top:1px solid var(--border);padding-top:.7rem;margin-top:.8rem;}
 .kurs-foot b{color:var(--ink-2);}
-.kurs-cta{margin-top:.9rem;}
+.kurs-cta{margin-top:.9rem;display:flex;flex-wrap:wrap;gap:.5rem;}
+.kurs-cta .btn{padding:.7rem 1.2rem;font-size:.84rem;}
 
 /* Kalender / Termine */
 .cal-wrap{background:var(--oak-ghost);border:1px solid var(--border);border-radius:14px;padding:clamp(1.1rem,3vw,1.8rem);}
 .cal-note{font-size:.76rem;color:var(--muted);margin-bottom:1rem;}
+.cal-foot{font-size:.76rem;color:var(--muted);margin-top:1rem;line-height:1.5;border-top:1px solid var(--border);padding-top:.8rem;}
 .termin{display:grid;grid-template-columns:auto 1fr auto;gap:.9rem 1.1rem;align-items:center;background:#fff;border:1px solid var(--border);border-radius:11px;padding:.8rem 1rem;margin-bottom:.6rem;}
 .termin .t-date{font-family:var(--serif);font-weight:600;color:var(--oak-deep);line-height:1.1;text-align:center;min-width:54px;}
 .termin .t-date small{display:block;font-family:var(--sans);font-size:.66rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
@@ -138,7 +140,8 @@
 
 <main class="prose">
   <p class="sched-intro">Unsere Schulungen verbinden Recht und Praxis: kompakt, verständlich und sofort anwendbar.
-    Wählen Sie einen Bereich, klappen Sie den Kurs auf – und melden Sie sich direkt zu einem Termin an oder fragen Sie eine Inhouse-Schulung an.</p>
+    Wählen Sie einen Bereich, klappen Sie den Kurs auf – und <strong>fragen Sie ihn unverbindlich an</strong>.
+    Termine, Ablauf und Preis stimmen wir individuell mit Ihnen ab (online, vor Ort oder inhouse).</p>
 
   <div class="filter-bar" id="filterBar">
     <button class="chip active" data-f="alle">Alle</button>
@@ -157,6 +160,7 @@
   <div class="cal-wrap">
     <div class="cal-note" id="calNote"></div>
     <div id="terminList"></div>
+    <p class="cal-foot">Online-Schulungen finden bei ausreichender Teilnehmerzahl statt. Sollte ein Termin einmal nicht zustande kommen, erstatten wir bereits gezahlte Beträge selbstverständlich vollständig.</p>
   </div>
 
   <div class="sec-head" id="anmeldung">
@@ -222,6 +226,10 @@ const CONFIG = {
   ANMELDUNG_ENDPOINT: "https://ayieotppxrjrzdpeofkx.supabase.co/functions/v1/anmeldung",
   SUPABASE_ANON: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aWVvdHBweHJqcnpkcGVvZmt4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEwOTgwNzUsImV4cCI6MjA5NjY3NDA3NX0.3L9VJPGZq04LPxo9JV74fDPa696ObjqotjEZimHbykQ"
 };
+/* MODUS: "anfrage" = Schulungen nur anfragen (aktuell) · "buchung" = volles Buchungssystem
+   (Kalender, Termine, Zahlung, Bestätigungen). Zum Reaktivieren auf "buchung" stellen
+   und Termine in Supabase (Tabelle schulungstermine) eintragen. */
+const MODUS = "anfrage";
 
 /* BEISPIEL-Termine (Fallback). Spalten = Google-Sheet-Spalten:
    kurs_id, datum (JJJJ-MM-TT), enddatum, ort, format, status, hinweis  */
@@ -292,10 +300,10 @@ const KURSE = [
    methodik:"0,5 Tage, Präsenz oder Inhouse; kurz, aktivierend, praxisnah.",
    abschluss:"Teilnahmebescheinigung von OAK engineering."},
 
-  {id:"iso14001", bereich:"Umwelt", titel:"Systematische Auditierung nach ISO 14001 &amp; EMAS", typ:"Freiwillig", recht:"DIN EN ISO 14001", dauer:"2–3 Tage",
+  {id:"iso14001", bereich:"Umwelt", titel:"Systematische Auditierung nach ISO 14001", typ:"Freiwillig", recht:"DIN EN ISO 14001", dauer:"2–3 Tage",
    praxis:"Live-Audit: Probe-Audit durchführen, Umweltaspekte identifizieren, messbare Ziele (KPIs) ableiten.",
-   ziele:["Umweltmanagementsysteme nach ISO 14001/EMAS verstehen","Interne Audits planen und durchführen","Umweltaspekte bewerten und Ziele ableiten"],
-   inhalte:["Aufbau und Anforderungen der ISO 14001 / EMAS","Auditarten, Auditprogramm und -planung","Fragetechnik und Auditpsychologie","Bewertung von Umweltaspekten, Rechtskataster","Live-Audit mit KPI-Ableitung"],
+   ziele:["Umweltmanagementsysteme nach ISO 14001 verstehen","Interne Audits planen und durchführen","Umweltaspekte bewerten und Ziele ableiten"],
+   inhalte:["Aufbau und Anforderungen der ISO 14001","Auditarten, Auditprogramm und -planung","Fragetechnik und Auditpsychologie","Bewertung von Umweltaspekten, Rechtskataster","Live-Audit mit KPI-Ableitung"],
    zielgruppe:"Künftige interne Auditoren, Umweltmanagement-Beauftragte, QM-/EHS-Verantwortliche.",
    methodik:"2–3 Tage, Präsenz oder Inhouse; Training mit realem Probe-Audit.",
    abschluss:"Teilnahmebescheinigung als Nachweis interner Auditorenkompetenz."},
@@ -381,6 +389,17 @@ let TERMINE = [];
 
 function li(arr){ return arr.map(x=>`<li>${x}</li>`).join(""); }
 
+function ctaButtons(id){
+  if(MODUS==="buchung"){
+    return `<button class="btn btn-primary" data-anmelden="${id}">Anmelden →</button>`
+      + ` <button class="btn btn-ghost" data-inhouse="${id}">Inhouse anfragen</button>`
+      + ` <button class="btn btn-ghost" data-individuell="${id}">Individuell anfragen</button>`
+      + ` <button class="btn btn-ghost" data-flyer="${id}">Flyer (PDF)</button>`;
+  }
+  return `<button class="btn btn-primary" data-anfrage="${id}">Diese Schulung anfragen →</button>`
+    + ` <button class="btn btn-ghost" data-flyer="${id}">Flyer (PDF)</button>`;
+}
+
 function renderKurse(){
   $("#kursList").innerHTML = KURSE.map(k=>`
     <div class="acc-item" data-bereich="${k.bereich}" data-id="${k.id}">
@@ -395,7 +414,7 @@ function renderKurse(){
         <div class="kurs-sec"><h4>Inhalte</h4><ul>${li(k.inhalte)}</ul></div>
         <div class="kurs-sec"><h4>Methodik</h4><p>${k.methodik}</p></div>
         <div class="kurs-foot"><span><b>Zielgruppe:</b> ${k.zielgruppe}</span><span><b>Abschluss:</b> ${k.abschluss}</span></div>
-        <div class="kurs-cta"><button class="btn btn-primary" data-anmelden="${k.id}">Zu diesem Kurs anmelden →</button> <button class="btn btn-ghost" data-flyer="${k.id}">Flyer als PDF drucken</button></div>
+        <div class="kurs-cta">${ctaButtons(k.id)}</div>
       </div></div>
     </div>`).join("");
 }
@@ -412,8 +431,17 @@ function terminLabel(t){
   if(t.enddatum){ const d2=fmtDate(t.enddatum); date = `${d1.tag}.–${d2.tag}. ${d2.mon} ${d2.jahr}`; }
   return {kursTitel: k?k.titel:t.kurs_id, date, t};
 }
-function statusClass(s){ s=(s||"").toLowerCase(); return s.includes("ausgebucht")?"s-ausgebucht":s.includes("warte")?"s-warteliste":s.includes("wenig")?"s-wenige":"s-offen"; }
-function statusText(s){ s=(s||"offen").toLowerCase(); return s.includes("ausgebucht")?"Ausgebucht":s.includes("warte")?"Warteliste":s.includes("wenig")?"Wenige Plätze":"Plätze frei"; }
+// Verfügbarkeit dynamisch aus Plätzen & Belegung (Fallback: manuelles status-Feld)
+function statusInfo(t){
+  const p = (t.plaetze==null) ? null : (+t.plaetze);
+  const bel = (+t.belegt)||0;
+  const manual = (t.status||"").toLowerCase();
+  if(manual.includes("ausgebucht") || (p!=null && bel>=p)) return {cls:"s-ausgebucht", txt:"Ausgebucht", full:true};
+  if(manual.includes("warte")) return {cls:"s-warteliste", txt:"Warteliste", full:false};
+  const frei = (p!=null) ? (p-bel) : null;
+  if(frei!=null && frei<=3) return {cls:"s-wenige", txt:"Nur noch "+frei+" Plätze", full:false};
+  return {cls:"s-offen", txt:"Plätze frei", full:false};
+}
 
 function renderTermine(filter){
   const wrap = $("#terminList");
@@ -422,12 +450,12 @@ function renderTermine(filter){
   if(!list.length){ wrap.innerHTML = '<div class="cal-empty">Für diesen Bereich sind aktuell keine offenen Termine veröffentlicht – fragen Sie gern eine Inhouse-Schulung an.</div>'; return; }
   wrap.innerHTML = list.map(t=>{
     const L = terminLabel(t); const d = fmtDate(t.datum);
-    const ausgebucht = (t.status||"").toLowerCase().includes("ausgebucht");
+    const si = statusInfo(t);
     return `<div class="termin">
       <div class="t-date">${d.tag}<small>${d.mon}</small></div>
       <div class="t-main"><b>${L.kursTitel}</b><span>${L.date} · ${esc(t.ort)} · ${esc(t.format)}${t.hinweis?" · "+esc(t.hinweis):""}</span></div>
-      <span class="t-status ${statusClass(t.status)}">${statusText(t.status)}</span>
-      <button class="t-go" data-termin='${JSON.stringify({kurs_id:t.kurs_id,label:L.date+" · "+esc(t.ort),format:t.format})}' ${ausgebucht?"disabled":""}>${ausgebucht?"Ausgebucht":"Anmelden"}</button>
+      <span class="t-status ${si.cls}">${si.txt}</span>
+      <button class="t-go" data-termin='${JSON.stringify({kurs_id:t.kurs_id,label:L.date+" · "+esc(t.ort),format:t.format})}' ${si.full?"disabled":""}>${si.full?"Ausgebucht":"Anmelden"}</button>
     </div>`;
   }).join("");
 }
@@ -451,7 +479,7 @@ async function loadTermine(){
     const res = await fetch(CONFIG.TERMINE_ENDPOINT, {headers:{apikey:CONFIG.SUPABASE_ANON, Authorization:"Bearer "+CONFIG.SUPABASE_ANON}, cache:"no-store"});
     if(!res.ok) throw new Error(res.status);
     const data = await res.json();
-    TERMINE = (Array.isArray(data)?data:[]).map(t=>({kurs_id:t.kurs_id, datum:t.datum||"", enddatum:t.enddatum||"", ort:t.ort||"", format:t.format||"", status:t.status||"offen", hinweis:t.hinweis||""}));
+    TERMINE = (Array.isArray(data)?data:[]).map(t=>({kurs_id:t.kurs_id, datum:t.datum||"", enddatum:t.enddatum||"", ort:t.ort||"", format:t.format||"", status:t.status||"offen", hinweis:t.hinweis||"", plaetze:t.plaetze, belegt:t.belegt, min_tn:t.min_tn}));
     note.textContent = TERMINE.length
       ? "Offene Termine – Inhouse-Schulungen jederzeit auf Anfrage. Kein passender Termin dabei? Fragen Sie einfach einen Wunschtermin an."
       : "Aktuell sind keine offenen Termine veröffentlicht – Inhouse-Schulungen jederzeit auf Anfrage.";
@@ -469,13 +497,14 @@ function buildKursSelect(){
     KURSE.map(k=>`<option value="${k.id}">${k.titel.replace(/&amp;/g,"&")}</option>`).join("");
 }
 function buildTerminSelect(){
+  if(MODUS!=="buchung") return;          // im Anfrage-Modus kein Termin-Feld
   const kursId = $("#f-kurs").value;
   const sel = $("#f-termin");
   const opts = ['<option value="">Inhouse / individueller Termin</option>'];
   TERMINE.filter(t=>t.kurs_id===kursId && t.datum).sort((a,b)=>a.datum.localeCompare(b.datum)).forEach(t=>{
     const L = terminLabel(t);
-    if((t.status||"").toLowerCase().includes("ausgebucht")) return;
-    opts.push(`<option value="${L.date} · ${esc(t.ort)} (${esc(t.format)})">${L.date} · ${esc(t.ort)} (${esc(t.format)})</option>`);
+    if(statusInfo(t).full) return;
+    opts.push(`<option value="${L.date} · ${esc(t.ort)} (${esc(t.format)})" data-datum="${t.datum}" data-enddatum="${t.enddatum||''}">${L.date} · ${esc(t.ort)} (${esc(t.format)})</option>`);
   });
   sel.innerHTML = opts.join("");
 }
@@ -501,7 +530,7 @@ async function submitAnmeldung(e){
   const payload = {
     kurs_id: kursId,
     kurs_titel: kurs ? kurs.titel.replace(/&amp;/g,"&") : kursId,
-    termin: $("#f-termin").value || "Inhouse / individueller Termin",
+    termin: MODUS==="buchung" ? ($("#f-termin").value || "Inhouse / individueller Termin") : "Anfrage (Termin nach Absprache)",
     format: $("#f-format").value,
     name: $("#f-name").value.trim(),
     email: $("#f-email").value.trim(),
@@ -509,8 +538,15 @@ async function submitAnmeldung(e){
     firma: $("#f-firma").value.trim(),
     anzahl_personen: parseInt($("#f-anzahl").value)||1,
     nachricht: $("#f-msg").value.trim(),
-    datenschutz_ok: true
+    datenschutz_ok: true,
+    modus: MODUS
   };
+  // Datum nur im Buchungsmodus (für Kalender-Einladung)
+  if(MODUS==="buchung"){
+    const tOpt = $("#f-termin").options[$("#f-termin").selectedIndex];
+    payload.datum = (tOpt && tOpt.dataset.datum) ? tOpt.dataset.datum : null;
+    payload.enddatum = (tOpt && tOpt.dataset.enddatum) ? tOpt.dataset.enddatum : null;
+  }
   btn.disabled = true; btn.textContent = "Wird gesendet …";
   msg.className = "anm-msg"; msg.textContent = "";
   try{
@@ -522,7 +558,9 @@ async function submitAnmeldung(e){
     const data = await res.json().catch(()=>({}));
     if(res.ok && data.ok){
       msg.className="anm-msg ok";
-      msg.textContent = "Vielen Dank! Ihre Anmeldung ist eingegangen. Sie erhalten in Kürze eine Bestätigung per E-Mail.";
+      msg.textContent = MODUS==="buchung"
+        ? "Vielen Dank! Ihre Anmeldung ist eingegangen. Sie erhalten gleich eine Eingangsbestätigung mit den Zahlungsinformationen; die verbindliche Teilnahmebestätigung mit Kalender-Termin folgt nach Zahlungseingang."
+        : "Vielen Dank! Ihre Anfrage ist eingegangen – wir melden uns in Kürze mit Terminvorschlägen, Ablauf und Preis.";
       $("#anmForm").reset(); buildTerminSelect();
     } else { throw new Error(data.storeErr || data.error || res.status); }
   }catch(err){
@@ -530,7 +568,7 @@ async function submitAnmeldung(e){
     const sub = encodeURIComponent("Schulungsanmeldung: "+payload.kurs_titel);
     const body = encodeURIComponent(`Kurs: ${payload.kurs_titel}\nTermin: ${payload.termin}\nFormat: ${payload.format}\nName: ${payload.name}\nE-Mail: ${payload.email}\nTelefon: ${payload.telefon}\nFirma: ${payload.firma}\nPersonen: ${payload.anzahl_personen}\nNachricht: ${payload.nachricht}`);
     msg.innerHTML = 'Die Online-Übermittlung hat nicht geklappt. Bitte senden Sie die Anmeldung direkt per <a href="mailto:info@oak-engineering.de?subject='+sub+'&body='+body+'" style="color:var(--oak-deep);font-weight:700">E-Mail</a>.';
-  }finally{ btn.disabled=false; btn.textContent="Anmeldung absenden →"; }
+  }finally{ btn.disabled=false; btn.textContent = MODUS==="buchung" ? "Anmeldung absenden →" : "Anfrage absenden →"; }
 }
 
 function printFlyer(kursId){
@@ -556,18 +594,34 @@ function printFlyer(kursId){
   window.print();
 }
 
-function prefillKurs(kursId, terminLabelStr, format){
+function prefillKurs(kursId, terminLabelStr, format, note){
   $("#f-kurs").value = kursId; buildTerminSelect();
   if(terminLabelStr){ const opt=[...$("#f-termin").options].find(o=>o.value.startsWith(terminLabelStr)); if(opt) $("#f-termin").value=opt.value; }
   if(format && format!=="Live-Online"){ const fo=[...$("#f-format").options].find(o=>o.value===format); if(fo) $("#f-format").value=format; }
+  if(note){ $("#f-msg").value = note; }
   document.getElementById("anmeldung").scrollIntoView({behavior:"smooth"});
   setTimeout(()=>$("#f-name").focus(), 400);
+}
+
+// Anfrage-Modus: Kalender & Termin-Feld ausblenden, Texte auf „Anfrage" umstellen
+function setupAnfrageUI(){
+  const hide = el => { if(el) el.style.display="none"; };
+  hide(document.getElementById("kalender"));
+  hide(document.querySelector(".cal-wrap"));
+  const tsel = document.getElementById("f-termin");
+  if(tsel && tsel.closest(".anm-field")) tsel.closest(".anm-field").style.display="none";
+  const sec = document.getElementById("anmeldung");
+  if(sec){ const ey=sec.querySelector(".ey"), h2=sec.querySelector("h2"); if(ey) ey.textContent="Anfrage"; if(h2) h2.textContent="Schulung anfragen"; }
+  const lead = document.querySelector(".anm-card .lead");
+  if(lead) lead.textContent = "Sagen Sie uns, welche Schulung Sie interessiert – wir melden uns mit Terminvorschlägen, Ablauf und Preis. Unverbindlich und kostenfrei beraten wir Sie vorab gern.";
+  const sub = document.getElementById("anmSubmit");
+  if(sub) sub.textContent = "Anfrage absenden →";
 }
 
 /* Init */
 renderKurse();
 buildKursSelect();
-loadTermine();
+if(MODUS==="buchung"){ loadTermine(); } else { setupAnfrageUI(); }
 
 $("#filterBar").addEventListener("click", e=>{ const c=e.target.closest(".chip"); if(c) applyFilter(c.dataset.f); });
 $("#f-kurs").addEventListener("change", buildTerminSelect);
@@ -575,6 +629,12 @@ $("#anmForm").addEventListener("submit", submitAnmeldung);
 document.addEventListener("click", e=>{
   const fl = e.target.closest("[data-flyer]");
   if(fl){ printFlyer(fl.dataset.flyer); return; }
+  const an = e.target.closest("[data-anfrage]");
+  if(an){ prefillKurs(an.dataset.anfrage); return; }
+  const ih = e.target.closest("[data-inhouse]");
+  if(ih){ prefillKurs(ih.dataset.inhouse, "", "Inhouse", "Inhouse-Anfrage: Bitte ein Angebot für diese Schulung als Inhouse-Veranstaltung (bei uns vor Ort oder online für unser Team)."); return; }
+  const iv = e.target.closest("[data-individuell]");
+  if(iv){ prefillKurs(iv.dataset.individuell, "", "egal", "Anfrage individuell zugeschnittene Schulung: Inhalte, Umfang und Termin nach Absprache."); return; }
   const a = e.target.closest("[data-anmelden]");
   if(a){ prefillKurs(a.dataset.anmelden); return; }
   const t = e.target.closest("[data-termin]");
