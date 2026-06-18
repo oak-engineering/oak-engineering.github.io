@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Schulungen &amp; Weiterbildungen – OAK Engineering | EHS-Management &amp; Digitalisierung</title>
-<meta name="description" content="Praxisnahe EHS-Schulungen von OAK engineering: Fachkunde-Lehrgänge (Immissionsschutz, Gewässerschutz, Abfall, Gefahrstoffe), Arbeitssicherheit, Gefahrgut (ADR 1.3) und KI/Digitalisierung – online, vor Ort oder inhouse in Augsburg, München und ganz Bayern.">
+<meta name="description" content="Praxisnahe EHS-Schulungen von OAK engineering: Arbeitssicherheit & Sicherheitskultur, Umweltrecht, ISO 14001/CSRD und KI/Digitalisierung – online, vor Ort oder inhouse in Augsburg, München und ganz Bayern.">
 <link rel="canonical" href="https://www.oak-engineering.de/schulungen.html">
 <link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="site.css">
@@ -134,7 +134,7 @@
   <div class="sub-overlay"></div>
   <div class="sub-eyebrow">Weiterbildung</div>
   <h1>Schulungen &amp; Weiterbildungen</h1>
-  <p>Praxisnahe EHS-Qualifizierung – von der gesetzlichen Fachkunde bis zu KI im Arbeitsschutz.
+  <p>Praxisnahe EHS-Qualifizierung – von Sicherheitskultur und Umweltrecht bis zu KI im Arbeitsschutz.
      Online, vor Ort oder inhouse, immer mit konkretem Anwendungsbezug.</p>
 </header>
 
@@ -147,7 +147,6 @@
     <button class="chip active" data-f="alle">Alle</button>
     <button class="chip" data-f="Umwelt">Umwelt</button>
     <button class="chip" data-f="Sicherheit">Arbeitssicherheit</button>
-    <button class="chip" data-f="Gefahrgut">Gefahrgut</button>
     <button class="chip" data-f="Digital &amp; KI">Digital &amp; KI</button>
   </div>
 
@@ -234,9 +233,6 @@ const MODUS = "anfrage";
 /* BEISPIEL-Termine (Fallback). Spalten = Google-Sheet-Spalten:
    kurs_id, datum (JJJJ-MM-TT), enddatum, ort, format, status, hinweis  */
 const SAMPLE_TERMINE = [
-  {kurs_id:"imsb",     datum:"2026-09-15", enddatum:"2026-09-18", ort:"Augsburg", format:"Präsenz",     status:"offen",   hinweis:""},
-  {kurs_id:"adr13",    datum:"2026-09-29", enddatum:"",           ort:"Augsburg", format:"Präsenz",     status:"offen",   hinweis:""},
-  {kurs_id:"gefstoffb",datum:"2026-10-06", enddatum:"2026-10-07", ort:"Online",   format:"Live-Online", status:"wenige",  hinweis:""},
   {kurs_id:"iso14001", datum:"2026-10-20", enddatum:"2026-10-22", ort:"München",  format:"Präsenz",     status:"offen",   hinweis:""},
   {kurs_id:"sibe",     datum:"2026-11-24", enddatum:"2026-11-25", ort:"Augsburg", format:"Präsenz",     status:"wenige",  hinweis:""},
   {kurs_id:"kiboost",  datum:"2026-11-12", enddatum:"",           ort:"Online",   format:"Live-Online", status:"offen",   hinweis:""}
@@ -244,38 +240,6 @@ const SAMPLE_TERMINE = [
 
 /* ── Kurskatalog ────────────────────────────────────────────── */
 const KURSE = [
-  {id:"imsb", bereich:"Umwelt", titel:"Fachkunde für Immissionsschutzbeauftragte", typ:"Pflicht", recht:"§§ 53–58 BImSchG", dauer:"4 Tage",
-   praxis:"Anlagen-Check: Lärmmessung simulieren, Grenzwerte in Genehmigungsbescheiden prüfen, Emissionskataster erstellen.",
-   ziele:["Aufgaben und Pflichten als Immissionsschutzbeauftragte/r rechtssicher wahrnehmen","Emissionen und Immissionen beurteilen und Grenzwerte einordnen","Behördliche Auflagen umsetzen und die Geschäftsleitung fundiert beraten"],
-   inhalte:["Rechtsrahmen: BImSchG, 4./9. BImSchV, TA Luft, TA Lärm","Stellung, Rechte und Pflichten des Beauftragten","Emissionsarten sowie Mess- und Beurteilungsverfahren","Genehmigungs- und Änderungsverfahren","Praxis: Lärmmessung, Grenzwertprüfung, Emissionskataster"],
-   zielgruppe:"Künftige und bestellte Immissionsschutzbeauftragte, EHS-Verantwortliche genehmigungsbedürftiger Anlagen.",
-   methodik:"4 Tage, Präsenz oder Inhouse; Fachvorträge, Übungen und Fallarbeit.",
-   abschluss:"Teilnahmebescheinigung als Fachkunde-Nachweis nach BImSchG."},
-
-  {id:"gewsb", bereich:"Umwelt", titel:"Fachkunde für Gewässerschutzbeauftragte", typ:"Pflicht", recht:"§§ 64–66 WHG", dauer:"4 Tage",
-   praxis:"Monitoring: Abscheider-Begehung, Abwasseranalysen interpretieren, Notfallplan bei Stoffaustritt erstellen.",
-   ziele:["Die Funktion der/des Gewässerschutzbeauftragten sicher ausfüllen","Abwasser- und Anlagenüberwachung organisieren","Bei Stoffaustritten richtig reagieren und vorbeugen"],
-   inhalte:["Rechtsrahmen: WHG, AbwV, AwSV, Indirekteinleiterrecht","Aufgaben, Rechte und Pflichten des Beauftragten","Abwasserbehandlung und Eigenkontrolle","Anlagen mit wassergefährdenden Stoffen","Praxis: Abscheider-Begehung, Abwasseranalysen, Notfallplan"],
-   zielgruppe:"Künftige/bestellte Gewässerschutzbeauftragte, Anlagen- und Umweltverantwortliche.",
-   methodik:"4 Tage, Präsenz oder Inhouse; Vorträge, Vor-Ort-Übungen, Fallbeispiele.",
-   abschluss:"Teilnahmebescheinigung als Fachkunde-Nachweis nach WHG."},
-
-  {id:"abfb", bereich:"Umwelt", titel:"Fachkunde für Abfallbeauftragte", typ:"Pflicht", recht:"§§ 59–60 KrWG", dauer:"4 Tage",
-   praxis:"Stoffstrom-Audit: Abfälle nach AVV einstufen, eANV-Verfahren üben, Trennkonzept zur Kostensenkung.",
-   ziele:["Abfälle rechtssicher einstufen und Stoffströme dokumentieren","Nachweis- und Registerpflichten (eANV) erfüllen","Entsorgungswege optimieren und Kosten senken"],
-   inhalte:["Rechtsrahmen: KrWG, AVV, NachwV, GewAbfV","Aufgaben, Rechte und Pflichten des Beauftragten","Abfalleinstufung und Entsorgungswege","Elektronisches Abfallnachweisverfahren (eANV)","Praxis: AVV-Einstufung, eANV-Übung, Trennkonzept"],
-   zielgruppe:"Künftige/bestellte Abfallbeauftragte, Verantwortliche in Produktion und Entsorgung.",
-   methodik:"4 Tage, Präsenz oder Inhouse; Fachinput, Übungen am eANV, Fallarbeit.",
-   abschluss:"Teilnahmebescheinigung als Fachkunde-Nachweis nach KrWG."},
-
-  {id:"awsv", bereich:"Umwelt", titel:"AwSV-Fachverantwortung für Anlagenbetreiber", typ:"Pflicht", recht:"§ 62 WHG / AwSV", dauer:"1–2 Tage",
-   praxis:"Auffangwannen beurteilen, Eigenüberwachungsplan für Lageranlagen erstellen (z. B. Heizöl, Säuren).",
-   ziele:["Pflichten als Betreiber von Anlagen mit wassergefährdenden Stoffen kennen","Anlagen korrekt einstufen und überwachen","Eigenüberwachung und Dokumentation aufbauen"],
-   inhalte:["Rechtsrahmen: WHG § 62, AwSV, Gefährdungsstufen","Anlagenkataster und Einstufung","Anforderungen an Rückhaltung und Dichtheit","Prüf- und Fachbetriebspflichten","Praxis: Auffangwannen beurteilen, Eigenüberwachungsplan"],
-   zielgruppe:"Anlagenbetreiber, Haustechnik, Instandhaltung, Umweltverantwortliche.",
-   methodik:"1–2 Tage, Präsenz oder Inhouse; kompakt und anwendungsorientiert.",
-   abschluss:"Teilnahmebescheinigung von OAK engineering."},
-
   {id:"umwrecht-kompakt", bereich:"Umwelt", titel:"Umweltrecht kompakt: Haftung &amp; Compliance", typ:"Freiwillig", recht:"UGB / BImSchG / WHG", dauer:"1 Tag",
    praxis:"Fallstudien: reale Urteile zum Organisationsverschulden, rechtssicheres Pflichtenübertragungs-System aufbauen.",
    ziele:["Die wesentlichen umweltrechtlichen Pflichten überblicken","Haftungsrisiken erkennen und vermeiden","Verantwortlichkeiten rechtssicher übertragen"],
@@ -324,14 +288,6 @@ const KURSE = [
    methodik:"2 Tage, Präsenz oder Inhouse; viele Übungen und eine Begehung.",
    abschluss:"Teilnahmebescheinigung von OAK engineering."},
 
-  {id:"gefstoffb", bereich:"Sicherheit", titel:"Fachkunde für Gefahrstoffbeauftragte", typ:"Pflicht", recht:"§ 14 GefStoffV", dauer:"2 Tage",
-   praxis:"Gefahrstoff-Check: Betriebsanweisung aus Sicherheitsdatenblättern erstellen, Substitutionsprüfung durchführen.",
-   ziele:["Pflichten im Umgang mit Gefahrstoffen sicher erfüllen","Gefahrstoffkataster und Betriebsanweisungen erstellen","Substitution und Schutzmaßnahmen ableiten"],
-   inhalte:["Rechtsrahmen: GefStoffV, TRGS, CLP/REACH","Gefahrstoffkataster und Sicherheitsdatenblätter","Gefährdungsbeurteilung und Schutzmaßnahmen (TOP)","Substitutionsprüfung und Lagerung (TRGS 510)","Praxis: Betriebsanweisung und Substitution"],
-   zielgruppe:"Gefahrstoffbeauftragte, SiFa, Labor- und Produktionsverantwortliche.",
-   methodik:"2 Tage, Präsenz oder Inhouse; praxisnah mit eigenen SDB.",
-   abschluss:"Teilnahmebescheinigung als Fachkunde-Nachweis."},
-
   {id:"visionzero", bereich:"Sicherheit", titel:"Vision Zero: Aktive Gestaltung der Sicherheitskultur", typ:"Freiwillig", recht:"DGUV Strategie", dauer:"1–2 Tage",
    praxis:"Kultur-Analyse: Arbeit mit der Bradley-Kurve, Workshop zur Fehler-Lern-Kultur, Safety-Incentives entwickeln.",
    ziele:["Die Sicherheitskultur im Betrieb weiterentwickeln","Von reaktiver zu präventiver Kultur kommen","Wirksame Kultur-Maßnahmen gestalten"],
@@ -347,14 +303,6 @@ const KURSE = [
    zielgruppe:"Führungskräfte, Meister, Teamleitungen, Projektleitende.",
    methodik:"1 Tag, Präsenz oder Inhouse; Training mit Rollenspielen.",
    abschluss:"Teilnahmebescheinigung von OAK engineering."},
-
-  {id:"adr13", bereich:"Gefahrgut", titel:"Gefahrgut-Logistik: Unterweisung nach ADR 1.3", typ:"Pflicht", recht:"Kap. 1.3 ADR / GGVSEB", dauer:"0,5–1 Tag",
-   praxis:"Versand-Training: korrektes Labeling von Versandstücken, Beförderungspapiere prüfen, Ladungssicherung üben.",
-   ziele:["Beteiligte an der Gefahrgutbeförderung unterweisen","Aufgabenbezogene Pflichten sicher umsetzen","Dokumente und Kennzeichnung korrekt handhaben"],
-   inhalte:["Rechtsrahmen: ADR Kapitel 1.3, GGVSEB","Klassifizierung und Kennzeichnung","Beförderungspapiere und Pflichten der Beteiligten","Verpackung, Ladungssicherung, Freistellungen (1.1.3.6)","Versand-Training"],
-   zielgruppe:"Versand, Lager, Logistik und alle an der Beförderung beteiligten Personen.",
-   methodik:"0,5–1 Tag, Präsenz oder Online; mit Praxisübungen.",
-   abschluss:"Unterweisungsnachweis nach ADR 1.3."},
 
   {id:"ehs40", bereich:"Digital &amp; KI", titel:"EHS 4.0: Die digitale Transformation im Betrieb", typ:"Zukunft", recht:"Strategisches Management", dauer:"1 Tag",
    praxis:"Tool-Check: Softwarelösungen zur automatisierten Überwachung von Fristen, Auflagen und Katastern auswählen.",

@@ -12,7 +12,7 @@ Gögginger Straße 137
 ## Kontakt
 
 Telefon: 015679 787193
-E-Mail: nikolai.krawielitzki@oak-engineering.de
+E-Mail: info@oak-engineering.de
 
 ## Umsatzsteuer
 

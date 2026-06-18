@@ -14,7 +14,7 @@ Sie persönlich identifiziert werden können.
 
 Nikolai Krawielitzki
 Gögginger Straße 137, 86199 Augsburg
-E-Mail: nikolai.krawielitzki@oak-engineering.de
+E-Mail: info@oak-engineering.de
 
 ### Wie erfassen wir Ihre Daten?
 
@@ -81,4 +81,4 @@ Verbindung zu externen Schrift-Diensten** wie Google Fonts; es werden hierfür k
 Sie haben jederzeit das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung
 (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) sowie
 Widerspruch gegen die Verarbeitung (Art. 21). Zur Geltendmachung wenden Sie sich an:
-nikolai.krawielitzki@oak-engineering.de
+info@oak-engineering.de
