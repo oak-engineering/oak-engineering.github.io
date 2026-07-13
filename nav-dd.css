@@ -1,4 +1,4 @@
-/* OAK Engineering – geteiltes Dropdown-Menü „Leistungen" (Tool-Seiten) */
+/* OAK engineering – geteiltes Dropdown-Menü „Leistungen" (Tool-Seiten) */
 .nav-dd{position:relative;display:flex;align-items:center;}
 .nav-dd-btn{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--muted);background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:.3rem;padding:0;transition:color .2s;}
 .nav-dd-btn svg{width:9px;height:9px;transition:transform .2s;}

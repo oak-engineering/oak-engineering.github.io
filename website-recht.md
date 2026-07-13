@@ -11,7 +11,11 @@ Tel.: 015679 787193 · E-Mail: info@oak-engineering.de
 - **Berufsbezeichnung:** Ingenieur (verliehen in Deutschland)
 - **Zuständige Kammer:** Bayerische Ingenieurekammer-Bau, Schloßschmidstraße 3, 80639 München (bayika.de)
 - **Berufsrecht:** BayIngG, Berufsordnung Bayer. Ing.-Kammer-Bau, HOAI
-- **USt-IdNr.:** ⟪falls vorhanden ergänzen, sonst Punkt weglassen⟫
+- **USt-IdNr.:** keine (Kleinunternehmer §19 UStG) – Punkt entfällt im Impressum.
+  Steuernummer vorhanden (siehe `references/oak.md`, Stammdaten), wird aber **bewusst NICHT im
+  Impressum veröffentlicht** (keine Pflicht nach §5 DDG, Missbrauchsschutz – Entscheidung 13.07.2026).
+  Pflichtangabe nur auf Rechnungen (§14 UStG) → Rechnungs-Tool. ⚠️ Diese Datei wird mit dem
+  Website-Ordner mitdeployt – hier nie die konkrete Nummer eintragen.
 - **Redaktionell verantwortlich:** Nikolai Krawielitzki (Anschrift wie oben)
 - **EU-Streitschlichtung:** Plattform OS https://ec.europa.eu/consumers/odr/ ; keine Teilnahme an Verbraucherschlichtung
 - **Bildnachweise:** Unsplash.com
