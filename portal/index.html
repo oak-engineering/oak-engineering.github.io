@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>OAK Kundenportal</title>
+<link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginView">
+  <form class="login" id="loginForm" autocomplete="on">
+    <div class="marke" style="justify-content:center;flex-direction:column;text-align:center;margin-bottom:6px;">
+      <div class="tree">🌳</div>
+      <div class="wort">OAK engineering</div>
+    </div>
+    <h1>Kundenportal</h1>
+    <div class="doktyp">Gefährdungsbeurteilungen · Betriebsanweisungen</div>
+    <label for="email">E-Mail</label>
+    <input type="email" id="email" name="email" required autocomplete="username" placeholder="name@firma.de">
+    <label for="pass">Passwort</label>
+    <input type="password" id="pass" name="password" required autocomplete="current-password" placeholder="••••••••">
+    <button class="btn" id="loginBtn" type="submit">Anmelden</button>
+    <div class="fehler" id="loginFehler"></div>
+    <div class="hinweis">Zugang erhalten Sie von OAK&nbsp;engineering.<br>Ihre Unterlagen sind vertraulich und nur nach Login sichtbar.</div>
+  </form>
+</div>
+
+<!-- ÜBERSICHT -->
+<div id="appView" class="hidden">
+  <header class="kopf">
+    <div class="wrap">
+      <div class="marke">
+        <span class="tree">🌳</span>
+        <div><div class="wort">OAK engineering</div><div class="sub">Kundenportal</div></div>
+      </div>
+      <div class="rechts">
+        <span id="userMail"></span>
+        <button class="btn sek" id="logoutBtn" type="button">Abmelden</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="titelzeile">
+      <h1 id="kundeTitel">Ihre Anlagen</h1>
+      <span class="kunde" id="kundeName"></span>
+    </div>
+    <div class="toolbar">
+      <input type="search" id="suche" placeholder="Maschine suchen …">
+      <select id="typFilter"><option value="">Alle Maschinentypen</option></select>
+      <span style="align-self:center;color:var(--grau);font-size:13px;" id="zaehler"></span>
+    </div>
+
+    <table>
+      <thead><tr>
+        <th style="width:52px">Status</th><th>Maschine</th><th>Maschinentyp</th>
+        <th style="width:70px">Nr.</th><th style="width:270px">Dokumente</th>
+      </tr></thead>
+      <tbody id="liste"><tr><td colspan="5" class="leer">lädt …</td></tr></tbody>
+    </table>
+
+    <div class="fuss">
+      Status-Ampel = aktueller Stand der Maßnahmen (Momentaufnahme). Details und Risiko stehen in der jeweiligen GBU.<br>
+      OAK engineering · Nikolai Krawielitzki · vertrauliche Kundenunterlagen.
+    </div>
+  </main>
+</div>
+
+<script src="auth.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
