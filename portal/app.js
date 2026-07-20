@@ -47,16 +47,13 @@ function renderAnlagen(){
   const z=$("#anlagenZaehler"); if(z) z.textContent = rows.length + " von " + anlagen().length + " Anlagen";
 }
 
-function docKarte(r){
-  const stand = r.stand ? `<span class="stand">Stand ${esc(r.stand)}</span>` : "";
-  let action;
-  if(r.doc_typ==="link" && r.url)
-    action = `<a class="btn sek" href="${esc(r.url)}" target="_blank" rel="noopener">Öffnen ↗</a>`;
-  else
-    action = `<a class="btn sek" href="${viewerUrl(r.doc_typ, r.storage_path, r.titel)}" target="_blank" rel="noopener">Öffnen</a>`;
-  const fmt = {html:"Dokument", pdf:"PDF", link:"Extern"}[r.doc_typ] || "";
-  return `<div class="dok"><div class="dok-txt"><div class="dok-titel">${esc(r.titel||"Dokument")}</div>
-      <div class="dok-meta">${fmt}${fmt&&stand?" · ":""}${stand}</div></div>${action}</div>`;
+function docZeile(r){
+  const oeffnen = (r.doc_typ==="link" && r.url)
+    ? `<a class="doc-open" href="${esc(r.url)}" target="_blank" rel="noopener">Öffnen ↗</a>`
+    : `<a class="doc-open" href="${viewerUrl(r.doc_typ, r.storage_path, r.titel)}" target="_blank" rel="noopener">Öffnen</a>`;
+  const fmt = {html:"Dokument", pdf:"PDF", link:"Extern"}[r.doc_typ] || "Dokument";
+  return `<tr><td>${esc(r.titel||"Dokument")}</td><td class="tspalte">${fmt}</td>`
+    + `<td class="tspalte">${r.stand?esc(r.stand):"—"}</td><td class="doc-td">${oeffnen}</td></tr>`;
 }
 
 function renderSektionen(){
@@ -75,7 +72,9 @@ function renderSektionen(){
         <table><thead><tr><th style="width:52px">Status</th><th>Maschine</th><th>Maschinentyp</th><th style="width:70px">Nr.</th><th style="width:270px">Dokumente</th></tr></thead>
         <tbody id="anlagen-liste"></tbody></table>`;
     } else {
-      sec.innerHTML = `<div class="sek-kopf"><h2>${label}</h2></div><div class="doks">${rows.map(docKarte).join("")}</div>`;
+      sec.innerHTML = `<div class="sek-kopf"><h2>${label}</h2><span class="zaehler">${rows.length} ${rows.length===1?"Dokument":"Dokumente"}</span></div>
+        <table><thead><tr><th>Dokument</th><th style="width:130px">Art</th><th style="width:120px">Stand</th><th style="width:120px"></th></tr></thead>
+        <tbody>${rows.map(docZeile).join("")}</tbody></table>`;
     }
     wrap.appendChild(sec);
   }
