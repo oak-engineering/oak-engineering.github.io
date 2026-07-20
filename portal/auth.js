@@ -27,9 +27,9 @@ async function token(){ let s=getSession(); if(!s) return null;
   if(Date.now()>=(s.expires_at||0)){ try{ await refresh(); s=getSession(); }catch(e){ clearSession(); return null; } }
   return s.access_token; }
 
-/* Authenticated GET (REST oder Storage) mit einmaligem Refresh-Retry bei 401.
+/* Authenticated GET (REST oder Storage), einmaliger Refresh-Retry bei 401 -> liefert Response.
    Wirft "AUTH", wenn keine gültige Sitzung -> Aufrufer leitet zum Login. */
-async function apiGet(path, asText){
+async function apiFetch(path){
   let t = await token(); if(!t){ clearSession(); throw new Error("AUTH"); }
   const doFetch = tk => fetch(CFG.url + path, { headers:{ "apikey":CFG.anon, "Authorization":"Bearer "+tk } });
   let r = await doFetch(t);
@@ -37,6 +37,10 @@ async function apiGet(path, asText){
     catch(e){ clearSession(); throw new Error("AUTH"); } }
   if(r.status===401){ clearSession(); throw new Error("AUTH"); }
   if(!r.ok) throw new Error("HTTP "+r.status);
+  return r;
+}
+async function apiGet(path, asText){
+  const r = await apiFetch(path);
   return asText ? r.text() : r.json();
 }
 

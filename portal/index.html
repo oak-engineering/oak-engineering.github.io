@@ -12,12 +12,9 @@
 <!-- LOGIN -->
 <div id="loginView">
   <form class="login" id="loginForm" autocomplete="on">
-    <div class="marke" style="justify-content:center;flex-direction:column;text-align:center;margin-bottom:6px;">
-      <div class="tree">🌳</div>
-      <div class="wort">OAK engineering</div>
-    </div>
+    <img src="../assets/oak-logo.png" class="oak-logo login-logo" alt="OAK engineering">
     <h1>Kundenportal</h1>
-    <div class="doktyp">Gefährdungsbeurteilungen · Betriebsanweisungen</div>
+    <div class="doktyp">Digitaler Zugang &amp; Update-Service</div>
     <label for="email">E-Mail</label>
     <input type="email" id="email" name="email" required autocomplete="username" placeholder="name@firma.de">
     <label for="pass">Passwort</label>
@@ -28,14 +25,14 @@
   </form>
 </div>
 
-<!-- ÜBERSICHT -->
+<!-- PORTAL -->
 <div id="appView" class="hidden">
   <header class="kopf">
     <div class="wrap">
-      <div class="marke">
-        <span class="tree">🌳</span>
+      <a class="marke" href="index.html">
+        <img src="../assets/oak-logo.png" class="oak-logo" alt="OAK engineering">
         <div><div class="wort">OAK engineering</div><div class="sub">Kundenportal</div></div>
-      </div>
+      </a>
       <div class="rechts">
         <span id="userMail"></span>
         <button class="btn sek" id="logoutBtn" type="button">Abmelden</button>
@@ -45,25 +42,17 @@
 
   <main class="wrap">
     <div class="titelzeile">
-      <h1 id="kundeTitel">Ihre Anlagen</h1>
+      <div>
+        <h1 id="kundeTitel">Ihre Unterlagen</h1>
+        <div class="unter">Digitaler Zugang &amp; Update-Service — Ihre aktuellen OAK-Unterlagen</div>
+      </div>
       <span class="kunde" id="kundeName"></span>
     </div>
-    <div class="toolbar">
-      <input type="search" id="suche" placeholder="Maschine suchen …">
-      <select id="typFilter"><option value="">Alle Maschinentypen</option></select>
-      <span style="align-self:center;color:var(--grau);font-size:13px;" id="zaehler"></span>
-    </div>
 
-    <table>
-      <thead><tr>
-        <th style="width:52px">Status</th><th>Maschine</th><th>Maschinentyp</th>
-        <th style="width:70px">Nr.</th><th style="width:270px">Dokumente</th>
-      </tr></thead>
-      <tbody id="liste"><tr><td colspan="5" class="leer">lädt …</td></tr></tbody>
-    </table>
+    <div id="sektionen"><div class="leer">lädt …</div></div>
 
     <div class="fuss">
-      Status-Ampel = aktueller Stand der Maßnahmen (Momentaufnahme). Details und Risiko stehen in der jeweiligen GBU.<br>
+      Status-Ampel (Anlagen) = aktueller Stand der Maßnahmen. „Stand" = Datum der letzten Aktualisierung durch OAK engineering.<br>
       OAK engineering · Nikolai Krawielitzki · vertrauliche Kundenunterlagen.
     </div>
   </main>

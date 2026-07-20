@@ -18,8 +18,10 @@ a{color:var(--gruen)}
 /* Kopf */
 .kopf{background:#fff;border-bottom:3px solid var(--gruen);}
 .kopf .wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;gap:12px;}
-.marke{display:flex;align-items:center;gap:10px;}
-.marke .tree{font-size:26px}
+.marke{display:flex;align-items:center;gap:11px;text-decoration:none;}
+.oak-logo{display:block;height:40px;width:auto;}
+.login-logo{height:66px;width:auto;margin:0 auto 6px;}
+.unter{font-size:12.5px;color:var(--gruen);margin-top:3px;font-weight:500;}
 .marke .wort{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:22px;color:var(--dunkel);letter-spacing:.3px;}
 .marke .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gruen);font-weight:600;}
 .kopf .rechts{display:flex;align-items:center;gap:14px;font-size:13px;}
@@ -61,4 +63,15 @@ tbody tr:hover{background:#f6faf8}
 .docs a:hover{filter:brightness(1.05)}
 .leer{color:var(--grau);font-style:italic;padding:22px;text-align:center;}
 .fuss{color:var(--grau);font-size:11.5px;text-align:center;margin:26px 0 40px;line-height:1.6;}
+/* Kategorie-Sektionen + generische Dokumentkarten */
+.titelzeile .unter{margin-top:4px}
+.sektion{margin:24px 0}
+.sek-kopf{display:flex;align-items:baseline;gap:12px;margin:0 0 10px;border-bottom:2px solid var(--akzent);padding-bottom:5px;}
+.sek-kopf h2{font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:700;color:var(--dunkel);}
+.sek-kopf .zaehler{font-size:12.5px;color:var(--grau);}
+.doks{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;}
+.dok{display:flex;align-items:center;justify-content:space-between;gap:14px;background:#fff;border:1px solid var(--rand);border-radius:12px;padding:14px 16px;}
+.dok-titel{font-weight:600;color:var(--dunkel);font-size:15px;}
+.dok-meta{font-size:12px;color:var(--grau);margin-top:3px;}
+.dok .stand{color:var(--gruen);font-weight:600;}
 .hidden{display:none!important}
