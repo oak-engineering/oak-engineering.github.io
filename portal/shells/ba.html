@@ -200,6 +200,7 @@
     <div class="fussz" id="ba-mgl"><b data-t="l_mitgeltend"></b> <span id="ba-mgl-list"></span></div>
     <div class="fussz"><b data-t="l_unterw"></b> <span data-t="unterweisung"></span></div>
     <div class="fussz" data-t="footer"></div>
+    <div class="fussz" id="ba-qr" style="display:none;margin-top:8px;align-items:center;gap:10px"></div>
   </div>
 </div>
 
@@ -309,6 +310,11 @@ const T = (DOC.ba && DOC.ba.t)
   const mgl=document.getElementById("ba-mgl"), mglList=document.getElementById("ba-mgl-list");
   if(m.mitgeltend && m.mitgeltend.length){ mglList.innerHTML=m.mitgeltend.join(" · "); }
   else if(mgl){ mgl.style.display="none"; }
+  // QR-Aushang: fuehrt (nach Login) auf die Maschinenseite mit GBU/BA/Maengelliste/Protokoll.
+  if(m.qrSvg){ const q=document.getElementById("ba-qr");
+    if(q){ q.style.display="flex";
+      q.innerHTML='<span style="width:76px;height:76px;flex:0 0 auto;display:inline-block">'+m.qrSvg+'</span>'
+        +'<span style="font-size:11px;color:#555;line-height:1.4">Digitale Unterlagen dieser Anlage:<br>QR scannen &rarr; GBU, Betriebsanweisung, M&auml;ngelliste, Protokoll (Anmeldung erforderlich).</span>'; } }
 })();
 
 /* ---------------- Sprache ---------------- */

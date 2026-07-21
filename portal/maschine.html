@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>OAK Kundenportal — Maschine</title>
+<link rel="stylesheet" href="portal.css">
+<style>
+  .m-wrap{max-width:760px;margin:0 auto;padding:0 18px;}
+  .m-kopf{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid var(--rand);
+    border-radius:14px;padding:18px 20px;margin:20px 0;}
+  .m-kopf .ampel{width:20px;height:20px;flex:0 0 auto;}
+  .m-name{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:700;color:var(--dunkel);line-height:1.1;}
+  .m-typ{font-size:13.5px;color:var(--grau);margin-top:2px;}
+  .m-docs{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0 26px;}
+  .doc-btn{font-size:14px;font-weight:600;color:var(--gruen);background:#fff;border:1px solid var(--rand);
+    border-radius:10px;padding:12px 16px;text-decoration:none;flex:1 1 200px;text-align:center;}
+  .doc-btn.gbu{background:var(--gruen);color:#fff;border-color:var(--gruen);}
+  .doc-btn:hover{filter:brightness(1.04);}
+  .m-qr{background:#fff;border:1px solid var(--rand);border-radius:14px;padding:18px;max-width:240px;margin:0 auto;text-align:center;}
+  .m-qr svg{width:180px;height:180px;display:block;margin:0 auto 8px;}
+  .m-qr-cap{font-size:12px;color:var(--grau);margin-bottom:10px;}
+</style>
+</head>
+<body>
+  <header class="kopf">
+    <div class="wrap">
+      <a class="marke" href="index.html">
+        <img src="../assets/oak-logo.png" class="oak-logo" alt="OAK engineering">
+        <div><div class="wort">OAK engineering</div><div class="sub">Kundenportal</div></div>
+      </a>
+      <div class="rechts"><a class="btn sek" href="index.html">← Übersicht</a></div>
+    </div>
+  </header>
+  <main class="m-wrap">
+    <div class="titelzeile">
+      <div><h1 id="mTitel">Maschine</h1><div class="unter" id="mSub"></div></div>
+    </div>
+    <div id="inhalt"><div class="leer">lädt …</div></div>
+    <div class="fuss">OAK engineering · Nikolai Krawielitzki · vertrauliche Kundenunterlagen.</div>
+  </main>
+  <script src="auth.js"></script>
+  <script src="maschine.js"></script>
+</body>
+</html>

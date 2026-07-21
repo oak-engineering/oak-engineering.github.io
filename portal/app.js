@@ -4,24 +4,28 @@ const $ = s => document.querySelector(s);
 function zurLogin(){ $("#appView").classList.add("hidden"); $("#loginView").classList.remove("hidden"); }
 function zurApp(){ $("#loginView").classList.add("hidden"); $("#appView").classList.remove("hidden"); }
 
-const KATS = [
-  ["anlagen", "Anlagen &amp; Maschinen"],
-  ["begehungen", "Begehungen"],
-  ["gefahrstoffe", "Gefahrstoffe"],
-  ["umwelt", "Umwelt &amp; Immissionsschutz"],
-  ["unterweisungen", "Unterweisungen"],
-  ["sonstige", "Weitere Unterlagen"],
-];
-const KAT_LABEL = Object.fromEntries(KATS);
-
-/* Oberkategorien (Header-Tabs): fassen die feinen `kategorie`-Werte zu Domänen zusammen.
-   Innerhalb einer Multi-kat-Domäne werden die Kategorien als Zwischenüberschriften gezeigt. */
+/* Zwei-Ebenen-Navigation: Domänen-Tabs (oben) → Sub-Reiter (feine `kategorie`-Werte).
+   Der Sub `anlagen` ist speziell (Maschinen-Tabelle mit Ampel/Suche/Doc-Buttons), alle
+   anderen sind einfache Dokumentlisten. `unterweisungen` gibt es je Domäne getrennt. */
 const DOMAENEN = [
-  { key: "arbeitssicherheit", label: "Arbeitssicherheit", kats: ["anlagen", "begehungen", "unterweisungen"] },
-  { key: "gefahrstoffe",      label: "Gefahrstoffe",       kats: ["gefahrstoffe"] },
-  { key: "umwelt",            label: "Umwelt &amp; Immissionsschutz", kats: ["umwelt"] },
-  { key: "weitere",           label: "Weitere Unterlagen", kats: ["sonstige"] },
+  { key: "arbeitssicherheit", label: "Arbeitssicherheit", subs: [
+      { kat: "anlagen",       label: "Anlagen &amp; Maschinensicherheit" },
+      { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
+      { kat: "begehungen",    label: "Begehungen" },
+      { kat: "unterweisungen", label: "Unterweisungen" },
+  ]},
+  { key: "umwelt", label: "Umwelt &amp; Immissionsschutz", subs: [
+      { kat: "umwelt-immissionsschutz", label: "Immissionsschutz" },
+      { kat: "umwelt-gewaesserschutz",  label: "Gewässerschutz" },
+      { kat: "umwelt-awsv",             label: "AwSV" },
+      { kat: "umwelt-unterweisungen",   label: "Unterweisungen" },
+  ]},
+  { key: "weitere", label: "Weitere Unterlagen", subs: [
+      { kat: "sonstige", label: "Weitere Unterlagen" },
+  ]},
 ];
+// Label je feiner Kategorie (für Sektions-Überschriften/Fallback).
+const KAT_LABEL = Object.fromEntries(DOMAENEN.flatMap(d => d.subs.map(s => [s.kat, s.label])));
 
 function ampelKlasse(st){
   if(!st || !st.gesamt) return "grau";
@@ -38,6 +42,13 @@ function machDoc(row, typ, label, extra){
   const u = viewerUrl(typ, row.storage_path, (row.maschine||"") + " · " + label,
     "&m=" + encodeURIComponent(row.maschine||"") + "&mid=" + encodeURIComponent(row.maschinen_id||""));
   return `<a class="${extra||""}" href="${u}" target="_blank" rel="noopener">${label}</a>`;
+}
+/* URL der Maschinenseite (Ziel des QR-Codes) und QR-Druck-Button je Anlage. */
+function maschineUrl(slug, mid){ return "maschine.html?k=" + encodeURIComponent(slug||"") + "&mid=" + encodeURIComponent(mid||""); }
+function qrLink(row){
+  if(!row.maschinen_id) return "";
+  return `<a class="qr-btn" href="qr.html?k=${encodeURIComponent(row.kunde_slug||"")}&mid=${encodeURIComponent(row.maschinen_id)}"`
+    + ` target="_blank" rel="noopener" title="QR-Code zur Maschinenseite (drucken)">QR</a>`;
 }
 
 let ALLE = [], ADMIN = false, AKTIV = null;
@@ -60,7 +71,7 @@ function renderAdminBar(){
     <select id="kundeWahl">${kunden.map(([slug,name]) =>
       `<option value="${esc(slug)}"${slug===AKTIV?" selected":""}>${esc(name)}</option>`).join("")}</select>
     <span class="admin-hint">Sie sehen die Ansicht dieses Kunden.</span>`;
-  $("#kundeWahl").addEventListener("change", e => { AKTIV = e.target.value; AKTIVE_DOM = null; setKundeName(); renderTabs(); renderSektionen(); });
+  $("#kundeWahl").addEventListener("change", e => { AKTIV = e.target.value; AKTIVE_DOM = null; AKTIVE_SUB = null; setKundeName(); renderTabs(); renderSubTabs(); renderSektionen(); });
 }
 
 function renderAnlagen(){
@@ -72,7 +83,7 @@ function renderAnlagen(){
   tb.innerHTML = rows.length ? rows.map(r => `<tr>
       <td><span class="ampel ${ampelKlasse(r.status)}" title="${esc((r.status&&r.status.band)||"—")}"></span></td>
       <td>${esc(r.maschine)}</td><td>${esc(r.maschinentyp||"–")}</td>
-      <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}</td>
+      <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}</td>
     </tr>`).join("") : `<tr><td colspan="4" class="leer">keine Anlagen</td></tr>`;
   const z=$("#anlagenZaehler"); if(z) z.textContent = rows.length + " von " + anlagen().length + " Anlagen";
 }
@@ -86,14 +97,16 @@ function docZeile(r){
     + `<td class="tspalte">${r.stand?esc(r.stand):"—"}</td><td class="doc-td">${oeffnen}</td></tr>`;
 }
 
-let AKTIVE_DOM = null;
+let AKTIVE_DOM = null, AKTIVE_SUB = null;
 function katRows(kat){ return sichtbar().filter(r => r.kategorie===kat); }
-/* Sichtbare Domänen: Kunde nur mit Inhalt, Admin alle. */
-function verfuegbareDomaenen(){ return DOMAENEN.filter(d => ADMIN || d.kats.some(k => katRows(k).length)); }
-function domCount(d){ return d.kats.reduce((n,k)=> n + katRows(k).length, 0); }
+/* Sichtbare Domänen (Top-Tabs): Kunde nur mit Inhalt, Admin alle. */
+function verfuegbareDomaenen(){ return DOMAENEN.filter(d => ADMIN || d.subs.some(s => katRows(s.kat).length)); }
+function domCount(d){ return d.subs.reduce((n,s)=> n + katRows(s.kat).length, 0); }
+/* Sichtbare Sub-Reiter der Domäne: Kunde nur mit Inhalt, Admin alle. */
+function verfuegbareSubs(dom){ return dom ? dom.subs.filter(s => ADMIN || katRows(s.kat).length) : []; }
 
 /* Eine feine Kategorie als Sektion rendern. zeigeHeading=false: ohne Zwischenüberschrift
-   (Single-kat-Domänen; der Tab benennt sie bereits). */
+   (der Sub-Reiter benennt sie schon). Anlagen zeigen ihren Kopf immer (Suche/Zähler). */
 function renderSektion(wrap, kat, label, zeigeHeading){
   const rows = katRows(kat);
   if(!rows.length){
@@ -113,7 +126,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
         <input type="search" id="suche" placeholder="Maschine suchen …">
         <select id="typFilter"><option value="">Alle Maschinentypen</option>${typen.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>
       </div>
-      <table><thead><tr><th style="width:52px">Status</th><th>Maschine</th><th>Maschinentyp</th><th style="width:270px">Dokumente</th></tr></thead>
+      <table><thead><tr><th style="width:52px">Status</th><th>Maschine</th><th>Maschinentyp</th><th style="width:310px">Dokumente</th></tr></thead>
       <tbody id="anlagen-liste"></tbody></table>`;
   } else {
     const kopf = zeigeHeading
@@ -126,7 +139,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   wrap.appendChild(sec);
 }
 
-/* Header-Tabs (Oberkategorien) */
+/* Ebene 1: Domänen-Tabs */
 function renderTabs(){
   const nav = $("#katTabs"); if(!nav) return;
   const doms = verfuegbareDomaenen();
@@ -139,7 +152,25 @@ function renderTabs(){
       + ` role="tab" aria-selected="${d.key===AKTIVE_DOM}">${d.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
   }).join("");
   nav.querySelectorAll(".kat-tab").forEach(b => b.addEventListener("click", () => {
-    AKTIVE_DOM = b.dataset.dom; renderTabs(); renderSektionen();
+    AKTIVE_DOM = b.dataset.dom; AKTIVE_SUB = null; renderTabs(); renderSubTabs(); renderSektionen();
+  }));
+}
+
+/* Ebene 2: Sub-Reiter der aktiven Domäne (verborgen, wenn nur ein Sub sichtbar) */
+function renderSubTabs(){
+  const nav = $("#subTabs"); if(!nav) return;
+  const dom = verfuegbareDomaenen().find(d => d.key===AKTIVE_DOM);
+  const subs = verfuegbareSubs(dom);
+  if(subs.length <= 1){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = subs[0] ? subs[0].kat : null; return; }
+  if(!AKTIVE_SUB || !subs.some(s => s.kat===AKTIVE_SUB)) AKTIVE_SUB = subs[0].kat;
+  nav.classList.remove("hidden");
+  nav.innerHTML = subs.map(s => {
+    const n = katRows(s.kat).length;
+    return `<button type="button" class="sub-tab${s.kat===AKTIVE_SUB?" aktiv":""}" data-sub="${esc(s.kat)}"`
+      + ` role="tab" aria-selected="${s.kat===AKTIVE_SUB}">${s.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
+  }).join("");
+  nav.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => {
+    AKTIVE_SUB = b.dataset.sub; renderSubTabs(); renderSektionen();
   }));
 }
 
@@ -148,8 +179,11 @@ function renderSektionen(){
   const doms = verfuegbareDomaenen();
   if(!doms.length){ wrap.innerHTML = `<div class="leer">Für Sie sind derzeit keine Unterlagen hinterlegt.</div>`; return; }
   const dom = doms.find(d => d.key===AKTIVE_DOM) || doms[0];
-  const einzel = dom.kats.length===1;           // keine redundante Zwischenüberschrift bei Single-kat-Domäne
-  for(const kat of dom.kats) renderSektion(wrap, kat, KAT_LABEL[kat], !einzel);
+  const subs = verfuegbareSubs(dom);
+  if(!subs.length){ wrap.innerHTML = `<div class="leer">In dieser Kategorie sind keine Unterlagen hinterlegt.</div>`; return; }
+  const sub = subs.find(s => s.kat===AKTIVE_SUB) || subs[0];
+  // Bei ausgeblendeter Sub-Leiste (nur ein Sub) die Zwischenüberschrift zeigen, sonst benennt der Reiter.
+  renderSektion(wrap, sub.kat, KAT_LABEL[sub.kat], subs.length <= 1);
   const s=$("#suche"); if(s){ s.addEventListener("input", renderAnlagen); $("#typFilter").addEventListener("change", renderAnlagen); }
   renderAnlagen();
 }
@@ -167,14 +201,15 @@ async function ladePortal(){
     const rows = await apiGet("/rest/v1/portal_dokumente?select=*&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc", false);
     ALLE = rows || [];
     AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null) : null;
-    AKTIVE_DOM = null;
+    AKTIVE_DOM = null; AKTIVE_SUB = null;
     setKundeName();
     renderAdminBar();
     renderTabs();
+    renderSubTabs();
     renderSektionen();
   }catch(e){
     if(e.message==="AUTH"){ zurLogin(); return; }
-    const nav=$("#katTabs"); if(nav){ nav.classList.add("hidden"); nav.innerHTML=""; }
+    for(const id of ["#katTabs","#subTabs"]){ const nav=$(id); if(nav){ nav.classList.add("hidden"); nav.innerHTML=""; } }
     $("#sektionen").innerHTML = `<div class="leer">Fehler: ${esc(e.message)}</div>`;
   }
 }

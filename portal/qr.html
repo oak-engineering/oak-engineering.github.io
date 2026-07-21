@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>OAK Kundenportal — QR-Aushang</title>
+<link rel="stylesheet" href="portal.css">
+<style>
+  body{background:#eef3f0;}
+  .qr-tools{max-width:520px;margin:20px auto 0;padding:0 18px;display:flex;justify-content:space-between;gap:10px;align-items:center;}
+  .qr-tools .hin{font-size:12.5px;color:var(--grau);}
+  .blatt{max-width:520px;margin:14px auto 40px;background:#fff;border:1px solid var(--rand);border-radius:16px;
+    padding:34px 30px;text-align:center;box-shadow:0 8px 30px rgba(20,60,45,.08);}
+  .blatt .kunde{font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--gruen);font-weight:600;}
+  .blatt .name{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:700;color:var(--dunkel);margin:4px 0 2px;}
+  .blatt .meta{font-size:14px;color:var(--grau);margin-bottom:20px;}
+  #qrbox{width:280px;height:280px;margin:0 auto 14px;}
+  #qrbox svg{width:280px;height:280px;}
+  .blatt .auf{font-size:14px;color:var(--dunkel);font-weight:600;}
+  .blatt .sub{font-size:12px;color:var(--grau);margin-top:6px;line-height:1.5;}
+  .blatt .marke-fuss{margin-top:22px;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .blatt .marke-fuss img{height:26px;}
+  .blatt .marke-fuss span{font-family:'Cormorant Garamond',serif;font-weight:700;color:var(--dunkel);font-size:16px;}
+  @media print{ .qr-tools{display:none;} body{background:#fff;} .blatt{border:0;box-shadow:none;margin-top:0;} }
+</style>
+</head>
+<body>
+  <div class="qr-tools">
+    <a class="btn sek" href="index.html">← Übersicht</a>
+    <span class="hin">Zum Ausdrucken &amp; an der Maschine anbringen</span>
+    <button class="btn" type="button" onclick="window.print()">Drucken</button>
+  </div>
+  <div class="blatt" id="blatt">
+    <div class="kunde" id="mkunde"></div>
+    <div class="name" id="mname">…</div>
+    <div class="meta" id="mmeta"></div>
+    <div id="qrbox"></div>
+    <div class="auf">Digitale Unterlagen dieser Anlage</div>
+    <div class="sub">Mit dem Firmen-Handy scannen und nach Anmeldung GBU, Betriebsanweisung,<br>Mängelliste und Protokoll öffnen.</div>
+    <div class="marke-fuss"><img src="../assets/oak-logo.png" alt="OAK engineering"><span>OAK engineering</span></div>
+  </div>
+  <script src="auth.js"></script>
+  <script src="qr.js"></script>
+</body>
+</html>
