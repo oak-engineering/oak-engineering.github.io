@@ -44,6 +44,20 @@ async function apiGet(path, asText){
   return asText ? r.text() : r.json();
 }
 
+/* Authenticated Schreibzugriff (REST/RPC), einmaliger Refresh-Retry bei 401. */
+async function apiSend(method, path, body, prefer){
+  let t = await token(); if(!t){ clearSession(); throw new Error("AUTH"); }
+  const doFetch = tk => fetch(CFG.url + path, {
+    method, headers: Object.assign({ "apikey":CFG.anon, "Authorization":"Bearer "+tk,
+      "Content-Type":"application/json" }, prefer?{Prefer:prefer}:{}),
+    body: body!=null ? JSON.stringify(body) : undefined });
+  let r = await doFetch(t);
+  if(r.status===401){ try{ await refresh(); t=(getSession()||{}).access_token; r = await doFetch(t); }
+    catch(e){ clearSession(); throw new Error("AUTH"); } }
+  if(!r.ok) throw new Error("HTTP "+r.status+" "+(await r.text().catch(()=>"")).slice(0,120));
+  return r.status===204 ? null : r.json().catch(()=>null);
+}
+
 /* Storage-Download (privater Bucket, RLS erzwingt eigenen Kunden-Ordner). Pfad-Segmente encoden, / behalten. */
 function storagePfad(docdata_path){
   const seg = String(docdata_path).split("/").map(encodeURIComponent).join("/");

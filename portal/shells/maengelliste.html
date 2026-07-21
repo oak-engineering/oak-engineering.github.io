@@ -213,6 +213,9 @@ function zeilenSumme(m){
 }
 function speichereState(){
   const el=document.getElementById("oak-state"); if(el) el.textContent=JSON.stringify(state);
+  /* Kundenportal: geaenderte Kosten/Schwere an den eingeloggten Viewer melden (serverseitig + Log). */
+  try{ if(window.parent!==window) window.parent.postMessage(
+    {typ:"oak-doc-state", docTyp:"maengelliste", state:state, status:null}, "*"); }catch(e){}
 }
 function renderTabelle(){
   if(!tb) return;

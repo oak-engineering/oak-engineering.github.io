@@ -533,6 +533,10 @@ function save(){
      Restrisiko blieb unsichtbar. Deshalb weich fangen: die UI muss immer weiterlaufen. */
   try{ localStorage.setItem(LSKEY, JSON.stringify(state)); flashSaved(); }
   catch(e){ const el=document.getElementById("savehint"); if(el) el.textContent="bitte „In Datei speichern"; }
+  /* Im Kundenportal (eingebettet): Arbeitsstand an den eingeloggten Viewer melden – der speichert
+     ihn serverseitig (Supabase) + schreibt das Bearbeitungslog. Standalone/file:// bleibt wie bisher. */
+  try{ if(window.parent!==window) window.parent.postMessage(
+    {typ:"oak-doc-state", docTyp:"bda", state:state, status:window.__oakStatus||null}, "*"); }catch(e){}
 }
 let saveTimer;
 function flashSaved(){ const e=document.getElementById("savehint"); e.textContent="gespeichert ✓";
@@ -786,6 +790,7 @@ function updateDash(){
     `<span class="di">höchstes Restrisiko <span class="rzahl ${bMax.cls}">${maxRest}</span></span>`;
   /* Winzigen Status fuer die Anlagenuebersicht-Ampel im geteilten localStorage ablegen (nur Zahlen,
      keine Fotos -> keine Quota-Gefahr). Die Uebersicht liest ihn same-origin und faerbt die Ampel. */
+  window.__oakStatus = {offen:mTotal-mDone, gesamt:mTotal, wirksam:mWirk, band:bMax.cls, maxRisiko:maxRest};
   try{ localStorage.setItem("oak_status_"+location.pathname,
     JSON.stringify({offen:mTotal-mDone, gesamt:mTotal, wirksam:mWirk, band:bMax.cls})); }catch(e){}
 }

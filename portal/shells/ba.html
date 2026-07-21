@@ -416,7 +416,11 @@ function loadStore(){
   try{ const el=document.getElementById("oak-state"); const emb=el?JSON.parse(el.textContent):null; if(emb){ store=Object.assign(store,emb); return; } }catch(e){}
   try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s) store=Object.assign(store,s); }catch(e){}
 }
-function persist(silent){ localStorage.setItem(LSKEY,JSON.stringify(store));
+function persist(silent){
+  try{ localStorage.setItem(LSKEY,JSON.stringify(store)); }catch(e){}
+  /* Kundenportal: Arbeitsstand (Sprache/Felder/Unterschriften/Piktogramm-Wahl) an den Viewer melden. */
+  try{ if(window.parent!==window) window.parent.postMessage(
+    {typ:"oak-doc-state", docTyp:"ba", state:store, status:null}, "*"); }catch(e){}
   if(silent) return; const e=document.getElementById("savehint"); if(e){ e.textContent=T[store.lang||'de'].saved; clearTimeout(saveTimer); saveTimer=setTimeout(()=>e.textContent="",1600); } }
 function initFields(){
   document.querySelectorAll('[data-f]').forEach(inp=>{

@@ -42,6 +42,93 @@ function mitLightbox(html, typ){
   return html.includes("</body>") ? html.replace("</body>", LIGHTBOX + "</body>") : html + LIGHTBOX;
 }
 
+/* ===== Stufe 2: Live-Bearbeitung — Dokument meldet seinen Arbeitsstand per postMessage,
+   der (eingeloggte) Viewer speichert serverseitig, schreibt das Bearbeitungslog und
+   aktualisiert die Ampel. Der Live-State wird beim Öffnen in den oak-state-Block injiziert. */
+const LIVE_TYPEN = { bda:1, ba:1, maengelliste:1 };
+let LIVE = { slug:"", mid:"", docTyp:"", userName:"", letzterStatus:null, letzterZaehler:null, timer:null, ausstehend:null };
+
+function badge(txt, err){
+  const b=document.getElementById("saveBadge");
+  b.classList.remove("hidden"); b.classList.toggle("err", !!err); b.textContent=txt;
+}
+function injiziereLiveState(html, stateObj){
+  if(!stateObj) return html;
+  const blob = JSON.stringify(stateObj).replace(/<\//g, "<\\/");
+  return html.replace(/(<script id="oak-state"[^>]*>)[\s\S]*?(<\/script>)/, (m,a,b)=> a + blob + b);
+}
+/* Kompakter Log-Diff statt Voll-State: was hat sich auf Statusebene geändert? */
+function zaehlerVon(docTyp, state, status){
+  if(docTyp==="bda"){
+    const sig = state && state.signaturen ? Object.keys(state.signaturen).filter(k=>state.signaturen[k]).length : 0;
+    return { offen:(status||{}).offen, wirksam:(status||{}).wirksam, unterschriften:sig };
+  }
+  if(docTyp==="ba"){
+    const sig = state && state.sign ? Object.keys(state.sign).filter(k=>state.sign[k]).length : 0;
+    return { unterschriften:sig };
+  }
+  if(docTyp==="maengelliste"){
+    let summe=0; (state&&state.m||[]).forEach(x=>{ const v=Number(x.kosten); if(isFinite(v)) summe+=v; });
+    return { kosten_summe:summe };
+  }
+  return {};
+}
+function diffText(alt, neu){
+  if(!alt) return "Erste Änderung in dieser Sitzung";
+  const teile=[];
+  for(const k of Object.keys(neu)){
+    if(JSON.stringify(alt[k])!==JSON.stringify(neu[k])) teile.push(k+": "+alt[k]+" → "+neu[k]);
+  }
+  return teile.join(" · ") || "Details geändert";
+}
+async function speichereLive(msg){
+  const zaehler = zaehlerVon(msg.docTyp, msg.state, msg.status);
+  const s = getSession();
+  try{
+    badge("Speichern …");
+    await apiSend("POST", "/rest/v1/portal_doc_state?on_conflict=kunde_slug,maschinen_id,doc_typ",
+      [{ kunde_slug:LIVE.slug, maschinen_id:LIVE.mid, doc_typ:msg.docTyp, state:msg.state,
+         geaendert_von:(s&&s.user&&s.user.id)||null, geaendert_name:LIVE.userName,
+         updated_at:new Date().toISOString() }],
+      "resolution=merge-duplicates,return=minimal");
+    await apiSend("POST", "/rest/v1/portal_log",
+      [{ kunde_slug:LIVE.slug, maschinen_id:LIVE.mid, doc_typ:msg.docTyp,
+         user_id:(s&&s.user&&s.user.id)||null, user_name:LIVE.userName,
+         aktion:"Dokument bearbeitet", details:{ aenderung:diffText(LIVE.letzterZaehler, zaehler), stand:zaehler } }],
+      "return=minimal").catch(()=>{});
+    if(msg.docTyp==="bda" && msg.status)
+      await apiSend("POST", "/rest/v1/rpc/portal_status_setzen",
+        { p_kunde_slug:LIVE.slug, p_maschinen_id:LIVE.mid, p_doc_typ:"bda", p_status:msg.status }).catch(()=>{});
+    LIVE.letzterZaehler = zaehler;
+    badge("✓ Gespeichert "+new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}));
+  }catch(e){
+    if(e.message==="AUTH"){ location.replace("index.html"); return; }
+    badge("Speichern fehlgeschlagen – Änderungen ggf. nicht gesichert!", true);
+  }
+}
+window.addEventListener("message", ev => {
+  const d = ev.data;
+  if(!d || d.typ!=="oak-doc-state" || !LIVE_TYPEN[d.docTyp] || d.docTyp!==LIVE.docTyp) return;
+  LIVE.ausstehend = d;
+  clearTimeout(LIVE.timer);
+  badge("Änderung erkannt …");
+  LIVE.timer = setTimeout(()=>{ const m=LIVE.ausstehend; LIVE.ausstehend=null; speichereLive(m); }, 1500);
+});
+async function zeigeLog(){
+  const modal=document.getElementById("logModal"), liste=document.getElementById("logListe");
+  modal.classList.remove("hidden"); liste.textContent="lädt …";
+  try{
+    const rows = await apiGet("/rest/v1/portal_log?maschinen_id=eq."+encodeURIComponent(LIVE.mid)
+      +"&kunde_slug=eq."+encodeURIComponent(LIVE.slug)+"&order=created_at.desc&limit=40", false);
+    liste.innerHTML = rows.length ? rows.map(r =>
+      `<div style="padding:9px 0;border-bottom:1px solid #eef3f1">
+        <b>${esc(new Date(r.created_at).toLocaleString("de-DE"))}</b> · ${esc(r.user_name||"?")}
+        <span style="color:var(--grau)">(${esc(r.doc_typ||"")})</span><br>
+        <span style="color:var(--grau)">${esc(r.aktion)}${r.details&&r.details.aenderung?": "+esc(r.details.aenderung):""}</span>
+      </div>`).join("") : "<i>Noch keine Einträge.</i>";
+  }catch(e){ liste.textContent = "Log konnte nicht geladen werden ("+e.message+")."; }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const t = await token();
   if(!t){ location.replace("index.html"); return; }
@@ -62,11 +149,40 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   try{
     if(istShell){
-      const [shell, docdata] = await Promise.all([
+      // Live-Kontext: Mandant aus dem Storage-Pfad (<slug>/...), Nutzername fuers Log.
+      LIVE.slug = String(p).split("/")[0] || "";
+      LIVE.mid = param("mid") || "";
+      LIVE.docTyp = LIVE_TYPEN[typ] ? typ : "";
+      const s = getSession();
+      try{
+        const me = await apiGet("/rest/v1/portal_mitglied?select=name&user_id=eq."
+          + encodeURIComponent((s&&s.user&&s.user.id)||""), false);
+        LIVE.userName = (me&&me[0]&&me[0].name) || (s&&s.user&&s.user.email) || "?";
+      }catch(e){ LIVE.userName = (s&&s.user&&s.user.email) || "?"; }
+
+      const liveStatePromise = (LIVE.docTyp && LIVE.mid)
+        ? apiGet("/rest/v1/portal_doc_state?select=state&kunde_slug=eq."+encodeURIComponent(LIVE.slug)
+            +"&maschinen_id=eq."+encodeURIComponent(LIVE.mid)+"&doc_typ=eq."+typ, false).catch(()=>[])
+        : Promise.resolve([]);
+      const [shell, docdata, liveRows] = await Promise.all([
         fetch("shells/" + typ + ".html").then(r => { if(!r.ok) throw new Error("Vorlage fehlt"); return r.text(); }),
         apiGet(storagePfad(p), true),
+        liveStatePromise,
       ]);
-      frame.srcdoc = mitLightbox(injiziere(shell, docdata), typ);
+      let html = injiziere(shell, docdata);
+      const liveState = liveRows && liveRows[0] && liveRows[0].state;
+      if(liveState){
+        html = injiziereLiveState(html, liveState);
+        LIVE.letzterZaehler = null;   // Diff beginnt mit der ersten Aenderung dieser Sitzung
+      }
+      if(LIVE.docTyp && LIVE.mid){
+        const lb=document.getElementById("logBtn");
+        lb.classList.remove("hidden"); lb.addEventListener("click", zeigeLog);
+        document.getElementById("logZu").addEventListener("click", ()=>document.getElementById("logModal").classList.add("hidden"));
+        document.getElementById("logModal").addEventListener("click", ev=>{ if(ev.target.id==="logModal") ev.target.classList.add("hidden"); });
+        badge(liveState ? "Stand geladen (zuletzt gespeicherte Version)" : "Bereit – Änderungen werden automatisch gespeichert");
+      }
+      frame.srcdoc = mitLightbox(html, typ);
     } else if(typ==="html"){
       frame.srcdoc = await apiGet(storagePfad(p), true);
     } else if(typ==="pdf"){

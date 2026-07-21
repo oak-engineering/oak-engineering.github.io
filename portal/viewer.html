@@ -15,6 +15,9 @@
   .vkopf .typ{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gruen);font-weight:600;}
   #rahmen{flex:1 1 auto;border:0;width:100%;background:#f3f7f5;}
   #ladehinweis{padding:40px;text-align:center;color:var(--grau);font-size:15px;}
+  .save-badge{font-size:12.5px;font-weight:600;color:var(--gruen);background:var(--akzent);
+    border:1px solid var(--hellgruen);border-radius:8px;padding:5px 10px;white-space:nowrap;}
+  .save-badge.err{color:#c0392b;background:#fdecea;border-color:#e5b4ae;}
 </style>
 </head>
 <body>
@@ -23,8 +26,21 @@
     <div class="typ" id="vTyp"></div>
     <div class="titel" id="vTitel">Dokument wird geladen …</div>
   </div>
-  <a class="btn sek" href="index.html">← Übersicht</a>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="saveBadge" class="save-badge hidden"></span>
+    <button class="btn sek hidden" id="logBtn" type="button">Bearbeitungslog</button>
+    <a class="btn sek" href="index.html">← Übersicht</a>
+  </div>
 </div></div>
+<div id="logModal" class="hidden" style="position:fixed;inset:0;background:rgba(10,22,16,.55);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:14px;max-width:640px;width:100%;max-height:80vh;overflow:auto;padding:22px 24px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+      <h2 style="font-family:'Cormorant Garamond',serif;color:var(--dunkel);font-size:22px">Bearbeitungslog</h2>
+      <button class="btn sek" id="logZu" type="button">Schließen</button>
+    </div>
+    <div id="logListe" style="font-size:13.5px;color:var(--text)">lädt …</div>
+  </div>
+</div>
 <div id="ladehinweis">Dokument wird geladen …</div>
 <iframe id="rahmen" class="hidden" title="Dokument"></iframe>
 
