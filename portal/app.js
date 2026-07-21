@@ -14,7 +14,7 @@ const DOMAENEN = [
       { kat: "begehungen",    label: "Begehungen" },
       { kat: "unterweisungen", label: "Unterweisungen" },
   ]},
-  { key: "umwelt", label: "Umwelt &amp; Immissionsschutz", subs: [
+  { key: "umwelt", label: "Umwelt", subs: [
       { kat: "umwelt-immissionsschutz", label: "Immissionsschutz" },
       { kat: "umwelt-gewaesserschutz",  label: "Gewässerschutz" },
       { kat: "umwelt-awsv",             label: "AwSV" },
@@ -99,23 +99,23 @@ function docZeile(r){
 
 let AKTIVE_DOM = null, AKTIVE_SUB = null;
 function katRows(kat){ return sichtbar().filter(r => r.kategorie===kat); }
-/* Sichtbare Domänen (Top-Tabs): Kunde nur mit Inhalt, Admin alle. */
-function verfuegbareDomaenen(){ return DOMAENEN.filter(d => ADMIN || d.subs.some(s => katRows(s.kat).length)); }
+/* ALLE Bereiche sind für jeden sichtbar (auch ohne Inhalt) – zeigt das volle OAK-Leistungsspektrum. */
+function verfuegbareDomaenen(){ return DOMAENEN; }
 function domCount(d){ return d.subs.reduce((n,s)=> n + katRows(s.kat).length, 0); }
-/* Sichtbare Sub-Reiter der Domäne: Kunde nur mit Inhalt, Admin alle. */
-function verfuegbareSubs(dom){ return dom ? dom.subs.filter(s => ADMIN || katRows(s.kat).length) : []; }
+function verfuegbareSubs(dom){ return dom ? dom.subs : []; }
+function domHatInhalt(d){ return d.subs.some(s => katRows(s.kat).length); }
 
 /* Eine feine Kategorie als Sektion rendern. zeigeHeading=false: ohne Zwischenüberschrift
    (der Sub-Reiter benennt sie schon). Anlagen zeigen ihren Kopf immer (Suche/Zähler). */
 function renderSektion(wrap, kat, label, zeigeHeading){
   const rows = katRows(kat);
   if(!rows.length){
-    if(!ADMIN) return;                          // Kunden sehen leere Kategorien nicht
     const leer = document.createElement("section"); leer.className = "sektion";
-    leer.innerHTML = `<div class="sek-kopf"><h2>${label}</h2>`
-      + `<span class="zaehler" style="color:#9a7b1a;background:#fff4e0;border-radius:6px;padding:2px 8px">nur für Admin sichtbar</span></div>`
-      + `<div class="leer" style="padding:14px 4px">Noch keine Unterlagen. Hier erscheinen die von dir hochgeladenen `
-      + `<b>${label}</b>-Dokumente (Upload via <code>portal_publish.py</code> bzw. <code>portal_extra.json</code>, Kategorie <code>${esc(kat)}</code>).</div>`;
+    leer.innerHTML = `<div class="sek-kopf"><h2>${label}</h2></div>`
+      + `<div class="leer">Für diesen Bereich sind derzeit keine Unterlagen hinterlegt.<br>`
+      + `<span style="font-style:normal">OAK engineering unterstützt Sie hier auf Wunsch gern.</span></div>`
+      + (ADMIN ? `<div class="leer" style="padding:0 4px 12px;font-size:12px;color:#9a7b1a">Admin: Upload via `
+          + `<code>portal_publish.py</code> bzw. <code>portal_extra.json</code>, Kategorie <code>${esc(kat)}</code>.</div>` : "");
     wrap.appendChild(leer); return;
   }
   const sec = document.createElement("section"); sec.className = "sektion";
@@ -144,7 +144,8 @@ function renderTabs(){
   const nav = $("#katTabs"); if(!nav) return;
   const doms = verfuegbareDomaenen();
   if(!doms.length){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
-  if(!AKTIVE_DOM || !doms.some(d => d.key===AKTIVE_DOM)) AKTIVE_DOM = doms[0].key;
+  // Standard-Tab: erste Domäne MIT Inhalt (Kunde landet auf Dokumenten, nicht auf leerem Bereich).
+  if(!AKTIVE_DOM || !doms.some(d => d.key===AKTIVE_DOM)) AKTIVE_DOM = (doms.find(domHatInhalt) || doms[0]).key;
   nav.classList.remove("hidden");
   nav.innerHTML = doms.map(d => {
     const n = domCount(d);
@@ -162,7 +163,8 @@ function renderSubTabs(){
   const dom = verfuegbareDomaenen().find(d => d.key===AKTIVE_DOM);
   const subs = verfuegbareSubs(dom);
   if(subs.length <= 1){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = subs[0] ? subs[0].kat : null; return; }
-  if(!AKTIVE_SUB || !subs.some(s => s.kat===AKTIVE_SUB)) AKTIVE_SUB = subs[0].kat;
+  // Standard-Sub: erster Sub-Reiter MIT Inhalt, sonst der erste.
+  if(!AKTIVE_SUB || !subs.some(s => s.kat===AKTIVE_SUB)) AKTIVE_SUB = (subs.find(s => katRows(s.kat).length) || subs[0]).kat;
   nav.classList.remove("hidden");
   nav.innerHTML = subs.map(s => {
     const n = katRows(s.kat).length;
