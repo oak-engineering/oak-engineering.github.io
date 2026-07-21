@@ -81,7 +81,17 @@ function renderSektionen(){
   const wrap = $("#sektionen"); wrap.innerHTML = "";
   for(const [kat, label] of KATS){
     const rows = sichtbar().filter(r => r.kategorie===kat);
-    if(!rows.length) continue;
+    if(!rows.length){
+      // Kunden sehen leere Kategorien nicht; Admin schon (als Einstiegspunkt + Hinweis).
+      if(!ADMIN) continue;
+      const leer = document.createElement("section"); leer.className = "sektion";
+      leer.innerHTML = `<div class="sek-kopf"><h2>${label}</h2>`
+        + `<span class="zaehler" style="color:#9a7b1a;background:#fff4e0;border-radius:6px;padding:2px 8px">nur für Admin sichtbar</span></div>`
+        + `<div class="leer" style="padding:14px 4px">Noch keine Unterlagen. Hier erscheinen die von dir hochgeladenen `
+        + `<b>${label}</b>-Dokumente (Upload via <code>portal_publish.py</code> bzw. <code>portal_extra.json</code>, Kategorie <code>${esc(kat)}</code>).</div>`;
+      wrap.appendChild(leer);
+      continue;
+    }
     const sec = document.createElement("section"); sec.className = "sektion";
     if(kat==="anlagen"){
       const typen = [...new Set(anlagen().map(r=>r.maschinentyp).filter(Boolean))].sort();
