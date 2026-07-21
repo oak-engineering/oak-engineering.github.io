@@ -147,7 +147,7 @@
       <button data-lang="tr" onclick="setLang('tr')">Türkçe</button>
     </div>
     <button class="pgbtn" onclick="insertPageBreak()" title="Seitenumbruch vor dem aktiven Abschnitt (für den PDF-Druck)">⤵ Umbruch</button>
-    <button onclick="saveToFile()">💾 In Datei speichern</button>
+    <button class="nur-lokal" onclick="saveToFile()">💾 In Datei speichern</button>
     <button class="prbtn" onclick="exportPDF()" data-t="print_btn"></button>
     <span class="savehint" id="savehint"></span>
     <span class="hint" data-t="bar_hint"></span>
@@ -418,9 +418,11 @@ function loadStore(){
 }
 function persist(silent){
   try{ localStorage.setItem(LSKEY,JSON.stringify(store)); }catch(e){}
-  /* Kundenportal: Arbeitsstand (Sprache/Felder/Unterschriften/Piktogramm-Wahl) an den Viewer melden. */
-  try{ if(window.parent!==window) window.parent.postMessage(
-    {typ:"oak-doc-state", docTyp:"ba", state:store, status:null}, "*"); }catch(e){}
+  /* Kundenportal: Arbeitsstand an den Viewer melden – Ziel-Origin gepinnt (__OAK_PORTAL_ORIGIN);
+     Standalone/file:// setzt das Flag nie -> kein postMessage. */
+  var _po=window.__OAK_PORTAL_ORIGIN;
+  try{ if(_po && window.parent!==window) window.parent.postMessage(
+    {typ:"oak-doc-state", docTyp:"ba", state:store, status:null}, _po); }catch(e){}
   if(silent) return; const e=document.getElementById("savehint"); if(e){ e.textContent=T[store.lang||'de'].saved; clearTimeout(saveTimer); saveTimer=setTimeout(()=>e.textContent="",1600); } }
 function initFields(){
   document.querySelectorAll('[data-f]').forEach(inp=>{
@@ -476,6 +478,8 @@ document.addEventListener('DOMContentLoaded',()=>{
   initCePop();
   setLang(store.lang||'de');
   if(!DOC.ba && !DOC.meta){ const b=document.getElementById('vorlage-hinweis'); if(b) b.style.display='block'; }
+  /* Kundenportal: HTML-Speichern ausblenden (Kunden laden nur PDF; die HTML = OAK-Wissen bleibt online). */
+  if(window.__OAK_PORTAL_ORIGIN){ document.querySelectorAll('.nur-lokal').forEach(b=>{ b.style.display='none'; }); }
 });
 </script>
 </body>

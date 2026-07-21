@@ -15,6 +15,15 @@ function injiziere(shellHtml, docdataText){
   return shellHtml.replace(/(<script id="doc-data"[^>]*>)[\s\S]*?(<\/script>)/, (m,a,b)=> a + safe + b);
 }
 
+/* Portal-Kontext-Flag in die Shell setzen: markiert das Dokument als „im Kundenportal" und pinnt
+   gleichzeitig die Ziel-Origin fuers Zurueckmelden (postMessage). Steuert im Dokument ausserdem,
+   dass die HTML-Speichern-Schaltflaeche verborgen wird (Kunden laden nur PDF). location.origin
+   ueber JSON.stringify sicher einbetten. */
+function setzePortalFlag(shellHtml){
+  const tag = "<script>window.__OAK_PORTAL_ORIGIN=" + JSON.stringify(location.origin) + ";</scr"+"ipt>";
+  return shellHtml.replace(/<head([^>]*)>/i, (m)=> m + tag);
+}
+
 /* Foto-Lightbox: Klick auf ein Foto im Dokument -> Vollbild (Fotos sind sonst zu klein zum
    Erkennen). Wird in GBU/Mängelliste/Protokoll injiziert — NICHT in die BA (dort sind die
    Piktogramme klick-interaktiv) und nicht in freie HTML-Dokumente (eigene Lightbox/Interaktion). */
@@ -107,6 +116,10 @@ async function speichereLive(msg){
   }
 }
 window.addEventListener("message", ev => {
+  // Nur Nachrichten aus GENAU dem injizierten Dokument-iframe akzeptieren (der Sandbox-iframe hat eine
+  // opake Origin -> ev.origin==="null", daher ist der source-Vergleich die belastbare Prüfung).
+  const rahmen = document.getElementById("rahmen");
+  if(!rahmen || ev.source !== rahmen.contentWindow) return;
   const d = ev.data;
   if(!d || d.typ!=="oak-doc-state" || !LIVE_TYPEN[d.docTyp] || d.docTyp!==LIVE.docTyp) return;
   LIVE.ausstehend = d;
@@ -169,7 +182,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         apiGet(storagePfad(p), true),
         liveStatePromise,
       ]);
-      let html = injiziere(shell, docdata);
+      let html = setzePortalFlag(injiziere(shell, docdata));
       const liveState = liveRows && liveRows[0] && liveRows[0].state;
       if(liveState){
         html = injiziereLiveState(html, liveState);

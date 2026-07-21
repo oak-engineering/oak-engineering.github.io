@@ -98,7 +98,7 @@
   <option value="m²"><option value="h"><option value="Satz">
 </datalist>
 <div class="toolbar">
-  <button class="tb" id="btnSave" title="Schreibt die Änderungen in diese Datei zurück">💾 In Datei speichern</button>
+  <button class="tb nur-lokal" id="btnSave" title="Schreibt die Änderungen in diese Datei zurück">💾 In Datei speichern</button>
   <button class="tb" onclick="window.print()">📄 PDF exportieren</button>
   <span class="tb-hint">Geschätzte Kosten (netto) editierbar · Schwere durch Antippen umschalten</span>
 </div>
@@ -213,9 +213,11 @@ function zeilenSumme(m){
 }
 function speichereState(){
   const el=document.getElementById("oak-state"); if(el) el.textContent=JSON.stringify(state);
-  /* Kundenportal: geaenderte Kosten/Schwere an den eingeloggten Viewer melden (serverseitig + Log). */
-  try{ if(window.parent!==window) window.parent.postMessage(
-    {typ:"oak-doc-state", docTyp:"maengelliste", state:state, status:null}, "*"); }catch(e){}
+  /* Kundenportal: geaenderte Kosten/Schwere an den Viewer melden – Ziel-Origin gepinnt
+     (__OAK_PORTAL_ORIGIN); Standalone/file:// setzt das Flag nie -> kein postMessage. */
+  var _po=window.__OAK_PORTAL_ORIGIN;
+  try{ if(_po && window.parent!==window) window.parent.postMessage(
+    {typ:"oak-doc-state", docTyp:"maengelliste", state:state, status:null}, _po); }catch(e){}
 }
 function renderTabelle(){
   if(!tb) return;
@@ -289,6 +291,8 @@ async function saveToFile(){
   }catch(e){ if(e && e.name!=="AbortError") alert("Speichern fehlgeschlagen: "+e.message); }
 }
 const _bs=document.getElementById("btnSave"); if(_bs) _bs.addEventListener("click",saveToFile);
+/* Kundenportal: HTML-Speichern ausblenden (Kunden laden nur PDF; die HTML = OAK-Wissen bleibt online). */
+if(window.__OAK_PORTAL_ORIGIN){ document.querySelectorAll(".nur-lokal").forEach(function(b){ b.style.display="none"; }); }
 
 /* Die frueheren kpi-Zeilen sind entfallen - renderKpi() rechnet die Werte jetzt live aus
    state.m (Menge x Preis) und wird bei jeder Eingabe neu aufgerufen. */

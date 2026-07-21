@@ -244,7 +244,7 @@
 
 <div class="blatt">
   <div class="toolbar">
-    <button onclick="saveToFile()">💾 In Datei speichern</button>
+    <button class="nur-lokal" onclick="saveToFile()">💾 In Datei speichern</button>
     <button onclick="exportPDF()">📄 PDF exportieren</button>
     <button class="ghost" onclick="exportJSON()">⬇ JSON exportieren</button>
     <button class="ghost" onclick="resetAll()">↺ Zurücksetzen</button>
@@ -534,9 +534,11 @@ function save(){
   try{ localStorage.setItem(LSKEY, JSON.stringify(state)); flashSaved(); }
   catch(e){ const el=document.getElementById("savehint"); if(el) el.textContent="bitte „In Datei speichern"; }
   /* Im Kundenportal (eingebettet): Arbeitsstand an den eingeloggten Viewer melden – der speichert
-     ihn serverseitig (Supabase) + schreibt das Bearbeitungslog. Standalone/file:// bleibt wie bisher. */
-  try{ if(window.parent!==window) window.parent.postMessage(
-    {typ:"oak-doc-state", docTyp:"bda", state:state, status:window.__oakStatus||null}, "*"); }catch(e){}
+     ihn serverseitig (Supabase) + schreibt das Bearbeitungslog. Ziel-Origin ist gepinnt (der Viewer
+     injiziert __OAK_PORTAL_ORIGIN); Standalone/file:// setzt das Flag nie -> kein postMessage. */
+  var _po=window.__OAK_PORTAL_ORIGIN;
+  try{ if(_po && window.parent!==window) window.parent.postMessage(
+    {typ:"oak-doc-state", docTyp:"bda", state:state, status:window.__oakStatus||null}, _po); }catch(e){}
 }
 let saveTimer;
 function flashSaved(){ const e=document.getElementById("savehint"); e.textContent="gespeichert ✓";
@@ -864,6 +866,8 @@ async function saveToFile(){
 
 buildDatalists(); render(); initSignaturen();
 if(!DOC.hazards && !(DOC.meta && DOC.meta.maschine)){ const b=document.getElementById("vorlage-hinweis"); if(b) b.style.display="block"; }
+/* Kundenportal: HTML-Speichern ausblenden (Kunden laden nur PDF; die HTML = OAK-Wissen bleibt online). */
+if(window.__OAK_PORTAL_ORIGIN){ document.querySelectorAll(".nur-lokal").forEach(function(b){ b.style.display="none"; }); }
 </script>
 </body>
 </html>
