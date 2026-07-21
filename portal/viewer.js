@@ -15,6 +15,33 @@ function injiziere(shellHtml, docdataText){
   return shellHtml.replace(/(<script id="doc-data"[^>]*>)[\s\S]*?(<\/script>)/, (m,a,b)=> a + safe + b);
 }
 
+/* Foto-Lightbox: Klick auf ein Foto im Dokument -> Vollbild (Fotos sind sonst zu klein zum
+   Erkennen). Wird in GBU/Mängelliste/Protokoll injiziert — NICHT in die BA (dort sind die
+   Piktogramme klick-interaktiv) und nicht in freie HTML-Dokumente (eigene Lightbox/Interaktion). */
+const LIGHTBOX =
+  '<style>.oaklb{position:fixed;inset:0;background:rgba(10,22,16,.94);z-index:2147483000;'
+  + 'display:flex;align-items:center;justify-content:center;cursor:zoom-out}'
+  + '.oaklb img{max-width:96vw;max-height:96vh;border-radius:6px;box-shadow:0 12px 48px rgba(0,0,0,.55)}'
+  + '.oaklb .oaklb-x{position:fixed;top:12px;right:18px;font:700 30px/1 sans-serif;color:#fff;cursor:pointer}</style>'
+  + '<scr'+'ipt>document.addEventListener("click",function(e){'
+  + 'var t=e.target;if(!(t&&t.tagName==="IMG"))return;'
+  + 'if(t.closest(".oaklb"))return;'
+  + 'if(t.closest(".kopf,.oak-marke,.marke,header"))return;'   // Logos nicht zoomen
+  + 'var r=t.getBoundingClientRect();if(r.width<80||r.height<60)return;'
+  + 'if(t.naturalWidth<300)return;'                             // Piktogramme/Icons ignorieren
+  + 'var o=document.createElement("div");o.className="oaklb";'
+  + 'var i=document.createElement("img");i.src=t.src;i.alt=t.alt||"";'
+  + 'var x=document.createElement("div");x.className="oaklb-x";x.textContent="\\u2715";'
+  + 'o.appendChild(i);o.appendChild(x);'
+  + 'o.addEventListener("click",function(){o.remove();});'
+  + 'document.addEventListener("keydown",function esc(ev){if(ev.key==="Escape"){o.remove();document.removeEventListener("keydown",esc);}});'
+  + 'document.body.appendChild(o);e.stopPropagation();},true);</scr'+'ipt>';
+const LIGHTBOX_TYPEN = { bda:1, maengelliste:1, protokoll:1 };
+function mitLightbox(html, typ){
+  if(!LIGHTBOX_TYPEN[typ]) return html;
+  return html.includes("</body>") ? html.replace("</body>", LIGHTBOX + "</body>") : html + LIGHTBOX;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const t = await token();
   if(!t){ location.replace("index.html"); return; }
@@ -39,7 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         fetch("shells/" + typ + ".html").then(r => { if(!r.ok) throw new Error("Vorlage fehlt"); return r.text(); }),
         apiGet(storagePfad(p), true),
       ]);
-      frame.srcdoc = injiziere(shell, docdata);
+      frame.srcdoc = mitLightbox(injiziere(shell, docdata), typ);
     } else if(typ==="html"){
       frame.srcdoc = await apiGet(storagePfad(p), true);
     } else if(typ==="pdf"){
