@@ -9,7 +9,10 @@ function param(n){ return new URLSearchParams(location.search).get(n) || ""; }
 function fehler(msg){ const l=document.getElementById("ladehinweis"); l.classList.remove("hidden"); l.textContent = msg; }
 
 function injiziere(shellHtml, docdataText){
-  return shellHtml.replace(/(<script id="doc-data"[^>]*>)[\s\S]*?(<\/script>)/, (m,a,b)=> a + docdataText + b);
+  // "</" -> "<\/": verhindert, dass Inhalte den Script-Block vorzeitig schliessen (XSS-Haertung);
+  // JSON.parse liest \/ wieder als / — Inhalt bleibt identisch.
+  const safe = docdataText.replace(/<\//g, "<\\/");
+  return shellHtml.replace(/(<script id="doc-data"[^>]*>)[\s\S]*?(<\/script>)/, (m,a,b)=> a + safe + b);
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -26,6 +29,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if(!typ || (istShell ? !p : (typ!=="html" && typ!=="pdf")) || !p){ fehler("Ungültiger Dokument-Link."); return; }
   const frame = document.getElementById("rahmen");
+  // Sandbox: Dokumente laufen in einer eigenen (opaken) Origin — kein Zugriff auf die
+  // Portal-Session/localStorage der Seite. PDF ohne Sandbox (Browser-PDF-Viewer braucht das).
+  if(typ !== "pdf") frame.setAttribute("sandbox", "allow-scripts allow-modals");
 
   try{
     if(istShell){
