@@ -57,10 +57,10 @@ tbody tr:hover{background:#f6faf8}
 .ampel{display:inline-block;width:13px;height:13px;border-radius:50%;}
 .ampel.rot{background:var(--rot)} .ampel.orange{background:var(--orange)}
 .ampel.gruen{background:var(--hellgruen)} .ampel.grau{background:#bcc;}
+/* Alle Dokument-Buttons (GBU/BA/Mängel/Protokoll/QR) einheitlich: Outline-Chip. */
 .docs a{display:inline-block;font-size:12.5px;font-weight:600;border:1px solid var(--rand);border-radius:7px;
-  padding:5px 9px;margin:2px 3px 2px 0;color:var(--gruen);text-decoration:none;}
-.docs a.gbu{background:var(--gruen);color:#fff;border-color:var(--gruen);}
-.docs a:hover{filter:brightness(1.05)}
+  padding:5px 10px;margin:2px 3px 2px 0;color:var(--gruen);background:#fff;text-decoration:none;text-align:center;}
+.docs a:hover{background:var(--akzent);border-color:var(--hellgruen);}
 .leer{color:var(--grau);font-style:italic;padding:22px;text-align:center;}
 .fuss{color:var(--grau);font-size:11.5px;text-align:center;margin:26px 0 40px;line-height:1.6;}
 /* Kategorie-Sektionen + generische Dokumentkarten */
@@ -94,9 +94,6 @@ tbody tr:hover{background:#f6faf8}
 .sub-tab .tab-n{font-size:11px;font-weight:700;background:var(--akzent);color:var(--dunkel);border-radius:999px;padding:0 7px;}
 .sub-tab.aktiv .tab-n{background:var(--gruen);color:#fff;}
 @media (max-width:640px){.sub-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}}
-/* QR-Button in der Anlagen-Tabelle */
-.docs a.qr-btn{border-color:var(--hellgruen);color:var(--dunkel);font-weight:700;letter-spacing:.3px;}
-.docs a.qr-btn:hover{background:var(--akzent);}
 /* Admin-Leiste (nur fuer OAK-Admins sichtbar) */
 #adminBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--akzent);
   border:1px solid var(--hellgruen);border-radius:10px;padding:10px 14px;margin:18px 0 2px;font-size:14px;}
