@@ -42,7 +42,7 @@ function setKundeName(){
 }
 function renderAdminBar(){
   const bar = $("#adminBar");
-  if(!ADMIN){ bar.classList.add("hidden"); return; }
+  if(!ADMIN){ bar.classList.add("hidden"); bar.innerHTML = ""; return; }  // keine Admin-Reste nach Rollenwechsel
   const kunden = [...new Map(ALLE.map(r => [r.kunde_slug, r.kunde || r.kunde_slug])).entries()]
     .sort((a,b) => String(a[1]).localeCompare(String(b[1])));
   bar.classList.remove("hidden");
