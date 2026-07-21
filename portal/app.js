@@ -30,8 +30,28 @@ function machDoc(row, typ, label, extra){
   return `<a class="${extra||""}" href="${u}" target="_blank" rel="noopener">${label}</a>`;
 }
 
-let ALLE = [];
-function anlagen(){ return ALLE.filter(r => r.kategorie==="anlagen"); }
+let ALLE = [], ADMIN = false, AKTIV = null;
+/* Admin sieht alle Mandanten -> AKTIV filtert auf den gewaehlten Kunden.
+   Normale Kunden: AKTIV bleibt null, RLS liefert ohnehin nur den eigenen Mandanten. */
+function sichtbar(){ return AKTIV ? ALLE.filter(r => r.kunde_slug===AKTIV) : ALLE; }
+function anlagen(){ return sichtbar().filter(r => r.kategorie==="anlagen"); }
+
+function setKundeName(){
+  const r = AKTIV ? ALLE.find(x => x.kunde_slug===AKTIV) : ALLE[0];
+  $("#kundeName").textContent = (r && r.kunde) || "";
+}
+function renderAdminBar(){
+  const bar = $("#adminBar");
+  if(!ADMIN){ bar.classList.add("hidden"); return; }
+  const kunden = [...new Map(ALLE.map(r => [r.kunde_slug, r.kunde || r.kunde_slug])).entries()]
+    .sort((a,b) => String(a[1]).localeCompare(String(b[1])));
+  bar.classList.remove("hidden");
+  bar.innerHTML = `<span class="admin-tag">Admin</span> <label for="kundeWahl">Kundenportal:</label>
+    <select id="kundeWahl">${kunden.map(([slug,name]) =>
+      `<option value="${esc(slug)}"${slug===AKTIV?" selected":""}>${esc(name)}</option>`).join("")}</select>
+    <span class="admin-hint">Sie sehen die Ansicht dieses Kunden.</span>`;
+  $("#kundeWahl").addEventListener("change", e => { AKTIV = e.target.value; setKundeName(); renderSektionen(); });
+}
 
 function renderAnlagen(){
   const tb = $("#anlagen-liste"); if(!tb) return;
@@ -59,7 +79,7 @@ function docZeile(r){
 function renderSektionen(){
   const wrap = $("#sektionen"); wrap.innerHTML = "";
   for(const [kat, label] of KATS){
-    const rows = ALLE.filter(r => r.kategorie===kat);
+    const rows = sichtbar().filter(r => r.kategorie===kat);
     if(!rows.length) continue;
     const sec = document.createElement("section"); sec.className = "sektion";
     if(kat==="anlagen"){
@@ -87,9 +107,17 @@ async function ladePortal(){
   const s = getSession();
   $("#userMail").textContent = (s && s.user && s.user.email) || "";
   try{
+    let me = [];
+    if(s && s.user && s.user.id)
+      me = await apiGet("/rest/v1/portal_mitglied?select=rolle,kunde,kunde_slug&user_id=eq."
+        + encodeURIComponent(s.user.id), false);
+    ADMIN = !!(me && me[0] && me[0].rolle === "admin");
+
     const rows = await apiGet("/rest/v1/portal_dokumente?select=*&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc", false);
     ALLE = rows || [];
-    if(ALLE.length) $("#kundeName").textContent = ALLE[0].kunde || "";
+    AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null) : null;
+    setKundeName();
+    renderAdminBar();
     renderSektionen();
   }catch(e){
     if(e.message==="AUTH"){ zurLogin(); return; }

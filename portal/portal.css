@@ -73,4 +73,12 @@ tbody tr:hover{background:#f6faf8}
 .doc-td{text-align:right;}
 .doc-open{display:inline-block;font-size:13px;font-weight:600;color:var(--gruen);border:1px solid var(--rand);border-radius:8px;padding:5px 12px;text-decoration:none;white-space:nowrap;}
 .doc-open:hover{background:var(--akzent);}
+/* Admin-Leiste (nur fuer OAK-Admins sichtbar) */
+#adminBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--akzent);
+  border:1px solid var(--hellgruen);border-radius:10px;padding:10px 14px;margin:18px 0 2px;font-size:14px;}
+#adminBar select{font-family:inherit;font-size:14px;padding:7px 10px;border:1px solid var(--rand);border-radius:8px;}
+#adminBar label{font-weight:600;color:var(--dunkel);}
+.admin-tag{background:var(--dunkel);color:#fff;font-size:11px;font-weight:600;letter-spacing:1px;
+  text-transform:uppercase;padding:3px 9px;border-radius:6px;}
+.admin-hint{color:var(--grau);font-size:12.5px;}
 .hidden{display:none!important}
