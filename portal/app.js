@@ -8,6 +8,7 @@ const KATS = [
   ["anlagen", "Anlagen &amp; Maschinen"],
   ["begehungen", "Begehungen"],
   ["gefahrstoffe", "Gefahrstoffe"],
+  ["umwelt", "Umwelt &amp; Immissionsschutz"],
   ["unterweisungen", "Unterweisungen"],
   ["sonstige", "Weitere Unterlagen"],
 ];
