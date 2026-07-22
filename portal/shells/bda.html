@@ -26,7 +26,7 @@
 <style>
   :root{
     --gruen:#2D6A4F; --dunkel:#1B4332; --hell:#52B788; --akzent:#D8F3DC;
-    --rot:#c62828; --rot-bg:#fdecea; --gelb:#ef6c00; --gelb-bg:#fff4e5; --gn:#2e7d32; --gn-bg:#e8f5e9;
+    --rot:#c62828; --rot-bg:#fdecea; --akut:#7f0000; --akut-bg:#ffdad6; --gelb:#ef6c00; --gelb-bg:#fff4e5; --gn:#2e7d32; --gn-bg:#e8f5e9;
     --grau:#5b6b63; --linie:#cdd8d2;
     --text:#1f2a25;
   }
@@ -43,6 +43,8 @@
   .kopf{display:flex;align-items:center;justify-content:space-between;gap:18px;
     padding:16px 26px;border-bottom:4px solid var(--gruen);background:linear-gradient(180deg,#fff,#f6faf8);}
   .kopf img{height:50px;width:auto;object-fit:contain;}
+  /* Kundenlogo bewusst deutlich groesser als das OAK-Logo (Wunsch Nikolai). */
+  .kopf img.kundenlogo{height:96px;max-width:260px;}
   /* OAK-Logo = Baum + Schriftzug „OAK engineering" (wie auf der Website). */
   .oak-marke{display:flex;align-items:center;gap:8px;}
   .oak-marke img{height:50px;width:auto;}
@@ -76,6 +78,7 @@
   .legende{font-size:11.5px;}
   .legende .pill{display:inline-block;padding:2px 9px;border-radius:10px;font-weight:600;margin-right:6px;}
   .pill.r{background:var(--rot-bg);color:var(--rot);border:1px solid var(--rot);}
+  .pill.akut{background:var(--akut-bg);color:var(--akut);border:1px solid var(--akut);font-weight:700;}
   .pill.g{background:var(--gelb-bg);color:var(--gelb);border:1px solid var(--gelb);}
   .pill.gn{background:var(--gn-bg);color:var(--gn);border:1px solid var(--gn);}
 
@@ -85,7 +88,7 @@
   .dash .di{display:inline-block;margin-right:13px;padding-right:13px;border-right:1px solid #cdd8d2;}
   .dash .di:last-child{border-right:none;margin-right:0;padding-right:0;}
   .dash small{color:var(--grau);}
-  .dash .r{color:var(--rot);} .dash .g{color:var(--gelb);} .dash .gn{color:var(--gn);}
+  .dash .r{color:var(--rot);} .dash .g{color:var(--gelb);} .dash .gn{color:var(--gn);} .dash .akut{color:var(--akut);}
 
   /* Gefährdungs-Karten */
   .karte{border:1px solid var(--linie);border-radius:9px;margin:12px 0;overflow:hidden;background:#fff;}
@@ -95,6 +98,7 @@
   .karte .kat small{display:block;font-weight:400;color:var(--grau);font-size:10.5px;}
   .ampel{margin-left:auto;font-weight:700;padding:3px 11px;border-radius:12px;font-size:11.5px;white-space:nowrap;}
   .ampel.r{background:var(--rot-bg);color:var(--rot);border:1px solid var(--rot);}
+  .ampel.akut{background:var(--akut-bg);color:var(--akut);border:1px solid var(--akut);font-weight:700;letter-spacing:.4px;}
   .ampel.g{background:var(--gelb-bg);color:var(--gelb);border:1px solid var(--gelb);}
   .ampel.gn{background:var(--gn-bg);color:var(--gn);border:1px solid var(--gn);}
   .karte .body{padding:11px 14px;display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;}
@@ -128,7 +132,7 @@
   table.mxg th{background:#f1f6f3;color:var(--dunkel);font-weight:600;font-size:10px;}
   table.mxg .mxcorner{background:var(--gruen);color:#fff;font-size:8.5px;}
   td.mx{cursor:pointer;font-weight:600;}
-  td.mx.r{background:#fdecea;color:#c62828;} td.mx.g{background:#fff4e5;color:#ef6c00;} td.mx.gn{background:#e8f5e9;color:#2e7d32;}
+  td.mx.r{background:#fdecea;color:#c62828;} td.mx.g{background:#fff4e5;color:#ef6c00;} td.mx.gn{background:#e8f5e9;color:#2e7d32;} td.mx.akut{background:#ffdad6;color:#7f0000;font-weight:700;}
   td.mx:hover{outline:2px solid var(--gruen);outline-offset:-2px;}
   td.mx.sel{box-shadow:inset 0 0 0 3px var(--dunkel);font-weight:800;}
   .mxres{font-size:12px;}
@@ -424,7 +428,7 @@ const HAZARDS = (DOC.hazards && DOC.hazards.length) ? DOC.hazards : HAZARDS_DEFA
     imgs[0].parentNode.insertBefore(marke, imgs[0]); marke.appendChild(imgs[0]);
     const w=document.createElement("span"); w.className="oak-wort"; w.textContent="OAK engineering"; marke.appendChild(w);
   }
-  if(m.kundenLogoB64 && imgs[1]){ imgs[1].src = m.kundenLogoB64; if(m.kunde) imgs[1].alt = m.kunde; }
+  if(m.kundenLogoB64 && imgs[1]){ imgs[1].src = m.kundenLogoB64; imgs[1].className = "kundenlogo"; if(m.kunde) imgs[1].alt = m.kunde; }
   document.querySelectorAll("table.meta input").forEach(inp=>{
     const k = inp.dataset.k;
     if(m[k] != null && m[k] !== ""){ inp.setAttribute("value", m[k]); if(!inp.value) inp.value = m[k]; }
@@ -544,7 +548,14 @@ let saveTimer;
 function flashSaved(){ const e=document.getElementById("savehint"); e.textContent="gespeichert ✓";
   clearTimeout(saveTimer); saveTimer=setTimeout(()=>e.textContent="automatisch gespeichert",1500); }
 
-function band(r){ if(r>=10) return {cls:"r", t:"hoch"}; if(r>=5) return {cls:"g", t:"mittel"}; return {cls:"gn", t:"gering"}; }
+/* Risikobereiche (Nohl R=W x S, 1-16). 15-16 ist der Stilllegungsbereich und bleibt
+   echten Sofortgefahren vorbehalten (z. B. offen laufender Roboterarm). */
+function band(r){
+  if(r>=15) return {cls:"akut", key:"akut",      t:"AKUTE GEFAHR (Stilllegung)"};
+  if(r>=9)  return {cls:"r",    key:"gefahr",    t:"Gefahrbereich"};
+  if(r>=4)  return {cls:"g",    key:"besorgnis", t:"Besorgnisbereich"};
+  return {cls:"gn", key:"akzeptanz", t:"Akzeptanzbereich"};
+}
 function colorCell(){ document.querySelectorAll(".nohl .cell").forEach(td=>{
   const b=band(+td.dataset.r); td.style.background = b.cls==="r"?"#fdecea":b.cls==="g"?"#fff4e5":"#e8f5e9";
   td.style.color = b.cls==="r"?"#c62828":b.cls==="g"?"#ef6c00":"#2e7d32"; td.style.fontWeight="600";
@@ -792,9 +803,9 @@ function updateDash(){
     `<span class="di">höchstes Restrisiko <span class="rzahl ${bMax.cls}">${maxRest}</span></span>`;
   /* Winzigen Status fuer die Anlagenuebersicht-Ampel im geteilten localStorage ablegen (nur Zahlen,
      keine Fotos -> keine Quota-Gefahr). Die Uebersicht liest ihn same-origin und faerbt die Ampel. */
-  window.__oakStatus = {offen:mTotal-mDone, gesamt:mTotal, wirksam:mWirk, band:bMax.cls, maxRisiko:maxRest};
+  window.__oakStatus = {offen:mTotal-mDone, gesamt:mTotal, wirksam:mWirk, band:bMax.key, maxRisiko:maxRest};
   try{ localStorage.setItem("oak_status_"+location.pathname,
-    JSON.stringify({offen:mTotal-mDone, gesamt:mTotal, wirksam:mWirk, band:bMax.cls})); }catch(e){}
+    JSON.stringify({offen:mTotal-mDone, gesamt:mTotal, wirksam:mWirk, band:bMax.key})); }catch(e){}
 }
 
 function renderRG(){

@@ -27,6 +27,7 @@
 
   .kopf{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 26px;border-bottom:4px solid var(--gruen);background:linear-gradient(180deg,#fff,#f6faf8);}
   .kopf img{height:50px;width:auto;object-fit:contain;}
+  .kopf img.kundenlogo{height:96px;max-width:260px;}
   .kopf .mitte{text-align:center;flex:1;}
   .kopf .mitte .doktyp{font-family:"Jost";font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gruen);font-weight:600;}
   .kopf .mitte h1{font-size:26px;line-height:1.1;}
@@ -56,6 +57,8 @@
   .sw{display:inline-block;padding:2px 9px;border-radius:11px;font-weight:700;font-size:11px;white-space:nowrap;}
   .sw.s{background:var(--rot-bg);color:var(--rot);border:1px solid var(--rot);}
   .sw.g{background:var(--gelb-bg);color:var(--gelb);border:1px solid var(--gelb);}
+  .sw.a{background:#e8f5e9;color:#2e7d32;border:1px solid #2e7d32;}
+  .sw.akut{background:#ffdad6;color:#7f0000;border:1px solid #7f0000;letter-spacing:.3px;}
   td.kosten{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;font-weight:500;}
   tr.summe td{background:var(--akzent)!important;font-weight:700;color:var(--dunkel);font-size:14px;border-top:2px solid var(--gruen);}
   tr.summe td.kosten{font-size:16px;}
@@ -110,7 +113,7 @@
       <h1 id="m-titel">⟪Maschine⟫</h1>
       <div class="sub" id="m-sub">⟪Maschinenart⟫ &middot; Prüfgrundlage ⟪Prüfgrundlage⟫</div>
     </div>
-    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="⟪Kundenlogo⟫" style="height:50px">
+    <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="⟪Kundenlogo⟫" class="kundenlogo">
   </div>
 
   <div class="inner">
@@ -180,7 +183,7 @@ function setTxt(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
 const _imgs=document.querySelectorAll(".kopf img");
 if(META.oakLogoB64 && _imgs[0]) _imgs[0].src=META.oakLogoB64;
-if(META.kundenLogoB64 && _imgs[1]){ _imgs[1].src=META.kundenLogoB64; if(META.kunde)_imgs[1].alt=META.kunde; }
+if(META.kundenLogoB64 && _imgs[1]){ _imgs[1].src=META.kundenLogoB64; _imgs[1].className="kundenlogo"; if(META.kunde)_imgs[1].alt=META.kunde; }
 
 if(META.maschine){ setTxt("m-titel",META.maschine); document.title="Mängelübersicht – "+META.maschine; }
 if(META.maschinenart||META.pruefgrundlage)
@@ -219,6 +222,10 @@ function speichereState(){
   try{ if(_po && window.parent!==window) window.parent.postMessage(
     {typ:"oak-doc-state", docTyp:"maengelliste", state:state, status:null}, _po); }catch(e){}
 }
+/* Einstufung der Maengel in denselben Risikobereichen wie die GBU. */
+const SW_FOLGE=["a","g","s","akut"];
+const SW_CLS={a:"a",g:"g",s:"s",akut:"akut"};
+const SW_TXT={a:"Akzeptanzbereich",g:"Besorgnisbereich",s:"Gefahrbereich",akut:"AKUTE GEFAHR (Stilllegung)"};
 function renderTabelle(){
   if(!tb) return;
   tb.innerHTML="";
@@ -230,8 +237,8 @@ function renderTabelle(){
     tb.insertAdjacentHTML("beforeend",
       `<tr data-k="${k}"><td class="nr">${esc(m.nr)}</td>`+
       `<td>${esc(m.label)}${m.pp?`<span class="pp">${esc(m.pp)}</span>`:""}</td>`+
-      `<td><span class="sw ${m.schwere==="s"?"s":"g"}" data-sw="${k}" title="umschalten">`+
-        `${m.schwere==="s"?"schwerwiegend":"geringfügig"}</span></td>`+
+      `<td><span class="sw ${SW_CLS[m.schwere]||"g"}" data-sw="${k}" title="klicken zum Umschalten">`+
+        `${SW_TXT[m.schwere]||SW_TXT.g}</span></td>`+
       `<td class="kosten"><input class="zin" type="number" step="10" min="0" data-f="kosten" data-k="${k}" `+
         `value="${m.kosten==null?"":m.kosten}" placeholder="offen"> €</td></tr>`);
   });
@@ -246,7 +253,8 @@ function renderTabelle(){
   }));
   tb.querySelectorAll("[data-sw]").forEach(el=>el.addEventListener("click",e=>{
     const k=+e.target.dataset.sw;
-    state.m[k].schwere = state.m[k].schwere==="s" ? "g" : "s";
+    const i=SW_FOLGE.indexOf(state.m[k].schwere);
+    state.m[k].schwere = SW_FOLGE[(i+1)%SW_FOLGE.length];
     speichereState(); renderTabelle(); renderKpi();
   }));
   renderKpi();
