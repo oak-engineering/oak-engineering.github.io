@@ -29,9 +29,11 @@ const UPDATE_INTERVALL = 60000;
 let katalogSignatur = null, updateTimer = null;
 
 async function katalogSignaturLesen(){
-  const r = await apiGet("/rest/v1/portal_dokumente?select=stand&order=stand.desc", false);
+  // updated_at (Default now()) aendert sich bei jedem Publish - der Katalog wird
+  // neu eingefuegt. "stand" taugt nicht: es ist das Dokumentdatum und oft NULL.
+  const r = await apiGet("/rest/v1/portal_dokumente?select=updated_at&order=updated_at.desc", false);
   if(!Array.isArray(r)) return null;
-  return r.length + "|" + ((r[0] && r[0].stand) || "");   // Anzahl + neuester Stand
+  return r.length + "|" + ((r[0] && r[0].updated_at) || "");
 }
 function updateBannerZeigen(){
   if(document.getElementById("updateBanner")) return;
