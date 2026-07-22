@@ -126,7 +126,7 @@
 
     <div class="dash">
       <div class="kpi"><div class="n" id="kpi-n">⟪n⟫</div><div class="l">Mängel</div></div>
-      <div class="kpi s"><div class="n" id="kpi-s">⟪n⟫</div><div class="l">davon schwerwiegend</div></div>
+      <div class="kpi s"><div class="n" id="kpi-s">⟪n⟫</div><div class="l">davon im Gefahrbereich</div></div>
       <div class="kpi sum"><div class="n" id="kpi-sum">⟪Summe⟫ €</div><div class="l">geschätzte Behebung gesamt
         <span id="kpi-sum-hint" class="sum-hint"></span></div></div>
     </div>
@@ -137,11 +137,11 @@
         <tr><th>Nr.</th><th>Mangel (Kurzbeschreibung)</th><th style="width:120px;">Schwere</th><th style="width:170px;text-align:right;">Geschätzte Kosten</th></tr>
       </thead>
       <tbody id="m-tbody">
-        <!-- Je Mangel eine Zeile. Schwere: <span class="sw s">schwerwiegend</span> oder <span class="sw g">geringfügig</span>.
+        <!-- Je Mangel eine Zeile. Einstufung: Akzeptanz- / Besorgnis- / Gefahrbereich / AKUTE GEFAHR.
              Kosten = grobe netto-Richtwerte. .pp = Prüfpunkt/Norm-Referenz. -->
         <tr><td class="nr">1</td>
           <td>⟪Mangel-Kurzbeschreibung⟫<span class="pp">⟪Prüfpunkt · Norm⟫</span></td>
-          <td><span class="sw s">schwerwiegend</span></td><td class="kosten">⟪x⟫ €</td></tr>
+          <td><span class="sw s">Gefahrbereich</span></td><td class="kosten">⟪x⟫ €</td></tr>
         <tr><td class="nr">2</td>
           <td>⟪Mangel-Kurzbeschreibung⟫<span class="pp">⟪Prüfpunkt · Norm⟫</span></td>
           <td><span class="sw g">geringfügig</span></td><td class="kosten">⟪x⟫ €</td></tr>
@@ -150,8 +150,10 @@
     </table>
 
     <div class="hinweis">
-      <span class="sw s">schwerwiegend</span> Betrieb ohne zusätzliche Schutzmaßnahme nicht zulässig.
-      <span class="sw g">geringfügig</span> Betrieb mit Auflage möglich. &nbsp;|&nbsp;
+      <span class="sw akut">AKUTE GEFAHR</span> Betrieb sofort einstellen, Anlage stilllegen.
+      <span class="sw s">Gefahrbereich</span> vorrangig handeln, Betrieb ohne zusätzliche Schutzmaßnahme nicht zulässig.
+      <span class="sw g">Besorgnisbereich</span> Maßnahme erforderlich, Betrieb mit Auflage möglich.
+      <span class="sw a">Akzeptanzbereich</span> im Rahmen normaler Sorgfalt. &nbsp;|&nbsp;
       Kosten sind <b>grobe Richtwerte</b> (netto, zzgl. MwSt.) für die externe technische/organisatorische Umsetzung –
       kein verbindliches Angebot. Erstellung von BdA, BA und Unterweisung ist in der laufenden Betreuung enthalten.
     </div>
@@ -203,7 +205,9 @@ const state = (function(){
   try{ const st=JSON.parse((el&&el.textContent)||"null"); if(st&&Array.isArray(st.m)) return st; }catch(e){}
   return { m: MAENGEL.map((m,k)=>({
     nr: m.nr!=null?m.nr:(k+1), label:m.label||"", pp:m.pp||"",
-    schwere:(m.schwere==="s"||m.schwere==="schwerwiegend")?"s":"g",
+    // Vier Stufen: a/g/s/akut. Altwerte werden gemappt; Unbekanntes landet auf "g"
+    // (Besorgnisbereich) - aber NIE wird "akut" stillschweigend heruntergestuft.
+    schwere:({s:"s",schwerwiegend:"s",g:"g","geringfügig":"g",a:"a",akut:"akut"}[m.schwere]||"g"),
     // Ein geschaetzter Gesamtbetrag (netto) je Mangel. Back-compat: altes menge*preis einmalig verrechnen.
     kosten:(m.kosten!=null&&m.kosten!=="")?Number(m.kosten)
            :((m.preis!=null&&m.preis!=="")?Math.round(Number(m.preis)*Number(m.menge!=null&&m.menge!==""?m.menge:1)):null)
@@ -267,7 +271,7 @@ function aktualisiereSumme(){
 }
 function renderKpi(){
   let summe=0, schwer=0, offen=0;
-  state.m.forEach(m=>{ if(m.schwere==="s") schwer++; const x=zeilenSumme(m); if(x==null) offen++; else summe+=x; });
+  state.m.forEach(m=>{ if(m.schwere==="s"||m.schwere==="akut") schwer++; const x=zeilenSumme(m); if(x==null) offen++; else summe+=x; });
   setTxt("kpi-n", String(state.m.length));
   setTxt("kpi-s", String(schwer));
   setTxt("kpi-sum", eur(summe)+" €");
