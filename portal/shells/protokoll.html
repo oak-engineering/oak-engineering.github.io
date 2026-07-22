@@ -30,6 +30,8 @@
   h1,h2,h3{font-family:"Cormorant Garamond","Georgia",serif;font-weight:700;color:var(--dunkel);margin:0;}
   .kopf{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 26px;border-bottom:4px solid var(--gruen);background:linear-gradient(180deg,#fff,#f6faf8);}
   .kopf img{height:50px;width:auto;object-fit:contain;}
+  /* Kundenlogo bewusst deutlich groesser als das OAK-Logo (Wunsch Nikolai). */
+  .kopf img.kundenlogo{height:96px;max-width:260px;}
   .kopf .logo-txt{height:50px;min-width:50px;padding:0 12px;border-radius:9px;background:var(--hell);display:flex;align-items:center;justify-content:center;font-family:"Cormorant Garamond",serif;font-weight:700;color:var(--dunkel);font-size:24px;}
   .kopf .mitte{text-align:center;flex:1;}
   .kopf .mitte .doktyp{font-family:"Jost";font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gruen);font-weight:600;}
@@ -61,6 +63,7 @@
   .leer{color:var(--grau);font-style:italic;font-size:12px;}
   .fuss{font-size:10.5px;color:var(--grau);margin-top:18px;border-top:1px solid var(--linie);padding-top:8px;}
   @media print{
+    .kopf img.kundenlogo{height:74px;}
     body{background:#fff;padding:0;font-size:11px;}
     .blatt{box-shadow:none;max-width:100%;border-radius:0;}
     .foto,ul.liste li{break-inside:avoid;}
@@ -120,7 +123,7 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;",
 /* Logos */
 const kopf=document.querySelector(".kopf");
 if(META.oakLogoB64){ const i=document.createElement("img"); i.src=META.oakLogoB64; i.alt="OAK engineering"; kopf.replaceChild(i, document.getElementById("oak-logo")); }
-if(META.kundenLogoB64){ const i=document.createElement("img"); i.src=META.kundenLogoB64; i.alt=META.kunde||"Kunde"; kopf.replaceChild(i, document.getElementById("kunden-logo")); }
+if(META.kundenLogoB64){ const i=document.createElement("img"); i.src=META.kundenLogoB64; i.className="kundenlogo"; i.alt=META.kunde||"Kunde"; kopf.replaceChild(i, document.getElementById("kunden-logo")); }
 else if(META.kunde){ document.getElementById("kunden-logo").textContent=META.kunde; }
 
 /* Titel */

@@ -803,7 +803,7 @@ function updateOverdue(){
 }
 
 function updateDash(){
-  let hV={r:0,g:0,gn:0}, hN={r:0,g:0,gn:0}, mTotal=0, mDone=0, mWirk=0, maxRest=0;
+  let hV={akut:0,r:0,g:0,gn:0}, hN={akut:0,r:0,g:0,gn:0}, mTotal=0, mDone=0, mWirk=0, maxRest=0;
   state.h.forEach(s=>{
     /* Restrisiko zaehlt nur, was durch Wirksamkeitspruefung belegt ist (wirksamOk) - sonst gilt
        weiter das Ausgangsrisiko. So passt das Dashboard zur Karte (dort erscheint das Restrisiko
@@ -813,13 +813,15 @@ function updateDash(){
     (s.massnahmen||[]).forEach(m=>{ mTotal++; if(m.status==="erledigt") mDone++; if(m.wirksam==="wirksam") mWirk++; });
   });
   const total=state.h.length, bMax=band(maxRest);
-  const seg=v=>`<b class="r">${v.r}</b>/<b class="g">${v.g}</b>/<b class="gn">${v.gn}</b>`;
+  /* Zaehlung je Risikobereich. "akut" wird mitgezaehlt, sonst verschwaende eine
+     Stilllegungsgefahr still in der Uebersicht. */
+  const seg=v=>`${v.akut?`<b class="akut">${v.akut}</b>/`:""}<b class="r">${v.r}</b>/<b class="g">${v.g}</b>/<b class="gn">${v.gn}</b>`;
   document.getElementById("dash").innerHTML=
     `<span class="di"><b>${total}</b> Gefährdungen</span>`+
-    `<span class="di">Ausgangsrisiko ${seg(hV)} <small>(h/m/g)</small></span>`+
-    `<span class="di">Restrisiko ${seg(hN)}</span>`+
+    `<span class="di">Ausgangsrisiko ${seg(hV)} <small>(Gefahr/Besorgnis/Akzeptanz)</small></span>`+
+    `<span class="di">aktuelles Risiko ${seg(hN)}</span>`+
     `<span class="di">Maßnahmen <b>${mDone}/${mTotal}</b> erledigt · <b class="gn">${mWirk}</b> wirksam</span>`+
-    `<span class="di">höchstes Restrisiko <span class="rzahl ${bMax.cls}">${maxRest}</span></span>`;
+    `<span class="di">höchstes aktuelles Risiko <span class="rzahl ${bMax.cls}">${maxRest}</span> <small>${bMax.t}</small></span>`;
   /* Winzigen Status fuer die Anlagenuebersicht-Ampel im geteilten localStorage ablegen (nur Zahlen,
      keine Fotos -> keine Quota-Gefahr). Die Uebersicht liest ihn same-origin und faerbt die Ampel. */
   window.__oakStatus = {offen:mTotal-mDone, gesamt:mTotal, wirksam:mWirk, band:bMax.key, maxRisiko:maxRest};
