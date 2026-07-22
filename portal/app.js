@@ -29,22 +29,26 @@ const KAT_LABEL = Object.fromEntries(DOMAENEN.flatMap(d => d.subs.map(s => [s.ka
 
 /* Risikobereiche wie in der GBU. Die Farbe zeigt die Handlungsdringlichkeit,
    damit sich die Anlagen sortieren lassen - "akut" bleibt der Stilllegung vorbehalten. */
+/* Altbestand mituebersetzen: vor dem Umstieg standen in der Spalte teils die
+   Bandnamen (hoch/mittel/gering), teils die CSS-Klassen (r/g/gn). Unbekanntes
+   wird bewusst NICHT gruen - lieber zu streng als ein verharmlostes Risiko. */
+const BAND_ALT = {hoch:"gefahr", mittel:"besorgnis", gering:"akzeptanz",
+                  r:"gefahr", g:"besorgnis", gn:"akzeptanz"};
 const BAND_LABEL = {akut:"AKUTE GEFAHR (Stilllegung)", gefahr:"Gefahrbereich",
                     besorgnis:"Besorgnisbereich", akzeptanz:"Akzeptanzbereich"};
 function ampelKlasse(st){
   if(!st || !st.gesamt) return "grau";
   if((st.offen||0)===0) return "gruen";
-  const b = st.band==="hoch" ? "gefahr" : (st.band==="mittel" ? "besorgnis"
-          : (st.band==="gering" ? "akzeptanz" : st.band));   // Altbestand mituebersetzen
+  const b = BAND_ALT[st.band] || st.band;
   if(b==="akut") return "akut";
   if(b==="gefahr") return "rot";
   if(b==="besorgnis") return "orange";
-  return "gruen";
+  if(b==="akzeptanz") return "gruen";
+  return "orange";            // unbekanntes Band: sichtbar lassen, nicht gruen faerben
 }
 function ampelTitel(st){
   if(!st || !st.gesamt) return "kein Status";
-  const b = st.band==="hoch" ? "gefahr" : (st.band==="mittel" ? "besorgnis"
-          : (st.band==="gering" ? "akzeptanz" : st.band));
+  const b = BAND_ALT[st.band] || st.band;
   return (BAND_LABEL[b]||b||"") + " · Risiko " + (st.maxRisiko||"?")
        + (st.maengelGefahr ? " · " + st.maengelGefahr + " Mangel/Maengel" : "");
 }
