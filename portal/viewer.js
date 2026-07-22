@@ -178,7 +178,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             +"&maschinen_id=eq."+encodeURIComponent(LIVE.mid)+"&doc_typ=eq."+typ, false).catch(()=>[])
         : Promise.resolve([]);
       const [shell, docdata, liveRows] = await Promise.all([
-        fetch("shells/" + typ + ".html").then(r => { if(!r.ok) throw new Error("Vorlage fehlt"); return r.text(); }),
+        // cache:"no-cache" erzwingt die Revalidierung: sonst rendert ein wiederkehrender
+        // Besucher noch die alte Shell (z. B. mit den alten Risiko-Bezeichnungen).
+        fetch("shells/" + typ + ".html", {cache:"no-cache"})
+          .then(r => { if(!r.ok) throw new Error("Vorlage fehlt"); return r.text(); }),
         apiGet(storagePfad(p), true),
         liveStatePromise,
       ]);
