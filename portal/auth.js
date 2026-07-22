@@ -31,7 +31,12 @@ async function token(){ let s=getSession(); if(!s) return null;
    Wirft "AUTH", wenn keine gültige Sitzung -> Aufrufer leitet zum Login. */
 async function apiFetch(path){
   let t = await token(); if(!t){ clearSession(); throw new Error("AUTH"); }
-  const doFetch = tk => fetch(CFG.url + path, { headers:{ "apikey":CFG.anon, "Authorization":"Bearer "+tk } });
+  // cache:"no-cache" erzwingt die Revalidierung. Ohne das liefert der Browser nach einer
+  // Neuveroeffentlichung weiter das alte Dokument aus dem Storage aus.
+  const doFetch = tk => fetch(CFG.url + path, {
+    cache: "no-cache",
+    headers: { "apikey": CFG.anon, "Authorization": "Bearer " + tk }
+  });
   let r = await doFetch(t);
   if(r.status===401){ try{ await refresh(); t=(getSession()||{}).access_token; r = await doFetch(t); }
     catch(e){ clearSession(); throw new Error("AUTH"); } }
