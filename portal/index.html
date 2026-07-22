@@ -35,10 +35,25 @@
       </a>
       <div class="rechts">
         <span id="userMail"></span>
+        <button class="btn sek" id="pwBtn" type="button">Passwort &auml;ndern</button>
         <button class="btn sek" id="logoutBtn" type="button">Abmelden</button>
       </div>
     </div>
   </header>
+
+  <dialog id="pwDlg" class="pw-dlg">
+    <form method="dialog" id="pwForm">
+      <h3>Passwort &auml;ndern</h3>
+      <p class="pw-hint">Mindestens 8 Zeichen. Nach dem Speichern gilt das neue Passwort sofort.</p>
+      <label>Neues Passwort<input type="password" id="pw1" autocomplete="new-password" required minlength="8"></label>
+      <label>Wiederholen<input type="password" id="pw2" autocomplete="new-password" required minlength="8"></label>
+      <p class="pw-msg" id="pwMsg"></p>
+      <div class="pw-akt">
+        <button class="btn sek" value="cancel" type="submit">Abbrechen</button>
+        <button class="btn" id="pwSave" value="ok" type="button">Speichern</button>
+      </div>
+    </form>
+  </dialog>
 
   <main class="wrap">
     <div class="titelzeile">

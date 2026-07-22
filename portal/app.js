@@ -27,11 +27,26 @@ const DOMAENEN = [
 // Label je feiner Kategorie (für Sektions-Überschriften/Fallback).
 const KAT_LABEL = Object.fromEntries(DOMAENEN.flatMap(d => d.subs.map(s => [s.kat, s.label])));
 
+/* Risikobereiche wie in der GBU. Die Farbe zeigt die Handlungsdringlichkeit,
+   damit sich die Anlagen sortieren lassen - "akut" bleibt der Stilllegung vorbehalten. */
+const BAND_LABEL = {akut:"AKUTE GEFAHR (Stilllegung)", gefahr:"Gefahrbereich",
+                    besorgnis:"Besorgnisbereich", akzeptanz:"Akzeptanzbereich"};
 function ampelKlasse(st){
   if(!st || !st.gesamt) return "grau";
   if((st.offen||0)===0) return "gruen";
-  if(st.band==="hoch") return "rot";
-  return "orange";
+  const b = st.band==="hoch" ? "gefahr" : (st.band==="mittel" ? "besorgnis"
+          : (st.band==="gering" ? "akzeptanz" : st.band));   // Altbestand mituebersetzen
+  if(b==="akut") return "akut";
+  if(b==="gefahr") return "rot";
+  if(b==="besorgnis") return "orange";
+  return "gruen";
+}
+function ampelTitel(st){
+  if(!st || !st.gesamt) return "kein Status";
+  const b = st.band==="hoch" ? "gefahr" : (st.band==="mittel" ? "besorgnis"
+          : (st.band==="gering" ? "akzeptanz" : st.band));
+  return (BAND_LABEL[b]||b||"") + " · Risiko " + (st.maxRisiko||"?")
+       + (st.maengelGefahr ? " · " + st.maengelGefahr + " Mangel/Maengel" : "");
 }
 function viewerUrl(typ, path, titel, extra){
   return "viewer.html?typ=" + encodeURIComponent(typ) + "&p=" + encodeURIComponent(path||"")
@@ -49,6 +64,44 @@ function qrLink(row){
   if(!row.maschinen_id) return "";
   return `<a class="qr-btn" href="qr.html?k=${encodeURIComponent(row.kunde_slug||"")}&mid=${encodeURIComponent(row.maschinen_id)}"`
     + ` target="_blank" rel="noopener" title="QR-Code zur Maschinenseite (drucken)">QR</a>`;
+}
+
+/* Update-Waechter: meldet neu veroeffentlichte Dokumente, statt still Veraltetes anzuzeigen.
+   Bewusst KEIN Auto-Reload - der Nutzer entscheidet, sonst reisst es ihm die Arbeit weg. */
+const UPDATE_INTERVALL = 60000;
+let katalogSignatur = null, updateTimer = null;
+
+async function katalogSignaturLesen(){
+  const r = await apiGet("/rest/v1/portal_dokumente?select=stand&order=stand.desc", false);
+  if(!Array.isArray(r)) return null;
+  return r.length + "|" + ((r[0] && r[0].stand) || "");   // Anzahl + neuester Stand
+}
+function updateBannerZeigen(){
+  if(document.getElementById("updateBanner")) return;
+  const d = document.createElement("div");
+  d.id = "updateBanner"; d.className = "update-banner";
+  d.innerHTML = '<span>Es gibt aktualisierte Dokumente.</span>'
+    + '<button class="btn" id="updateJetzt" type="button">Jetzt aktualisieren</button>'
+    + '<button class="btn sek" id="updateSpaeter" type="button">Später</button>';
+  document.body.appendChild(d);
+  document.getElementById("updateJetzt").addEventListener("click", ()=>{
+    if(window.__oakUngespeichert &&
+       !confirm("Es gibt ungespeicherte Änderungen. Trotzdem neu laden?")) return;
+    location.reload();
+  });
+  document.getElementById("updateSpaeter").addEventListener("click", ()=>{ d.remove(); });
+}
+async function updatePruefen(){
+  try{
+    const sig = await katalogSignaturLesen();
+    if(sig && katalogSignatur && sig !== katalogSignatur) updateBannerZeigen();
+  }catch(e){ /* ein fehlgeschlagener Poll darf die Ansicht nie stoeren */ }
+}
+async function updateWaechterStarten(){
+  try{ katalogSignatur = await katalogSignaturLesen(); }catch(e){ return; }
+  clearInterval(updateTimer);
+  updateTimer = setInterval(updatePruefen, UPDATE_INTERVALL);
+  document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) updatePruefen(); });
 }
 
 let ALLE = [], ADMIN = false, AKTIV = null;
@@ -81,7 +134,7 @@ function renderAnlagen(){
   const rows = anlagen().filter(r => (!tf || r.maschinentyp===tf) &&
     (!q || (r.maschine||"").toLowerCase().includes(q) || (r.maschinen_id||"").toLowerCase().includes(q)));
   tb.innerHTML = rows.length ? rows.map(r => `<tr>
-      <td><span class="ampel ${ampelKlasse(r.status)}" title="${esc((r.status&&r.status.band)||"—")}"></span></td>
+      <td><span class="ampel ${ampelKlasse(r.status)}" title="${esc(ampelTitel(r.status))}"></span></td>
       <td>${esc(r.maschine)}</td><td>${esc(r.maschinentyp||"–")}</td>
       <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}</td>
     </tr>`).join("") : `<tr><td colspan="4" class="leer">keine Anlagen</td></tr>`;
@@ -209,6 +262,7 @@ async function ladePortal(){
     renderTabs();
     renderSubTabs();
     renderSektionen();
+    updateWaechterStarten();
   }catch(e){
     if(e.message==="AUTH"){ zurLogin(); return; }
     for(const id of ["#katTabs","#subTabs"]){ const nav=$(id); if(nav){ nav.classList.add("hidden"); nav.innerHTML=""; } }
@@ -226,6 +280,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     finally{ btn.disabled=false; }
   });
   $("#logoutBtn").addEventListener("click", ()=>{ clearSession(); ALLE=[]; zurLogin(); });
+
+  // Passwort aendern
+  const pwDlg=$("#pwDlg"), pwMsg=$("#pwMsg");
+  $("#pwBtn").addEventListener("click", ()=>{
+    $("#pw1").value=""; $("#pw2").value=""; pwMsg.textContent=""; pwMsg.className="pw-msg";
+    pwDlg.showModal();
+  });
+  $("#pwSave").addEventListener("click", async ()=>{
+    const a=$("#pw1").value, b=$("#pw2").value;
+    pwMsg.className="pw-msg";
+    if(a.length<8){ pwMsg.textContent="Mindestens 8 Zeichen."; pwMsg.classList.add("fehler"); return; }
+    if(a!==b){ pwMsg.textContent="Die Eingaben stimmen nicht ueberein."; pwMsg.classList.add("fehler"); return; }
+    pwMsg.textContent="Wird gespeichert …";
+    try{
+      await passwortAendern(a);
+      pwMsg.textContent="Passwort geaendert."; pwMsg.classList.add("ok");
+      setTimeout(()=>pwDlg.close(), 1200);
+    }catch(err){
+      pwMsg.textContent = (err && err.message==="AUTH") ? "Sitzung abgelaufen – bitte neu anmelden."
+                                                        : ("Fehlgeschlagen: " + (err.message||err));
+      pwMsg.classList.add("fehler");
+    }
+  });
 
   const t = await token();
   if(t){ zurApp(); await ladePortal(); } else { zurLogin(); }

@@ -64,3 +64,19 @@ function storagePfad(docdata_path){
   return "/storage/v1/object/authenticated/" + CFG.bucket + "/" + seg;
 }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* Passwort des angemeldeten Nutzers aendern (Supabase Auth: PUT /auth/v1/user).
+   Serverseitig gilt die Mindestlaenge des Projekts; hier zusaetzlich 8 Zeichen. */
+async function passwortAendern(neu){
+  const t = await token(); if(!t){ clearSession(); throw new Error("AUTH"); }
+  const r = await fetch(CFG.url + "/auth/v1/user", {
+    method:"PUT",
+    headers:{ "apikey":CFG.anon, "Authorization":"Bearer "+t, "Content-Type":"application/json" },
+    body: JSON.stringify({ password: neu })
+  });
+  if(!r.ok){
+    let d={}; try{ d = await r.json(); }catch(e){}
+    throw new Error(d.msg || d.error_description || d.message || ("Fehler " + r.status));
+  }
+  return r.json().catch(()=>({}));
+}
