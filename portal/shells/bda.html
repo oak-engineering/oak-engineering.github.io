@@ -128,7 +128,14 @@
   /* Klickbare Nohl-Matrix */
   .mxwrap{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
   table.mxg{border-collapse:collapse;font-size:11px;}
-  table.mxg th,table.mxg td{border:1px solid var(--linie);width:27px;height:23px;text-align:center;padding:0;}
+  table.mxg th,table.mxg td{border:1px solid var(--linie);text-align:center;padding:0;}
+  table.mxg td{width:27px;height:23px;}
+  /* Achsenbeschriftung im Klartext: die nackten Zahlen 1-4 sagen dem Kunden nichts. */
+  table.mxg th{padding:2px 4px;line-height:1.15;}
+  table.mxg .mxnum{display:block;font-size:11px;font-weight:700;}
+  table.mxg .mxwort{display:block;font-size:8px;font-weight:500;color:var(--grau);max-width:64px;}
+  table.mxg .mxcorner span{display:block;font-size:8px;line-height:1.2;}
+  .mxax{margin-top:5px;max-width:420px;line-height:1.45;}
   table.mxg th{background:#f1f6f3;color:var(--dunkel);font-weight:600;font-size:10px;}
   table.mxg .mxcorner{background:var(--gruen);color:#fff;font-size:8.5px;}
   td.mx{cursor:pointer;font-weight:600;}
@@ -566,17 +573,29 @@ function wsSelect(kind,i,val){
   return `<select data-i="${i}" data-kind="${kind}">${o}</select>`;
 }
 function rzahlHtml(r){ const b=band(r); return `<span class="rzahl ${b.cls}">${r}</span> <span style="font-size:11px;color:var(--grau)">${b.t}</span>`; }
+/* Stufentexte der Nohl-Matrix. Ohne sie sind die Zahlen 1-4 fuer den Kunden
+   nicht lesbar - deshalb stehen sie an beiden Achsen im Klartext. */
+const W_TEXT={4:"sehr wahrscheinlich",3:"wahrscheinlich",2:"möglich",1:"unwahrscheinlich"};
+const S_TEXT={1:"leichte Verletzung",2:"mittelschwere Verletzung",3:"schwere Verletzung",4:"möglicherweise tödlich"};
 function matrixHtml(i, wKind, sKind, w, s){
   let body="";
   for(let wv=4; wv>=1; wv--){
-    let cells=`<th class="mxh" title="Wahrscheinlichkeit W=${wv}">${wv}</th>`;
+    let cells=`<th class="mxh" title="Eintrittswahrscheinlichkeit W${wv} \u2013 ${W_TEXT[wv]}">`
+            + `<span class="mxnum">${wv}</span><span class="mxwort">${W_TEXT[wv]}</span></th>`;
     for(let sv=1; sv<=4; sv++){
       const r=wv*sv, b=band(r), sel=(wv===w&&sv===s)?" sel":"";
-      cells+=`<td class="mx ${b.cls}${sel}" data-i="${i}" data-wk="${wKind}" data-sk="${sKind}" data-w="${wv}" data-s="${sv}" title="W${wv} × S${sv} = ${r} (${b.t})">${r}</td>`;
+      cells+=`<td class="mx ${b.cls}${sel}" data-i="${i}" data-wk="${wKind}" data-sk="${sKind}" data-w="${wv}" data-s="${sv}" title="Wahrscheinlichkeit ${wv} (${W_TEXT[wv]}) \u00d7 Schadensschwere ${sv} (${S_TEXT[sv]}) = ${r} \u00b7 ${b.t}">${r}</td>`;
     }
     body+=`<tr>${cells}</tr>`;
   }
-  return `<table class="mxg"><tr><th class="mxcorner">W\\S</th><th class="mxh">1</th><th class="mxh">2</th><th class="mxh">3</th><th class="mxh">4</th></tr>${body}</table>`;
+  let kopf=`<th class="mxcorner"><span>W \u2193</span><span>S \u2192</span></th>`;
+  for(let sv=1; sv<=4; sv++)
+    kopf+=`<th class="mxh" title="Schadensschwere S${sv} \u2013 ${S_TEXT[sv]}">`
+        + `<span class="mxnum">${sv}</span><span class="mxwort">${S_TEXT[sv]}</span></th>`;
+  return `<table class="mxg"><tr>${kopf}</tr>${body}</table>`
+       + `<div class="mxax"><b>Zeile</b> = Eintrittswahrscheinlichkeit W \u00b7 <b>Spalte</b> = Schadensschwere S \u00b7 `
+       + `Feld = Risiko R = W \u00d7 S.<br><b>1\u20133</b> Akzeptanzbereich \u00b7 <b>4\u20138</b> Besorgnisbereich \u00b7 `
+       + `<b>9\u201312</b> Gefahrbereich \u00b7 <b>15\u201316</b> AKUTE GEFAHR (Stilllegung).</div>`;
 }
 
 /* Belegfotos an der Gefaehrdung - dort, wo der Leser sie braucht, nicht in einer Galerie am
