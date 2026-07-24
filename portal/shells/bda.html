@@ -84,6 +84,16 @@
 
   /* Dashboard */
   .dash{font-size:12.5px;color:var(--text);background:var(--akzent);border:1px solid var(--hell);border-radius:8px;padding:9px 14px;margin:2px 0 10px;line-height:1.95;}
+  .reifegrad{border:1px solid var(--hell);border-radius:8px;padding:11px 14px;margin:2px 0 12px;font-size:12.5px;color:var(--text);}
+  .reifegrad .rg-kopf{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .reifegrad .rg-stufe{font-weight:700;color:var(--dunkel);font-size:14px;}
+  .reifegrad .rg-proz{font-weight:700;color:var(--gruen);}
+  .reifegrad .rg-bar{flex:1;min-width:120px;height:9px;border-radius:5px;background:#e8ede9;overflow:hidden;}
+  .reifegrad .rg-bar i{display:block;height:100%;background:var(--gruen);}
+  .reifegrad .rg-offen{margin-top:8px;} .reifegrad .rg-offen b{color:var(--dunkel);}
+  .reifegrad ul{margin:5px 0 0;padding-left:18px;line-height:1.6;}
+  .reifegrad li .st{font-weight:600;} .reifegrad li .st.t{color:var(--gelb);} .reifegrad li .st.o{color:var(--rot);}
+  .reifegrad .todo{color:var(--grau);}
   .dash b{font-weight:700;color:var(--dunkel);}
   .dash .di{display:inline-block;margin-right:13px;padding-right:13px;border-right:1px solid #cdd8d2;}
   .dash .di:last-child{border-right:none;margin-right:0;padding-right:0;}
@@ -299,6 +309,9 @@
     <div class="sektion-titel">Auswertung &amp; Maßnahmenstand</div>
     <div class="dash" id="dash"></div>
 
+    <!-- Reifegrad / Vollständigkeit (aus meta.reifegrad) -->
+    <div id="reifegrad" class="reifegrad" hidden></div>
+
     <!-- Inhaltsverzeichnis der Gefährdungen (Sprungmarken) -->
     <div id="toc" class="toc"></div>
 
@@ -421,12 +434,31 @@ const HAZARDS_DEFAULT = [
 
 const DOC = (()=>{ try{ return JSON.parse(document.getElementById("doc-data").textContent)||{}; }catch(e){ return {}; } })();
 const HAZARDS = (DOC.hazards && DOC.hazards.length) ? DOC.hazards : HAZARDS_DEFAULT;
+function renderReifegrad(rg){
+  const box = document.getElementById("reifegrad");
+  if(!box || !rg || !Array.isArray(rg.kriterien)) return;
+  const LAB = {erfuellt:"erfüllt", teilweise:"teilweise", offen:"offen"};
+  const offen = rg.kriterien.filter(k => k.status !== "erfuellt");
+  let h = `<div class="rg-kopf">`
+    + `<span class="rg-stufe">GBU-Reifegrad · Stufe ${rg.stufe} (${rg.stufe_txt||""})</span>`
+    + `<span class="rg-bar"><i style="width:${rg.prozent}%"></i></span>`
+    + `<span class="rg-proz">${rg.prozent} %</span></div>`;
+  if(offen.length){
+    h += `<div class="rg-offen"><b>Planmäßig in Stufe 2 zu vertiefen:</b><ul>`
+      + offen.map(k => { const cls = k.status === "offen" ? "o" : "t";
+          return `<li><span class="st ${cls}">${k.k}</span> — <span class="st ${cls}">${LAB[k.status]}</span>`
+               + (k.todo ? ` <span class="todo">(${k.todo})</span>` : "") + `</li>`; }).join("")
+      + `</ul></div>`;
+  } else { h += `<div class="rg-offen">Alle Kriterien erfüllt – vertiefte Beurteilung abgeschlossen.</div>`; }
+  box.innerHTML = h; box.hidden = false;
+}
 /* Kopf/Metadaten aus DOC.meta anwenden (nur wenn injiziert) */
 (function(){
   const m = DOC.meta || {}; if(!Object.keys(m).length) return;
   if(m.maschine){ document.title = "GBU/BdA – " + m.maschine;
     const h = document.querySelector(".kopf h1"); if(h) h.textContent = m.maschine; }
   if(m.untertitel){ const s = document.querySelector(".kopf .sub"); if(s) s.textContent = m.untertitel; }
+  renderReifegrad(m.reifegrad);
   const imgs = document.querySelectorAll(".kopf img");
   if(m.oakLogoB64 && imgs[0]) imgs[0].src = m.oakLogoB64;
   /* OAK-Baum + Schriftzug „OAK engineering" – der Baum allein ist nicht selbsterklaerend. */
