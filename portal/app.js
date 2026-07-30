@@ -10,6 +10,7 @@ function zurApp(){ $("#loginView").classList.add("hidden"); $("#appView").classL
 const DOMAENEN = [
   { key: "arbeitssicherheit", label: "Arbeitssicherheit", subs: [
       { kat: "anlagen",       label: "Anlagen &amp; Maschinensicherheit" },
+      { kat: "allg-gbu",      label: "Allgemeine GBU" },
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
       { kat: "begehungen",    label: "Begehungen" },
       { kat: "unterweisungen", label: "Unterweisungen" },
@@ -217,7 +218,7 @@ function docZeile(r){
   const oeffnen = (r.doc_typ==="link" && r.url)
     ? `<a class="doc-open" href="${esc(r.url)}" target="_blank" rel="noopener">Öffnen</a>`
     : `<a class="doc-open" href="${viewerUrl(r.doc_typ, r.storage_path, r.titel)}" target="_blank" rel="noopener">Öffnen</a>`;
-  const fmt = {html:"Dokument", pdf:"PDF", link:"Online"}[r.doc_typ] || "Dokument";
+  const fmt = {html:"Dokument", pdf:"PDF", link:"Online", bda:"GBU", ba:"BA", maengelliste:"Mängelliste", protokoll:"Protokoll"}[r.doc_typ] || "Dokument";
   return `<tr><td>${esc(r.titel||"Dokument")}</td><td class="tspalte">${fmt}</td>`
     + `<td class="tspalte">${r.stand?esc(r.stand):"—"}</td><td class="doc-td">${oeffnen}</td></tr>`;
 }
