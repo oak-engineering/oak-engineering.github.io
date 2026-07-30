@@ -139,6 +139,7 @@ if(subteile.length) document.getElementById("p-sub").textContent=subteile.join("
 const stammFelder=[
   ["Kunde",META.kunde],["Maschine",META.maschine],["Hersteller / Typ",[META.hersteller,META.typ].filter(Boolean).join(" / ")],
   ["Baujahr",META.baujahr],["Serien-Nr.",META.seriennr],["Standort / Bereich",[META.standort,META.bereich].filter(Boolean).join(" / ")],
+  ["Linearroboter",({ja:"vorhanden",nein:"nicht vorhanden"})[META.linearroboter]||"–"],
   ["CE / Konformität",META.ce],["Betriebsanleitung",META.anleitung],["Begehung am",BEGEHUNG],["Begeher",META.begeher||"OAK engineering"]
 ];
 const mt=document.getElementById("p-meta");

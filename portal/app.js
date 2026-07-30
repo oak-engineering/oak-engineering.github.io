@@ -52,6 +52,14 @@ function ampelTitel(st){
   return (BAND_LABEL[b]||b||"") + " · Risiko " + (st.maxRisiko||"?")
        + (st.maengelGefahr ? " · " + st.maengelGefahr + " Mangel/Maengel" : "");
 }
+/* Status -> Filtergruppe (fuer den Status-Filter der Anlagen-Uebersicht). */
+function statusGruppe(st){
+  const k = ampelKlasse(st);
+  if(k==="rot"||k==="akut") return "gefahr";
+  if(k==="orange") return "besorgnis";
+  if(k==="gruen") return "akzeptanz";
+  return "ohne";
+}
 function viewerUrl(typ, path, titel, extra){
   return "viewer.html?typ=" + encodeURIComponent(typ) + "&p=" + encodeURIComponent(path||"")
     + "&t=" + encodeURIComponent(titel||"") + (extra||"");
@@ -137,21 +145,34 @@ function renderAnlagen(){
   const tb = $("#anlagen-liste"); if(!tb) return;
   const q = ($("#suche")?.value||"").toLowerCase().trim();
   const tf = $("#typFilter")?.value||"";
-  const rows = anlagen().filter(r => (!tf || r.maschinentyp===tf) &&
-    (!q || (r.maschine||"").toLowerCase().includes(q) || (r.maschinen_id||"").toLowerCase().includes(q)));
+  const df = $("#datumFilter")?.value||"";
+  const sf = $("#statusFilter")?.value||"";
+  const sortBy = $("#sortSelect")?.value||"prio";
+  let rows = anlagen().filter(r => (!tf || r.maschinentyp===tf) && (!df || r.stand===df)
+    && (!sf || statusGruppe(r.status)===sf)
+    && (!q || (r.maschine||"").toLowerCase().includes(q) || (r.maschinen_id||"").toLowerCase().includes(q)));
+  const PRIO = {akut:0, rot:1, orange:2, gruen:3, grau:4};   // rote Maschinen zuerst -> Abarbeitung priorisieren
+  rows = rows.slice().sort((a,b)=>{
+    if(sortBy==="maschine") return String(a.maschine||"").localeCompare(String(b.maschine||""),"de",{numeric:true});
+    if(sortBy==="datum") return String(b.stand||"").localeCompare(String(a.stand||""));   // neueste Begehung zuerst
+    const na=(PRIO[ampelKlasse(a.status)]==null?9:PRIO[ampelKlasse(a.status)]);
+    const nb=(PRIO[ampelKlasse(b.status)]==null?9:PRIO[ampelKlasse(b.status)]);
+    if(na!==nb) return na-nb;
+    return (((b.status&&b.status.maxRisiko)||0) - ((a.status&&a.status.maxRisiko)||0));
+  });
   tb.innerHTML = rows.length ? rows.map(r => `<tr>
       <td><span class="ampel ${ampelKlasse(r.status)}" title="${esc(ampelTitel(r.status))}"></span></td>
-      <td>${esc(r.maschine)}</td><td>${esc(r.maschinentyp||"–")}</td>
+      <td>${esc(r.maschine)}</td><td>${esc(r.maschinentyp||"–")}</td><td>${esc(r.stand||"–")}</td>
       <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}</td>
-    </tr>`).join("") : `<tr><td colspan="4" class="leer">keine Anlagen</td></tr>`;
+    </tr>`).join("") : `<tr><td colspan="5" class="leer">keine Anlagen</td></tr>`;
   const z=$("#anlagenZaehler"); if(z) z.textContent = rows.length + " von " + anlagen().length + " Anlagen";
 }
 
 function docZeile(r){
   const oeffnen = (r.doc_typ==="link" && r.url)
-    ? `<a class="doc-open" href="${esc(r.url)}" target="_blank" rel="noopener">Öffnen ↗</a>`
+    ? `<a class="doc-open" href="${esc(r.url)}" target="_blank" rel="noopener">Öffnen</a>`
     : `<a class="doc-open" href="${viewerUrl(r.doc_typ, r.storage_path, r.titel)}" target="_blank" rel="noopener">Öffnen</a>`;
-  const fmt = {html:"Dokument", pdf:"PDF", link:"Extern"}[r.doc_typ] || "Dokument";
+  const fmt = {html:"Dokument", pdf:"PDF", link:"Online"}[r.doc_typ] || "Dokument";
   return `<tr><td>${esc(r.titel||"Dokument")}</td><td class="tspalte">${fmt}</td>`
     + `<td class="tspalte">${r.stand?esc(r.stand):"—"}</td><td class="doc-td">${oeffnen}</td></tr>`;
 }
@@ -180,12 +201,16 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   const sec = document.createElement("section"); sec.className = "sektion";
   if(kat==="anlagen"){
     const typen = [...new Set(anlagen().map(r=>r.maschinentyp).filter(Boolean))].sort();
+    const daten = [...new Set(anlagen().map(r=>r.stand).filter(Boolean))].sort().reverse();
     sec.innerHTML = `<div class="sek-kopf"><h2>${label}</h2><span class="zaehler" id="anlagenZaehler"></span></div>
       <div class="toolbar">
         <input type="search" id="suche" placeholder="Maschine suchen …">
         <select id="typFilter"><option value="">Alle Maschinentypen</option>${typen.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>
+        <select id="datumFilter"><option value="">Alle Begehungen</option>${daten.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("")}</select>
+        <select id="statusFilter"><option value="">Alle Status</option><option value="gefahr">Gefahr</option><option value="besorgnis">Besorgnis</option><option value="akzeptanz">Akzeptanz</option><option value="ohne">ohne Status</option></select>
+        <select id="sortSelect"><option value="prio">Sortierung: Priorität</option><option value="maschine">Sortierung: Maschine</option><option value="datum">Sortierung: Begehung</option></select>
       </div>
-      <table><thead><tr><th style="width:52px">Status</th><th>Maschine</th><th>Maschinentyp</th><th style="width:310px">Dokumente</th></tr></thead>
+      <table><thead><tr><th style="width:52px">Status</th><th>Maschine</th><th>Maschinentyp</th><th style="width:96px">Begehung</th><th style="width:310px">Dokumente</th></tr></thead>
       <tbody id="anlagen-liste"></tbody></table>`;
   } else {
     const kopf = zeigeHeading
@@ -245,7 +270,8 @@ function renderSektionen(){
   const sub = subs.find(s => s.kat===AKTIVE_SUB) || subs[0];
   // Bei ausgeblendeter Sub-Leiste (nur ein Sub) die Zwischenüberschrift zeigen, sonst benennt der Reiter.
   renderSektion(wrap, sub.kat, KAT_LABEL[sub.kat], subs.length <= 1);
-  const s=$("#suche"); if(s){ s.addEventListener("input", renderAnlagen); $("#typFilter").addEventListener("change", renderAnlagen); }
+  const s=$("#suche"); if(s){ s.addEventListener("input", renderAnlagen);
+    ["#typFilter","#datumFilter","#statusFilter","#sortSelect"].forEach(id=>{ const el=$(id); if(el) el.addEventListener("change", renderAnlagen); }); }
   renderAnlagen();
 }
 
