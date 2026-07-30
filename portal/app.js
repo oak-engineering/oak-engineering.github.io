@@ -141,30 +141,49 @@ function renderAdminBar(){
   $("#kundeWahl").addEventListener("change", e => { AKTIV = e.target.value; AKTIVE_DOM = null; AKTIVE_SUB = null; setKundeName(); renderTabs(); renderSubTabs(); renderSektionen(); });
 }
 
+/* Klick-Sortierung: Standard nach Priorität (rote oben). Klick auf einen Spaltenkopf setzt/dreht die
+   Sortierung (wie in Excel), Pfeil zeigt Richtung. */
+let ANL_SORT = { key:"status", dir:"asc" };
+function cmpAnlagen(a,b){
+  const s = ANL_SORT.dir==="desc" ? -1 : 1, key = ANL_SORT.key;
+  if(key==="status"){
+    const PRIO = {akut:0, rot:1, orange:2, gruen:3, grau:4};
+    const pa=(PRIO[ampelKlasse(a.status)]==null?9:PRIO[ampelKlasse(a.status)]);
+    const pb=(PRIO[ampelKlasse(b.status)]==null?9:PRIO[ampelKlasse(b.status)]);
+    if(pa!==pb) return (pa-pb)*s;
+    return (((b.status&&b.status.maxRisiko)||0) - ((a.status&&a.status.maxRisiko)||0))*s;
+  }
+  if(key==="stand") return String(a.stand||"").localeCompare(String(b.stand||""))*s;
+  const va = key==="maschinentyp" ? (a.maschinentyp||"") : (a.maschine||"");
+  const vb = key==="maschinentyp" ? (b.maschinentyp||"") : (b.maschine||"");
+  return va.localeCompare(vb,"de",{numeric:true})*s;
+}
+function thSort(key,label,width){
+  const aktiv = ANL_SORT.key===key;
+  const pfeil = aktiv ? (ANL_SORT.dir==="desc" ? " ▼" : " ▲") : " ↕";
+  return `<th class="th-sort${aktiv?" aktiv":""}" data-sort="${key}"`
+    + ` style="cursor:pointer;user-select:none${width?";width:"+width:""}" title="Sortieren (klicken)">`
+    + `${label}<span class="sort-pfeil" style="opacity:.55;font-size:11px">${pfeil}</span></th>`;
+}
 function renderAnlagen(){
-  const tb = $("#anlagen-liste"); if(!tb) return;
+  const tab = $("#anlagen-tabelle"); if(!tab) return;
   const q = ($("#suche")?.value||"").toLowerCase().trim();
   const tf = $("#typFilter")?.value||"";
   const df = $("#datumFilter")?.value||"";
   const sf = $("#statusFilter")?.value||"";
-  const sortBy = $("#sortSelect")?.value||"prio";
-  let rows = anlagen().filter(r => (!tf || r.maschinentyp===tf) && (!df || r.stand===df)
+  const rows = anlagen().filter(r => (!tf || r.maschinentyp===tf) && (!df || r.stand===df)
     && (!sf || statusGruppe(r.status)===sf)
-    && (!q || (r.maschine||"").toLowerCase().includes(q) || (r.maschinen_id||"").toLowerCase().includes(q)));
-  const PRIO = {akut:0, rot:1, orange:2, gruen:3, grau:4};   // rote Maschinen zuerst -> Abarbeitung priorisieren
-  rows = rows.slice().sort((a,b)=>{
-    if(sortBy==="maschine") return String(a.maschine||"").localeCompare(String(b.maschine||""),"de",{numeric:true});
-    if(sortBy==="datum") return String(b.stand||"").localeCompare(String(a.stand||""));   // neueste Begehung zuerst
-    const na=(PRIO[ampelKlasse(a.status)]==null?9:PRIO[ampelKlasse(a.status)]);
-    const nb=(PRIO[ampelKlasse(b.status)]==null?9:PRIO[ampelKlasse(b.status)]);
-    if(na!==nb) return na-nb;
-    return (((b.status&&b.status.maxRisiko)||0) - ((a.status&&a.status.maxRisiko)||0));
-  });
-  tb.innerHTML = rows.length ? rows.map(r => `<tr>
+    && (!q || (r.maschine||"").toLowerCase().includes(q) || (r.maschinen_id||"").toLowerCase().includes(q)))
+    .slice().sort(cmpAnlagen);
+  const kopf = `<thead><tr>${thSort("status","Status","78px")}${thSort("maschine","Maschine")}`
+    + `${thSort("maschinentyp","Maschinentyp")}${thSort("stand","Begehung","112px")}`
+    + `<th style="width:300px">Dokumente</th></tr></thead>`;
+  const koerper = `<tbody>${rows.length ? rows.map(r => `<tr>
       <td><span class="ampel ${ampelKlasse(r.status)}" title="${esc(ampelTitel(r.status))}"></span></td>
       <td>${esc(r.maschine)}</td><td>${esc(r.maschinentyp||"–")}</td><td>${esc(r.stand||"–")}</td>
       <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}</td>
-    </tr>`).join("") : `<tr><td colspan="5" class="leer">keine Anlagen</td></tr>`;
+    </tr>`).join("") : `<tr><td colspan="5" class="leer">keine Anlagen</td></tr>`}</tbody>`;
+  tab.innerHTML = kopf + koerper;
   const z=$("#anlagenZaehler"); if(z) z.textContent = rows.length + " von " + anlagen().length + " Anlagen";
 }
 
@@ -208,10 +227,8 @@ function renderSektion(wrap, kat, label, zeigeHeading){
         <select id="typFilter"><option value="">Alle Maschinentypen</option>${typen.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>
         <select id="datumFilter"><option value="">Alle Begehungen</option>${daten.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("")}</select>
         <select id="statusFilter"><option value="">Alle Status</option><option value="gefahr">Gefahr</option><option value="besorgnis">Besorgnis</option><option value="akzeptanz">Akzeptanz</option><option value="ohne">ohne Status</option></select>
-        <select id="sortSelect"><option value="prio">Sortierung: Priorität</option><option value="maschine">Sortierung: Maschine</option><option value="datum">Sortierung: Begehung</option></select>
       </div>
-      <table><thead><tr><th style="width:52px">Status</th><th>Maschine</th><th>Maschinentyp</th><th style="width:96px">Begehung</th><th style="width:310px">Dokumente</th></tr></thead>
-      <tbody id="anlagen-liste"></tbody></table>`;
+      <table id="anlagen-tabelle"></table>`;
   } else {
     const kopf = zeigeHeading
       ? `<div class="sek-kopf"><h2>${label}</h2><span class="zaehler">${rows.length} ${rows.length===1?"Dokument":"Dokumente"}</span></div>`
@@ -271,7 +288,14 @@ function renderSektionen(){
   // Bei ausgeblendeter Sub-Leiste (nur ein Sub) die Zwischenüberschrift zeigen, sonst benennt der Reiter.
   renderSektion(wrap, sub.kat, KAT_LABEL[sub.kat], subs.length <= 1);
   const s=$("#suche"); if(s){ s.addEventListener("input", renderAnlagen);
-    ["#typFilter","#datumFilter","#statusFilter","#sortSelect"].forEach(id=>{ const el=$(id); if(el) el.addEventListener("change", renderAnlagen); }); }
+    ["#typFilter","#datumFilter","#statusFilter"].forEach(id=>{ const el=$(id); if(el) el.addEventListener("change", renderAnlagen); });
+    const tab=$("#anlagen-tabelle"); if(tab) tab.addEventListener("click", ev=>{
+      const th=ev.target.closest(".th-sort"); if(!th) return;
+      const k=th.dataset.sort;
+      if(ANL_SORT.key===k) ANL_SORT.dir=(ANL_SORT.dir==="asc"?"desc":"asc");
+      else { ANL_SORT.key=k; ANL_SORT.dir=(k==="stand"?"desc":"asc"); }   // Datum: neueste zuerst
+      renderAnlagen();
+    }); }
   renderAnlagen();
 }
 
@@ -319,19 +343,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("#pw1").value=""; $("#pw2").value=""; pwMsg.textContent=""; pwMsg.className="pw-msg";
     pwDlg.showModal();
   });
-  $("#pwSave").addEventListener("click", async ()=>{
+  $("#pwCancel").addEventListener("click", ()=> pwDlg.close());
+  $("#pwForm").addEventListener("submit", async (ev)=>{
+    ev.preventDefault();   // ohne das schloss das Dialog-Formular bei Enter still, ohne zu speichern ("nichts passiert")
     const a=$("#pw1").value, b=$("#pw2").value;
     pwMsg.className="pw-msg";
     if(a.length<8){ pwMsg.textContent="Mindestens 8 Zeichen."; pwMsg.classList.add("fehler"); return; }
-    if(a!==b){ pwMsg.textContent="Die Eingaben stimmen nicht ueberein."; pwMsg.classList.add("fehler"); return; }
+    if(a!==b){ pwMsg.textContent="Die Eingaben stimmen nicht überein."; pwMsg.classList.add("fehler"); return; }
     pwMsg.textContent="Wird gespeichert …";
     try{
       await passwortAendern(a);
-      pwMsg.textContent="Passwort geaendert."; pwMsg.classList.add("ok");
-      setTimeout(()=>pwDlg.close(), 1200);
+      pwMsg.textContent="Passwort geändert – gilt ab sofort."; pwMsg.classList.add("ok");
+      setTimeout(()=>pwDlg.close(), 1400);
     }catch(err){
       pwMsg.textContent = (err && err.message==="AUTH") ? "Sitzung abgelaufen – bitte neu anmelden."
-                                                        : ("Fehlgeschlagen: " + (err.message||err));
+                                                        : ("Fehlgeschlagen: " + (err && err.message || err));
       pwMsg.classList.add("fehler");
     }
   });
