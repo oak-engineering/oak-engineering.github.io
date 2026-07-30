@@ -197,7 +197,7 @@ function renderAnlagen(){
     .slice().sort(cmpAnlagen);
   const kopf = `<thead><tr>${thSort("status","Status","78px")}${thSort("maschine","Maschine")}`
     + `${thSort("maschinentyp","Maschinentyp")}${thSort("stand","Begehung","112px")}`
-    + `<th style="width:260px">Dokumente</th>`
+    + `<th style="width:330px">Dokumente</th>`
     + (ADMIN ? `<th style="width:78px;text-align:center" title="Freigabe durch die Sicherheitsfachkraft (Dokumente final geprüft & gültig)">Freigabe</th>` : "")
     + `</tr></thead>`;
   const koerper = `<tbody>${rows.length ? rows.map(r => {
