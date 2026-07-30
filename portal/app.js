@@ -197,17 +197,18 @@ function renderAnlagen(){
     .slice().sort(cmpAnlagen);
   const kopf = `<thead><tr>${thSort("status","Status","78px")}${thSort("maschine","Maschine")}`
     + `${thSort("maschinentyp","Maschinentyp")}${thSort("stand","Begehung","112px")}`
-    + `<th style="width:300px">Dokumente</th></tr></thead>`;
+    + `<th style="width:260px">Dokumente</th>`
+    + (ADMIN ? `<th style="width:78px;text-align:center" title="Freigabe durch die Sicherheitsfachkraft (Dokumente final geprüft & gültig)">Freigabe</th>` : "")
+    + `</tr></thead>`;
   const koerper = `<tbody>${rows.length ? rows.map(r => {
-      const fgCheck = ADMIN ? `<label style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;`
-        + `font-size:11px;color:#1b4332;white-space:nowrap;cursor:pointer" title="Freigabe durch die Sicherheitsfachkraft">`
-        + `<input type="checkbox" class="fg-check" data-mid="${esc(r.maschinen_id||"")}" data-slug="${esc(r.kunde_slug||"")}"`
-        + `${FREIGABE[fgKey(r)]?" checked":""}> Freigabe SiFa</label>` : "";
+      const fgCell = ADMIN ? `<td class="fg-zelle"><input type="checkbox" class="fg-check" `
+        + `data-mid="${esc(r.maschinen_id||"")}" data-slug="${esc(r.kunde_slug||"")}"${FREIGABE[fgKey(r)]?" checked":""} `
+        + `title="Freigabe durch die Sicherheitsfachkraft"></td>` : "";
       return `<tr>
       <td><span class="ampel ${ampelKlasse(r.status)}" title="${esc(ampelTitel(r.status))}"></span></td>
       <td>${esc(r.maschine)}${statusBadge(r, neuestesDatum)}</td><td>${esc(r.maschinentyp||"–")}</td><td>${esc(r.stand||"–")}</td>
-      <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}${fgCheck}</td>
-    </tr>`; }).join("") : `<tr><td colspan="5" class="leer">keine Anlagen</td></tr>`}</tbody>`;
+      <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}</td>${fgCell}
+    </tr>`; }).join("") : `<tr><td colspan="${ADMIN?6:5}" class="leer">keine Anlagen</td></tr>`}</tbody>`;
   tab.innerHTML = kopf + koerper;
   const z=$("#anlagenZaehler"); if(z) z.textContent = rows.length + " von " + anlagen().length + " Anlagen";
 }
@@ -253,7 +254,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
         <select id="datumFilter"><option value="">Alle Begehungen</option>${daten.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("")}</select>
         <select id="statusFilter"><option value="">Alle Status</option><option value="gefahr">Gefahr</option><option value="besorgnis">Besorgnis</option><option value="akzeptanz">Akzeptanz</option><option value="ohne">ohne Status</option></select>
       </div>
-      <table id="anlagen-tabelle"></table>`;
+      <div class="tabelle-wrap"><table id="anlagen-tabelle"></table></div>`;
   } else {
     const kopf = zeigeHeading
       ? `<div class="sek-kopf"><h2>${label}</h2><span class="zaehler">${rows.length} ${rows.length===1?"Dokument":"Dokumente"}</span></div>`

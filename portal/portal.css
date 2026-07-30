@@ -63,6 +63,12 @@ tbody tr:hover{background:#f6faf8}
   padding:5px 10px;margin:2px 3px 2px 0;color:var(--gruen);background:#fff;text-decoration:none;text-align:center;}
 .docs a:hover{background:var(--akzent);border-color:var(--hellgruen);}
 .leer{color:var(--grau);font-style:italic;padding:22px;text-align:center;}
+/* SiFa-Freigabe: eigene schmale Spalte, kompaktes Kästchen (kein Umbruch → Zeilenhöhe bleibt) */
+.fg-zelle{text-align:center;}
+.fg-check{width:17px;height:17px;cursor:pointer;accent-color:var(--gruen);vertical-align:middle;margin:0;}
+/* Anlagen-Tabelle auf schmalen Screens horizontal scrollbar statt gequetscht */
+.tabelle-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+@media(max-width:720px){ #anlagen-tabelle{min-width:680px;} }
 .fuss{color:var(--grau);font-size:11.5px;text-align:center;margin:26px 0 40px;line-height:1.6;}
 /* Kategorie-Sektionen + generische Dokumentkarten */
 .titelzeile .unter{margin-top:4px}
