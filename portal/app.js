@@ -124,6 +124,25 @@ let ALLE = [], ADMIN = false, AKTIV = null;
 function sichtbar(){ return AKTIV ? ALLE.filter(r => r.kunde_slug===AKTIV) : ALLE; }
 function anlagen(){ return sichtbar().filter(r => r.kategorie==="anlagen"); }
 
+/* SiFa-Freigabe + „neu"-Badge (Statusanzeigen der Anlagen-Uebersicht). FREIGABE aus der Tabelle
+   portal_freigabe (ueberlebt den Katalog-Neuaufbau), keyed kunde_slug|maschinen_id. */
+let FREIGABE = {}, ADMIN_NAME = "";
+function fgKey(r){ return (r.kunde_slug||"") + "|" + (r.maschinen_id||""); }
+function statusBadge(r, neuestesDatum){
+  const fg = FREIGABE[fgKey(r)];
+  if(fg){
+    const dt = (fg.freigegeben_am||"").slice(0,10).split("-").reverse().join(".");
+    return `<span style="display:inline-block;margin-left:7px;padding:1px 7px;border-radius:10px;font-size:11px;`
+      + `font-weight:600;background:#d8f3dc;color:#1b4332;border:1px solid #52b788" `
+      + `title="Freigegeben durch die Sicherheitsfachkraft${fg.freigegeben_von?' ('+esc(fg.freigegeben_von)+')':''}">✓ freigegeben · ${dt}</span>`;
+  }
+  if(r.stand && r.stand===neuestesDatum){
+    return `<span style="display:inline-block;margin-left:7px;padding:1px 7px;border-radius:10px;font-size:11px;`
+      + `font-weight:700;background:#2d6a4f;color:#fff" title="Neu aus der letzten Begehung">neu</span>`;
+  }
+  return "";
+}
+
 function setKundeName(){
   const r = AKTIV ? ALLE.find(x => x.kunde_slug===AKTIV) : ALLE[0];
   $("#kundeName").textContent = (r && r.kunde) || "";
@@ -171,6 +190,7 @@ function renderAnlagen(){
   const tf = $("#typFilter")?.value||"";
   const df = $("#datumFilter")?.value||"";
   const sf = $("#statusFilter")?.value||"";
+  const neuestesDatum = anlagen().map(r=>r.stand).filter(Boolean).sort().slice(-1)[0] || "";
   const rows = anlagen().filter(r => (!tf || r.maschinentyp===tf) && (!df || r.stand===df)
     && (!sf || statusGruppe(r.status)===sf)
     && (!q || (r.maschine||"").toLowerCase().includes(q) || (r.maschinen_id||"").toLowerCase().includes(q)))
@@ -178,11 +198,16 @@ function renderAnlagen(){
   const kopf = `<thead><tr>${thSort("status","Status","78px")}${thSort("maschine","Maschine")}`
     + `${thSort("maschinentyp","Maschinentyp")}${thSort("stand","Begehung","112px")}`
     + `<th style="width:300px">Dokumente</th></tr></thead>`;
-  const koerper = `<tbody>${rows.length ? rows.map(r => `<tr>
+  const koerper = `<tbody>${rows.length ? rows.map(r => {
+      const fgCheck = ADMIN ? `<label style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;`
+        + `font-size:11px;color:#1b4332;white-space:nowrap;cursor:pointer" title="Freigabe durch die Sicherheitsfachkraft">`
+        + `<input type="checkbox" class="fg-check" data-mid="${esc(r.maschinen_id||"")}" data-slug="${esc(r.kunde_slug||"")}"`
+        + `${FREIGABE[fgKey(r)]?" checked":""}> Freigabe SiFa</label>` : "";
+      return `<tr>
       <td><span class="ampel ${ampelKlasse(r.status)}" title="${esc(ampelTitel(r.status))}"></span></td>
-      <td>${esc(r.maschine)}</td><td>${esc(r.maschinentyp||"–")}</td><td>${esc(r.stand||"–")}</td>
-      <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}</td>
-    </tr>`).join("") : `<tr><td colspan="5" class="leer">keine Anlagen</td></tr>`}</tbody>`;
+      <td>${esc(r.maschine)}${statusBadge(r, neuestesDatum)}</td><td>${esc(r.maschinentyp||"–")}</td><td>${esc(r.stand||"–")}</td>
+      <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}${fgCheck}</td>
+    </tr>`; }).join("") : `<tr><td colspan="5" class="leer">keine Anlagen</td></tr>`}</tbody>`;
   tab.innerHTML = kopf + koerper;
   const z=$("#anlagenZaehler"); if(z) z.textContent = rows.length + " von " + anlagen().length + " Anlagen";
 }
@@ -289,13 +314,32 @@ function renderSektionen(){
   renderSektion(wrap, sub.kat, KAT_LABEL[sub.kat], subs.length <= 1);
   const s=$("#suche"); if(s){ s.addEventListener("input", renderAnlagen);
     ["#typFilter","#datumFilter","#statusFilter"].forEach(id=>{ const el=$(id); if(el) el.addEventListener("change", renderAnlagen); });
-    const tab=$("#anlagen-tabelle"); if(tab) tab.addEventListener("click", ev=>{
-      const th=ev.target.closest(".th-sort"); if(!th) return;
-      const k=th.dataset.sort;
-      if(ANL_SORT.key===k) ANL_SORT.dir=(ANL_SORT.dir==="asc"?"desc":"asc");
-      else { ANL_SORT.key=k; ANL_SORT.dir=(k==="stand"?"desc":"asc"); }   // Datum: neueste zuerst
-      renderAnlagen();
-    }); }
+    const tab=$("#anlagen-tabelle"); if(tab){
+      tab.addEventListener("click", ev=>{
+        const th=ev.target.closest(".th-sort"); if(!th) return;
+        const k=th.dataset.sort;
+        if(ANL_SORT.key===k) ANL_SORT.dir=(ANL_SORT.dir==="asc"?"desc":"asc");
+        else { ANL_SORT.key=k; ANL_SORT.dir=(k==="stand"?"desc":"asc"); }   // Datum: neueste zuerst
+        renderAnlagen();
+      });
+      tab.addEventListener("change", async ev=>{     // SiFa-Freigabe (nur Admin) togglen
+        const cb=ev.target.closest(".fg-check"); if(!cb) return;
+        const mid=cb.dataset.mid, slug=cb.dataset.slug, key=slug+"|"+mid, jetzt=new Date().toISOString();
+        cb.disabled=true;
+        try{
+          if(cb.checked){
+            await apiSend("POST","/rest/v1/portal_freigabe?on_conflict=kunde_slug,maschinen_id",
+              [{kunde_slug:slug, maschinen_id:mid, freigegeben:true, freigegeben_am:jetzt, freigegeben_von:ADMIN_NAME, updated_at:jetzt}],
+              "resolution=merge-duplicates,return=minimal");
+            FREIGABE[key]={freigegeben_am:jetzt, freigegeben_von:ADMIN_NAME};
+          } else {
+            await apiSend("DELETE","/rest/v1/portal_freigabe?kunde_slug=eq."+encodeURIComponent(slug)+"&maschinen_id=eq."+encodeURIComponent(mid), null, "return=minimal");
+            delete FREIGABE[key];
+          }
+          renderAnlagen();
+        }catch(e){ cb.checked=!cb.checked; cb.disabled=false; alert("Freigabe konnte nicht gespeichert werden: "+((e&&e.message)||e)); }
+      });
+    } }
   renderAnlagen();
 }
 
@@ -305,12 +349,17 @@ async function ladePortal(){
   try{
     let me = [];
     if(s && s.user && s.user.id)
-      me = await apiGet("/rest/v1/portal_mitglied?select=rolle,kunde,kunde_slug&user_id=eq."
+      me = await apiGet("/rest/v1/portal_mitglied?select=rolle,kunde,kunde_slug,name&user_id=eq."
         + encodeURIComponent(s.user.id), false);
     ADMIN = !!(me && me[0] && me[0].rolle === "admin");
+    ADMIN_NAME = (me && me[0] && me[0].name) || (s && s.user && s.user.email) || "OAK engineering";
 
     const rows = await apiGet("/rest/v1/portal_dokumente?select=*&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc", false);
     ALLE = rows || [];
+    try{
+      const fgr = await apiGet("/rest/v1/portal_freigabe?select=kunde_slug,maschinen_id,freigegeben_am,freigegeben_von&freigegeben=eq.true", false);
+      FREIGABE = {}; (fgr||[]).forEach(x=> FREIGABE[(x.kunde_slug||"")+"|"+(x.maschinen_id||"")]=x);
+    }catch(e){ FREIGABE = {}; }
     AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null) : null;
     AKTIVE_DOM = null; AKTIVE_SUB = null;
     setKundeName();
