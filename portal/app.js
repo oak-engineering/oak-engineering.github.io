@@ -123,7 +123,16 @@ let ALLE = [], ADMIN = false, AKTIV = null;
 /* Admin sieht alle Mandanten -> AKTIV filtert auf den gewaehlten Kunden.
    Normale Kunden: AKTIV bleibt null, RLS liefert ohnehin nur den eigenen Mandanten. */
 function sichtbar(){ return AKTIV ? ALLE.filter(r => r.kunde_slug===AKTIV) : ALLE; }
-function anlagen(){ return sichtbar().filter(r => r.kategorie==="anlagen"); }
+/* Anlagen UND allgemeine GBU laufen ueber dieselbe Tabelle. Grund (Nikolai 06.08.2026):
+   Eine allgemeine GBU ist derselbe Dokumentensatz wie bei einer Maschine (GBU · BA · Mängel ·
+   Protokoll) und braucht denselben Freigabe-Haken. Vorher fiel `allg-gbu` in die einfache
+   Dokumentliste - dort gab es weder Doc-Buttons noch Freigabe, und jeder Dokumenttyp stand
+   als eigene Zeile. */
+const TABELLEN_KATEGORIEN = ["anlagen", "allg-gbu"];
+/* Die Tabelle zeigt immer NUR die gerade geoeffnete Kategorie - sonst staenden die allgemeinen
+   GBU zusaetzlich unter "Anlagen". */
+function tabellenKat(){ return TABELLEN_KATEGORIEN.includes(AKTIVE_SUB) ? AKTIVE_SUB : "anlagen"; }
+function anlagen(){ return sichtbar().filter(r => r.kategorie === tabellenKat()); }
 
 /* SiFa-Freigabe + „neu"-Badge (Statusanzeigen der Anlagen-Uebersicht). FREIGABE aus der Tabelle
    portal_freigabe (ueberlebt den Katalog-Neuaufbau), keyed kunde_slug|maschinen_id. */
@@ -196,8 +205,9 @@ function renderAnlagen(){
     && (!sf || statusGruppe(r.status)===sf)
     && (!q || (r.maschine||"").toLowerCase().includes(q) || (r.maschinen_id||"").toLowerCase().includes(q)))
     .slice().sort(cmpAnlagen);
-  const kopf = `<thead><tr>${thSort("status","Status","78px")}${thSort("maschine","Maschine")}`
-    + `${thSort("maschinentyp","Maschinentyp")}${thSort("stand","Begehung","112px")}`
+  const istAllg = tabellenKat()==="allg-gbu";
+  const kopf = `<thead><tr>${thSort("status","Status","78px")}${thSort("maschine", istAllg?"Thema":"Maschine")}`
+    + `${thSort("maschinentyp", istAllg?"Art":"Maschinentyp")}${thSort("stand","Begehung","112px")}`
     + `<th style="width:330px">Dokumente</th>`
     + (ADMIN ? `<th style="width:78px;text-align:center" title="Freigabe durch die Sicherheitsfachkraft (Dokumente final geprüft & gültig)">Freigabe</th>` : "")
     + `</tr></thead>`;
@@ -211,7 +221,7 @@ function renderAnlagen(){
       <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}</td>${fgCell}
     </tr>`; }).join("") : `<tr><td colspan="${ADMIN?6:5}" class="leer">keine Anlagen</td></tr>`}</tbody>`;
   tab.innerHTML = kopf + koerper;
-  const z=$("#anlagenZaehler"); if(z) z.textContent = rows.length + " von " + anlagen().length + " Anlagen";
+  const z=$("#anlagenZaehler"); if(z) z.textContent = rows.length + " von " + anlagen().length + (istAllg ? " GBU" : " Anlagen");
 }
 
 function docZeile(r){
@@ -245,13 +255,13 @@ function renderSektion(wrap, kat, label, zeigeHeading){
     wrap.appendChild(leer); return;
   }
   const sec = document.createElement("section"); sec.className = "sektion";
-  if(kat==="anlagen"){
+  if(TABELLEN_KATEGORIEN.includes(kat)){
     const typen = [...new Set(anlagen().map(r=>r.maschinentyp).filter(Boolean))].sort();
     const daten = [...new Set(anlagen().map(r=>r.stand).filter(Boolean))].sort().reverse();
     sec.innerHTML = `<div class="sek-kopf"><h2>${label}</h2><span class="zaehler" id="anlagenZaehler"></span></div>
       <div class="toolbar">
-        <input type="search" id="suche" placeholder="Maschine suchen …">
-        <select id="typFilter"><option value="">Alle Maschinentypen</option>${typen.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>
+        <input type="search" id="suche" placeholder="${kat==="allg-gbu"?"Thema suchen …":"Maschine suchen …"}">
+        <select id="typFilter"${typen.length?"":" hidden"}><option value="">Alle Maschinentypen</option>${typen.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join("")}</select>
         <select id="datumFilter"><option value="">Alle Begehungen</option>${daten.map(d=>`<option value="${esc(d)}">${esc(d)}</option>`).join("")}</select>
         <select id="statusFilter"><option value="">Alle Status</option><option value="gefahr">Gefahr</option><option value="besorgnis">Besorgnis</option><option value="akzeptanz">Akzeptanz</option><option value="ohne">ohne Status</option></select>
       </div>
