@@ -153,7 +153,7 @@
       Beurteilung der Gefährdungen steht in der Gefährdungsbeurteilung (GBU), auf die je Position
       verwiesen wird; dort finden sich auch die Belegfotos.
       Nicht enthalten sind Punkte, die durch Ordnung, Reinigung oder Verhalten behoben werden –
-      sie sind Maßnahme in der GBU, aber kein bezifferbarer Mangel.<br>
+      sie sind Maßnahme in der GBU, aber kein bezifferbarer Mangel<span id="raus-hinweis"></span>.<br>
       Beträge sind <b>Richtwerte netto</b> (zzgl. MwSt.) und umfassen <b>Material und Arbeitszeit</b>
       (Planung, Montage, Abnahme) – kein verbindliches Angebot.
     </div>
@@ -173,8 +173,14 @@
 "use strict";
 const DOC=(()=>{try{return JSON.parse(document.getElementById("doc-data").textContent)||{};}catch(e){return {};}})();
 const META=DOC.meta||{};
-const HAT_DATEN=!!(DOC.maengel && DOC.maengel.length);
-const MAENGEL=HAT_DATEN?DOC.maengel:[
+/* NUR bezifferbare Beschaffenheitsmaengel (Vorgabe Nikolai 06.08.2026): Diese Liste dient der
+   Bezifferung des Nachruestbedarfs. Was durch Ordnung, Reinigung oder Verhalten behoben wird
+   (art="betrieb"), ist Massnahme in der GBU - hier waere es ein Posten ohne Betrag und wuerde
+   die Aufstellung gegenueber dem Gutachter verwaessern. Der Datensatz behaelt beides. */
+const ALLE_M = (DOC.maengel||[]);
+const RAUS = ALLE_M.filter(m => m && m.art==="betrieb").length;
+const HAT_DATEN=!!ALLE_M.filter(m => !m || m.art!=="betrieb").length;
+const MAENGEL=HAT_DATEN?ALLE_M.filter(m => !m || m.art!=="betrieb"):[
   {nr:1,label:"⟪Mangel-Kurzbeschreibung⟫",pp:"⟪Prüfpunkt · Norm⟫",schwere:"s",kosten:null},
   {nr:2,label:"⟪Mangel-Kurzbeschreibung⟫",pp:"⟪Prüfpunkt · Norm⟫",schwere:"g",kosten:null}
 ];
@@ -298,6 +304,10 @@ function renderKpi(){
     state.satz = si.value===""?0:Number(si.value);
     speichereState(); aktualisiereSumme(); renderKpi();
   });
+})();
+(function(){
+  const e=document.getElementById("raus-hinweis");
+  if(e && RAUS) e.textContent = " (hier: " + RAUS + " Punkt" + (RAUS===1?"":"e") + ")";
 })();
 renderTabelle();
 /* ---- In Datei speichern (File System Access; kein Export/Reimport) ---- */
