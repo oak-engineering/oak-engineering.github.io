@@ -27,6 +27,7 @@
 
   .kopf{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 26px;border-bottom:4px solid var(--gruen);background:linear-gradient(180deg,#fff,#f6faf8);}
   .kopf img{height:50px;width:auto;object-fit:contain;}
+  /* Kundenlogo bewusst deutlich groesser als das OAK-Logo (Wunsch Nikolai). */
   .kopf img.kundenlogo{height:96px;max-width:260px;}
   .kopf .mitte{text-align:center;flex:1;}
   .kopf .mitte .doktyp{font-family:"Jost";font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gruen);font-weight:600;}
@@ -95,7 +96,7 @@
 <body>
 <!-- Aenderungen werden hier gehalten und mit "In Datei speichern" in DIESE Datei geschrieben
      (File System Access API) - kein Export, kein Reinkopieren. -->
-<script id="oak-state" type="application/json">null</script>
+<script id="oak-state" type="application/json"></script>
 <datalist id="einheiten">
   <option value="lfd. m"><option value="Stk"><option value="pauschal">
   <option value="m²"><option value="h"><option value="Satz">
@@ -103,7 +104,7 @@
 <div class="toolbar">
   <button class="tb nur-lokal" id="btnSave" title="Schreibt die Änderungen in diese Datei zurück">💾 In Datei speichern</button>
   <button class="tb" onclick="window.print()">📄 PDF exportieren</button>
-  <span class="tb-hint">Geschätzte Kosten (netto) editierbar · Schwere durch Antippen umschalten</span>
+  <label class="tb-hint" style="margin-left:auto">Stundensatz <input id="satzIn" type="number" step="5" min="0" style="width:66px;padding:3px 5px;border-radius:6px;border:1px solid #4d7a66;background:#0f2a1f;color:#eaf5ef;font:inherit"> €/h</label><span class="tb-hint" style="margin-left:10px">Material und Stunden editierbar · netto</span>
 </div>
 <div class="blatt">
   <div class="kopf">
@@ -126,7 +127,7 @@
 
     <div class="dash">
       <div class="kpi"><div class="n" id="kpi-n">⟪n⟫</div><div class="l">Mängel</div></div>
-      <div class="kpi s"><div class="n" id="kpi-s">⟪n⟫</div><div class="l">davon im Gefahrbereich</div></div>
+      <div class="kpi s"><div class="n" id="kpi-s">⟪n⟫</div><div class="l">davon mit Arbeitszeit</div></div>
       <div class="kpi sum"><div class="n" id="kpi-sum">⟪Summe⟫ €</div><div class="l">geschätzte Behebung gesamt
         <span id="kpi-sum-hint" class="sum-hint"></span></div></div>
     </div>
@@ -134,28 +135,27 @@
     <div class="sektion-titel">Festgestellte Mängel &amp; geschätzte Behebungskosten</div>
     <table class="maeng">
       <thead>
-        <tr><th>Nr.</th><th>Mangel (Kurzbeschreibung)</th><th style="width:120px;">Schwere</th><th style="width:170px;text-align:right;">Geschätzte Kosten</th></tr>
+        <tr><th>Nr.</th><th>Mangel (was fehlt / ist mangelhaft)</th><th style="width:104px;">GBU-Bezug</th><th style="width:96px;text-align:right;">Material</th><th style="width:88px;text-align:right;">Aufwand</th><th style="width:118px;text-align:right;">Summe netto</th></tr>
       </thead>
       <tbody id="m-tbody">
         <!-- Je Mangel eine Zeile. Einstufung: Akzeptanz- / Besorgnis- / Gefahrbereich / AKUTE GEFAHR.
              Kosten = grobe netto-Richtwerte. .pp = Prüfpunkt/Norm-Referenz. -->
         <tr><td class="nr">1</td>
-          <td>⟪Mangel-Kurzbeschreibung⟫<span class="pp">⟪Prüfpunkt · Norm⟫</span></td>
-          <td><span class="sw s">Gefahrbereich</span></td><td class="kosten">⟪x⟫ €</td></tr>
-        <tr><td class="nr">2</td>
-          <td>⟪Mangel-Kurzbeschreibung⟫<span class="pp">⟪Prüfpunkt · Norm⟫</span></td>
-          <td><span class="sw g">geringfügig</span></td><td class="kosten">⟪x⟫ €</td></tr>
-        <tr class="summe"><td></td><td>Gesamtsumme ⟪Maschine⟫</td><td></td><td class="kosten">⟪Summe⟫ €</td></tr>
+          <td>⟪Mangel-Kurzbeschreibung⟫<span class="pp">⟪Grundlage · Norm⟫</span></td>
+          <td>⟪GBU⟫</td><td class="kosten">⟪x⟫ €</td><td class="kosten">⟪h⟫ h</td><td class="kosten">⟪x⟫ €</td></tr>
+        <tr class="summe"><td></td><td>Gesamtsumme ⟪Maschine⟫</td><td></td><td></td><td></td><td class="kosten">⟪Summe⟫ €</td></tr>
       </tbody>
     </table>
 
     <div class="hinweis">
-      <span class="sw akut">AKUTE GEFAHR</span> Betrieb sofort einstellen, Anlage stilllegen.
-      <span class="sw s">Gefahrbereich</span> vorrangig handeln, Betrieb ohne zusätzliche Schutzmaßnahme nicht zulässig.
-      <span class="sw g">Besorgnisbereich</span> Maßnahme erforderlich, Betrieb mit Auflage möglich.
-      <span class="sw a">Akzeptanzbereich</span> im Rahmen normaler Sorgfalt. &nbsp;|&nbsp;
-      Kosten sind <b>grobe Richtwerte</b> (netto, zzgl. MwSt.) für die externe technische/organisatorische Umsetzung –
-      kein verbindliches Angebot. Erstellung von BdA, BA und Unterweisung ist in der laufenden Betreuung enthalten.
+      Diese Aufstellung beziffert den <b>Nachrüstbedarf</b>: Was fehlt oder mangelhaft ist und was die
+      Herstellung des Soll-Zustands kostet. Sie enthält bewusst <b>keine Risikobewertung</b> – die
+      Beurteilung der Gefährdungen steht in der Gefährdungsbeurteilung (GBU), auf die je Position
+      verwiesen wird; dort finden sich auch die Belegfotos.
+      Nicht enthalten sind Punkte, die durch Ordnung, Reinigung oder Verhalten behoben werden –
+      sie sind Maßnahme in der GBU, aber kein bezifferbarer Mangel.<br>
+      Beträge sind <b>Richtwerte netto</b> (zzgl. MwSt.) und umfassen <b>Material und Arbeitszeit</b>
+      (Planung, Montage, Abnahme) – kein verbindliches Angebot.
     </div>
 
     <div class="fuss" id="ml-mgl"></div>
@@ -168,7 +168,7 @@
   </div>
 </div>
 
-<script id="doc-data" type="application/json">{"_typ": "OAK-doc-data", "meta": {"mitgeltend": []}, "hazards": [], "maengel": [], "ba": {"t": {}}, "protokoll": {}}</script>
+<script id="doc-data" type="application/json">{}</script>
 <script>
 "use strict";
 const DOC=(()=>{try{return JSON.parse(document.getElementById("doc-data").textContent)||{};}catch(e){return {};}})();
@@ -203,20 +203,30 @@ const tb=document.getElementById("m-tbody");
 const state = (function(){
   const el=document.getElementById("oak-state");
   try{ const st=JSON.parse((el&&el.textContent)||"null"); if(st&&Array.isArray(st.m)) return st; }catch(e){}
-  return { m: MAENGEL.map((m,k)=>({
+  return { satz: (DOC.stundensatz!=null?Number(DOC.stundensatz):85), m: MAENGEL.map((m,k)=>({
     nr: m.nr!=null?m.nr:(k+1), label:m.label||"", pp:m.pp||"",
-    // Vier Stufen: a/g/s/akut. Altwerte werden gemappt; Unbekanntes landet auf "g"
-    // (Besorgnisbereich) - aber NIE wird "akut" stillschweigend heruntergestuft.
+    // schwere bleibt im Datensatz (Portal-Ampel und GBU greifen darauf zu), wird hier aber
+    // NICHT mehr angezeigt: Die Maengelliste beziffert, sie bewertet nicht (Vorgabe 06.08.2026).
     schwere:({s:"s",schwerwiegend:"s",g:"g","geringfügig":"g",a:"a",akut:"akut"}[m.schwere]||"g"),
-    // Ein geschaetzter Gesamtbetrag (netto) je Mangel. Back-compat: altes menge*preis einmalig verrechnen.
-    kosten:(m.kosten!=null&&m.kosten!=="")?Number(m.kosten)
-           :((m.preis!=null&&m.preis!=="")?Math.round(Number(m.preis)*Number(m.menge!=null&&m.menge!==""?m.menge:1)):null)
+    // Verweis auf die Gefaehrdung in der GBU - dort liegen Begruendung und Belegfoto.
+    gbu: m.gbu||"",
+    // Kosten = Material + Arbeitszeit. Ein fehlender Schutzzaun kostet nicht nur das Gitter,
+    // sondern Planung, Anpassung, Montage und Abnahme (Vorgabe Nikolai 06.08.2026).
+    material:(m.material!=null&&m.material!=="")?Number(m.material)
+             :((m.kosten!=null&&m.kosten!=="")?Number(m.kosten)      // Altbestand: Pauschale = Material
+             :((m.preis!=null&&m.preis!=="")?Math.round(Number(m.preis)*Number(m.menge!=null&&m.menge!==""?m.menge:1)):null)),
+    stunden:(m.stunden!=null&&m.stunden!=="")?Number(m.stunden):null
   })) };
 })();
 function zeilenSumme(m){
-  // Ein geschaetzter Gesamtbetrag (netto) je Mangel. null = bewusst offen (kein 0 erfinden).
-  if(m.kosten==null||m.kosten==="") return null;
-  const v=Number(m.kosten); return isFinite(v)?Math.round(v):null;
+  // Summe = Material + Stunden x Stundensatz. Ist BEIDES offen, bleibt die Zeile bewusst offen
+  // (keine 0 erfinden) - fehlt nur eines, wird der bekannte Teil gerechnet.
+  const hatM = !(m.material==null||m.material==="");
+  const hatH = !(m.stunden==null||m.stunden==="");
+  if(!hatM && !hatH) return null;
+  const mat = hatM?Number(m.material):0;
+  const arb = hatH?Number(m.stunden)*Number(state.satz||0):0;
+  const v = mat+arb; return isFinite(v)?Math.round(v):null;
 }
 function speichereState(){
   const el=document.getElementById("oak-state"); if(el) el.textContent=JSON.stringify(state);
@@ -226,7 +236,8 @@ function speichereState(){
   try{ if(_po && window.parent!==window) window.parent.postMessage(
     {typ:"oak-doc-state", docTyp:"maengelliste", state:state, status:null}, _po); }catch(e){}
 }
-/* Einstufung der Maengel in denselben Risikobereichen wie die GBU. */
+/* Einstufung der Maengel in denselben Risikobereichen wie die GBU.
+   "a"=Akzeptanz  "g"=Besorgnis  "s"=Gefahr  "akut"=akute Gefahr (Stilllegung). */
 const SW_FOLGE=["a","g","s","akut"];
 const SW_CLS={a:"a",g:"g",s:"s",akut:"akut"};
 const SW_TXT={a:"Akzeptanzbereich",g:"Besorgnisbereich",s:"Gefahrbereich",akut:"AKUTE GEFAHR (Stilllegung)"};
@@ -241,44 +252,53 @@ function renderTabelle(){
     tb.insertAdjacentHTML("beforeend",
       `<tr data-k="${k}"><td class="nr">${esc(m.nr)}</td>`+
       `<td>${esc(m.label)}${m.pp?`<span class="pp">${esc(m.pp)}</span>`:""}</td>`+
-      `<td><span class="sw ${SW_CLS[m.schwere]||"g"}" data-sw="${k}" title="klicken zum Umschalten">`+
-        `${SW_TXT[m.schwere]||SW_TXT.g}</span></td>`+
-      `<td class="kosten"><input class="zin" type="number" step="10" min="0" data-f="kosten" data-k="${k}" `+
-        `value="${m.kosten==null?"":m.kosten}" placeholder="offen"> €</td></tr>`);
+      `<td class="gbu">${esc(m.gbu||"–")}</td>`+
+      `<td class="kosten"><input class="zin" type="number" step="10" min="0" data-f="material" data-k="${k}" `+
+        `value="${m.material==null?"":m.material}" placeholder="offen"> €</td>`+
+      `<td class="kosten"><input class="zin zin-h" type="number" step="0.5" min="0" data-f="stunden" data-k="${k}" `+
+        `value="${m.stunden==null?"":m.stunden}" placeholder="–"> h</td>`+
+      `<td class="kosten summe-zelle">${sum==null?"<span class=\"offen\">offen</span>":eur(sum)+" €"}</td></tr>`);
   });
   tb.insertAdjacentHTML("beforeend",
     `<tr class="summe"><td></td><td>Gesamtsumme ${esc(META.maschine||"⟪Maschine⟫")}`+
     `${offen?` <span class="offen">· ${offen} Position(en) offen</span>`:""}</td>`+
-    `<td></td><td class="kosten" id="ml-summe">${eur(summe)} €</td></tr>`);
+    `<td></td><td></td><td></td><td class="kosten" id="ml-summe">${eur(summe)} €</td></tr>`);
   tb.querySelectorAll("input.zin").forEach(inp=>inp.addEventListener("input",e=>{
-    const k=+e.target.dataset.k, v=e.target.value;
-    state.m[k].kosten = (v===""?null:Number(v));
+    const k=+e.target.dataset.k, f=e.target.dataset.f, v=e.target.value;
+    state.m[k][f] = (v===""?null:Number(v));
     speichereState(); renderKpi(); aktualisiereSumme();
-  }));
-  tb.querySelectorAll("[data-sw]").forEach(el=>el.addEventListener("click",e=>{
-    const k=+e.target.dataset.sw;
-    const i=SW_FOLGE.indexOf(state.m[k].schwere);
-    state.m[k].schwere = SW_FOLGE[(i+1)%SW_FOLGE.length];
-    speichereState(); renderTabelle(); renderKpi();
   }));
   renderKpi();
 }
 function aktualisiereSumme(){
-  // Nur die Fuss-Summenzeile aktualisieren (kein Full-Rerender -> Eingabefokus bleibt erhalten).
+  // Nur Zeilen- und Fuss-Summen aktualisieren (kein Full-Rerender -> Eingabefokus bleibt erhalten).
   let summe=0;
-  state.m.forEach(m=>{ const x=zeilenSumme(m); if(x!=null) summe+=x; });
+  state.m.forEach((m,k)=>{
+    const x=zeilenSumme(m); if(x!=null) summe+=x;
+    const z=tb.querySelector(`tr[data-k="${k}"] .summe-zelle`);
+    if(z) z.innerHTML = (x==null?'<span class="offen">offen</span>':eur(x)+" €");
+  });
   const el=document.getElementById("ml-summe"); if(el) el.textContent=eur(summe)+" €";
 }
 function renderKpi(){
-  let summe=0, schwer=0, offen=0;
-  state.m.forEach(m=>{ if(m.schwere==="s"||m.schwere==="akut") schwer++; const x=zeilenSumme(m); if(x==null) offen++; else summe+=x; });
+  let summe=0, mitArbeit=0, offen=0;
+  // Kennzahl "davon im Gefahrbereich" ist entfallen: Diese Liste beziffert, sie bewertet nicht.
+  state.m.forEach(m=>{ if(!(m.stunden==null||m.stunden==="")) mitArbeit++; const x=zeilenSumme(m); if(x==null) offen++; else summe+=x; });
   setTxt("kpi-n", String(state.m.length));
-  setTxt("kpi-s", String(schwer));
+  setTxt("kpi-s", String(mitArbeit));
   setTxt("kpi-sum", eur(summe)+" €");
   // Offene Positionen sichtbar machen: eine Summe ohne diesen Hinweis waere zu optimistisch.
   const e=document.getElementById("kpi-sum-hint");
   if(e) e.textContent = offen ? ("+ "+offen+" Position(en) offen") : "";
 }
+(function(){
+  const si=document.getElementById("satzIn"); if(!si) return;
+  si.value = state.satz;
+  si.addEventListener("input", ()=>{
+    state.satz = si.value===""?0:Number(si.value);
+    speichereState(); aktualisiereSumme(); renderKpi();
+  });
+})();
 renderTabelle();
 /* ---- In Datei speichern (File System Access; kein Export/Reimport) ---- */
 async function saveToFile(){

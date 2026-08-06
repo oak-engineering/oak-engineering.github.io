@@ -84,13 +84,15 @@
 
   /* Dashboard */
   .dash{font-size:12.5px;color:var(--text);background:var(--akzent);border:1px solid var(--hell);border-radius:8px;padding:9px 14px;margin:2px 0 10px;line-height:1.95;}
+  /* Reifegrad: gestufte GBU sichtbar machen - Stufe prominent, Prozent sekundaer. */
   .reifegrad{border:1px solid var(--hell);border-radius:8px;padding:11px 14px;margin:2px 0 12px;font-size:12.5px;color:var(--text);}
   .reifegrad .rg-kopf{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
   .reifegrad .rg-stufe{font-weight:700;color:var(--dunkel);font-size:14px;}
   .reifegrad .rg-proz{font-weight:700;color:var(--gruen);}
   .reifegrad .rg-bar{flex:1;min-width:120px;height:9px;border-radius:5px;background:#e8ede9;overflow:hidden;}
   .reifegrad .rg-bar i{display:block;height:100%;background:var(--gruen);}
-  .reifegrad .rg-offen{margin-top:8px;} .reifegrad .rg-offen b{color:var(--dunkel);}
+  .reifegrad .rg-offen{margin-top:8px;}
+  .reifegrad .rg-offen b{color:var(--dunkel);}
   .reifegrad ul{margin:5px 0 0;padding-left:18px;line-height:1.6;}
   .reifegrad li .st{font-weight:600;} .reifegrad li .st.t{color:var(--gelb);} .reifegrad li .st.o{color:var(--rot);}
   .reifegrad .todo{color:var(--grau);}
@@ -313,7 +315,7 @@
     <div class="sektion-titel">Auswertung &amp; Maßnahmenstand</div>
     <div class="dash" id="dash"></div>
 
-    <!-- Reifegrad / Vollständigkeit (aus meta.reifegrad) -->
+    <!-- Reifegrad / Vollständigkeit der gestuften Beurteilung (aus meta.reifegrad) -->
     <div id="reifegrad" class="reifegrad" hidden></div>
 
     <!-- Inhaltsverzeichnis der Gefährdungen (Sprungmarken) -->
@@ -343,8 +345,8 @@
 </div>
 
 <div id="bghmPicker" class="modal"><div class="mbox"><div class="mhd"><span>Gefährdung hinzufügen – BGHM-Kategorie wählen</span><button type="button" onclick="closeBghmPicker()">✕</button></div><div id="bghmList" class="mbody"></div></div></div>
-<script id="doc-data" type="application/json">{"_typ": "OAK-doc-data", "meta": {"mitgeltend": []}, "hazards": [], "maengel": [], "ba": {"t": {}}, "protokoll": {}}</script>
-<script id="oak-state" type="application/json">null</script>
+<script id="doc-data" type="application/json">{}</script>
+<script id="oak-state" type="application/json"></script>
 <script id="massnahmen-katalog" type="application/json">{"S": ["Gefahrstoff durch weniger gefährlichen Stoff ersetzen", "Verfahren mit geringerer Gefährdung wählen", "Emissionsärmeres Material/Verfahren einsetzen"], "T": ["Trennende Schutzeinrichtung mit Verriegelung (EN ISO 14119)", "Zweihandschaltung / Lichtvorhang an der Gefahrstelle", "NOT-HALT-Einrichtung gut erreichbar anbringen", "Sicherheitsabstände nach EN ISO 13857 einhalten", "Berührschutz/Isolierung heißer Oberflächen", "Absaugung an der Emissionsquelle", "Schallmindernde Kapselung/Aufstellung", "Auffangwanne unter Leckagestellen"], "O": ["Freischalten und gegen Wiedereinschalten sichern (LOTO)", "Betriebsanweisung erstellen und aushängen", "Jährliche Unterweisung der Beschäftigten", "Wiederkehrende Prüfung nach DGUV V3 / TRBS", "Zutritt zum Gefahrenbereich regeln", "Prüf- und Wartungsintervalle festlegen", "Nur unterwiesenes Personal einsetzen"], "P": ["Dicht schließende Schutzbrille tragen", "Gehörschutz tragen", "Schnittfeste Schutzhandschuhe tragen", "Hitzeschutzhandschuhe bei Arbeiten an heißen Teilen", "Sicherheitsschuhe mit rutschhemmender Sohle tragen", "Atemschutz bei Stäuben/Dämpfen tragen", "Gesichtsschutz tragen"], "V": ["Keine weite Kleidung/Schmuck im Bereich bewegter Teile", "Ordnung und Sauberkeit halten", "Leckagen und Mängel unverzüglich melden", "Vor Arbeitsbeginn Schutzeinrichtungen prüfen", "Nicht in die laufende Maschine greifen"]}</script>
 <script id="bghm-katalog" type="application/json">[{"nr": "1", "titel": "Mechanische Gefährdungen", "kurz": "Mechanik", "items": [["1.1", "Ungeschützt bewegte Maschinenteile"], ["1.2", "Teile mit gefährlichen Oberflächen"], ["1.3", "Bewegte Transportmittel, bewegte Arbeitsmittel"], ["1.4", "Unkontrolliert bewegte Teile"], ["1.5", "Sturz, Ausrutschen, Stolpern, Umknicken"], ["1.6", "Absturz"]]}, {"nr": "2", "titel": "Elektrische Gefährdungen", "kurz": "Elektrik", "items": [["2.1", "Elektrischer Schlag"], ["2.2", "Lichtbögen"], ["2.3", "Elektrostatische Aufladungen"]]}, {"nr": "3", "titel": "Gefahrstoffe", "kurz": "Gefahrstoffe", "items": [["3.1", "Hautkontakt mit Gefahrstoffen (Feststoffe, Flüssigkeiten, Feuchtarbeit)"], ["3.2", "Einatmen von Gefahrstoffen (Gase, Dämpfe, Nebel, Stäube einschl. Rauche)"], ["3.3", "Verschlucken von Gefahrstoffen"], ["3.4", "Physikalisch-chemische Gefährdungen (z. B. Brand, Explosion)"]]}, {"nr": "4", "titel": "Biologische Arbeitsstoffe", "kurz": "Biostoffe", "items": [["4.1", "Infektionsgefährdung durch pathogene Mikroorganismen (z. B. Bakterien, Viren)"], ["4.2", "Sensibilisierende und toxische Wirkungen von Mikroorganismen"]]}, {"nr": "5", "titel": "Brand- und Explosionsgefährdungen", "kurz": "Brand/Explosion", "items": [["5.1", "Brennbare Feststoffe, Flüssigkeiten, Gase"], ["5.2", "Explosionsfähige Atmosphäre"], ["5.3", "Explosivstoffe"]]}, {"nr": "6", "titel": "Thermische Gefährdungen", "kurz": "Thermisch", "items": [["6.1", "Heiße Medien/Oberflächen"], ["6.2", "Kalte Medien/Oberflächen"]]}, {"nr": "7", "titel": "Spezielle physikalische Einwirkungen", "kurz": "Physikalisch (Lärm, Vibration, Strahlung)", "items": [["7.1", "Lärm"], ["7.2", "Ultraschall, Infraschall"], ["7.3", "Ganzkörpervibrationen"], ["7.4", "Hand-Arm-Vibrationen"], ["7.5", "Nicht ionisierende Strahlung (z. B. Infrarot, UV, Laserstrahlung)"], ["7.6", "Ionisierende Strahlung (z. B. Röntgenstrahlung, radioaktive Strahlung)"], ["7.7", "Elektromagnetische Felder"], ["7.8", "Unter- oder Überdruck"]]}, {"nr": "8", "titel": "Arbeitsumgebungsbedingungen", "kurz": "Arbeitsumgebung", "items": [["8.1", "Klima (z. B. Hitze, Kälte, unzureichende Lüftung)"], ["8.2", "Beleuchtung, Licht"], ["8.3", "Ersticken, Ertrinken"], ["8.4", "Unzureichende Flucht- und Verkehrswege, unzureichende Sicherheits-/Gesundheitsschutzkennzeichnung"], ["8.5", "Unzureichende Bewegungsfläche, ungünstige Anordnung des Arbeitsplatzes, unzureichende Pausen-/Sanitärräume"]]}, {"nr": "9", "titel": "Physische Belastung / Arbeitsschwere", "kurz": "Körperliche Belastung", "items": [["9.1", "Schwere dynamische Arbeit (z. B. manuelle Handhabung von Lasten)"], ["9.2", "Einseitige dynamische Arbeit, Körperbewegung (z. B. häufig wiederholte Bewegungen)"], ["9.3", "Haltungsarbeit (Zwangshaltung), Haltearbeit"], ["9.4", "Kombination aus statischer und dynamischer Arbeit"]]}, {"nr": "10", "titel": "Psychische Faktoren", "kurz": "Psychisch", "items": [["10.1", "Ungenügend gestaltete Arbeitsaufgabe (z. B. Routineaufgaben, Über-/Unterqualifikation)"], ["10.2", "Ungenügend gestaltete Arbeitsorganisation (z. B. Zeitdruck, lange/wechselnde Arbeitszeiten, Nachtarbeit)"], ["10.3", "Ungenügend gestaltete soziale Bedingungen (z. B. fehlende Kontakte, Führungsverhalten, Konflikte)"], ["10.4", "Ungenügend gestaltete Arbeits-/Umgebungsbedingungen (z. B. Lärm, Klima, Enge, Softwaregestaltung)"]]}, {"nr": "11", "titel": "Sonstige Gefährdungen", "kurz": "Sonstige", "items": [["11.1", "Durch Menschen (z. B. Überfall)"], ["11.2", "Durch Tiere (z. B. gebissen werden)"], ["11.3", "Durch Pflanzen und pflanzliche Produkte (z. B. sensibilisierende/toxische Wirkungen)"]]}]</script>
 <script id="wirkweisen-katalog" type="application/json">{"1.1": ["erfasst/eingezogen werden von bewegten Maschinenteilen", "gequetscht werden zwischen bewegten Teilen", "getroffen werden von bewegten Teilen", "geschnitten/abgeschert werden an bewegten Teilen"], "1.2": ["geschnitten/gestochen werden an scharfen Kanten oder Spitzen", "Schürf-/Reibverletzung an rauen Oberflächen"], "1.3": ["angefahren/überfahren werden von bewegten Transportmitteln", "gequetscht werden zwischen Transportmittel und Hindernis"], "1.4": ["getroffen/gequetscht werden von herabfallenden, kippenden oder rollenden Teilen", "getroffen werden von weggeschleuderten Teilen"], "1.5": ["stürzen durch Ausrutschen, Stolpern oder Umknicken"], "1.6": ["abstürzen von hochgelegenen Arbeitsplätzen oder in Öffnungen"], "2.1": ["Körperdurchströmung bei Berührung spannungsführender Teile"], "2.2": ["Verbrennung oder Blendung durch Störlichtbogen"], "2.3": ["Schädigung durch Entladung elektrostatischer Aufladung"], "3.1": ["Hautschädigung durch Haut-/Augenkontakt mit Gefahrstoffen"], "3.2": ["Atemwegs- oder Organschädigung durch Einatmen von Gasen, Dämpfen, Nebeln oder Stäuben"], "3.3": ["Vergiftung durch Verschlucken von Gefahrstoffen"], "3.4": ["Verbrennung/Verletzung durch Brand, Explosion oder Verpuffung"], "5.1": ["Verbrennung durch Entzündung brennbarer Stoffe"], "5.2": ["Verletzung durch Explosion einer explosionsfähigen Atmosphäre"], "6.1": ["verbrannt oder verbrüht werden an heißen Oberflächen oder Medien"], "6.2": ["Kälteverletzung/Erfrierung an kalten Oberflächen oder Medien"], "7.1": ["Gehörschädigung durch hohen Schallpegel"], "7.3": ["Gesundheitsschädigung durch Ganzkörpervibrationen"], "7.4": ["Gesundheitsschädigung durch Hand-Arm-Vibrationen"], "7.5": ["Augen-/Hautschädigung durch optische Strahlung (IR, UV, Laser)"], "7.6": ["Schädigung durch ionisierende Strahlung"], "7.8": ["Verletzung durch Hochdruckstrahl oder plötzliche Druckentladung"]}</script>
@@ -438,6 +440,8 @@ const HAZARDS_DEFAULT = [
 
 const DOC = (()=>{ try{ return JSON.parse(document.getElementById("doc-data").textContent)||{}; }catch(e){ return {}; } })();
 const HAZARDS = (DOC.hazards && DOC.hazards.length) ? DOC.hazards : HAZARDS_DEFAULT;
+/* GBU-Reifegrad (gestufte Beurteilung) sichtbar machen. Ohne meta.reifegrad bleibt der Block
+   verborgen - Altdokumente brechen nicht. Stufe prominent, Prozent sekundaer. */
 function renderReifegrad(rg){
   const box = document.getElementById("reifegrad");
   if(!box || !rg || !Array.isArray(rg.kriterien)) return;
@@ -446,14 +450,18 @@ function renderReifegrad(rg){
   let h = `<div class="rg-kopf">`
     + `<span class="rg-stufe">GBU-Reifegrad · Stufe ${rg.stufe} (${rg.stufe_txt||""})</span>`
     + `<span class="rg-bar"><i style="width:${rg.prozent}%"></i></span>`
-    + `<span class="rg-proz">${rg.prozent} %</span></div>`;
+    + `<span class="rg-proz">${rg.prozent} %</span></div>`;
   if(offen.length){
     h += `<div class="rg-offen"><b>Planmäßig in Stufe 2 zu vertiefen:</b><ul>`
-      + offen.map(k => { const cls = k.status === "offen" ? "o" : "t";
+      + offen.map(k => {
+          const cls = k.status === "offen" ? "o" : "t";
           return `<li><span class="st ${cls}">${k.k}</span> — <span class="st ${cls}">${LAB[k.status]}</span>`
-               + (k.todo ? ` <span class="todo">(${k.todo})</span>` : "") + `</li>`; }).join("")
+               + (k.todo ? ` <span class="todo">(${k.todo})</span>` : "") + `</li>`;
+        }).join("")
       + `</ul></div>`;
-  } else { h += `<div class="rg-offen">Alle Kriterien erfüllt – vertiefte Beurteilung abgeschlossen.</div>`; }
+  } else {
+    h += `<div class="rg-offen">Alle Kriterien erfüllt – vertiefte Beurteilung abgeschlossen.</div>`;
+  }
   box.innerHTML = h; box.hidden = false;
 }
 /* Kopf/Metadaten aus DOC.meta anwenden (nur wenn injiziert) */
@@ -591,8 +599,8 @@ let saveTimer;
 function flashSaved(){ const e=document.getElementById("savehint"); e.textContent="gespeichert ✓";
   clearTimeout(saveTimer); saveTimer=setTimeout(()=>e.textContent="automatisch gespeichert",1500); }
 
-/* Risikobereiche (Nohl R=W x S, 1-16). 15-16 ist der Stilllegungsbereich und bleibt
-   echten Sofortgefahren vorbehalten (z. B. offen laufender Roboterarm). */
+/* Risikobereiche (Nohl R=W×S, 1–16). 15–16 ist der Stilllegungsbereich und
+   bleibt echten Sofortgefahren vorbehalten (z. B. offen laufender Roboterarm). */
 function band(r){
   if(r>=15) return {cls:"akut", key:"akut",      t:"AKUTE GEFAHR (Stilllegung)"};
   if(r>=9)  return {cls:"r",    key:"gefahr",    t:"Gefahrbereich"};
