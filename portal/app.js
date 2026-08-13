@@ -9,6 +9,7 @@ function zurApp(){ $("#loginView").classList.add("hidden"); $("#appView").classL
    anderen sind einfache Dokumentlisten. `unterweisungen` gibt es je Domäne getrennt. */
 const DOMAENEN = [
   { key: "arbeitssicherheit", label: "Arbeitssicherheit", subs: [
+      { kat: "hallenplan",    label: "Hallenplan" },
       { kat: "anlagen",       label: "Anlagen &amp; Maschinensicherheit" },
       { kat: "allg-gbu",      label: "Allgemeine GBU" },
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
