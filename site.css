@@ -60,21 +60,6 @@ nav{position:sticky;top:0;z-index:130;display:flex;align-items:center;justify-co
 .nav-search button:hover{background:var(--oak-ghost);}
 .nav-search:focus-within{border-color:var(--oak);box-shadow:0 0 0 3px var(--oak-pale);}
 
-/* Interaktive Tools auf den Leistungsseiten */
-.tools-cta{margin-top:2.6rem;background:var(--oak-ghost);border:1px solid var(--oak-pale);
-  border-radius:10px;padding:1.6rem 1.8rem;}
-.tools-cta .tc-k{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--oak);margin-bottom:.45rem;}
-.tools-cta h2{font-family:var(--serif);font-size:1.45rem;color:var(--oak-deep);margin:0 0 .4rem;font-weight:600;}
-.tools-cta p{font-size:.88rem;color:var(--muted);margin-bottom:1.2rem;}
-.tools-grid{display:flex;flex-wrap:wrap;gap:.7rem;}
-.tool-link{display:inline-flex;align-items:center;gap:.6rem;background:#fff;border:1.5px solid var(--oak-pale);
-  border-radius:8px;padding:.75rem 1.15rem;font-size:.88rem;font-weight:500;color:var(--oak-deep);
-  transition:border-color .15s,transform .15s;}
-.tool-link:hover{border-color:var(--oak);transform:translateY(-1px);}
-.tool-link .badge{font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--oak);background:var(--oak-ghost);padding:.12rem .5rem;border-radius:99px;}
-
 /* ── SUBPAGE-HEADER ──────────────────────────────────── */
 .sub-hero{background:linear-gradient(135deg,var(--oak-deep),var(--oak));color:#fff;
   padding:3.2rem 0 2.8rem;}
@@ -177,11 +162,13 @@ footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 8vw;disp
 
 /* Im Drawer haengt das Untermenue direkt unter dem Punkt – auf ALLEN Breiten, nicht nur mobil. */
 .nav-links .nav-dd{flex-direction:column;align-items:stretch;}
-.nav-links .nav-dd-btn{padding:.25rem 0;justify-content:flex-start;width:100%;text-transform:none;letter-spacing:0;font-size:.95rem;}
-/* Chevron nach rechts schieben – ohne space-between, sonst rutscht der Text in die Mitte,
-   sobald ein drittes Kind (das Icon) dazukommt. */
-.nav-links .nav-dd-btn>svg:last-child{margin-left:auto;}
-.nav-links .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem 1rem;}
+/* „Leistungen" ist im Drawer nur die Rubrik-Ueberschrift ueber den vier Links – das Untermenue
+   steht dort immer offen. Der Chevron verspraeche ein Auf-/Zuklappen, das es nicht gibt. */
+.nav-links .nav-dd-btn{padding:.25rem 0;justify-content:flex-start;width:100%;cursor:default;
+  text-transform:uppercase;letter-spacing:.1em;font-size:.7rem;font-weight:600;color:var(--muted);}
+.nav-links .nav-dd-btn>svg:last-child{display:none;}
+.nav-links .nav-dd-btn .nav-ico{display:none;}
+.nav-links .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem;}
 .nav-links .nav-dd-menu a{font-size:.92rem;padding:.35rem 0;}
 .nav-links .nav-search{width:100%;height:42px;}
 .nav-links .nav-search input{width:100%;font-size:.95rem;}
@@ -189,7 +176,7 @@ footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 8vw;disp
 body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20,.35);z-index:110;}
 /* In der Linkliste keine Buttons */
 .nav-links .nav-cta,.nav-links .nav-login{background:none;border:none;padding:.25rem 0;border-radius:0;
-  color:var(--ink);font-weight:500;text-align:left;}
+  color:var(--ink) !important;font-weight:500;text-align:left;}
 .nav-links .nav-cta:hover,.nav-links .nav-login:hover{color:var(--oak);}
 
 @media(max-width:1200px){
@@ -208,17 +195,67 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
 }
 
 /* ── Sub-Hero mit interaktivem Gitter ────────────────── */
-.sub-hero{position:relative;overflow:hidden;}
+/* Bleibt beim Scrollen unter der Navigation stehen (Orientierung) und schrumpft dabei auf eine
+   Zeile. Der Inhalt scrollt darunter durch: .sub-hero ist positioniert, main nicht. */
+.sub-hero{position:sticky;top:68px;z-index:100;overflow:hidden;
+  transition:padding .25s var(--ease);}
 .sub-hero #gridCanvas{position:absolute;inset:0;z-index:0;width:100%;height:100%;display:block;}
 .sub-hero .sub-overlay{position:absolute;inset:0;z-index:1;pointer-events:none;
   background:
     radial-gradient(ellipse 90% 130% at 18% 35%, rgba(27,67,50,.78) 0%, rgba(27,67,50,.28) 55%, transparent 82%),
     linear-gradient(180deg, rgba(17,26,20,.35), transparent 40%, rgba(17,26,20,.45));}
-.sub-hero > *:not(#gridCanvas):not(.sub-overlay){position:relative;z-index:2;}
+.sub-hero > *:not(#gridCanvas):not(.sub-overlay):not(.hero-clip){position:relative;z-index:2;}
+.sub-hero h1{transition:font-size .25s var(--ease),margin-bottom .25s var(--ease);}
+.sub-hero p{transition:opacity .2s var(--ease),max-height .25s var(--ease);overflow:hidden;max-height:6rem;}
+
+body.kopf-kompakt .sub-hero{padding:.7rem 0;}
+body.kopf-kompakt .sub-hero h1{font-size:1.2rem;margin-bottom:0;}
+body.kopf-kompakt .sub-hero p{opacity:0;max-height:0;}
+body.kopf-kompakt .sub-hero .back-link{display:none;}
+
+/* ── Clip-Fenster rechts im Kopf (Image-Loop, bis dahin Platzhalterbild) ── */
+/* Fuellt die rechte Haelfte des Kopfes und laeuft nach links weich ins Gitter aus – so entsteht
+   keine sichtbare Kachelkante, und der ohnehin hellere rechte Rand bekommt einen Inhalt. */
+.hero-clip{position:absolute;right:0;top:0;bottom:0;width:min(46%,620px);z-index:1;
+  overflow:hidden;opacity:.92;transition:opacity .25s var(--ease);pointer-events:none;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 42%);
+          mask-image:linear-gradient(90deg,transparent,#000 42%);}
+.hero-clip img,.hero-clip video{width:100%;height:100%;object-fit:cover;
+  animation:clipZoom 18s ease-in-out infinite alternate;}
+@keyframes clipZoom{from{transform:scale(1)}to{transform:scale(1.09)}}
+body.kopf-kompakt .hero-clip{opacity:0;}          /* im schmalen Kopf ist kein Platz dafuer */
+@media(max-width:900px){.hero-clip{display:none;}}
+@media(prefers-reduced-motion:reduce){
+  .sub-hero,.sub-hero h1,.sub-hero p,.hero-clip{transition:none;}
+  .hero-clip img,.hero-clip video{animation:none;}
+}
+
+/* ── Mini-Tools: schmale Icon-Zeile statt eigener Spalte ── */
+.mini-tools{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-bottom:1.8rem;
+  padding-bottom:1.1rem;border-bottom:1px solid var(--border);}
+.mt-label{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-right:.5rem;}
+.mt{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:8px;
+  border:1.5px solid var(--border);color:var(--oak-deep);background:var(--white);
+  transition:border-color .15s,background .15s,color .15s;}
+.mt:hover,.mt:focus-visible{border-color:var(--oak);background:var(--oak-ghost);color:var(--oak);}
+.mt svg{width:18px;height:18px;}
+.mt::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 9px);left:50%;
+  transform:translateX(-50%);white-space:nowrap;background:var(--ink);color:#fff;
+  font-size:.72rem;line-height:1.4;padding:.32rem .6rem;border-radius:6px;opacity:0;
+  pointer-events:none;transition:opacity .15s;z-index:20;}
+.mt:hover::after,.mt:focus-visible::after{opacity:1;}
+/* Touch kennt kein Hover -> dort steht der Name neben dem Icon statt im Tooltip */
+@media(hover:none){
+  .mt{width:auto;height:auto;padding:.35rem .75rem;grid-auto-flow:column;gap:.45rem;}
+  .mt::before{content:attr(data-kurz);font-size:.8rem;font-weight:500;}
+  .mt::after{display:none;}
+}
 
 /* ── Subpage-Layout: Akkordeon (2/3) + Tools-Panel (1/3) ── */
-.sub-layout{display:grid;grid-template-columns:2fr 1fr;gap:2.5rem;align-items:start;}
-.leist-col h2,.tools-col h2{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--oak-deep);margin-bottom:1.2rem;}
+/* Einspaltig: die Mini-Tools stehen als Icon-Zeile oben, der Inhalt bekommt die volle Breite. */
+.sub-layout{display:block;}
+.leist-col h2{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--oak-deep);margin-bottom:1.2rem;}
 
 .accordion{border-top:1px solid var(--border);}
 .acc-item{border-bottom:1px solid var(--border);}
@@ -241,28 +278,5 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
   padding:.2rem .65rem;border-radius:99px;margin:.25rem .4rem .25rem 0;font-weight:500;}
 .prose .laws{margin:.4rem 0 1.4rem;}
 
-.tools-col{position:sticky;top:88px;}
-.tools-panel{background:var(--oak-ghost);border:1px solid var(--oak-pale);border-radius:12px;padding:1.5rem;}
-.tools-panel .tc-k{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--oak);margin-bottom:.3rem;}
-.tools-panel h2{font-size:1.3rem;margin-bottom:.3rem;}
-.tools-panel .tp-sub{font-size:.82rem;color:var(--muted);margin-bottom:1.1rem;line-height:1.5;}
-.tool-card{display:block;background:#fff;border:1.5px solid var(--oak-pale);border-radius:9px;padding:.9rem 1rem;
-  margin-bottom:.7rem;transition:border-color .15s,transform .15s,box-shadow .15s;}
-.tool-card:last-child{margin-bottom:0;}
-/* In der Seitenspalte der Leistungsseiten kompakt: Beschreibung und CTA weg, der Zweck steht
-   im Namen plus Badge. Sonst ist die Spalte hoeher als die Leistungsliste daneben. */
-.tools-col .tool-card{padding:.55rem .7rem;margin-bottom:.45rem;}
-.tools-col .tool-card .d,.tools-col .tool-card .go{display:none;}
-.tools-col .tool-card b{font-size:.95rem;margin-bottom:0;}
-.tools-col .tool-card .badge{margin-bottom:.2rem;}
-.tool-card:hover{border-color:var(--oak);transform:translateY(-2px);box-shadow:0 6px 18px rgba(27,67,50,.08);}
-.tool-card .badge{display:inline-block;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--oak);background:var(--oak-ghost);padding:.12rem .5rem;border-radius:99px;margin-bottom:.4rem;}
-.tool-card b{display:block;font-family:var(--serif);font-size:1.05rem;color:var(--ink);line-height:1.25;margin-bottom:.2rem;}
-.tool-card .d{font-size:.78rem;color:var(--muted);line-height:1.45;}
-.tool-card .go{display:block;margin-top:.5rem;font-size:.78rem;font-weight:600;color:var(--oak);}
-
-@media(max-width:860px){
-  .sub-layout{grid-template-columns:1fr;gap:2rem;}
-  .tools-col{position:static;}
-}
+/* (Die Tool-Kacheln und die rechte Tools-Spalte sind entfallen – die Mini-Tools stehen
+   jetzt als Icon-Zeile oben im Inhalt, siehe .mini-tools.) */

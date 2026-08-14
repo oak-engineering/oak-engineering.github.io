@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141137">
+<link rel="stylesheet" href="fonts.css?v=202608141158">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -175,11 +175,13 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
 
 /* Im Drawer haengt das Untermenue direkt unter dem Punkt – auf ALLEN Breiten, nicht nur mobil. */
 .nav-links .nav-dd{flex-direction:column;align-items:stretch;}
-.nav-links .nav-dd-btn{padding:.25rem 0;justify-content:flex-start;width:100%;text-transform:none;letter-spacing:0;font-size:.95rem;}
-/* Chevron nach rechts schieben – ohne space-between, sonst rutscht der Text in die Mitte,
-   sobald ein drittes Kind (das Icon) dazukommt. */
-.nav-links .nav-dd-btn>svg:last-child{margin-left:auto;}
-.nav-links .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem 1rem;}
+/* „Leistungen" ist im Drawer nur die Rubrik-Ueberschrift ueber den vier Links – das Untermenue
+   steht dort immer offen. Der Chevron verspraeche ein Auf-/Zuklappen, das es nicht gibt. */
+.nav-links .nav-dd-btn{padding:.25rem 0;justify-content:flex-start;width:100%;cursor:default;
+  text-transform:uppercase;letter-spacing:.1em;font-size:.7rem;font-weight:600;color:var(--muted);}
+.nav-links .nav-dd-btn>svg:last-child{display:none;}
+.nav-links .nav-dd-btn .nav-ico{display:none;}
+.nav-links .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem;}
 .nav-links .nav-dd-menu a{font-size:.92rem;padding:.35rem 0;}
 .nav-links .nav-search{width:100%;height:42px;}
 .nav-links .nav-search input{width:100%;font-size:.95rem;}
@@ -187,7 +189,7 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
 body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20,.35);z-index:110;}
 /* In der Linkliste keine Buttons */
 .nav-links .nav-cta,.nav-links .nav-login{background:none;border:none;padding:.25rem 0;border-radius:0;
-  color:var(--ink);font-weight:500;text-align:left;}
+  color:var(--ink) !important;font-weight:500;text-align:left;}
 .nav-links .nav-cta:hover,.nav-links .nav-login:hover{color:var(--oak);}
 
 .nav-burger span {
@@ -974,6 +976,22 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   let w = 0, h = 0, cols = 0, rows = 0, dots = [];
   const mouse = { x: -9999, y: -9999 };
 
+  /* OAK-Signet als halbtransparentes Wasserzeichen hinter dem Gitter. Das PNG ist dunkelgruen,
+     deshalb einmalig in ein Offscreen-Canvas zeichnen und per 'source-in' hell einfaerben. */
+  const LOGO_BOX = { x: 285, y: 54, w: 454, h: 453 };
+  let logoTint = null;
+  const logo = new Image();
+  logo.onload = () => {
+    const o = document.createElement('canvas');
+    o.width = LOGO_BOX.w; o.height = LOGO_BOX.h;
+    const oc = o.getContext('2d');
+    oc.drawImage(logo, LOGO_BOX.x, LOGO_BOX.y, LOGO_BOX.w, LOGO_BOX.h, 0, 0, LOGO_BOX.w, LOGO_BOX.h);
+    oc.globalCompositeOperation = 'source-in';
+    oc.fillStyle = '#74C69D'; oc.fillRect(0, 0, LOGO_BOX.w, LOGO_BOX.h);
+    logoTint = o;
+  };
+  logo.src = 'assets/oak-logo.png';
+
   function build(){
     const rect = canvas.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -992,6 +1010,12 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
   function draw(t){
     ctx.clearRect(0, 0, w, h);
+    if(logoTint){
+      const s = Math.min(h * 0.62, w * 0.42);   // rechts neben dem Textblock, ueber den Karten
+      ctx.globalAlpha = 0.13;
+      ctx.drawImage(logoTint, w * 0.78 - s / 2, h * 0.40 - s / 2, s, s);
+      ctx.globalAlpha = 1;
+    }
     for(const d of dots){
       const wave = Math.sin((d.bx + d.by) * 0.01 + t * 0.0006) * 2;
       let tx = d.bx, ty = d.by + wave;
