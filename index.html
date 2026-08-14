@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141158">
+<link rel="stylesheet" href="fonts.css?v=202608141202">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -875,7 +875,7 @@ footer {
       </a>
       <a class="hero-card" href="umweltschutz.html">
         <b>Umweltschutz</b>
-        <span class="hc-d">Immissionsschutz&nbsp;· Störfall&nbsp;· ISO 14001&nbsp;· Gefahrgut&nbsp;· Gewässerschutz&nbsp;· CO₂</span>
+        <span class="hc-d">Immissionsschutz&nbsp;· Störfall&nbsp;· ISO 14001&nbsp;· Gefahrgut&nbsp;· Gewässerschutz&nbsp;· CO₂-Bilanzierung</span>
         <span class="hc-go">Mehr erfahren →</span>
       </a>
       <a class="hero-card" href="ki-digitalisierung.html">
@@ -1011,9 +1011,9 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   function draw(t){
     ctx.clearRect(0, 0, w, h);
     if(logoTint){
-      const s = Math.min(h * 0.62, w * 0.42);   // rechts neben dem Textblock, ueber den Karten
+      const s = Math.min(h * 0.62, w * 0.42);   // mittig im Hero, wie auf den Unterseiten
       ctx.globalAlpha = 0.13;
-      ctx.drawImage(logoTint, w * 0.78 - s / 2, h * 0.40 - s / 2, s, s);
+      ctx.drawImage(logoTint, (w - s) / 2, (h - s) / 2, s, s);
       ctx.globalAlpha = 1;
     }
     for(const d of dots){
