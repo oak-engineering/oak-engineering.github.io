@@ -11,7 +11,10 @@
 <link rel="stylesheet" href="site.css">
 <style>
 /* ── Schulungs-spezifische Komponenten (OAK-CI) ─────────────────── */
-.sched-intro{max-width:760px;margin:0 auto 1.6rem;}
+/* Gleiche Inhaltsbreite wie die Leistungsseiten (.sub-layout, 1140px) – sonst springt die
+   Breite beim Wechsel aus dem Leistungen-Menue von 1140 auf die 940px des Textlayouts. */
+main.prose{max-width:1140px;}
+.sched-intro{max-width:900px;margin:0 auto 1.6rem;}
 .legend-typ{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin:.4rem 0 1.4rem;font-size:.78rem;color:var(--muted);}
 .legend-typ span{display:inline-flex;align-items:center;gap:.35rem;}
 .typ-badge{display:inline-block;font-size:.64rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.18rem .55rem;border-radius:99px;}
@@ -133,10 +136,8 @@
 <header class="sub-hero">
   <canvas id="gridCanvas" aria-hidden="true"></canvas>
   <div class="sub-overlay"></div>
-  <div class="sub-eyebrow">Weiterbildung</div>
   <h1>Schulungen &amp; Weiterbildungen</h1>
-  <p>Praxisnahe EHS-Qualifizierung – von Sicherheitskultur und Umweltrecht bis zu KI im Arbeitsschutz.
-     Online, vor Ort oder inhouse, immer mit konkretem Anwendungsbezug.</p>
+  <p>Praxisnahe EHS-Qualifizierung – vom Umweltrecht bis zur KI.</p>
 </header>
 
 <main class="prose">

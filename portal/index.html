@@ -5,31 +5,40 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>OAK Kundenportal</title>
-<link rel="stylesheet" href="portal.css?v=2026-08-14h">
+<link rel="stylesheet" href="portal.css?v=2026-08-14i">
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="loginView">
 
-  <!-- Website-Kopf: liegt bewusst INNERHALB von #loginView und verschwindet damit
-       automatisch nach dem Login, wo der Portal-Header .kopf uebernimmt. -->
-  <header class="site-top">
-    <div class="site-top-inner">
-      <a class="site-marke" href="../index.html">
-        <img src="../assets/oak-logo.png" alt="OAK engineering">
-        <span><b>OAK engineering</b><small>EHS-Management &amp; Digitalisierung</small></span>
-      </a>
-      <nav class="site-nav" aria-label="Website">
-        <a href="../arbeitssicherheit.html">Arbeitssicherheit</a>
-        <a href="../umweltschutz.html">Umweltschutz</a>
-        <a href="../ki-digitalisierung.html">KI &amp; Digitalisierung</a>
-        <a href="../schulungen.html">Schulungen</a>
-        <a href="../about.html">Über uns</a>
-        <a href="../kontakt.html" class="site-nav-cta">Kontakt</a>
-      </nav>
+  <!-- Navigation 1:1 wie auf der Website; liegt in #loginView und weicht nach dem Login
+       dem Portal-Header .kopf mit Abmelden-Button. -->
+  <nav>
+    <a class="nav-logo" href="../index.html" aria-label="OAK engineering – zur Startseite">
+      <img src="../assets/oak-logo.png" alt="OAK engineering">
+      <span class="nav-wordmark">OAK engineering<small>EHS-Management &amp; Digitalisierung</small></span>
+    </a>
+    <button class="nav-burger" aria-label="Menü"><span></span><span></span><span></span></button>
+    <div class="nav-links">
+      <form class="nav-search" role="search" action="../suche.html" method="get">
+        <input type="search" name="q" placeholder="Suche …" aria-label="Suche auf der Website">
+        <button type="submit" aria-label="Suchen"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+      </form>
+      <div class="nav-dd">
+        <button type="button" class="nav-dd-btn">Leistungen <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="nav-dd-menu">
+          <a href="../arbeitssicherheit.html">Arbeitssicherheit</a>
+          <a href="../umweltschutz.html">Umweltschutz</a>
+          <a href="../ki-digitalisierung.html">KI &amp; Digitalisierung</a>
+          <a href="../schulungen.html">Schulungen</a>
+        </div>
+      </div>
+      <a href="../about.html">Über uns</a>
+      <a href="index.html" class="nav-login active" style="padding:.4rem .85rem;border:1.5px solid #2D6A4F;border-radius:9px;color:#2D6A4F;font-weight:600;white-space:nowrap;">Kundenlogin</a>
+      <a href="../kontakt.html" class="nav-cta">Kontakt</a>
     </div>
-  </header>
+  </nav>
 
   <form class="login" id="loginForm" autocomplete="on">
     <img src="../assets/oak-logo.png" class="oak-logo login-logo" alt="OAK engineering">
@@ -109,6 +118,16 @@
   </main>
 </div>
 
+<script>
+/* Nav-Verhalten wie auf der Website: Burger-Menue und Leistungen-Dropdown. */
+document.addEventListener('click', e => {
+  const b = e.target.closest('.nav-burger');
+  if (b) { document.querySelector('.nav-links').classList.toggle('open'); return; }
+  const dd = e.target.closest('.nav-dd-btn');
+  if (dd) { e.stopPropagation(); dd.closest('.nav-dd').classList.toggle('open'); return; }
+  if (!e.target.closest('.nav-dd')) document.querySelectorAll('.nav-dd.open').forEach(d => d.classList.remove('open'));
+});
+</script>
 <script src="auth.js?v=2026-08-14g"></script>
 <script src="cockpit.js?v=2026-08-14g"></script>
 <script src="vorfaelle.js?v=2026-08-14g"></script>

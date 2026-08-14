@@ -85,7 +85,7 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .sub-hero h1{font-family:var(--serif);font-size:clamp(2rem,4vw,3.2rem);font-weight:300;text-wrap:balance;
   line-height:1.12;margin-bottom:1rem;}
 .sub-hero h1 em{font-style:italic;color:var(--oak-light);}
-.sub-hero p{font-size:1rem;font-weight:300;color:rgba(255,255,255,.82);max-width:640px;text-wrap:pretty;}
+.sub-hero p{font-size:1rem;font-weight:300;color:rgba(255,255,255,.82);max-width:720px;text-wrap:pretty;}
 
 /* ── CONTENT ─────────────────────────────────────────── */
 main{max-width:940px;margin:0 auto;padding:3.5rem 8vw 4rem;}
@@ -188,7 +188,7 @@ footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 8vw;disp
 .accordion{border-top:1px solid var(--border);}
 .acc-item{border-bottom:1px solid var(--border);}
 .acc-head{width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:var(--serif);
-  font-size:1.15rem;font-weight:600;color:var(--ink);padding:1.1rem 2.4rem 1.1rem 0;position:relative;
+  font-size:1.05rem;font-weight:600;color:var(--ink);padding:.8rem 2.4rem .8rem 0;position:relative;
   transition:color .2s;line-height:1.3;}
 .acc-head:hover{color:var(--oak);}
 .acc-ico{position:absolute;right:.2rem;top:50%;transform:translateY(-50%);width:1.4rem;height:1.4rem;
@@ -214,6 +214,12 @@ footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 8vw;disp
 .tool-card{display:block;background:#fff;border:1.5px solid var(--oak-pale);border-radius:9px;padding:.9rem 1rem;
   margin-bottom:.7rem;transition:border-color .15s,transform .15s,box-shadow .15s;}
 .tool-card:last-child{margin-bottom:0;}
+/* In der Seitenspalte der Leistungsseiten kompakt: Beschreibung und CTA weg, der Zweck steht
+   im Namen plus Badge. Sonst ist die Spalte hoeher als die Leistungsliste daneben. */
+.tools-col .tool-card{padding:.55rem .7rem;margin-bottom:.45rem;}
+.tools-col .tool-card .d,.tools-col .tool-card .go{display:none;}
+.tools-col .tool-card b{font-size:.95rem;margin-bottom:0;}
+.tools-col .tool-card .badge{margin-bottom:.2rem;}
 .tool-card:hover{border-color:var(--oak);transform:translateY(-2px);box-shadow:0 6px 18px rgba(27,67,50,.08);}
 .tool-card .badge{display:inline-block;font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
   color:var(--oak);background:var(--oak-ghost);padding:.12rem .5rem;border-radius:99px;margin-bottom:.4rem;}
