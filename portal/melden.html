@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Vorfall melden – OAK engineering</title>
+<link rel="stylesheet" href="portal.css">
+<style>
+/* Meldeformular: bewusst eigene, sehr grosse Bedienelemente - es wird am Handy in der Halle
+   ausgefuellt, oft mit Handschuhen und unter Zeitdruck. */
+.mwrap{max-width:640px;margin:0 auto;padding:0 16px 40px;}
+.mkopf{background:#fff;border-bottom:3px solid var(--gruen);padding:14px 16px;text-align:center;}
+.mkopf img{height:44px;width:auto;display:block;margin:0 auto 6px;}
+.mkopf h1{font-size:27px;line-height:1.15;}
+.mkopf .doktyp{font-size:12.5px;color:var(--gruen);letter-spacing:.06em;text-transform:uppercase;margin-top:3px;}
+.notruf{background:#fdecea;border:1px solid #f5b7b1;color:#922b21;border-radius:10px;
+  padding:11px 13px;margin:16px 0;font-size:14.5px;line-height:1.45;}
+.notruf b{color:#7b241c;}
+.karte{background:#fff;border:1px solid var(--rand);border-radius:12px;padding:16px;margin:14px 0;}
+.karte h2{font-size:20px;margin-bottom:4px;}
+.hint{font-size:13px;color:#5a6b64;line-height:1.5;margin:4px 0 12px;}
+.arten{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.art{display:flex;flex-direction:column;gap:3px;align-items:flex-start;text-align:left;
+  border:2px solid var(--rand);background:#fff;border-radius:12px;padding:13px 12px;cursor:pointer;
+  font-family:inherit;font-size:15px;font-weight:600;color:var(--dunkel);min-height:86px;}
+.art small{font-weight:400;font-size:12.5px;color:#5a6b64;line-height:1.35;}
+.art.aktiv{border-color:var(--gruen);background:var(--akzent);box-shadow:0 0 0 3px rgba(45,106,79,.12);}
+label.feld{display:block;font-weight:600;font-size:14px;color:var(--dunkel);margin:14px 0 5px;}
+label.feld span{font-weight:400;color:#7d8f88;font-size:12.5px;}
+input[type=text],input[type=date],input[type=time],select,textarea{
+  width:100%;padding:12px;border:1px solid var(--rand);border-radius:9px;font-family:inherit;font-size:16px;background:#fff;color:var(--text);}
+textarea{min-height:130px;resize:vertical;line-height:1.5;}
+.zeile{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.check{display:flex;align-items:flex-start;gap:10px;margin:12px 0;font-size:15px;line-height:1.4;}
+.check input{width:22px;height:22px;margin-top:1px;flex:0 0 auto;}
+.btn-gross{width:100%;padding:16px;font-size:17px;font-weight:600;border:0;border-radius:11px;
+  background:var(--gruen);color:#fff;cursor:pointer;font-family:inherit;margin-top:6px;}
+.btn-gross:disabled{background:#9bb5a9;cursor:default;}
+.recht{font-size:12.5px;color:#5a6b64;line-height:1.55;background:#f6faf8;border:1px solid var(--rand);
+  border-radius:10px;padding:12px 13px;margin-top:14px;}
+.recht b{color:var(--dunkel);}
+.fertig{text-align:center;padding:34px 16px;}
+.fertig .haken{font-size:52px;color:var(--gruen);line-height:1;}
+.fertig h2{margin:12px 0 8px;font-size:26px;}
+.fehlerbox{background:#fdecea;border:1px solid #f5b7b1;color:#922b21;border-radius:9px;padding:11px;margin-top:12px;font-size:14px;}
+.vorschau{max-width:100%;border-radius:9px;margin-top:9px;display:block;}
+.fuss{text-align:center;font-size:12px;color:#7d8f88;margin-top:20px;line-height:1.6;}
+@media(max-width:420px){ .arten{grid-template-columns:1fr;} .zeile{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+
+<div class="mkopf">
+  <img src="../assets/oak-logo.png" alt="OAK engineering">
+  <h1>Vorfall melden</h1>
+  <div class="doktyp">Unfall · Beinahe-Unfall · Umweltvorfall</div>
+</div>
+
+<div class="mwrap">
+
+  <div class="notruf">
+    <b>Erst helfen, dann melden.</b> Bei Verletzten oder akuter Gefahr zuerst
+    <b>Notruf 112</b> und Vorgesetzte informieren. Dieses Formular ersetzt keine Sofortmeldung.
+  </div>
+
+  <form id="form">
+    <div class="karte">
+      <h2>Was ist passiert?</h2>
+      <div class="hint">Bitte eine Auswahl antippen.</div>
+      <div class="arten" id="arten">
+        <button type="button" class="art" data-art="unfall">Unfall
+          <small>Jemand wurde verletzt</small></button>
+        <button type="button" class="art" data-art="beinahe">Beinahe-Unfall
+          <small>Es ist gerade noch einmal gut gegangen</small></button>
+        <button type="button" class="art" data-art="unsicher">Unsicherer Zustand
+          <small>Gefährliche Stelle, Defekt, fehlende Absicherung</small></button>
+        <button type="button" class="art" data-art="umwelt">Umweltvorfall
+          <small>Öl, Kraftstoff oder Chemikalien ausgetreten</small></button>
+      </div>
+    </div>
+
+    <div class="karte">
+      <h2>Wann und wo?</h2>
+      <div class="zeile">
+        <div><label class="feld" for="datum">Datum</label>
+          <input type="date" id="datum" required></div>
+        <div><label class="feld" for="zeit">Uhrzeit <span>(oder z. B. Nachtschicht)</span></label>
+          <input type="text" id="zeit" placeholder="z. B. 22:30 oder Nachtschicht"></div>
+      </div>
+      <label class="feld" for="ort">Ort <span>(Halle, Bereich, Außengelände)</span></label>
+      <input type="text" id="ort" placeholder="z. B. Alte Halle, Gang hinter D200/2">
+      <label class="feld" for="anlage">Maschine / Anlage <span>(falls zutreffend)</span></label>
+      <input type="text" id="anlage" placeholder="z. B. D150/3">
+    </div>
+
+    <div class="karte">
+      <h2>Was genau ist passiert?</h2>
+      <div class="hint">Kurz in eigenen Worten: Hergang, Ursache, was aufgefallen ist.
+        Es geht nicht um Schuld – jede Meldung hilft, den nächsten Unfall zu verhindern.<br>
+        <b>Bitte keine Namen anderer Personen nennen</b> – für die Bewertung reicht, was passiert ist.</div>
+      <textarea id="beschreibung" required placeholder="z. B. Beim Vorbeigehen über abgestellte Staplerzinken gestolpert und gestürzt."></textarea>
+
+      <div class="check" id="verletzteBox"><input type="checkbox" id="verletzte">
+        <label for="verletzte">Es wurde jemand verletzt</label></div>
+      <div class="check" id="ehBox"><input type="checkbox" id="erste_hilfe">
+        <label for="erste_hilfe">Erste Hilfe wurde geleistet (bitte zusätzlich ins Verbandbuch eintragen)</label></div>
+    </div>
+
+    <div class="karte" id="umweltKarte" hidden>
+      <h2>Angaben zum Austritt</h2>
+      <div class="hint">Wichtig für die Bewertung nach Wasserrecht.</div>
+      <label class="feld" for="stoff">Welcher Stoff?</label>
+      <input type="text" id="stoff" placeholder="z. B. Hydrauliköl, Diesel, Reiniger">
+      <label class="feld" for="menge">Ungefähre Menge</label>
+      <input type="text" id="menge" placeholder="z. B. wenige Tropfen, ca. 5 Liter, ein Kanister">
+      <label class="feld" for="wohin">Wohin ist der Stoff gelangt?</label>
+      <select id="wohin">
+        <option value="">bitte wählen</option>
+        <option>vollständig aufgefangen (Wanne, Bindemittel)</option>
+        <option>auf befestigten Boden / in die Halle</option>
+        <option>in die Kanalisation</option>
+        <option>auf unbefestigten Boden / ins Erdreich</option>
+        <option>in ein Gewässer</option>
+        <option>unklar</option>
+      </select>
+      <div class="recht" id="awsvHinweis" hidden>
+        <b>Achtung – Anzeigepflicht:</b> Gelangen wassergefährdende Stoffe in nicht nur unerheblicher
+        Menge in ein Gewässer, in die Kanalisation oder in den Boden, ist das <b>unverzüglich</b> der
+        zuständigen Behörde oder einer Polizeidienststelle anzuzeigen (§ 24 Abs. 2 AwSV).
+        Bitte sofort die Betriebsleitung informieren – diese Meldung allein genügt dafür nicht.
+      </div>
+    </div>
+
+    <div class="karte">
+      <h2>Foto <span style="font-family:inherit;font-size:13px;font-weight:400;color:#7d8f88">(freiwillig)</span></h2>
+      <div class="hint">Ein Bild der Stelle hilft bei der Bewertung. Bitte keine Personen fotografieren.</div>
+      <input type="file" id="foto" accept="image/*" capture="environment">
+      <img id="vorschau" class="vorschau" hidden alt="">
+
+      <label class="feld" for="melder">Ihr Name <span>(freiwillig – ohne Namen ist die Meldung anonym)</span></label>
+      <input type="text" id="melder" placeholder="Name oder Abteilung">
+    </div>
+
+    <button class="btn-gross" id="senden" type="submit">Meldung absenden</button>
+    <div class="fehlerbox" id="fehler" hidden></div>
+
+    <div class="recht">
+      <b>Was mit Ihrer Meldung passiert:</b> Sie geht an die Betriebsleitung und an die
+      Sicherheitsfachkraft (OAK engineering) und wird dort bis zur Erledigung nachverfolgt.
+      Ohne Namensangabe wird sie anonym gespeichert.<br><br>
+      <b>Unfallanzeige:</b> Ist eine Person getötet worden oder mehr als drei Tage arbeitsunfähig,
+      muss der Unternehmer den Unfall innerhalb von drei Tagen dem Unfallversicherungsträger
+      anzeigen (§ 193 Abs. 1 SGB VII).
+    </div>
+  </form>
+
+  <div id="fertig" class="fertig" hidden>
+    <div class="haken">✓</div>
+    <h2>Danke für die Meldung.</h2>
+    <p>Sie ist eingegangen und wird bearbeitet.<br>
+      Bei akuter Gefahr informieren Sie bitte zusätzlich sofort Ihre Vorgesetzten.</p>
+    <button class="btn-gross" type="button" id="nochmal" style="max-width:280px;margin:18px auto 0">Weitere Meldung</button>
+  </div>
+
+  <div class="fuss">OAK engineering · Nikolai Krawielitzki<br>Meldungen werden vertraulich behandelt.</div>
+</div>
+
+<script>
+"use strict";
+const CFG = {
+  url: "https://ayieotppxrjrzdpeofkx.supabase.co",
+  anon: "sb_publishable_fz1o6tjpwa7gjiNb17uuEg_-ZwNdFcS",
+};
+/* Token: aus ?t=... oder aus einem gebackenen Wert (Kurzlink /m/<token>/). */
+const TOKEN = (new URLSearchParams(location.search).get("t") || window.OAK_MELDE_TOKEN || "").trim();
+
+const $ = s => document.querySelector(s);
+let ART = "";
+
+document.getElementById("datum").valueAsDate = new Date();
+
+document.getElementById("arten").addEventListener("click", ev => {
+  const b = ev.target.closest(".art"); if(!b) return;
+  ART = b.dataset.art;
+  document.querySelectorAll(".art").forEach(x => x.classList.toggle("aktiv", x === b));
+  $("#umweltKarte").hidden = (ART !== "umwelt");
+  $("#verletzteBox").hidden = (ART === "umwelt");
+  $("#ehBox").hidden = (ART === "umwelt");
+  if(ART === "unfall") $("#verletzte").checked = true;
+});
+
+$("#wohin").addEventListener("change", e => {
+  const kritisch = /Kanalisation|Gewässer|Erdreich|unklar/.test(e.target.value);
+  $("#awsvHinweis").hidden = !kritisch;
+});
+
+/* Foto klein rechnen - in der Halle haengt oft nur schwaches WLAN, und die Meldung
+   soll auch ueber Mobilfunk in zwei Sekunden durch sein. */
+let FOTO = "";
+$("#foto").addEventListener("change", ev => {
+  const datei = ev.target.files && ev.target.files[0];
+  if(!datei){ FOTO = ""; $("#vorschau").hidden = true; return; }
+  const leser = new FileReader();
+  leser.onload = () => {
+    const bild = new Image();
+    bild.onload = () => {
+      const max = 1280, s = Math.min(1, max / Math.max(bild.width, bild.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(bild.width * s); c.height = Math.round(bild.height * s);
+      c.getContext("2d").drawImage(bild, 0, 0, c.width, c.height);
+      FOTO = c.toDataURL("image/jpeg", 0.7);
+      $("#vorschau").src = FOTO; $("#vorschau").hidden = false;
+    };
+    bild.src = leser.result;
+  };
+  leser.readAsDataURL(datei);
+});
+
+$("#form").addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const fehler = $("#fehler");
+  fehler.hidden = true;
+  if(!TOKEN){ fehler.textContent = "Dieser Meldelink ist unvollständig. Bitte den QR-Code am Aushang erneut scannen."; fehler.hidden = false; return; }
+  if(!ART){ fehler.textContent = "Bitte oben auswählen, was passiert ist."; fehler.hidden = false; window.scrollTo({top:0,behavior:"smooth"}); return; }
+  const btn = $("#senden"); btn.disabled = true; btn.textContent = "Wird gesendet …";
+  try{
+    const r = await fetch(CFG.url + "/rest/v1/rpc/vorfall_melden", {
+      method: "POST",
+      headers: { "apikey": CFG.anon, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        p_token: TOKEN, p_art: ART,
+        p_domaene: ART === "umwelt" ? "umwelt" : "arbeitssicherheit",
+        p_datum: $("#datum").value || null, p_zeit: $("#zeit").value,
+        p_ort: $("#ort").value, p_anlage: $("#anlage").value,
+        p_beschreibung: $("#beschreibung").value, p_melder: $("#melder").value,
+        p_verletzte: $("#verletzte").checked, p_erste_hilfe: $("#erste_hilfe").checked,
+        p_stoff: $("#stoff").value, p_menge: $("#menge").value, p_wohin: $("#wohin").value,
+        p_foto: FOTO || null
+      })
+    });
+    if(!r.ok){
+      let txt = await r.text().catch(()=> "");
+      try{ txt = (JSON.parse(txt).message || txt); }catch(e){}
+      throw new Error(txt || ("Fehler " + r.status));
+    }
+    $("#form").hidden = true; $("#fertig").hidden = false; window.scrollTo({top:0});
+  }catch(e){
+    fehler.textContent = "Die Meldung konnte nicht gesendet werden: " + (e.message || e)
+      + " – bitte Vorgesetzte direkt informieren.";
+    fehler.hidden = false;
+  }finally{
+    btn.disabled = false; btn.textContent = "Meldung absenden";
+  }
+});
+
+$("#nochmal").addEventListener("click", () => location.reload());
+</script>
+</body>
+</html>

@@ -22,6 +22,12 @@ const DOMAENEN = [
       { kat: "umwelt-awsv",             label: "AwSV" },
       { kat: "umwelt-unterweisungen",   label: "Unterweisungen" },
   ]},
+  /* Vorfälle sind KEINE Dokumente: eigene Tabelle (portal_vorfaelle), eigene Darstellung
+     in vorfaelle.js. Sie stehen bewusst als eigene Domäne neben Arbeitssicherheit und Umwelt,
+     weil eine Meldung beides betreffen kann (z. B. Ölaustritt). */
+  { key: "vorfaelle", label: "Vorfälle", subs: [
+      { kat: "vorfaelle", label: "Unfälle &amp; Beinahe-Unfälle" },
+  ]},
   { key: "weitere", label: "Weitere Unterlagen", subs: [
       { kat: "sonstige", label: "Weitere Unterlagen" },
   ]},
@@ -235,7 +241,10 @@ function docZeile(r){
 }
 
 let AKTIVE_DOM = null, AKTIVE_SUB = null;
-function katRows(kat){ return sichtbar().filter(r => r.kategorie===kat); }
+function katRows(kat){
+  if(kat === "vorfaelle") return vSichtbar();      // Zähler/Tab-Logik: Meldungen statt Dokumente
+  return sichtbar().filter(r => r.kategorie===kat);
+}
 /* ALLE Bereiche sind für jeden sichtbar (auch ohne Inhalt) – zeigt das volle OAK-Leistungsspektrum. */
 function verfuegbareDomaenen(){ return DOMAENEN; }
 function domCount(d){ return d.subs.reduce((n,s)=> n + katRows(s.kat).length, 0); }
@@ -245,6 +254,7 @@ function domHatInhalt(d){ return d.subs.some(s => katRows(s.kat).length); }
 /* Eine feine Kategorie als Sektion rendern. zeigeHeading=false: ohne Zwischenüberschrift
    (der Sub-Reiter benennt sie schon). Anlagen zeigen ihren Kopf immer (Suche/Zähler). */
 function renderSektion(wrap, kat, label, zeigeHeading){
+  if(kat === "vorfaelle"){ renderVorfaelle(wrap); return; }   // eigene Datenquelle, s. vorfaelle.js
   const rows = katRows(kat);
   if(!rows.length){
     const leer = document.createElement("section"); leer.className = "sektion";
@@ -373,6 +383,7 @@ async function ladePortal(){
       const fgr = await apiGet("/rest/v1/portal_freigabe?select=kunde_slug,maschinen_id,freigegeben_am,freigegeben_von&freigegeben=eq.true", false);
       FREIGABE = {}; (fgr||[]).forEach(x=> FREIGABE[(x.kunde_slug||"")+"|"+(x.maschinen_id||"")]=x);
     }catch(e){ FREIGABE = {}; }
+    await ladeVorfaelle();
     AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null) : null;
     AKTIVE_DOM = null; AKTIVE_SUB = null;
     setKundeName();

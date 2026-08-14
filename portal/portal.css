@@ -136,3 +136,31 @@ tbody tr:hover{background:#f6faf8}
 .update-banner .btn{padding:6px 13px;font-size:13px;}
 .update-banner .btn.sek{background:transparent;color:#cfe6da;border:1px solid #4a6c5c;}
 @media(max-width:520px){ .update-banner{left:12px;right:12px;transform:none;justify-content:center;} }
+
+/* ---- Vorfälle (Unfälle, Beinahe-Unfälle, Umweltvorfälle) ---- */
+.v-info{font-size:13.5px;color:#5a6b64;line-height:1.55;background:#f6faf8;border:1px solid var(--rand);
+  border-radius:10px;padding:11px 13px;margin:10px 0 16px;}
+.v-liste{display:flex;flex-direction:column;gap:14px;}
+.v-karte{background:#fff;border:1px solid var(--rand);border-radius:12px;padding:14px 16px;}
+.v-kopf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.v-art{font-weight:600;font-size:13px;padding:3px 10px;border-radius:11px;}
+.v-datum{font-size:13px;color:#5a6b64;}
+.v-spacer{flex:1;}
+.v-badge{font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:11px;border:1px solid var(--rand);}
+.v-badge.v-offen{background:#fdecea;color:#922b21;border-color:#f5b7b1;}
+.v-badge.v-bearbeitung{background:#fdf6e3;color:#8a6d0b;border-color:#f0d99b;}
+.v-badge.v-erledigt{background:var(--akzent);color:var(--dunkel);border-color:var(--hellgruen);}
+select.v-status{padding:5px 8px;border:1px solid var(--rand);border-radius:8px;font-family:inherit;font-size:13px;background:#fff;color:var(--text);}
+.v-text{font-size:15px;line-height:1.55;margin:2px 0 10px;white-space:normal;}
+.v-merkmale{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px;}
+.v-merk{font-size:12px;background:#eef4f1;color:#3c5b4e;border-radius:9px;padding:2px 9px;}
+.v-daten{width:100%;border-collapse:collapse;font-size:13.5px;}
+.v-daten th{text-align:left;width:140px;font-weight:600;color:var(--dunkel);padding:3px 8px 3px 0;vertical-align:top;}
+.v-daten td{padding:3px 0;color:#3c5b4e;}
+.v-foto{max-width:240px;max-height:180px;object-fit:cover;border-radius:9px;margin-top:11px;border:1px solid var(--rand);display:block;}
+.v-notiz-label{display:block;font-size:13px;font-weight:600;color:var(--dunkel);margin-top:12px;}
+.v-notiz{width:100%;margin-top:5px;padding:9px;border:1px solid var(--rand);border-radius:8px;
+  font-family:inherit;font-size:14px;resize:vertical;color:var(--text);}
+.v-notiz-ro{margin-top:11px;font-size:13.5px;background:#f6faf8;border-radius:8px;padding:9px 11px;color:#3c5b4e;}
+.v-fuss{font-size:11.5px;color:#8aa;margin-top:10px;}
+.v-check{display:flex;align-items:center;gap:9px;font-size:14px;margin:8px 0;}
