@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141453">
+<link rel="stylesheet" href="fonts.css?v=202608141458">
 <link rel="stylesheet" href="nav.css">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
@@ -98,8 +98,8 @@ a { color: inherit; text-decoration: none; }
   /* Die Navigation steht im Fluss (sticky), deshalb KEIN zusaetzlicher Innenabstand von 68px
      und die Hoehe abzueglich der Leiste – sonst ragt der Hero ueber den Bildschirm hinaus. */
   min-height: calc(100vh - 68px);
-  display: flex; align-items: flex-start;
-  padding: 0 8vw;
+  display: flex; align-items: stretch;
+  padding: 0 6vw;
   background: var(--oak-deep);
   overflow: hidden;
 }
@@ -115,8 +115,10 @@ a { color: inherit; text-decoration: none; }
 }
 .hero-content {
   position: relative; z-index: 2;
-  max-width: 1080px; width: 100%; margin: 0 auto;
-  padding: 3.5rem 0 4rem;
+  /* Reihenfolge im Kopf: Schrift oben, Signet in der Mitte (im Gitter), Kacheln unten. */
+  display: flex; flex-direction: column;
+  max-width: 1240px; width: 100%; margin: 0 auto;
+  padding: 5.5rem 0 4.5rem;
   pointer-events: none;
 }
 .hero-eyebrow {
@@ -145,7 +147,7 @@ a { color: inherit; text-decoration: none; }
 }
 .hero-title em { font-style: italic; color: var(--oak-light); }
 .hero-sub {
-  font-size: 1.05rem; font-weight: 300;
+  font-size: 1.08rem; font-weight: 300;
   color: rgba(255,255,255,.8); line-height: 1.7;
   max-width: 760px;            /* kurzer Satz -> bleibt auf dem Desktop einzeilig */
   text-wrap: balance;
@@ -154,8 +156,8 @@ a { color: inherit; text-decoration: none; }
   opacity: 0; animation: fadeUp .8s var(--ease) .6s forwards;
 }
 .hero-cards {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;
-  max-width: 1120px;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem;
+  margin-top: auto;   /* schiebt die Kacheln an den unteren Rand – dazwischen steht das Signet */
   opacity: 0; animation: fadeUp .8s var(--ease) .8s forwards;
 }
 @media (max-width: 1024px) { .hero-cards { grid-template-columns: repeat(2, 1fr); max-width: 560px; } }
@@ -839,6 +841,6 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 // Gitter, Signet und Menue kommen aus site.js (gemeinsam fuer alle Seiten)
 </script>
-<script src="site.js?v=202608141453"></script>
+<script src="site.js?v=202608141458"></script>
 </body>
 </html>
