@@ -7,30 +7,37 @@ function zurApp(){ $("#loginView").classList.add("hidden"); $("#appView").classL
 /* Zwei-Ebenen-Navigation: Domänen-Tabs (oben) → Sub-Reiter (feine `kategorie`-Werte).
    Der Sub `anlagen` ist speziell (Maschinen-Tabelle mit Ampel/Suche/Doc-Buttons), alle
    anderen sind einfache Dokumentlisten. `unterweisungen` gibt es je Domäne getrennt. */
+/* Cockpit und Vorfälle sind KEINE Dokumentlisten: Cockpit rechnet Kennzahlen (cockpit.js),
+   Vorfälle kommen aus portal_vorfaelle (vorfaelle.js). Vorfälle stehen in BEIDEN Fachdomänen –
+   gefiltert nach Zuordnung, weil eine Meldung Arbeitssicherheit oder Umwelt betreffen kann. */
 const DOMAENEN = [
   { key: "arbeitssicherheit", label: "Arbeitssicherheit", subs: [
+      { kat: "ck-arbeitssicherheit", label: "Überblick" },
       { kat: "hallenplan",    label: "Hallenplan" },
       { kat: "anlagen",       label: "Anlagen &amp; Maschinensicherheit" },
       { kat: "allg-gbu",      label: "Allgemeine GBU" },
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
       { kat: "begehungen",    label: "Begehungen" },
+      { kat: "vf-arbeitssicherheit", label: "Vorfälle" },
       { kat: "unterweisungen", label: "Unterweisungen" },
   ]},
   { key: "umwelt", label: "Umwelt", subs: [
+      { kat: "ck-umwelt", label: "Überblick" },
       { kat: "umwelt-immissionsschutz", label: "Immissionsschutz" },
       { kat: "umwelt-gewaesserschutz",  label: "Gewässerschutz" },
       { kat: "umwelt-awsv",             label: "AwSV" },
+      { kat: "vf-umwelt",               label: "Umweltvorfälle" },
       { kat: "umwelt-unterweisungen",   label: "Unterweisungen" },
   ]},
-  /* Vorfälle sind KEINE Dokumente: eigene Tabelle (portal_vorfaelle), eigene Darstellung
-     in vorfaelle.js. Sie stehen bewusst als eigene Domäne neben Arbeitssicherheit und Umwelt,
-     weil eine Meldung beides betreffen kann (z. B. Ölaustritt). */
-  { key: "vorfaelle", label: "Vorfälle", subs: [
-      { kat: "vorfaelle",        label: "Unfälle &amp; Beinahe-Unfälle" },
-      { kat: "vorfall-aushang",  label: "Aushang &amp; QR-Code" },
+  { key: "energie", label: "Energie", subs: [
+      { kat: "ck-energie",         label: "Überblick" },
+      { kat: "energie-aspekte",    label: "Energieaspekte" },
+      { kat: "energie-verbrauch",  label: "Verbrauch &amp; Messstellen" },
+      { kat: "energie-massnahmen", label: "Effizienzmaßnahmen" },
   ]},
   { key: "weitere", label: "Weitere Unterlagen", subs: [
       { kat: "sonstige", label: "Weitere Unterlagen" },
+      { kat: "vorfall-aushang", label: "Aushang &amp; QR-Code" },
   ]},
 ];
 // Label je feiner Kategorie (für Sektions-Überschriften/Fallback).
@@ -243,7 +250,9 @@ function docZeile(r){
 
 let AKTIVE_DOM = null, AKTIVE_SUB = null;
 function katRows(kat){
-  if(kat === "vorfaelle") return vSichtbar();      // Zähler/Tab-Logik: Meldungen statt Dokumente
+  if(kat.indexOf("ck-") === 0) return [];                        // Cockpit hat keinen Zähler
+  if(kat === "vf-arbeitssicherheit") return vBereich("arbeitssicherheit");
+  if(kat === "vf-umwelt") return vBereich("umwelt");
   return sichtbar().filter(r => r.kategorie===kat);
 }
 /* ALLE Bereiche sind für jeden sichtbar (auch ohne Inhalt) – zeigt das volle OAK-Leistungsspektrum. */
@@ -255,7 +264,9 @@ function domHatInhalt(d){ return d.subs.some(s => katRows(s.kat).length); }
 /* Eine feine Kategorie als Sektion rendern. zeigeHeading=false: ohne Zwischenüberschrift
    (der Sub-Reiter benennt sie schon). Anlagen zeigen ihren Kopf immer (Suche/Zähler). */
 function renderSektion(wrap, kat, label, zeigeHeading){
-  if(kat === "vorfaelle"){ renderVorfaelle(wrap); return; }   // eigene Datenquelle, s. vorfaelle.js
+  if(kat.indexOf("ck-") === 0){ renderCockpit(wrap, kat.slice(3)); return; }        // cockpit.js
+  if(kat === "vf-arbeitssicherheit"){ renderVorfaelle(wrap, "arbeitssicherheit"); return; }
+  if(kat === "vf-umwelt"){ renderVorfaelle(wrap, "umwelt"); return; }               // vorfaelle.js
   const rows = katRows(kat);
   if(!rows.length){
     const leer = document.createElement("section"); leer.className = "sektion";
@@ -313,8 +324,10 @@ function renderSubTabs(){
   const dom = verfuegbareDomaenen().find(d => d.key===AKTIVE_DOM);
   const subs = verfuegbareSubs(dom);
   if(subs.length <= 1){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = subs[0] ? subs[0].kat : null; return; }
-  // Standard-Sub: erster Sub-Reiter MIT Inhalt, sonst der erste.
-  if(!AKTIVE_SUB || !subs.some(s => s.kat===AKTIVE_SUB)) AKTIVE_SUB = (subs.find(s => katRows(s.kat).length) || subs[0]).kat;
+  // Standard-Sub: das Cockpit, wenn die Domäne eines hat – sonst der erste Reiter mit Inhalt.
+  if(!AKTIVE_SUB || !subs.some(s => s.kat===AKTIVE_SUB))
+    AKTIVE_SUB = (subs.find(s => s.kat.indexOf("ck-")===0)
+               || subs.find(s => katRows(s.kat).length) || subs[0]).kat;
   nav.classList.remove("hidden");
   nav.innerHTML = subs.map(s => {
     const n = katRows(s.kat).length;

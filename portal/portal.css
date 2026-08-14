@@ -178,3 +178,34 @@ details.v-karte > summary:hover{background:#f6faf8;}
 details.v-karte > *:not(summary){padding-left:16px;padding-right:16px;}
 details.v-karte > .v-fuss{padding-bottom:12px;}
 .v-kopf-innen{padding-top:10px;}
+
+/* ---- Cockpit: Kennzahl-Kacheln je Domäne ---- */
+.ck-reihe{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin:6px 0 4px;}
+.ck-kachel{background:#fff;border:1px solid var(--rand);border-left:4px solid var(--rand);
+  border-radius:12px;padding:13px 15px;}
+.ck-zahl{font-family:'Cormorant Garamond',Georgia,serif;font-size:33px;font-weight:700;color:var(--dunkel);line-height:1.05;}
+.ck-label{font-size:13.5px;font-weight:600;color:var(--text);margin-top:3px;}
+.ck-hinweis{font-size:12px;color:#7d8f88;margin-top:2px;line-height:1.4;}
+.ck-kachel.ck-kritisch{border-left-color:var(--rot);}
+.ck-kachel.ck-kritisch .ck-zahl{color:var(--rot);}
+.ck-kachel.ck-warnung{border-left-color:var(--orange);}
+.ck-kachel.ck-gut{border-left-color:var(--hellgruen);}
+.ck-balken-block{margin:16px 0 4px;}
+.ck-balken{display:flex;gap:2px;height:15px;border-radius:8px;overflow:hidden;background:#eef4f1;}
+.ck-seg{display:block;}
+.ck-seg.ck-kritisch{background:var(--rot);}
+.ck-seg.ck-warnung{background:var(--orange);}
+.ck-seg.ck-gut{background:var(--hellgruen);}
+.ck-seg.ck-neutral{background:#c8d5cf;}
+.ck-legende{display:flex;gap:16px;flex-wrap:wrap;margin-top:9px;font-size:13px;color:#3c5b4e;}
+.ck-leg{display:flex;align-items:center;gap:6px;}
+.ck-punkt{width:10px;height:10px;border-radius:3px;display:inline-block;}
+.ck-punkt.ck-kritisch{background:var(--rot);}
+.ck-punkt.ck-warnung{background:var(--orange);}
+.ck-punkt.ck-gut{background:var(--hellgruen);}
+.ck-punkt.ck-neutral{background:#c8d5cf;}
+.ck-fuss{font-size:12.5px;color:#5a6b64;line-height:1.55;background:#f6faf8;border:1px solid var(--rand);
+  border-radius:10px;padding:11px 13px;margin-top:14px;}
+.ck-warnung{font-size:13.5px;line-height:1.55;background:#fdecea;border:1px solid #f5b7b1;color:#922b21;
+  border-radius:10px;padding:11px 13px;margin-top:14px;}
+.v-aushang{display:inline-block;margin-top:8px;font-weight:600;}

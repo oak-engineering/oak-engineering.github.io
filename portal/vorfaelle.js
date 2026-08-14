@@ -28,7 +28,13 @@ function vFoto(wert){
   return `<a href="${s}" target="_blank" rel="noopener"><img class="v-foto" src="${s}" alt="Belegfoto zur Meldung"></a>`;
 }
 function vSichtbar(){ return AKTIV ? VORFAELLE.filter(v => v.kunde_slug === AKTIV) : VORFAELLE; }
-function vOffen(){ return vSichtbar().filter(v => v.status !== "erledigt").length; }
+/* Eine Meldung kann beide Bereiche betreffen ("beides") – sie erscheint dann in beiden Reitern. */
+function vBereich(bereich){
+  return vSichtbar().filter(v => bereich === "umwelt"
+    ? (v.domaene === "umwelt" || v.domaene === "beides" || v.art === "umwelt")
+    : (v.domaene !== "umwelt" || v.domaene === "beides"));
+}
+function vOffen(rows){ return rows.filter(v => v.status !== "erledigt").length; }
 
 async function ladeVorfaelle(){
   try{
@@ -85,18 +91,30 @@ function vKarte(v){
   </details>`;
 }
 
-function renderVorfaelle(wrap){
-  const rows = vSichtbar();
+function renderVorfaelle(wrap, bereich){
+  bereich = bereich || "arbeitssicherheit";
+  const umwelt = bereich === "umwelt";
+  const rows = vBereich(bereich);
+  const offen = vOffen(rows);
   const sec = document.createElement("section");
   sec.className = "sektion";
   const knopf = ADMIN
     ? `<button class="btn sek" id="vNeu" type="button">+ Vorfall erfassen</button>` : "";
-  sec.innerHTML = `<div class="sek-kopf"><h2>Unfälle &amp; Beinahe-Unfälle</h2>
-      <span class="zaehler">${rows.length} ${rows.length === 1 ? "Meldung" : "Meldungen"}${vOffen() ? " · " + vOffen() + " offen" : ""}</span>
+  /* Der Meldeaushang liegt als Dokument im Katalog – hier direkt verlinkt, damit man ihn
+     dort findet, wo man ihn braucht (statt in einem eigenen Reiter). */
+  const aushang = sichtbar().find(r => r.kategorie === "vorfall-aushang");
+  const aushangLink = aushang
+    ? ` <a class="v-aushang" href="${viewerUrl(aushang.doc_typ, aushang.storage_path, aushang.titel)}"
+         target="_blank" rel="noopener">Aushang mit QR-Code öffnen</a>` : "";
+  sec.innerHTML = `<div class="sek-kopf"><h2>${umwelt ? "Umweltvorfälle" : "Unfälle &amp; Beinahe-Unfälle"}</h2>
+      <span class="zaehler">${rows.length} ${rows.length === 1 ? "Meldung" : "Meldungen"}${offen ? " · " + offen + " offen" : ""}</span>
       <span class="v-spacer"></span>${knopf}</div>
-    <div class="v-info">Meldungen aus dem Betrieb – über den QR-Aushang in der Halle oder hier erfasst.
-      Erfasst werden Unfälle, Beinahe-Unfälle, unsichere Zustände und Umweltvorfälle (z. B. Ölaustritt).
-      <b>Beinahe-Unfälle sind die wertvollsten Meldungen</b>: Sie zeigen die Lücke, bevor etwas passiert.</div>
+    <div class="v-info">${umwelt
+      ? `Gemeldete Umweltvorfälle – Austritt von Öl, Kraftstoff oder Chemikalien, Leckagen und
+         vergleichbare Ereignisse. <b>Gelangen wassergefährdende Stoffe in nicht nur unerheblicher Menge
+         in Gewässer, Kanalisation oder Boden, ist das unverzüglich anzuzeigen</b> (§ 24 Abs. 2 AwSV).`
+      : `Meldungen aus dem Betrieb – über den QR-Aushang in der Halle oder hier erfasst.
+         <b>Beinahe-Unfälle sind die wertvollsten Meldungen</b>: Sie zeigen die Lücke, bevor etwas passiert.`}${aushangLink}</div>
     ${rows.length ? `<div class="v-liste">${rows.map(vKarte).join("")}</div>`
       : `<div class="leer">Bisher keine Meldungen.<br><span style="font-style:normal">Der Meldelink für die Beschäftigten hängt als QR-Aushang in der Halle.</span></div>`}`;
   wrap.appendChild(sec);
