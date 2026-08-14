@@ -5,12 +5,32 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>OAK Kundenportal</title>
-<link rel="stylesheet" href="portal.css?v=2026-08-14g">
+<link rel="stylesheet" href="portal.css?v=2026-08-14h">
 </head>
 <body>
 
 <!-- LOGIN -->
 <div id="loginView">
+
+  <!-- Website-Kopf: liegt bewusst INNERHALB von #loginView und verschwindet damit
+       automatisch nach dem Login, wo der Portal-Header .kopf uebernimmt. -->
+  <header class="site-top">
+    <div class="site-top-inner">
+      <a class="site-marke" href="../index.html">
+        <img src="../assets/oak-logo.png" alt="OAK engineering">
+        <span><b>OAK engineering</b><small>EHS-Management &amp; Digitalisierung</small></span>
+      </a>
+      <nav class="site-nav" aria-label="Website">
+        <a href="../arbeitssicherheit.html">Arbeitssicherheit</a>
+        <a href="../umweltschutz.html">Umweltschutz</a>
+        <a href="../ki-digitalisierung.html">KI &amp; Digitalisierung</a>
+        <a href="../schulungen.html">Schulungen</a>
+        <a href="../about.html">Über uns</a>
+        <a href="../kontakt.html" class="site-nav-cta">Kontakt</a>
+      </nav>
+    </div>
+  </header>
+
   <form class="login" id="loginForm" autocomplete="on">
     <img src="../assets/oak-logo.png" class="oak-logo login-logo" alt="OAK engineering">
     <h1>Kundenportal</h1>
@@ -23,6 +43,13 @@
     <div class="fehler" id="loginFehler"></div>
     <div class="hinweis">Zugang erhalten Sie von OAK&nbsp;engineering.<br>Ihre Unterlagen sind vertraulich und nur nach Login sichtbar.</div>
   </form>
+
+  <footer class="site-bottom">
+    <a href="../index.html">Zur Website</a><span>·</span>
+    <a href="../impressum.html">Impressum</a><span>·</span>
+    <a href="../datenschutz.html">Datenschutz</a><span>·</span>
+    <a href="../kontakt.html">Kontakt</a>
+  </footer>
 </div>
 
 <!-- PORTAL -->
@@ -72,6 +99,12 @@
     <div class="fuss">
       Status-Ampel (Anlagen) = aktueller Stand der Maßnahmen. „Stand" = Datum der letzten Aktualisierung durch OAK engineering.<br>
       OAK engineering · Nikolai Krawielitzki · vertrauliche Kundenunterlagen.
+      <div class="fuss-links">
+        <a href="../index.html">Zur Website</a><span>·</span>
+        <a href="../impressum.html">Impressum</a><span>·</span>
+        <a href="../datenschutz.html">Datenschutz</a><span>·</span>
+        <a href="../kontakt.html">Kontakt</a>
+      </div>
     </div>
   </main>
 </div>
