@@ -62,7 +62,8 @@ function renderCockpit(wrap, bereich){
       <div class="ck-reihe">
         ${ckTile(z.anlagen, "Anlagen dokumentiert", z.ohne ? z.ohne + " ohne Bewertung" : "alle bewertet")}
         ${ckTile(z.gefahr, "im Gefahrbereich", z.gefahr ? "vorrangig abstellen" : "keine", z.gefahr ? "kritisch" : "gut")}
-        ${ckTile(z.offen, "offene Maßnahmen", "von " + z.gesamt + " insgesamt", z.offen ? "warnung" : "gut")}
+        ${ckTile(z.maengel, "Mängel im Gefahrbereich", "aus den Mängellisten", z.maengel ? "kritisch" : "gut")}
+        ${ckTile(z.gesamt - z.offen, "Maßnahmen wirksam", "von " + z.gesamt + " dokumentierten", (z.gesamt && !(z.gesamt - z.offen)) ? "warnung" : "")}
         ${ckTile(vOffenN, "offene Vorfälle", unfaelle + " Unfälle · " + beinahe + " Beinahe-Unfälle", vOffenN ? "warnung" : "gut")}
         ${ckTile(z.freigegeben + "/" + z.anlagen, "Dokumente freigegeben", "durch die Sicherheitsfachkraft")}
         ${ckTile(ckDatum(z.letzte), "letzte Begehung", "Stand der Unterlagen")}
@@ -73,9 +74,10 @@ function renderCockpit(wrap, bereich){
         { name: "Akzeptanzbereich", wert: z.akzeptanz, klasse: "gut" },
         { name: "nicht bewertet", wert: z.ohne, klasse: "neutral" },
       ])}
-      <div class="ck-fuss">Risiko = höchstes Ausgangsrisiko der Gefährdungsbeurteilung je Anlage
-        (1–3 Akzeptanz · 4–8 Besorgnis · 9–16 Gefahr). „Offene Maßnahmen" zählt die noch nicht
-        umgesetzten Maßnahmen aller Gefährdungsbeurteilungen.</div>`;
+      <div class="ck-fuss">Risiko = höchstes <b>Ausgangsrisiko</b> der Gefährdungsbeurteilung je Anlage
+        (1–3 Akzeptanz · 4–8 Besorgnis · 9–16 Gefahr) – also der Zustand <i>vor</i> Umsetzung der Maßnahmen.
+        „Maßnahmen wirksam" zählt die in den Gefährdungsbeurteilungen als umgesetzt und wirksam
+        bestätigten Maßnahmen; solange dort nichts abgehakt ist, steht der Wert bei null.</div>`;
   }
 
   if(bereich === "umwelt"){
