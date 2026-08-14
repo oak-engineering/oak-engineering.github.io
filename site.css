@@ -256,17 +256,12 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
   letter-spacing:0;text-transform:none;white-space:nowrap;margin-bottom:.7rem;}
 /* Tooltip zeigt in der rechten Leiste nach links, sonst steht er ausserhalb des Fensters. */
 .mini-tools .mt::after{bottom:auto;left:auto;right:calc(100% + 9px);top:50%;transform:translateY(-50%);}
-/* Einspaltig: Tools als Zeile OBEN, Inhalt darunter. Beide brauchen eigene Grid-Zeilen –
-   ohne das lagen sie in derselben Zelle und die Icons standen ueber dem Text. */
+/* Auf schmalen Bildschirmen entfaellt die Tool-Leiste ganz: Sie braucht Hover fuer den Tooltip,
+   den es dort nicht gibt, und die Icons allein sagen nichts. Der Inhalt bekommt die volle Breite. */
 @media(max-width:900px){
-  .sub-layout{grid-template-columns:1fr;gap:1.4rem;}
-  .sub-layout .leist-col{grid-column:1;grid-row:2;}
-  .mini-tools{grid-column:1;grid-row:1;flex-direction:row;flex-wrap:wrap;
-    align-items:center;gap:.45rem;padding-bottom:1.1rem;border-bottom:1px solid var(--border);}
-  .mt-label{font-size:1.25rem;margin:0 .5rem 0 0;}
-  .mini-tools .mt{width:42px;height:42px;}
-  .mini-tools .mt svg{width:21px;height:21px;}
-  .mini-tools .mt::after{right:auto;left:50%;top:auto;bottom:calc(100% + 9px);transform:translateX(-50%);}
+  .sub-layout{grid-template-columns:1fr;}
+  .sub-layout .leist-col{grid-column:1;grid-row:1;}
+  .mini-tools{display:none;}
 }
 .mt{position:relative;display:grid;place-items:center;width:46px;height:46px;border-radius:10px;
   border:1.5px solid var(--border);color:var(--oak-deep);background:var(--white);

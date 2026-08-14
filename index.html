@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141404">
+<link rel="stylesheet" href="fonts.css?v=202608141409">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -299,10 +299,6 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
   color: #fff; line-height: 1.15; margin-bottom: .5rem;
 }
 .hc-d { font-size: .8rem; color: rgba(255,255,255,.66); line-height: 1.5; flex: 1; }
-.hc-go {
-  margin-top: 1rem; font-size: .8rem; font-weight: 600;
-  color: var(--oak-light); letter-spacing: .02em;
-}
 .btn-primary {
   display: inline-flex; align-items: center; gap: .5rem;
   background: var(--oak-deep); color: var(--white);
@@ -814,24 +810,9 @@ footer {
 }
 
 /* ── MOBILE ─────────────────────────────────────────────────────────── */
-@media (max-width: 1200px) {
-  .nav-links {
-    display: none; position: fixed; top: 68px; left: 0; right: 0;
-    flex-direction: column; align-items: stretch;
-    background: var(--white); border-bottom: 1px solid var(--border);
-    padding: 1.2rem 6vw; gap: 1.1rem; z-index: 99;
-    text-transform: none; letter-spacing: 0; font-size: .95rem;
-  }
-  .nav-links.open { display: flex; }
-  .nav-links a { padding: .25rem 0; }
-  .nav-dd { flex-direction: column; align-items: stretch; }
-  .nav-dd-btn { padding: .25rem 0; justify-content: space-between; width: 100%; text-transform: none; letter-spacing: 0; font-size: .95rem; }
-  .nav-dd-menu { position: static; transform: none; display: flex; min-width: 0; border: none; box-shadow: none; background: transparent; padding: .1rem 0 .3rem 1rem; }
-  .nav-dd-menu a { font-size: .92rem; padding: .35rem 0; }
-  .nav-search { width: 100%; height: 42px; }
-  .nav-search input { width: 100%; font-size: .95rem; }
-  .nav-cta { text-align: center; }
-}
+/* (Die frühere Vollbreiten-Navigation für schmale Fenster ist entfallen – sie setzte
+   .nav-links auf left:0/right:0 und schob den Drawer dadurch auf die linke Seite.
+   Die Drawer-Regeln weiter oben gelten für alle Breiten.) */
 @media (max-width: 900px) {
   .hero { padding: 68px 6vw 0; min-height: auto; }
   .hero-content { padding: 4rem 0; }
@@ -863,7 +844,7 @@ footer {
         <a href="schulungen.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Schulungen</a>
       </div>
     </div>
-    <a href="about.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Über uns</a>
+    <a href="about.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Über OAK</a>
     <a href="portal/" class="nav-login"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Kundenlogin</a>
     <a href="kontakt.html" class="nav-cta"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m21 7-9 6-9-6"/></svg> Kontakt</a>
   </div>
@@ -883,22 +864,18 @@ footer {
       <a class="hero-card" href="arbeitssicherheit.html">
           <b>Arbeitssicherheit</b>
           <span class="hc-d">Gefährdungsbeurteilung&nbsp;· Gefahrstoffe&nbsp;· Psych. GBU&nbsp;· Sicherheitskultur&nbsp;· Schulungen</span>
-          <span class="hc-go">Mehr erfahren →</span>
         </a>
       <a class="hero-card" href="umweltschutz.html">
           <b>Umweltschutz</b>
           <span class="hc-d">Immissionsschutz&nbsp;· Störfall&nbsp;· ISO 14001&nbsp;· Gefahrgut&nbsp;· Gewässerschutz&nbsp;· <span class="nb">CO₂-Bilanzierung</span></span>
-          <span class="hc-go">Mehr erfahren →</span>
         </a>
       <a class="hero-card" href="ki-digitalisierung.html">
           <b>KI &amp; Digitalisierung</b>
           <span class="hc-d">KI-Auswertung&nbsp;· Automatisierung&nbsp;· Dashboards</span>
-          <span class="hc-go">Mehr erfahren →</span>
         </a>
       <a class="hero-card" href="schulungen.html">
           <b>Schulungsangebot</b>
           <span class="hc-d">Arbeitssicherheit&nbsp;· Umweltrecht&nbsp;· ISO 14001&nbsp;· KI – online, vor Ort &amp; inhouse</span>
-          <span class="hc-go">Mehr erfahren →</span>
         </a>
     </div>
   </div>
