@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141347">
+<link rel="stylesheet" href="fonts.css?v=202608141357">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -293,38 +293,17 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
 /* Statt der Stichwoerter kleine Icons nebeneinander – das Wort kommt beim Mouseover.
    overflow bleibt sichtbar, sonst schneidet die Kachel den Tooltip ab. */
 .hc-ico { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; align-content: flex-start; }
+/* Icon plus Wort – ohne Tooltip, weil das Wort ohnehin dasteht. */
 .ci {
-  position: relative; display: grid; place-items: center; width: 26px; height: 26px;
-  border-radius: 6px; border: 1px solid rgba(255,255,255,.22);
-  color: rgba(255,255,255,.75); background: rgba(255,255,255,.06);
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .22rem .6rem .22rem .45rem; border-radius: 99px;
+  border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.07);
+  color: rgba(255,255,255,.82); font-size: .72rem; font-weight: 500; line-height: 1.5;
   transition: color .15s, border-color .15s, background .15s;
 }
+.ci::after { content: attr(data-tip); }
 .ci:hover { color: #fff; border-color: var(--kachel); background: rgba(255,255,255,.14); }
-.ci svg { width: 15px; height: 15px; }
-.ci::after {
-  content: attr(data-tip); position: absolute; top: calc(100% + 7px); left: 50%;
-  transform: translateX(-50%); white-space: nowrap;
-  background: var(--white); color: var(--ink); font-size: .7rem; font-weight: 500;
-  padding: .25rem .55rem; border-radius: 5px; box-shadow: 0 6px 16px rgba(0,0,0,.35);
-  opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 5;
-}
-.ci:hover::after { opacity: 1; }
-/* Touch kennt kein Hover: dort steht das Wort neben dem Icon. */
-@media (hover: none) {
-  .ci { width: auto; height: auto; padding: .25rem .6rem; grid-auto-flow: column; gap: .35rem; }
-  .ci::before { content: attr(data-tip); font-size: .74rem; }
-  .ci::after { display: none; }
-}
-.hc-k {
-  font-size: .64rem; font-weight: 600; letter-spacing: .14em;
-  text-transform: uppercase; color: var(--oak-light); margin-bottom: .6rem;
-}
-.hero-card b {
-  font-family: var(--serif); font-size: 1.45rem; font-weight: 600;
-  color: #fff; line-height: 1.15; margin-bottom: .5rem;
-}
-.nb { white-space: nowrap; }
-.hc-d { font-size: .8rem; color: rgba(255,255,255,.66); line-height: 1.5; flex: 1; }
+.ci svg { width: 14px; height: 14px; flex: none; opacity: .85; }
 .hc-go {
   margin-top: 1rem; font-size: .8rem; font-weight: 600;
   color: var(--oak-light); letter-spacing: .02em;
