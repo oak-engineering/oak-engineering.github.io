@@ -21,17 +21,20 @@
      (bbox im 1024x559-PNG), sonst sitzt das Signet klein und ausserhalb der Mitte. */
   const LOGO_BOX = { x: 285, y: 54, w: 454, h: 453 };
   const LOGO_MITTE = parseFloat(canvas.dataset.logoX || '0.5');   // 0..1, je Seite ueberschreibbar
-  let logoTint = null;
-  const logo = new Image();
-  logo.onload = () => {
+  const LOGO_SKALA = parseFloat(canvas.dataset.logoS || '0.78'); // Anteil der Kopfhoehe
+  let logoTint = null, logoWeiss = null;
+  const glanz = document.createElement('canvas');   // Zwischenbild fuer das Aufleuchten
+  const einfaerben = (farbe) => {
     const o = document.createElement('canvas');
     o.width = LOGO_BOX.w; o.height = LOGO_BOX.h;
     const oc = o.getContext('2d');
     oc.drawImage(logo, LOGO_BOX.x, LOGO_BOX.y, LOGO_BOX.w, LOGO_BOX.h, 0, 0, LOGO_BOX.w, LOGO_BOX.h);
     oc.globalCompositeOperation = 'source-in';
-    oc.fillStyle = '#74C69D'; oc.fillRect(0, 0, LOGO_BOX.w, LOGO_BOX.h);
-    logoTint = o;
+    oc.fillStyle = farbe; oc.fillRect(0, 0, LOGO_BOX.w, LOGO_BOX.h);
+    return o;
   };
+  const logo = new Image();
+  logo.onload = () => { logoTint = einfaerben('#74C69D'); logoWeiss = einfaerben('#FFFFFF'); };
   logo.src = document.querySelector('.nav-logo img')?.getAttribute('src') || 'assets/oak-logo.png';
 
   function build(){
@@ -52,10 +55,30 @@
   function draw(t){
     ctx.clearRect(0, 0, w, h);
     if(logoTint){
-      const s = h * 0.78;                       // skaliert mit der Kopfhoehe, auch im kompakten Kopf
+      const s = Math.min(h * LOGO_SKALA, w * 0.45);   // skaliert mit dem Kopf, bleibt aber im Bild
+      const lx = w * LOGO_MITTE - s / 2, ly = (h - s) / 2;
       ctx.globalAlpha = 0.14;
-      ctx.drawImage(logoTint, w * LOGO_MITTE - s / 2, (h - s) / 2, s, s);
+      ctx.drawImage(logoTint, lx, ly, s, s);
       ctx.globalAlpha = 1;
+      /* Weisses Aufleuchten dort, wo der Zeiger steht: das weisse Signet wird mit einem
+         radialen Verlauf am Mauszeiger ausgestanzt und darueber gelegt. */
+      if(logoWeiss && mouse.x > -9000 && s > 0){
+        if(glanz.width !== Math.round(s)){ glanz.width = Math.round(s); glanz.height = Math.round(s); }
+        const g = glanz.getContext('2d');
+        g.clearRect(0, 0, glanz.width, glanz.height);
+        g.globalCompositeOperation = 'source-over';
+        g.drawImage(logoWeiss, 0, 0, glanz.width, glanz.height);
+        g.globalCompositeOperation = 'destination-in';
+        const mx = mouse.x - lx, my = mouse.y - ly, r = 165;
+        const verlauf = g.createRadialGradient(mx, my, 0, mx, my, r);
+        verlauf.addColorStop(0, 'rgba(0,0,0,1)');
+        verlauf.addColorStop(.55, 'rgba(0,0,0,.45)');
+        verlauf.addColorStop(1, 'rgba(0,0,0,0)');
+        g.fillStyle = verlauf; g.fillRect(0, 0, glanz.width, glanz.height);
+        ctx.globalAlpha = 0.75;
+        ctx.drawImage(glanz, lx, ly, s, s);
+        ctx.globalAlpha = 1;
+      }
     }
     for(const d of dots){
       const wave = Math.sin((d.bx + d.by) * 0.01 + t * 0.0006) * 1.8;

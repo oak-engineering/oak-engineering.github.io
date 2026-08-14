@@ -1,3 +1,4 @@
+@import url('../nav.css');
 /* OAK Kundenportal — CI (references/oak.md §10). Fonts lokal (kein Google-Call). */
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600 700;font-display:swap;src:url(../assets/fonts/cormorant-garamond-600-normal.woff2) format('woff2');}
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300 500;font-display:swap;src:url(../assets/fonts/cormorant-garamond-400-normal.woff2) format('woff2');}
@@ -13,95 +14,15 @@
   --border:#D6E4DA;--white:#FDFCFA;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost',sans-serif;
   --rot:#c0392b;--orange:#e08e0b;--grau:#8aa;--rand:#dfe7e3;--text:#243;}
 *{box-sizing:border-box}
-body{margin:0;font-family:'Jost','Segoe UI',Arial,sans-serif;color:var(--text);overflow-x:hidden;
+html{overflow-x:clip;}
+body{margin:0;font-family:'Jost','Segoe UI',Arial,sans-serif;color:var(--text);overflow-x:clip;
   background:linear-gradient(160deg,#f3f7f5,#e7efeb);min-height:100vh;}
 h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--dunkel);margin:0;}
 a{color:var(--gruen)}
 .wrap{max-width:1060px;margin:0 auto;padding:0 18px;}
 
-/* ================= Navigation 1:1 aus site.css uebernommen =================
-   Gleiche Leiste wie auf der Website – site.css selbst kann nicht geladen werden,
-   weil sich :root, body und .btn mit dem Portal-CSS ueberschneiden. */
-/* ── NAV ─────────────────────────────────────────────── */
-nav{position:sticky;top:0;z-index:130;display:flex;align-items:center;justify-content:space-between;
-  padding:0 5vw;height:68px;background:#fff;
-  border-bottom:1px solid var(--border);}
-.nav-logo{display:flex;align-items:center;gap:10px;}
-.nav-logo img{height:38px;width:auto;}
-.nav-wordmark{display:flex;flex-direction:column;line-height:1;font-family:var(--serif);
-  font-size:1.25rem;font-weight:600;color:var(--oak-deep);letter-spacing:.02em;}
-.nav-wordmark small{font-family:var(--sans);font-size:.58rem;font-weight:500;letter-spacing:.18em;
-  text-transform:uppercase;color:var(--muted);margin-top:3px;}
-.nav-links{display:flex;align-items:center;gap:1.3rem;font-size:.76rem;font-weight:500;
-  letter-spacing:.06em;text-transform:uppercase;color:var(--muted);}
-.nav-links a{transition:color .2s;}
-.nav-links a:hover{color:var(--oak);}
-.nav-links a.active{color:var(--oak-deep);font-weight:600;}
-.nav-dd{position:relative;display:flex;align-items:center;}
-.nav-dd-btn{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--muted);background:none;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:.3rem;padding:0;transition:color .2s;}
-.nav-dd-btn svg{width:9px;height:9px;transition:transform .2s;}
-.nav-dd:hover .nav-dd-btn,.nav-dd:focus-within .nav-dd-btn{color:var(--oak);}
-.nav-dd:hover .nav-dd-btn svg,.nav-dd.open .nav-dd-btn svg{transform:rotate(180deg);}
-.nav-dd-menu{position:absolute;top:calc(100% + 16px);left:50%;transform:translateX(-50%);min-width:215px;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 14px 34px rgba(27,67,50,.13);padding:.5rem;display:none;flex-direction:column;z-index:200;}
-/* Unsichtbare Bruecke ueber die 16px Abstand: sonst verlaesst die Maus .nav-dd auf dem Weg
-   ins Menue, :hover endet und das Dropdown klappt weg, bevor man es erreicht. */
-.nav-dd-menu::before{content:'';position:absolute;top:-16px;left:0;right:0;height:16px;}
-.nav-dd:hover .nav-dd-menu,.nav-dd:focus-within .nav-dd-menu,.nav-dd.open .nav-dd-menu{display:flex;}
-.nav-dd-menu a{text-transform:none;letter-spacing:0;font-size:.9rem;color:var(--ink-2);padding:.55rem .7rem;border-radius:7px;}
-.nav-dd-menu a:hover{background:var(--oak-ghost);color:var(--oak);}
-.nav-cta{background:var(--oak-deep);color:#fff !important;padding:.5rem 1.25rem;border-radius:3px;
-  font-size:.76rem;font-weight:500;letter-spacing:.04em;transition:background .2s;}
-.nav-cta:hover{background:var(--oak);}
-.nav-burger{display:none;background:none;border:none;cursor:pointer;padding:6px;}
-.nav-burger span{display:block;width:22px;height:2px;background:var(--ink);margin:5px 0;border-radius:2px;transition:.3s;}
-.nav-search{display:flex;align-items:center;background:var(--white);border:1.5px solid var(--border);
-  border-radius:99px;padding:0 .15rem 0 .7rem;height:34px;}
-.nav-search input{border:none;outline:none;background:none;font-family:var(--sans);font-size:.8rem;width:110px;color:var(--ink);}
-.nav-search input::placeholder{color:var(--muted);text-transform:none;letter-spacing:0;}
-.nav-search button{border:none;background:none;color:var(--oak);cursor:pointer;display:grid;place-items:center;
-  width:28px;height:28px;border-radius:50%;}
-.nav-search button:hover{background:var(--oak-ghost);}
-.nav-search:focus-within{border-color:var(--oak);box-shadow:0 0 0 3px var(--oak-pale);}
-
-.nav-burger{display:block;}
-/* Navigation als Seiten-Drawer: faehrt von rechts ein, statt die volle Breite zu belegen. */
-.nav-links{display:flex;flex-direction:column;align-items:stretch;gap:1.1rem;
-  position:fixed;top:0;right:0;bottom:0;width:min(320px,82vw);
-  transform:translateX(100%);transition:transform .28s var(--ease);
-  background:var(--white);border-left:1px solid var(--border);box-shadow:-14px 0 34px rgba(27,67,50,.12);
-  padding:5.5rem 1.6rem 2rem;z-index:120;overflow-y:auto;
-  text-transform:none;letter-spacing:0;font-size:.95rem;
-  visibility:hidden;}
-.nav-links.open{transform:translateX(0);visibility:visible;transition:transform .28s var(--ease);}
-/* Schlichte Strich-Icons im Drawer – einfarbig, uebernehmen die Textfarbe */
-.nav-links a,.nav-links .nav-dd-btn{display:flex;align-items:center;gap:.7rem;}
-.nav-ico{width:17px;height:17px;flex:none;opacity:.55;}
-.nav-links a:hover .nav-ico,.nav-dd-btn:hover .nav-ico{opacity:1;}
-.nav-dd-btn .nav-ico{margin-right:0;}
-.nav-dd-menu a{padding-left:1.6rem;}
-
-/* Im Drawer haengt das Untermenue direkt unter dem Punkt – auf ALLEN Breiten, nicht nur mobil.
-   „Leistungen" ist dort nur Rubrik-Ueberschrift: kein Chevron, kein Icon (wie auf der Website). */
-.nav-links .nav-dd{flex-direction:column;align-items:stretch;}
-.nav-links .nav-dd-btn{padding:.25rem 0;justify-content:flex-start;width:100%;cursor:default;
-  text-transform:uppercase;letter-spacing:.1em;font-size:.7rem;font-weight:600;color:var(--muted);}
-.nav-links .nav-dd-btn>svg:last-child{display:none;}
-.nav-links .nav-dd-btn .nav-ico{display:none;}
-.nav-links .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem;}
-/* Keine Unterstreichung in der Navigation – im Portal setzt eine Grundregel sie sonst. */
-.nav-links a,.nav-logo{text-decoration:none;}
-.nav-links .nav-dd-menu a{font-size:.92rem;padding:.35rem 0;}
-.nav-links .nav-search{width:100%;height:42px;}
-.nav-links .nav-search input{width:100%;font-size:.95rem;}
-/* Abdunklung hinter dem Drawer – Klick darauf schliesst */
-body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20,.35);z-index:110;}
-/* In der Linkliste keine Buttons */
-.nav-links .nav-cta,.nav-links .nav-login{background:none;border:none;padding:.25rem 0;border-radius:0;
-  color:var(--ink) !important;font-weight:500;text-align:left;font-size:.95rem !important;letter-spacing:0;}
-.nav-links .nav-cta:hover,.nav-links .nav-login:hover{color:var(--oak);}
-
-/* (Die frühere Vollbreiten-Navigation ist entfallen – sie setzte .nav-links unter 1200px auf
-   display:none/left:0 und legte damit den Drawer lahm. Die Drawer-Regeln oben gelten überall.) */
+/* Navigation: kommt aus ../nav.css (gemeinsame Quelle fuer Website und Portal).
+   Der Import steht oben in dieser Datei. */
 
 /* Rechtliche Pflichtlinks – muessen von jeder Seite erreichbar sein (§ 5 DDG) */
 .site-bottom{max-width:400px;margin:0 auto 4vh;padding:0 18px;display:flex;flex-wrap:wrap;

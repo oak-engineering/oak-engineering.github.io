@@ -50,7 +50,8 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141435">
+<link rel="stylesheet" href="fonts.css?v=202608141446">
+<link rel="stylesheet" href="nav.css">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -78,125 +79,18 @@
 
 /* ── RESET ──────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; font-size: 16px; }
+html { scroll-behavior: smooth; font-size: 16px; overflow-x: clip; }
 body {
   font-family: var(--sans);
   background: var(--white);
   color: var(--ink);
   line-height: 1.7;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 img { max-width: 100%; display: block; }
 a { color: inherit; text-decoration: none; }
 
-/* ── NAV ────────────────────────────────────────────────────────────── */
-nav {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 130;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 5vw;
-  height: 68px;
-  background: var(--white);
-  border-bottom: 1px solid var(--border);
-  transition: box-shadow .3s var(--ease);
-}
-nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
-.nav-logo {
-  display: flex; align-items: center; gap: 10px;
-}
-.nav-logo img { height: 38px; width: auto; }
-.nav-wordmark {
-  display: flex; flex-direction: column; line-height: 1;
-  font-family: var(--serif);
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--oak-deep);
-  letter-spacing: .02em;
-}
-.nav-wordmark small {
-  font-family: var(--sans);
-  font-size: .58rem; font-weight: 500;
-  letter-spacing: .18em; text-transform: uppercase;
-  color: var(--muted);
-  margin-top: 3px;
-}
-.nav-links {
-  display: flex; align-items: center; gap: 1.3rem;
-  font-size: .76rem; font-weight: 500; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--muted);
-}
-.nav-links a:hover { color: var(--oak); }
-.nav-dd { position: relative; display: flex; align-items: center; }
-.nav-dd-btn { font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--muted);
-  background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: .3rem; padding: 0; transition: color .2s; }
-.nav-dd-btn svg { width: 9px; height: 9px; transition: transform .2s; }
-.nav-dd:hover .nav-dd-btn, .nav-dd:focus-within .nav-dd-btn { color: var(--oak); }
-.nav-dd:hover .nav-dd-btn svg, .nav-dd.open .nav-dd-btn svg { transform: rotate(180deg); }
-.nav-dd-menu { position: absolute; top: calc(100% + 16px); left: 50%; transform: translateX(-50%);
-  min-width: 215px; background: var(--white); border: 1px solid var(--border); border-radius: 10px;
-  box-shadow: 0 14px 34px rgba(27,67,50,.13); padding: .5rem; display: none; flex-direction: column; z-index: 200; }
-/* Unsichtbare Bruecke ueber die 16px Abstand: sonst verlaesst die Maus .nav-dd auf dem Weg
-   ins Menue, :hover endet und das Dropdown klappt weg, bevor man es erreicht. */
-.nav-dd-menu::before { content: ''; position: absolute; top: -16px; left: 0; right: 0; height: 16px; }
-.nav-dd:hover .nav-dd-menu, .nav-dd:focus-within .nav-dd-menu, .nav-dd.open .nav-dd-menu { display: flex; }
-.nav-dd-menu a { text-transform: none; letter-spacing: 0; font-size: .9rem; color: var(--ink-2); padding: .55rem .7rem; border-radius: 7px; }
-.nav-dd-menu a:hover { background: var(--oak-ghost); color: var(--oak); }
-.nav-search { display: flex; align-items: center; background: var(--white);
-  border: 1.5px solid var(--border); border-radius: 99px; padding: 0 .15rem 0 .7rem; height: 34px; }
-.nav-search input { border: none; outline: none; background: none; font-family: var(--sans);
-  font-size: .8rem; width: 110px; color: var(--ink); }
-.nav-search input::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
-.nav-search button { border: none; background: none; color: var(--oak); cursor: pointer;
-  display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; }
-.nav-search button:hover { background: var(--oak-ghost); }
-.nav-search:focus-within { border-color: var(--oak); box-shadow: 0 0 0 3px var(--oak-pale); }
-.nav-cta {
-  background: var(--oak-deep); color: var(--white) !important;
-  padding: .5rem 1.25rem; border-radius: 3px;
-  font-size: .8rem !important;
-  transition: background .2s;
-}
-.nav-cta:hover { background: var(--oak) !important; }
-.nav-burger { display: block; background: none; border: none; cursor: pointer; padding: 4px; }
-/* Navigation als Seiten-Drawer: faehrt von rechts ein, statt die volle Breite zu belegen. */
-.nav-links{display:flex;flex-direction:column;align-items:stretch;gap:1.1rem;
-  position:fixed;top:0;right:0;bottom:0;width:min(320px,82vw);
-  transform:translateX(100%);transition:transform .28s var(--ease);
-  background:var(--white);border-left:1px solid var(--border);box-shadow:-14px 0 34px rgba(27,67,50,.12);
-  padding:5.5rem 1.6rem 2rem;z-index:120;overflow-y:auto;
-  text-transform:none;letter-spacing:0;font-size:.95rem;
-  visibility:hidden;}
-.nav-links.open{transform:translateX(0);visibility:visible;transition:transform .28s var(--ease);}
-/* Schlichte Strich-Icons im Drawer – einfarbig, uebernehmen die Textfarbe */
-.nav-links a,.nav-links .nav-dd-btn{display:flex;align-items:center;gap:.7rem;}
-.nav-ico{width:17px;height:17px;flex:none;opacity:.55;}
-.nav-links a:hover .nav-ico,.nav-dd-btn:hover .nav-ico{opacity:1;}
-.nav-dd-btn .nav-ico{margin-right:0;}
-.nav-dd-menu a{padding-left:1.6rem;}
-
-/* Im Drawer haengt das Untermenue direkt unter dem Punkt – auf ALLEN Breiten, nicht nur mobil. */
-.nav-links .nav-dd{flex-direction:column;align-items:stretch;}
-/* „Leistungen" ist im Drawer nur die Rubrik-Ueberschrift ueber den vier Links – das Untermenue
-   steht dort immer offen. Der Chevron verspraeche ein Auf-/Zuklappen, das es nicht gibt. */
-.nav-links .nav-dd-btn{padding:.25rem 0;justify-content:flex-start;width:100%;cursor:default;
-  text-transform:uppercase;letter-spacing:.1em;font-size:.7rem;font-weight:600;color:var(--muted);}
-.nav-links .nav-dd-btn>svg:last-child{display:none;}
-.nav-links .nav-dd-btn .nav-ico{display:none;}
-.nav-links .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem;}
-.nav-links .nav-dd-menu a{font-size:.92rem;padding:.35rem 0;}
-.nav-links .nav-search{width:100%;height:42px;}
-.nav-links .nav-search input{width:100%;font-size:.95rem;}
-/* Abdunklung hinter dem Drawer – Klick darauf schliesst */
-body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20,.35);z-index:110;}
-/* In der Linkliste keine Buttons */
-.nav-links .nav-cta,.nav-links .nav-login{background:none;border:none;padding:.25rem 0;border-radius:0;
-  color:var(--ink) !important;font-weight:500;text-align:left;font-size:.95rem !important;letter-spacing:0;}
-.nav-links .nav-cta:hover,.nav-links .nav-login:hover{color:var(--oak);}
-
-.nav-burger span {
-  display: block; width: 22px; height: 1.5px;
-  background: var(--ink); margin: 5px 0;
-  transition: all .3s;
-}
+/* Navigation: siehe nav.css (per <link> eingebunden) */
 
 /* ── HERO ───────────────────────────────────────────────────────────── */
 .hero {
@@ -855,7 +749,7 @@ footer {
 
 <!-- HERO -->
 <section class="hero" id="home">
-  <canvas id="gridCanvas" aria-hidden="true"></canvas>
+  <canvas id="gridCanvas" data-logo-x="0.5" data-logo-s="0.45" aria-hidden="true"></canvas>
   <div class="hero-overlay"></div>
   <div class="hero-content">
     <h1 class="hero-title">Wir digitalisieren <em>EHS-Management</em></h1>
@@ -935,160 +829,14 @@ window.addEventListener('scroll', () => {
   document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 40);
 });
 
-// Burger menu
-document.getElementById('burger').addEventListener('click', (e) => {
-  e.stopPropagation();
-  const l = document.getElementById('nav-links');
-  l.classList.toggle('open');
-  document.body.classList.toggle('nav-offen', l.classList.contains('open'));
-});
-
-// Close menu on link click
-document.querySelectorAll('.nav-links a').forEach(a => {
-  a.addEventListener('click', () => { document.getElementById('nav-links').classList.remove('open'); document.body.classList.remove('nav-offen'); });
-});
-
-// Dropdown "Leistungen" (Klick/Touch)
-document.querySelectorAll('.nav-dd-btn').forEach(b => {
-  b.addEventListener('click', e => { e.stopPropagation(); b.closest('.nav-dd').classList.toggle('open'); });
-});
-document.addEventListener('click', e => {
-  if(!e.target.closest('.nav-dd')) document.querySelectorAll('.nav-dd.open').forEach(d => d.classList.remove('open'));
-});
-
 // Scroll reveal
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
 }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
-// Interaktives Gitter im Hero (reagiert auf den Mauszeiger)
-(function(){
-  const canvas = document.getElementById('gridCanvas');
-  if(!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const GAP = 34, R = 145, PUSH = 26;
-  let w = 0, h = 0, cols = 0, rows = 0, dots = [];
-  const mouse = { x: -9999, y: -9999 };
-
-  /* OAK-Signet als halbtransparentes Wasserzeichen hinter dem Gitter. Das PNG ist dunkelgruen,
-     deshalb einmalig in ein Offscreen-Canvas zeichnen und per 'source-in' hell einfaerben. */
-  const LOGO_BOX = { x: 285, y: 54, w: 454, h: 453 };
-  let logoTint = null;
-  const logo = new Image();
-  logo.onload = () => {
-    const o = document.createElement('canvas');
-    o.width = LOGO_BOX.w; o.height = LOGO_BOX.h;
-    const oc = o.getContext('2d');
-    oc.drawImage(logo, LOGO_BOX.x, LOGO_BOX.y, LOGO_BOX.w, LOGO_BOX.h, 0, 0, LOGO_BOX.w, LOGO_BOX.h);
-    oc.globalCompositeOperation = 'source-in';
-    oc.fillStyle = '#74C69D'; oc.fillRect(0, 0, LOGO_BOX.w, LOGO_BOX.h);
-    logoTint = o;
-  };
-  logo.src = 'assets/oak-logo.png';
-
-  function build(){
-    const rect = canvas.getBoundingClientRect();
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    w = rect.width; h = rect.height;
-    if(w === 0 || h === 0) return;
-    canvas.width = w * dpr; canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    cols = Math.ceil(w / GAP) + 1;
-    rows = Math.ceil(h / GAP) + 1;
-    dots = [];
-    for(let r = 0; r < rows; r++) for(let c = 0; c < cols; c++){
-      dots.push({ x: c*GAP, y: r*GAP, bx: c*GAP, by: r*GAP, c, r, glow: 0 });
-    }
-  }
-  const at = (c, r) => (c < 0 || r < 0 || c >= cols || r >= rows) ? null : dots[r*cols + c];
-
-  function draw(t){
-    ctx.clearRect(0, 0, w, h);
-    if(logoTint){
-      const s = Math.min(h * 0.62, w * 0.42);   // mittig im Hero, wie auf den Unterseiten
-      ctx.globalAlpha = 0.13;
-      ctx.drawImage(logoTint, (w - s) / 2, (h - s) / 2, s, s);
-      ctx.globalAlpha = 1;
-    }
-    for(const d of dots){
-      const wave = Math.sin((d.bx + d.by) * 0.01 + t * 0.0006) * 2;
-      let tx = d.bx, ty = d.by + wave;
-      const dx = tx - mouse.x, dy = ty - mouse.y;
-      const dist = Math.hypot(dx, dy);
-      if(dist < R){
-        const f = 1 - dist / R, ang = Math.atan2(dy, dx);
-        tx += Math.cos(ang) * f * PUSH;
-        ty += Math.sin(ang) * f * PUSH;
-        d.glow = Math.max(d.glow, f);
-      }
-      d.glow *= 0.9;
-      d.x += (tx - d.x) * 0.18;
-      d.y += (ty - d.y) * 0.18;
-    }
-    ctx.lineWidth = 1;
-    for(const d of dots){
-      const right = at(d.c+1, d.r), down = at(d.c, d.r+1);
-      for(const n of [right, down]){
-        if(!n) continue;
-        const g = Math.max(d.glow, n.glow);
-        ctx.strokeStyle = 'rgba(116,198,157,' + (0.05 + g*0.4) + ')';
-        ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(n.x, n.y); ctx.stroke();
-      }
-    }
-    for(const d of dots){
-      const g = d.glow;
-      ctx.fillStyle = 'rgba(' + Math.round(116+g*120) + ',' + Math.round(198+g*57) + ',' + Math.round(157+g*60) + ',' + (0.3 + g*0.7) + ')';
-      ctx.beginPath(); ctx.arc(d.x, d.y, 1.4 + g*2.4, 0, 6.2832); ctx.fill();
-    }
-    requestAnimationFrame(draw);
-  }
-  window.addEventListener('pointermove', e => {
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    if(x >= 0 && y >= 0 && x <= rect.width && y <= rect.height){ mouse.x = x; mouse.y = y; }
-    else { mouse.x = -9999; mouse.y = -9999; }
-  });
-  let rt;
-  window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(build, 150); });
-  build();
-  requestAnimationFrame(draw);
-})();
-
-// Contact form → mailto
-function sendForm() {
-  const fname   = document.getElementById('f-fname').value.trim();
-  const lname   = document.getElementById('f-lname').value.trim();
-  const company = document.getElementById('f-company').value.trim();
-  const email   = document.getElementById('f-email').value.trim();
-  const topic   = document.getElementById('f-topic').value;
-  const msg     = document.getElementById('f-msg').value.trim();
-
-  if(!fname || !lname || !email || !msg) {
-    alert('Bitte füllen Sie alle Pflichtfelder aus.');
-    return;
-  }
-
-  const subject = encodeURIComponent(`Anfrage über Website: ${topic || 'Allgemein'}`);
-  const body = encodeURIComponent(
-`Name: ${fname} ${lname}${company ? '\nUnternehmen: ' + company : ''}
-E-Mail: ${email}
-Thema: ${topic || 'Nicht angegeben'}
-
-Nachricht:
-${msg}`
-  );
-  window.location.href = `mailto:info@oak-engineering.de?subject=${subject}&body=${body}`;
-
-  document.getElementById('form-fields').style.display = 'none';
-  document.getElementById('form-success').style.display = 'block';
-}
-document.addEventListener('click', e => {
-  if(document.body.classList.contains('nav-offen') && !e.target.closest('#nav-links') && !e.target.closest('#burger')){
-    document.getElementById('nav-links').classList.remove('open');
-    document.body.classList.remove('nav-offen');
-  }
-});
+// Gitter, Signet und Menue kommen aus site.js (gemeinsam fuer alle Seiten)
 </script>
+<script src="site.js?v=202608141446"></script>
 </body>
 </html>
