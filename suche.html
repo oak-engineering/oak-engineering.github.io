@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Suche – OAK engineering | EHS-Management &amp; Digitalisierung</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="fonts.css?v=202608141409">
-<link rel="stylesheet" href="site.css?v=202608141409">
+<link rel="stylesheet" href="fonts.css?v=202608141417">
+<link rel="stylesheet" href="site.css?v=202608141417">
 <style>
 .search-result{display:block;background:#fff;border:1px solid var(--border);border-radius:10px;
   padding:1.1rem 1.3rem;margin-bottom:.8rem;transition:border-color .15s,transform .15s,box-shadow .15s;}
@@ -48,6 +48,8 @@
 </nav>
 
 <header class="sub-hero">
+  <canvas id="gridCanvas" aria-hidden="true"></canvas>
+  <div class="sub-overlay"></div>
   <h1 id="shead">Suche</h1>
   <p id="ssub">Geben Sie oben einen Suchbegriff ein – z. B. „Gefahrstoffe", „BImSchG", „Schulungen" oder „KI".</p>
 </header>
@@ -69,7 +71,7 @@
   </div>
 </footer>
 
-<script src="site.js?v=202608141409"></script>
+<script src="site.js?v=202608141417"></script>
 <script>
 (function(){
   var INDEX = [

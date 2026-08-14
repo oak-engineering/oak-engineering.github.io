@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Kontakt – OAK engineering | EHS-Management &amp; Digitalisierung</title>
 <meta name="description" content="Kontakt zu OAK engineering – EHS-Management & Digitalisierung, Augsburg. Schreiben Sie uns oder nutzen Sie unsere digitale Visitenkarte.">
-<link rel="stylesheet" href="fonts.css?v=202608141409">
-<link rel="stylesheet" href="site.css?v=202608141409">
+<link rel="stylesheet" href="fonts.css?v=202608141417">
+<link rel="stylesheet" href="site.css?v=202608141417">
 </head>
 <body>
 <nav>
@@ -37,6 +37,8 @@
 </nav>
 
 <header class="sub-hero">
+  <canvas id="gridCanvas" aria-hidden="true"></canvas>
+  <div class="sub-overlay"></div>
   <h1>Bereit für den <em>ersten Schritt?</em></h1>
   <p>Schreiben Sie uns – wir antworten in der Regel innerhalb von 24&nbsp;Stunden.</p>
 </header>
@@ -132,5 +134,6 @@ function sendForm(){
   document.getElementById('form-success').style.display = 'block';
 }
 </script>
+<script src="site.js?v=202608141417"></script>
 </body>
 </html>
