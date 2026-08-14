@@ -110,12 +110,12 @@ function renderCockpit(wrap, bereich){
         ${ckTile(dok("energie-verbrauch"), "Verbrauch & Messstellen", "Dokumente")}
         ${ckTile(dok("energie-massnahmen"), "Effizienzmaßnahmen", "Dokumente")}
       </div>
-      ${!gesamt ? `<div class="ck-fuss"><b>Der Bereich Energie wird gerade aufgebaut</b> – Ziel ist die
-        Vorbereitung eines Energiemanagements nach ISO 50001. Die nächsten Schritte:
+      <div class="ck-fuss">${gesamt ? "" : "<b>Der Bereich Energie wird gerade aufgebaut.</b> "}
+        Ziel ist die Vorbereitung eines Energiemanagements nach <b>ISO 50001</b>. Die nächsten Schritte:
         Energieaspekte je Anlage erfassen (Antriebe, Druckluft, Temperierung, Beleuchtung) ·
-        Messkonzept und Basisjahr festlegen · Effizienzmaßnahmen ableiten und bewerten.<br>
-        Erste Befunde liegen bereits vor: bei der Begehung am 13.08.2026 wurden an der D200/2 zwei
-        deutliche Druckluftleckagen festgestellt (siehe Begehungsprotokoll).</div>` : ""}`;
+        Messkonzept und Basisjahr festlegen · Maßnahmen bewerten und priorisieren.<br><br>
+        Energiebefunde aus den Begehungen stehen unter <b>Effizienzmaßnahmen</b>. Sie sind bewusst von
+        der Mängelliste Arbeitsschutz getrennt: keine Sicherheitsrelevanz, aber ein Kostenthema.</div>`;
   }
 
   sec.innerHTML = `<div class="sek-kopf"><h2>Überblick</h2></div>${inhalt}`;
