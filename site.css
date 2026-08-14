@@ -274,9 +274,20 @@ body.kopf-kompakt .hero-clip{opacity:0;}          /* im schmalen Kopf ist kein P
 .acc-body-inner li{margin-bottom:.25rem;}
 .acc-body-inner .law{display:inline-block;font-size:.7rem;color:var(--oak-deep);background:var(--oak-pale);
   padding:.12rem .55rem;border-radius:99px;margin:.2rem .3rem .2rem 0;font-weight:500;}
+/* nowrap: sonst bricht ein Chip mitten im Begriff um und die Liste wirkt zerrissen. */
 .prose .law{display:inline-block;font-size:.74rem;color:var(--oak-deep);background:var(--oak-pale);
-  padding:.2rem .65rem;border-radius:99px;margin:.25rem .4rem .25rem 0;font-weight:500;}
-.prose .laws{margin:.4rem 0 1.4rem;}
+  padding:.2rem .65rem;border-radius:99px;margin:.25rem .4rem .25rem 0;font-weight:500;white-space:nowrap;}
+.prose .laws{margin:.4rem 0 1.4rem;line-height:2.1;}
+
+/* Hervorgehobener Block „Branchenerfahrung & fachliche Eignung" */
+.eignung{background:var(--oak-ghost);border:1px solid var(--oak-pale);border-radius:10px;
+  padding:1.5rem 1.7rem .9rem;margin:2rem 0 2.6rem;}
+.eignung h2{margin-top:0;}
+.eignung>p{max-width:none;}
+.eig-grid{display:grid;grid-template-columns:2fr 1fr;gap:.5rem 2.2rem;align-items:start;margin-top:1rem;}
+.eig-grid h3{margin-top:0;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.eig-grid .laws{margin-bottom:.6rem;}
+@media(max-width:760px){.eig-grid{grid-template-columns:1fr;}}
 
 /* (Die Tool-Kacheln und die rechte Tools-Spalte sind entfallen – die Mini-Tools stehen
    jetzt als Icon-Zeile oben im Inhalt, siehe .mini-tools.) */
