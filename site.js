@@ -151,7 +151,19 @@ document.addEventListener('click', e => {
   balken.appendChild(text);
   document.body.appendChild(balken);
 
-  new IntersectionObserver(([eintrag]) => {
-    document.body.classList.toggle('kopf-fest', !eintrag.isIntersecting);
-  }, { rootMargin: '-110px 0px 0px 0px', threshold: 0 }).observe(hero);
+  /* Bewusst mit Hysterese (einblenden < 100px, ausblenden > 150px): ohne den toten Bereich
+     schaltet der Balken bei jeder kleinen Hoehenaenderung – z. B. wenn ein Akkordeon auf-
+     oder zuklappt – hin und her, und die Ueberschrift wackelt. */
+  let laeuft = false;
+  const pruefen = () => {
+    laeuft = false;
+    const unten = hero.getBoundingClientRect().bottom;
+    const fest = document.body.classList.contains('kopf-fest');
+    if(!fest && unten < 100) document.body.classList.add('kopf-fest');
+    else if(fest && unten > 150) document.body.classList.remove('kopf-fest');
+  };
+  const anstossen = () => { if(!laeuft){ laeuft = true; requestAnimationFrame(pruefen); } };
+  window.addEventListener('scroll', anstossen, { passive: true });
+  window.addEventListener('resize', anstossen);
+  pruefen();
 })();

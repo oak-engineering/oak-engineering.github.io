@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141230">
+<link rel="stylesheet" href="fonts.css?v=202608141245">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -263,22 +263,21 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
   opacity: 0; animation: fadeUp .8s var(--ease) .8s forwards;
 }
 @media (max-width: 1024px) { .hero-cards { grid-template-columns: repeat(2, 1fr); max-width: 560px; } }
-/* Die Kacheln waren dunkler als der Hero und gingen darin unter. Jetzt ein eigener, hellerer
-   Gruenton mit sanftem Verlauf – plus je Bereich eine feine Akzentkante oben. */
 /* Leicht transparent, damit das Gitter durchscheint – der Grundton bleibt heller als der Hero,
    sonst geht die Kachel darin unter. Je Bereich eine feine Akzentkante oben. */
 .hero-card {
-  pointer-events: auto; position: relative; overflow: hidden;
-  display: flex; min-height: 208px;
+  pointer-events: auto; position: relative;
+  display: flex; flex-direction: column;
   background: linear-gradient(158deg, rgba(42,102,80,.66), rgba(23,61,45,.66));
   border: 1px solid rgba(255,255,255,.18);
   border-radius: 8px;
-  padding: 1.4rem 1.2rem 1.2rem 1.4rem;
+  padding: 1.4rem 1.4rem 1.2rem;
   box-shadow: 0 8px 30px rgba(0,0,0,.25);
   transition: background .2s, border-color .2s, transform .15s;
 }
 .hero-card::before {
   content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  border-radius: 7px 7px 0 0;
   background: var(--kachel, var(--oak-light));
 }
 .hero-card:nth-child(1) { --kachel: #74C69D; }
@@ -290,34 +289,32 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
   border-color: var(--kachel);
   transform: translateY(-3px);
 }
-/* Die ganze Kachel bleibt klickbar (Flaeche ueber ::after), die Tool-Icons liegen darueber –
-   verschachtelte <a> waeren ungueltig. */
-.hc-main { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.hc-main::after { content: ''; position: absolute; inset: 0; z-index: 1; }
-/* Die Icon-Spalte steht absolut rechts, damit die Ueberschrift die volle Kachelbreite behaelt
-   (sonst bricht z. B. „KI & Digitalisierung" um). Der Beschreibungstext haelt Abstand. */
-.hc-main .hc-d { padding-right: 34px; }
-.hc-tools { position: absolute; right: .85rem; top: 3.5rem; z-index: 2;
-  display: flex; flex-direction: column; gap: .25rem; }
-.hc-tools .mt {
-  position: relative; display: grid; place-items: center; width: 25px; height: 25px;
+.nb { white-space: nowrap; }
+/* Statt der Stichwoerter kleine Icons nebeneinander – das Wort kommt beim Mouseover.
+   overflow bleibt sichtbar, sonst schneidet die Kachel den Tooltip ab. */
+.hc-ico { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; align-content: flex-start; }
+.ci {
+  position: relative; display: grid; place-items: center; width: 26px; height: 26px;
   border-radius: 6px; border: 1px solid rgba(255,255,255,.22);
-  color: rgba(255,255,255,.72); background: rgba(255,255,255,.05);
-  transition: border-color .15s, color .15s, background .15s;
+  color: rgba(255,255,255,.75); background: rgba(255,255,255,.06);
+  transition: color .15s, border-color .15s, background .15s;
 }
-.hc-tools .mt:hover, .hc-tools .mt:focus-visible {
-  border-color: var(--kachel); color: #fff; background: rgba(255,255,255,.12);
+.ci:hover { color: #fff; border-color: var(--kachel); background: rgba(255,255,255,.14); }
+.ci svg { width: 15px; height: 15px; }
+.ci::after {
+  content: attr(data-tip); position: absolute; top: calc(100% + 7px); left: 50%;
+  transform: translateX(-50%); white-space: nowrap;
+  background: var(--white); color: var(--ink); font-size: .7rem; font-weight: 500;
+  padding: .25rem .55rem; border-radius: 5px; box-shadow: 0 6px 16px rgba(0,0,0,.35);
+  opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 5;
 }
-.hc-tools .mt svg { width: 14px; height: 14px; }
-.hc-tools .mt::after {
-  content: attr(data-tip); position: absolute; right: calc(100% + 8px); top: 50%;
-  transform: translateY(-50%); white-space: nowrap;
-  background: var(--white); color: var(--ink); font-size: .72rem; line-height: 1.4;
-  padding: .3rem .6rem; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,.3);
-  opacity: 0; pointer-events: none; transition: opacity .15s; z-index: 30;
+.ci:hover::after { opacity: 1; }
+/* Touch kennt kein Hover: dort steht das Wort neben dem Icon. */
+@media (hover: none) {
+  .ci { width: auto; height: auto; padding: .25rem .6rem; grid-auto-flow: column; gap: .35rem; }
+  .ci::before { content: attr(data-tip); font-size: .74rem; }
+  .ci::after { display: none; }
 }
-.hc-tools .mt:hover::after, .hc-tools .mt:focus-visible::after { opacity: 1; }
-@media (hover: none) { .hc-tools { display: none; } }
 .hc-k {
   font-size: .64rem; font-weight: 600; letter-spacing: .14em;
   text-transform: uppercase; color: var(--oak-light); margin-bottom: .6rem;
@@ -909,50 +906,49 @@ footer {
     <h1 class="hero-title">Wir digitalisieren <em>EHS-Management</em></h1>
     <p class="hero-sub">Externe Expertise für Arbeitssicherheit und Umweltschutz.</p>
     <div class="hero-cards">
-      <div class="hero-card">
-        <a class="hc-main" href="arbeitssicherheit.html">
+      <a class="hero-card" href="arbeitssicherheit.html">
           <b>Arbeitssicherheit</b>
-          <span class="hc-d">Gefährdungsbeurteilung&nbsp;· Gefahrstoffe&nbsp;· Psych. GBU&nbsp;· Sicherheitskultur&nbsp;· Schulungen</span>
+          <span class="hc-ico">
+            <span class="ci" data-tip="Gefährdungsbeurteilung" role="img" aria-label="Gefährdungsbeurteilung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 10.5l1.5 1.5 3-3M8.5 16h7"/></svg></span>
+            <span class="ci" data-tip="Gefahrstoffe" role="img" aria-label="Gefahrstoffe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v6.2L4.4 18.6A2 2 0 0 0 6.2 21.6h11.6a2 2 0 0 0 1.8-3L14 8.2V2"/><path d="M8.5 2h7M7.6 14h8.8"/></svg></span>
+            <span class="ci" data-tip="Psychische Gefährdungsbeurteilung" role="img" aria-label="Psychische Gefährdungsbeurteilung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 21v-2.4c2.4-1 4-3.4 4-6.1a7.5 7.5 0 1 0-11.9 6v2.5"/><path d="M9.5 13.5c1-1 2-1 3 0"/></svg></span>
+            <span class="ci" data-tip="Sicherheitskultur" role="img" aria-label="Sicherheitskultur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-4.2-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 12c0 4.8-7 9-7 9z"/></svg></span>
+            <span class="ci" data-tip="Schulungen" role="img" aria-label="Schulungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h6a3 3 0 0 1 3 3v13a2.5 2.5 0 0 0-2.5-2.5H3z"/><path d="M21 4h-6a3 3 0 0 0-3 3v13a2.5 2.5 0 0 1 2.5-2.5H21z"/></svg></span>
+          </span>
           <span class="hc-go">Mehr erfahren →</span>
         </a>
-        <div class="hc-tools">
-          <a class="mt" href="tools/OAK_SiFa-Einsatzzeiten-Rechner.html" data-tip="SiFa-Einsatzzeiten nach DGUV Vorschrift 2 berechnen" aria-label="SiFa-Einsatzzeiten nach DGUV Vorschrift 2 berechnen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9.5V13l2.2 2.2M9 2h6M18.5 6.5l1.5-1.5"/></svg></a>
-          <a class="mt" href="tools/OAK_Bradley-Kurve.html" data-tip="Sicherheitskultur auf der Bradley-Kurve einordnen" aria-label="Sicherheitskultur auf der Bradley-Kurve einordnen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 17 9 11 13 15 21 6"/><polyline points="21 11 21 6 16 6"/></svg></a>
-          <a class="mt" href="tools/OAK_EMKG-Helfer.html" data-tip="EMKG: Maßnahmenstufe aus den H-Sätzen ableiten" aria-label="EMKG: Maßnahmenstufe aus den H-Sätzen ableiten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2v6.2L4.4 18.6A2 2 0 0 0 6.2 21.6h11.6a2 2 0 0 0 1.8-3L14 8.2V2"/><path d="M8.5 2h7M7.6 14h8.8"/></svg></a>
-          <a class="mt" href="tools/OAK_Substitutions-Checker.html" data-tip="Gefahrstoffe nach dem Spaltenmodell vergleichen (TRGS 600)" aria-label="Gefahrstoffe nach dem Spaltenmodell vergleichen (TRGS 600)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h13"/><polyline points="14 5 17 8 14 11"/><path d="M20 16H7"/><polyline points="10 13 7 16 10 19"/></svg></a>
-          <a class="mt" href="tools/OAK_Helfer-Aushang.html" data-tip="Aushänge für Ersthelfer und Brandschutzhelfer erzeugen" aria-label="Aushänge für Ersthelfer und Brandschutzhelfer erzeugen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg></a>
-        </div>
-      </div>
-      <div class="hero-card">
-        <a class="hc-main" href="umweltschutz.html">
+      <a class="hero-card" href="umweltschutz.html">
           <b>Umweltschutz</b>
-          <span class="hc-d">Immissionsschutz&nbsp;· Störfall&nbsp;· ISO 14001&nbsp;· Gefahrgut&nbsp;· Gewässerschutz&nbsp;· <span class="nb">CO₂-Bilanzierung</span></span>
+          <span class="hc-ico">
+            <span class="ci" data-tip="Immissionsschutz" role="img" aria-label="Immissionsschutz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 21h20"/><path d="M5 21V9l5 3.2V9l5 3.2V4.5h4V21"/></svg></span>
+            <span class="ci" data-tip="Störfallrecht" role="img" aria-label="Störfallrecht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.6 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/></svg></span>
+            <span class="ci" data-tip="ISO 14001" role="img" aria-label="ISO 14001"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="m8.5 14.5-1.5 7 5-2.6 5 2.6-1.5-7"/></svg></span>
+            <span class="ci" data-tip="Gefahrgut" role="img" aria-label="Gefahrgut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 21.5 12 12 21.5 2.5 12z"/><path d="M12 8v5"/><circle cx="12" cy="16.4" r=".8" fill="currentColor" stroke="none"/></svg></span>
+            <span class="ci" data-tip="Gewässerschutz" role="img" aria-label="Gewässerschutz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.4 6 10.2A6 6 0 0 1 6 13.2C6 9.4 12 3 12 3z"/></svg></span>
+            <span class="ci" data-tip="CO₂-Bilanzierung" role="img" aria-label="CO₂-Bilanzierung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 0 0 .4-9 6 6 0 0 0-11.5-1.6A4 4 0 0 0 6.5 19z"/></svg></span>
+          </span></span>
           <span class="hc-go">Mehr erfahren →</span>
         </a>
-        <div class="hc-tools">
-          <a class="mt" href="tools/OAK_AwSV-Check.html" data-tip="AwSV: Gefährdungsstufe A–D und Pflichten Ihrer Anlage" aria-label="AwSV: Gefährdungsstufe A–D und Pflichten Ihrer Anlage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12.5c0 1.7 3.1 3 7 3s7-1.3 7-3"/></svg></a>
-          <a class="mt" href="tools/OAK_BImSchV-Check.html" data-tip="Ist Ihre Anlage nach der 4. BImSchV genehmigungsbedürftig?" aria-label="Ist Ihre Anlage nach der 4. BImSchV genehmigungsbedürftig?"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 21h20"/><path d="M5 21V9l5 3.2V9l5 3.2V4.5h4V21"/></svg></a>
-          <a class="mt" href="tools/OAK_CO2-Rechner.html" data-tip="CO₂-Fußabdruck (Scope 1 &amp; 2) überschlägig ermitteln" aria-label="CO₂-Fußabdruck überschlägig ermitteln"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.5 19a4.5 4.5 0 0 0 .4-9 6 6 0 0 0-11.5-1.6A4 4 0 0 0 6.5 19z"/></svg></a>
-          <a class="mt" href="tools/OAK_ADR-Punkte-Rechner.html" data-tip="Gefahrgut-Freistellung nach ADR 1.1.3.6 prüfen" aria-label="Gefahrgut-Freistellung nach ADR 1.1.3.6 prüfen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5 21.5 12 12 21.5 2.5 12z"/><path d="M12 8v5"/><circle cx="12" cy="16.4" r=".8" fill="currentColor" stroke="none"/></svg></a>
-        </div>
-      </div>
-      <div class="hero-card">
-        <a class="hc-main" href="ki-digitalisierung.html">
+      <a class="hero-card" href="ki-digitalisierung.html">
           <b>KI &amp; Digitalisierung</b>
-          <span class="hc-d">KI-Auswertung&nbsp;· Automatisierung&nbsp;· Dashboards</span>
+          <span class="hc-ico">
+            <span class="ci" data-tip="KI-Auswertung" role="img" aria-label="KI-Auswertung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></span>
+            <span class="ci" data-tip="Automatisierung" role="img" aria-label="Automatisierung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v2.6M12 19.4V22M22 12h-2.6M4.6 12H2M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8M19.1 19.1l-1.8-1.8M6.7 6.7 4.9 4.9"/></svg></span>
+            <span class="ci" data-tip="Dashboards" role="img" aria-label="Dashboards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7.5 15.5v-3M12 15.5v-6M16.5 15.5v-4"/></svg></span>
+          </span>
           <span class="hc-go">Mehr erfahren →</span>
         </a>
-        <div class="hc-tools">
-          <a class="mt" href="tools/OAK_Digitalisierungs-Check.html" data-tip="EHS-4.0-Reifegrad in fünf Fragen einschätzen" aria-label="EHS-4.0-Reifegrad in fünf Fragen einschätzen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="8.4 12.4 11 15 15.8 9.4"/></svg></a>
-        </div>
-      </div>
-      <div class="hero-card">
-        <a class="hc-main" href="schulungen.html">
+      <a class="hero-card" href="schulungen.html">
           <b>Schulungsangebot</b>
-          <span class="hc-d">Arbeitssicherheit&nbsp;· Umweltrecht&nbsp;· ISO 14001&nbsp;· KI – online, vor Ort &amp; inhouse</span>
+          <span class="hc-ico">
+            <span class="ci" data-tip="Arbeitssicherheit" role="img" aria-label="Arbeitssicherheit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+            <span class="ci" data-tip="Umweltrecht" role="img" aria-label="Umweltrecht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6.2A3 3 0 0 0 9 7.6c0 3.2 6 3.6 6 7a3 3 0 0 1-5.6 1.4"/><path d="M12 3v18"/></svg></span>
+            <span class="ci" data-tip="ISO 14001" role="img" aria-label="ISO 14001"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="6"/><path d="m8.5 14.5-1.5 7 5-2.6 5 2.6-1.5-7"/></svg></span>
+            <span class="ci" data-tip="KI" role="img" aria-label="KI"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></span>
+            <span class="ci" data-tip="Online, vor Ort & inhouse" role="img" aria-label="Online, vor Ort & inhouse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></span>
+          </span>
           <span class="hc-go">Mehr erfahren →</span>
         </a>
-      </div>
     </div>
   </div>
 </section>

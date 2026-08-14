@@ -236,11 +236,22 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
   .hero-clip img,.hero-clip video{animation:none;}
 }
 
-/* ── Mini-Tools: schmale Icon-Zeile statt eigener Spalte ── */
-.mini-tools{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;margin-bottom:1.8rem;
-  padding-bottom:1.1rem;border-bottom:1px solid var(--border);}
-.mt-label{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
-  color:var(--muted);margin-right:.5rem;}
+/* ── Mini-Tools: schmale Icon-Leiste am rechten Seitenrand ── */
+.sub-layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2.5rem;align-items:start;}
+.sub-layout .leist-col{grid-column:1;grid-row:1;}
+.mini-tools{grid-column:2;grid-row:1;position:sticky;top:132px;
+  display:flex;flex-direction:column;align-items:center;gap:.4rem;width:76px;}
+.mt-label{font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);text-align:center;margin-bottom:.1rem;}
+/* Tooltip zeigt in der rechten Leiste nach links, sonst steht er ausserhalb des Fensters. */
+.mini-tools .mt::after{bottom:auto;left:auto;right:calc(100% + 9px);top:50%;transform:translateY(-50%);}
+@media(max-width:900px){
+  .sub-layout{grid-template-columns:1fr;gap:1.6rem;}
+  .mini-tools{grid-row:1;grid-column:1;position:static;flex-direction:row;flex-wrap:wrap;
+    align-items:center;width:auto;padding-bottom:1.1rem;border-bottom:1px solid var(--border);}
+  .mt-label{margin:0 .5rem 0 0;}
+  .mini-tools .mt::after{right:auto;left:50%;top:auto;bottom:calc(100% + 9px);transform:translateX(-50%);}
+}
 .mt{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:8px;
   border:1.5px solid var(--border);color:var(--oak-deep);background:var(--white);
   transition:border-color .15s,background .15s,color .15s;}
@@ -259,8 +270,6 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
 }
 
 /* ── Subpage-Layout: Akkordeon (2/3) + Tools-Panel (1/3) ── */
-/* Einspaltig: die Mini-Tools stehen als Icon-Zeile oben, der Inhalt bekommt die volle Breite. */
-.sub-layout{display:block;}
 .leist-col h2{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--oak-deep);margin-bottom:1.2rem;}
 
 .accordion{border-top:1px solid var(--border);}
