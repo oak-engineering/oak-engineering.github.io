@@ -240,7 +240,7 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
 .sub-layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2.5rem;align-items:start;}
 .sub-layout .leist-col{grid-column:1;grid-row:1;}
 .mini-tools{grid-column:2;grid-row:1;position:sticky;top:132px;
-  display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;}
+  display:flex;flex-direction:column;align-items:center;gap:.5rem;}
 /* Gleiche Schrift, Groesse und Grundlinie wie „Leistungen im Detail" daneben – sonst wirkt die
    Leiste wie ein loses Anhaengsel statt wie eine zweite Spalte. */
 .mt-label{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--oak-deep);
