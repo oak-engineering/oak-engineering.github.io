@@ -66,7 +66,7 @@ function renderCockpit(wrap, bereich){
         ${ckTile(z.gesamt - z.offen, "Maßnahmen wirksam", "von " + z.gesamt + " dokumentierten", (z.gesamt && !(z.gesamt - z.offen)) ? "warnung" : "")}
         ${ckTile(vOffenN, "offene Vorfälle", unfaelle + " Unfälle · " + beinahe + " Beinahe-Unfälle", vOffenN ? "warnung" : "gut")}
         ${ckTile(z.freigegeben + "/" + z.anlagen, "Dokumente freigegeben", "durch die Sicherheitsfachkraft")}
-        ${ckTile(ckDatum(z.letzte), "letzte Begehung", "Stand der Unterlagen")}
+        ${ckTile(ckDatum(z.letzte), "Unterlagen aktualisiert", "Stand der Anlagendokumente")}
       </div>
       ${ckBalken([
         { name: "Gefahrbereich", wert: z.gefahr, klasse: "kritisch" },
@@ -94,7 +94,7 @@ function renderCockpit(wrap, bereich){
         ${ckTile(dok("umwelt-gewaesserschutz"), "Gewässerschutz", "Dokumente")}
         ${ckTile(dok("umwelt-awsv"), "AwSV", "Dokumente")}
       </div>
-      ${kritisch ? `<div class="ck-warnung"><b>Prüfen:</b> Gelangen wassergefährdende Stoffe in nicht nur
+      ${kritisch ? `<div class="ck-hinweisbox"><b>Prüfen:</b> Gelangen wassergefährdende Stoffe in nicht nur
         unerheblicher Menge in ein Gewässer, in die Kanalisation oder in den Boden, ist das unverzüglich
         der zuständigen Behörde oder einer Polizeidienststelle anzuzeigen (§ 24 Abs. 2 AwSV).</div>` : ""}
       ${!fach ? `<div class="ck-fuss">Für die Umweltthemen sind bisher keine Fachdokumente hinterlegt –

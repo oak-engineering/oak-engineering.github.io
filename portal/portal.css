@@ -206,6 +206,6 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .ck-punkt.ck-neutral{background:#c8d5cf;}
 .ck-fuss{font-size:12.5px;color:#5a6b64;line-height:1.55;background:#f6faf8;border:1px solid var(--rand);
   border-radius:10px;padding:11px 13px;margin-top:14px;}
-.ck-warnung{font-size:13.5px;line-height:1.55;background:#fdecea;border:1px solid #f5b7b1;color:#922b21;
+.ck-hinweisbox{font-size:13.5px;line-height:1.55;background:#fdecea;border:1px solid #f5b7b1;color:#922b21;
   border-radius:10px;padding:11px 13px;margin-top:14px;}
 .v-aushang{display:inline-block;margin-top:8px;font-weight:600;}
