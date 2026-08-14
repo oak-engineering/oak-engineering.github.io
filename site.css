@@ -249,11 +249,16 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
   letter-spacing:0;text-transform:none;white-space:nowrap;margin-bottom:.7rem;}
 /* Tooltip zeigt in der rechten Leiste nach links, sonst steht er ausserhalb des Fensters. */
 .mini-tools .mt::after{bottom:auto;left:auto;right:calc(100% + 9px);top:50%;transform:translateY(-50%);}
+/* Einspaltig: Tools als Zeile OBEN, Inhalt darunter. Beide brauchen eigene Grid-Zeilen –
+   ohne das lagen sie in derselben Zelle und die Icons standen ueber dem Text. */
 @media(max-width:900px){
-  .sub-layout{grid-template-columns:1fr;gap:1.6rem;}
-  .mini-tools{grid-row:1;grid-column:1;position:static;flex-direction:row;flex-wrap:wrap;
-    align-items:center;width:auto;padding-bottom:1.1rem;border-bottom:1px solid var(--border);}
-  .mt-label{margin:0 .5rem 0 0;}
+  .sub-layout{grid-template-columns:1fr;gap:1.4rem;}
+  .sub-layout .leist-col{grid-column:1;grid-row:2;}
+  .mini-tools{grid-column:1;grid-row:1;flex-direction:row;flex-wrap:wrap;
+    align-items:center;gap:.45rem;padding-bottom:1.1rem;border-bottom:1px solid var(--border);}
+  .mt-label{font-size:1.25rem;margin:0 .5rem 0 0;}
+  .mini-tools .mt{width:42px;height:42px;}
+  .mini-tools .mt svg{width:21px;height:21px;}
   .mini-tools .mt::after{right:auto;left:50%;top:auto;bottom:calc(100% + 9px);transform:translateX(-50%);}
 }
 .mt{position:relative;display:grid;place-items:center;width:46px;height:46px;border-radius:10px;
@@ -286,15 +291,21 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
 .acc-head{width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:var(--serif);
   font-size:1.05rem;font-weight:600;color:var(--ink);padding:.85rem 3rem .85rem 1rem;position:relative;
   transition:color .2s,padding-left .2s;line-height:1.3;
-  display:flex;align-items:center;flex-wrap:wrap;gap:.5rem .9rem;}
-/* Rechtsquellen stehen schon in der Kopfzeile – man sieht ohne Aufklappen, worum es geht. */
-/* Feste Titelspalte: so beginnen die Chips in allen Zeilen an derselben Stelle. */
+  display:flex;align-items:center;flex-wrap:nowrap;gap:.5rem .9rem;}
+/* Rechtsquellen stehen schon in der Kopfzeile – man sieht ohne Aufklappen, worum es geht.
+   Feste Titelspalte: so beginnen die Chips in allen Zeilen an derselben Stelle. Sie laufen
+   immer EINZEILIG – wird der Platz knapp (schmales Fenster, Zoom), blenden die hinteren
+   weich aus, statt in eine zweite Zeile zu rutschen. */
 .acc-titel{flex:0 0 320px;}
-.acc-laws{display:flex;flex-wrap:wrap;gap:.3rem;}
+.acc-laws{display:flex;flex-wrap:nowrap;gap:.3rem;flex:1 1 auto;min-width:0;overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);
+          mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);}
 .acc-head .law{font-family:var(--sans);font-size:.68rem;font-weight:500;letter-spacing:.01em;
   color:var(--oak-deep);background:var(--oak-pale);padding:.14rem .55rem;border-radius:99px;
   white-space:nowrap;}
-@media(max-width:760px){.acc-laws{display:none;}}
+/* Unter ~1050px reicht die Breite nicht mehr fuer Titelspalte + Chips: dann wuerden die
+   Titel umbrechen und die Zeilen unterschiedlich hoch. Also Chips weg, Titel einzeilig. */
+@media(max-width:1050px){.acc-laws{display:none;}.acc-titel{flex:1 1 auto;}}
 .acc-head:hover{color:var(--oak);}
 .acc-item.open .acc-head{color:var(--oak-deep);}
 /* Chevron statt „+": das Plus las sich wie „hinzufuegen", der Pfeil zeigt eindeutig „aufklappen". */
