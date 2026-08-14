@@ -240,9 +240,11 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
 .sub-layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2.5rem;align-items:start;}
 .sub-layout .leist-col{grid-column:1;grid-row:1;}
 .mini-tools{grid-column:2;grid-row:1;position:sticky;top:132px;
-  display:flex;flex-direction:column;align-items:center;gap:.4rem;width:76px;}
-.mt-label{font-size:.62rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--muted);text-align:center;margin-bottom:.1rem;}
+  display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;}
+/* Gleiche Schrift, Groesse und Grundlinie wie „Leistungen im Detail" daneben – sonst wirkt die
+   Leiste wie ein loses Anhaengsel statt wie eine zweite Spalte. */
+.mt-label{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--oak-deep);
+  letter-spacing:0;text-transform:none;white-space:nowrap;margin-bottom:.7rem;}
 /* Tooltip zeigt in der rechten Leiste nach links, sonst steht er ausserhalb des Fensters. */
 .mini-tools .mt::after{bottom:auto;left:auto;right:calc(100% + 9px);top:50%;transform:translateY(-50%);}
 @media(max-width:900px){
@@ -252,11 +254,11 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
   .mt-label{margin:0 .5rem 0 0;}
   .mini-tools .mt::after{right:auto;left:50%;top:auto;bottom:calc(100% + 9px);transform:translateX(-50%);}
 }
-.mt{position:relative;display:grid;place-items:center;width:36px;height:36px;border-radius:8px;
+.mt{position:relative;display:grid;place-items:center;width:46px;height:46px;border-radius:10px;
   border:1.5px solid var(--border);color:var(--oak-deep);background:var(--white);
   transition:border-color .15s,background .15s,color .15s;}
 .mt:hover,.mt:focus-visible{border-color:var(--oak);background:var(--oak-ghost);color:var(--oak);}
-.mt svg{width:18px;height:18px;}
+.mt svg{width:23px;height:23px;}
 .mt::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 9px);left:50%;
   transform:translateX(-50%);white-space:nowrap;background:var(--ink);color:#fff;
   font-size:.72rem;line-height:1.4;padding:.32rem .6rem;border-radius:6px;opacity:0;
