@@ -88,12 +88,18 @@ document.addEventListener('click', e => {
   const burger = e.target.closest('.nav-burger');
   if(burger){
     const links = burger.closest('nav').querySelector('.nav-links');
-    if(links) links.classList.toggle('open');
+    if(links){ links.classList.toggle('open');
+      document.body.classList.toggle('nav-offen', links.classList.contains('open')); }
     return;
   }
   // Klick außerhalb schließt offene Dropdowns
   if(!e.target.closest('.nav-dd')) document.querySelectorAll('.nav-dd.open').forEach(d => d.classList.remove('open'));
   // Menü schließen, wenn ein Navigationslink geklickt wird (nicht beim Tippen in die Suche)
   const link = e.target.closest('.nav-links a');
-  if(link){ const l = link.closest('.nav-links'); if(l) l.classList.remove('open'); }
+  if(link){ const l = link.closest('.nav-links'); if(l) l.classList.remove('open'); document.body.classList.remove('nav-offen'); }
+  // Klick auf die Abdunklung neben dem Drawer schliesst das Menue
+  if(document.body.classList.contains('nav-offen') && !e.target.closest('.nav-links') && !e.target.closest('.nav-burger')){
+    document.querySelectorAll('.nav-links.open').forEach(l => l.classList.remove('open'));
+    document.body.classList.remove('nav-offen');
+  }
 });

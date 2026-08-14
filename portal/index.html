@@ -1,11 +1,11 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>OAK Kundenportal</title>
-<link rel="stylesheet" href="portal.css?v=2026-08-14j">
+<link rel="stylesheet" href="portal.css?v=202608141123">
 </head>
 <body>
 
@@ -35,7 +35,7 @@
         </div>
       </div>
       <a href="../about.html">Über uns</a>
-      <a href="index.html" class="nav-login active" style="padding:.4rem .85rem;border:1.5px solid #2D6A4F;border-radius:9px;color:#2D6A4F;font-weight:600;white-space:nowrap;">Kundenlogin</a>
+      <a href="index.html" class="nav-login active">Kundenlogin</a>
       <a href="../kontakt.html" class="nav-cta">Kontakt</a>
     </div>
   </nav>
@@ -121,7 +121,12 @@
 /* Nav-Verhalten wie auf der Website: Burger-Menue und Leistungen-Dropdown. */
 document.addEventListener('click', e => {
   const b = e.target.closest('.nav-burger');
-  if (b) { document.querySelector('.nav-links').classList.toggle('open'); return; }
+  if (b) { const l=document.querySelector('.nav-links'); l.classList.toggle('open');
+           document.body.classList.toggle('nav-offen', l.classList.contains('open')); return; }
+  if (document.body.classList.contains('nav-offen') && !e.target.closest('.nav-links')) {
+    document.querySelector('.nav-links').classList.remove('open');
+    document.body.classList.remove('nav-offen');
+  }
   const dd = e.target.closest('.nav-dd-btn');
   if (dd) { e.stopPropagation(); dd.closest('.nav-dd').classList.toggle('open'); return; }
   if (!e.target.closest('.nav-dd')) document.querySelectorAll('.nav-dd.open').forEach(d => d.classList.remove('open'));
