@@ -133,6 +133,9 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
 .nav-dd-menu { position: absolute; top: calc(100% + 16px); left: 50%; transform: translateX(-50%);
   min-width: 215px; background: var(--white); border: 1px solid var(--border); border-radius: 10px;
   box-shadow: 0 14px 34px rgba(27,67,50,.13); padding: .5rem; display: none; flex-direction: column; z-index: 200; }
+/* Unsichtbare Bruecke ueber die 16px Abstand: sonst verlaesst die Maus .nav-dd auf dem Weg
+   ins Menue, :hover endet und das Dropdown klappt weg, bevor man es erreicht. */
+.nav-dd-menu::before { content: ''; position: absolute; top: -16px; left: 0; right: 0; height: 16px; }
 .nav-dd:hover .nav-dd-menu, .nav-dd:focus-within .nav-dd-menu, .nav-dd.open .nav-dd-menu { display: flex; }
 .nav-dd-menu a { text-transform: none; letter-spacing: 0; font-size: .9rem; color: var(--ink-2); padding: .55rem .7rem; border-radius: 7px; }
 .nav-dd-menu a:hover { background: var(--oak-ghost); color: var(--oak); }
