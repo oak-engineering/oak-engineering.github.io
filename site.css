@@ -195,23 +195,30 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
 }
 
 /* ── Sub-Hero mit interaktivem Gitter ────────────────── */
-/* Bleibt beim Scrollen unter der Navigation stehen (Orientierung) und schrumpft dabei auf eine
-   Zeile. Der Inhalt scrollt darunter durch: .sub-hero ist positioniert, main nicht. */
-.sub-hero{position:sticky;top:68px;z-index:100;overflow:hidden;
-  transition:padding .25s var(--ease);}
+.sub-hero{position:relative;overflow:hidden;}
 .sub-hero #gridCanvas{position:absolute;inset:0;z-index:0;width:100%;height:100%;display:block;}
 .sub-hero .sub-overlay{position:absolute;inset:0;z-index:1;pointer-events:none;
   background:
     radial-gradient(ellipse 90% 130% at 18% 35%, rgba(27,67,50,.78) 0%, rgba(27,67,50,.28) 55%, transparent 82%),
     linear-gradient(180deg, rgba(17,26,20,.35), transparent 40%, rgba(17,26,20,.45));}
 .sub-hero > *:not(#gridCanvas):not(.sub-overlay):not(.hero-clip){position:relative;z-index:2;}
-.sub-hero h1{transition:font-size .25s var(--ease),margin-bottom .25s var(--ease);}
-.sub-hero p{transition:opacity .2s var(--ease),max-height .25s var(--ease);overflow:hidden;max-height:6rem;}
 
-body.kopf-kompakt .sub-hero{padding:.7rem 0;}
-body.kopf-kompakt .sub-hero h1{font-size:1.2rem;margin-bottom:0;}
-body.kopf-kompakt .sub-hero p{opacity:0;max-height:0;}
-body.kopf-kompakt .sub-hero .back-link{display:none;}
+/* Titelbalken, der einfaehrt, sobald der Kopf weggescrollt ist. Bewusst ein eigenes, fixed
+   positioniertes Element: ein schrumpfender sticky-Kopf aendert die Dokumenthoehe und laesst
+   die Umschaltschwelle hin- und herkippen – die Ueberschrift zittert dann im Umschaltbereich. */
+.kopf-balken{position:fixed;top:68px;left:0;right:0;z-index:120;height:46px;display:flex;
+  align-items:center;color:#fff;pointer-events:none;
+  background:linear-gradient(135deg,var(--oak-deep),var(--oak));
+  box-shadow:0 6px 18px rgba(17,26,20,.18);
+  transform:translateY(-115%);transition:transform .25s var(--ease);}
+.kopf-balken::before{content:'';position:absolute;inset:0;opacity:.5;
+  background-image:radial-gradient(rgba(116,198,157,.55) 1px, transparent 1px);
+  background-size:32px 32px;}
+.kopf-balken span{position:relative;max-width:var(--seite);width:100%;margin:0 auto;
+  padding:0 var(--rand);font-family:var(--serif);font-size:1.15rem;font-weight:600;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+body.kopf-fest .kopf-balken{transform:translateY(0);}
+@media(prefers-reduced-motion:reduce){.kopf-balken{transition:none;}}
 
 /* ── Clip-Fenster rechts im Kopf (Image-Loop, bis dahin Platzhalterbild) ── */
 /* Fuellt die rechte Haelfte des Kopfes und laeuft nach links weich ins Gitter aus – so entsteht
@@ -223,10 +230,9 @@ body.kopf-kompakt .sub-hero .back-link{display:none;}
 .hero-clip img,.hero-clip video{width:100%;height:100%;object-fit:cover;
   animation:clipZoom 18s ease-in-out infinite alternate;}
 @keyframes clipZoom{from{transform:scale(1)}to{transform:scale(1.09)}}
-body.kopf-kompakt .hero-clip{opacity:0;}          /* im schmalen Kopf ist kein Platz dafuer */
 @media(max-width:900px){.hero-clip{display:none;}}
 @media(prefers-reduced-motion:reduce){
-  .sub-hero,.sub-hero h1,.sub-hero p,.hero-clip{transition:none;}
+  .hero-clip{transition:none;}
   .hero-clip img,.hero-clip video{animation:none;}
 }
 

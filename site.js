@@ -135,10 +135,23 @@ document.addEventListener('click', e => {
   }
 });
 
-/* ── 4) Seitenkopf bleibt stehen und schrumpft ───────── */
+/* ── 4) Titelbalken faehrt ein, wenn der Kopf weggescrollt ist ──
+   Eigenes fixed-Element statt eines schrumpfenden sticky-Kopfes: dessen Hoehenaenderung
+   verkuerzt das Dokument, die Umschaltschwelle kippt hin und her und die Ueberschrift zittert. */
 (function(){
-  if(!document.querySelector('.sub-hero')) return;
-  const setz = () => document.body.classList.toggle('kopf-kompakt', window.scrollY > 90);
-  window.addEventListener('scroll', setz, { passive: true });
-  setz();
+  const hero = document.querySelector('.sub-hero');
+  const h1 = hero && hero.querySelector('h1');
+  if(!hero || !h1 || !window.IntersectionObserver) return;
+
+  const balken = document.createElement('div');
+  balken.className = 'kopf-balken';
+  balken.setAttribute('aria-hidden', 'true');
+  const text = document.createElement('span');
+  text.textContent = h1.textContent.trim();
+  balken.appendChild(text);
+  document.body.appendChild(balken);
+
+  new IntersectionObserver(([eintrag]) => {
+    document.body.classList.toggle('kopf-fest', !eintrag.isIntersecting);
+  }, { rootMargin: '-110px 0px 0px 0px', threshold: 0 }).observe(hero);
 })();
