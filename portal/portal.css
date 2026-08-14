@@ -14,8 +14,7 @@
   --border:#D6E4DA;--white:#FDFCFA;--serif:'Cormorant Garamond',Georgia,serif;--sans:'Jost',sans-serif;
   --rot:#c0392b;--orange:#e08e0b;--grau:#8aa;--rand:#dfe7e3;--text:#243;}
 *{box-sizing:border-box}
-html{overflow-x:clip;}
-body{margin:0;font-family:'Jost','Segoe UI',Arial,sans-serif;color:var(--text);overflow-x:clip;
+body{margin:0;font-family:'Jost','Segoe UI',Arial,sans-serif;color:var(--text);overflow-x:hidden;
   background:linear-gradient(160deg,#f3f7f5,#e7efeb);min-height:100vh;}
 h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--dunkel);margin:0;}
 a{color:var(--gruen)}
