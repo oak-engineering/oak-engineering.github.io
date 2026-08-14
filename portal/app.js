@@ -35,11 +35,14 @@ const DOMAENEN = [
       { kat: "energie-verbrauch",  label: "Verbrauch &amp; Messstellen" },
       { kat: "energie-massnahmen", label: "Effizienzmaßnahmen" },
   ]},
-  { key: "weitere", label: "Weitere Unterlagen", subs: [
-      { kat: "sonstige", label: "Weitere Unterlagen" },
-      { kat: "vorfall-aushang", label: "Aushang &amp; QR-Code" },
-  ]},
 ];
+/* „Weitere Unterlagen" ist gestrichen (Nikolai, 14.08.2026). Damit trotzdem nie ein Dokument
+   unsichtbar wird, blendet verfuegbareDomaenen() den Reiter automatisch wieder ein, sobald es
+   Dokumente in einer Kategorie ohne Reiter gibt. Bewusst eingebettete Kategorien zaehlen nicht
+   mit: der Aushang wird direkt in der Vorfall-Sektion verlinkt. */
+const EINGEBETTET = ["vorfall-aushang"];
+const REST_DOMAENE = { key: "weitere", label: "Weitere Unterlagen",
+                       subs: [{ kat: "sonstige", label: "Weitere Unterlagen" }] };
 // Label je feiner Kategorie (für Sektions-Überschriften/Fallback).
 const KAT_LABEL = Object.fromEntries(DOMAENEN.flatMap(d => d.subs.map(s => [s.kat, s.label])));
 
@@ -253,10 +256,20 @@ function katRows(kat){
   if(kat.indexOf("ck-") === 0) return [];                        // Cockpit hat keinen Zähler
   if(kat === "vf-arbeitssicherheit") return vBereich("arbeitssicherheit");
   if(kat === "vf-umwelt") return vBereich("umwelt");
+  if(kat === "energie-massnahmen") return eSichtbar();           // Register statt Dokumentliste
+  if(kat === "sonstige"){                                        // Auffangbecken: alles ohne Reiter
+    const bekannt = new Set(DOMAENEN.flatMap(d => d.subs.map(s => s.kat)).concat(EINGEBETTET));
+    return sichtbar().filter(r => r.kategorie && !bekannt.has(r.kategorie));
+  }
   return sichtbar().filter(r => r.kategorie===kat);
 }
-/* ALLE Bereiche sind für jeden sichtbar (auch ohne Inhalt) – zeigt das volle OAK-Leistungsspektrum. */
-function verfuegbareDomaenen(){ return DOMAENEN; }
+/* ALLE Fachbereiche sind für jeden sichtbar (auch ohne Inhalt) – zeigt das volle OAK-Leistungsspektrum.
+   Dazu kommt „Weitere Unterlagen" NUR, wenn sonst etwas unsichtbar bliebe (s. REST_DOMAENE). */
+function verfuegbareDomaenen(){
+  const bekannt = new Set(DOMAENEN.flatMap(d => d.subs.map(s => s.kat)).concat(EINGEBETTET));
+  const uebrig = sichtbar().some(r => r.kategorie && !bekannt.has(r.kategorie));
+  return uebrig ? DOMAENEN.concat([REST_DOMAENE]) : DOMAENEN;
+}
 function domCount(d){ return d.subs.reduce((n,s)=> n + katRows(s.kat).length, 0); }
 function verfuegbareSubs(dom){ return dom ? dom.subs : []; }
 function domHatInhalt(d){ return d.subs.some(s => katRows(s.kat).length); }
@@ -267,6 +280,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat.indexOf("ck-") === 0){ renderCockpit(wrap, kat.slice(3)); return; }        // cockpit.js
   if(kat === "vf-arbeitssicherheit"){ renderVorfaelle(wrap, "arbeitssicherheit"); return; }
   if(kat === "vf-umwelt"){ renderVorfaelle(wrap, "umwelt"); return; }               // vorfaelle.js
+  if(kat === "energie-massnahmen"){ renderEnergie(wrap); return; }                  // energie.js
   const rows = katRows(kat);
   if(!rows.length){
     const leer = document.createElement("section"); leer.className = "sektion";
@@ -398,6 +412,7 @@ async function ladePortal(){
       FREIGABE = {}; (fgr||[]).forEach(x=> FREIGABE[(x.kunde_slug||"")+"|"+(x.maschinen_id||"")]=x);
     }catch(e){ FREIGABE = {}; }
     await ladeVorfaelle();
+    await ladeEnergie();
     AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null) : null;
     AKTIVE_DOM = null; AKTIVE_SUB = null;
     setKundeName();

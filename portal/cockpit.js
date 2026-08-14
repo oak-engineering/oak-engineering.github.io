@@ -103,12 +103,16 @@ function renderCockpit(wrap, bereich){
 
   if(bereich === "energie"){
     const dok = k => sichtbar().filter(r => r.kategorie === k).length;
-    const gesamt = dok("energie-aspekte") + dok("energie-verbrauch") + dok("energie-massnahmen");
+    const em = eSichtbar();
+    const nach = s => em.filter(m => m.status === s).length;
+    const gesamt = dok("energie-aspekte") + dok("energie-verbrauch") + em.length;
     inhalt = `
       <div class="ck-reihe">
-        ${ckTile(dok("energie-aspekte"), "Energieaspekte", "bewertete Anlagen/Prozesse")}
+        ${ckTile(nach("offen"), "offene Maßnahmen", em.length + " Befunde insgesamt", nach("offen") ? "warnung" : "gut")}
+        ${ckTile(nach("geplant"), "geplant", "Umsetzung terminiert")}
+        ${ckTile(nach("umgesetzt"), "umgesetzt", "abgeschlossen", nach("umgesetzt") ? "gut" : "")}
+        ${ckTile(dok("energie-aspekte"), "Energieaspekte", "Dokumente")}
         ${ckTile(dok("energie-verbrauch"), "Verbrauch & Messstellen", "Dokumente")}
-        ${ckTile(dok("energie-massnahmen"), "Effizienzmaßnahmen", "Dokumente")}
       </div>
       <div class="ck-fuss">${gesamt ? "" : "<b>Der Bereich Energie wird gerade aufgebaut.</b> "}
         Ziel ist die Vorbereitung eines Energiemanagements nach <b>ISO 50001</b>. Die nächsten Schritte:
