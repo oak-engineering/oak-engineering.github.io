@@ -231,6 +231,11 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
   animation:clipZoom 18s ease-in-out infinite alternate;}
 /* Das Video bewegt sich selbst – keine zusaetzliche Zoomfahrt. */
 .hero-clip video{width:100%;height:100%;object-fit:cover;display:block;}
+/* Kennzeichnung KI-generierter Inhalte – Art. 50 Abs. 4 VO (EU) 2024/1689 (gilt seit 02.08.2026) */
+.ki-hinweis{position:absolute;right:.55rem;bottom:.45rem;z-index:2;
+  font-size:.6rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(255,255,255,.9);background:rgba(17,26,20,.55);padding:.15rem .5rem;border-radius:4px;
+  backdrop-filter:blur(2px);}
 @keyframes clipZoom{from{transform:scale(1)}to{transform:scale(1.09)}}
 @media(max-width:900px){.hero-clip{display:none;}}
 @media(prefers-reduced-motion:reduce){

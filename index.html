@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141357">
+<link rel="stylesheet" href="fonts.css?v=202608141404">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -290,20 +290,15 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
   transform: translateY(-3px);
 }
 .nb { white-space: nowrap; }
-/* Statt der Stichwoerter kleine Icons nebeneinander – das Wort kommt beim Mouseover.
-   overflow bleibt sichtbar, sonst schneidet die Kachel den Tooltip ab. */
-.hc-ico { display: flex; flex-wrap: wrap; gap: 5px; flex: 1; align-content: flex-start; }
-/* Icon plus Wort – ohne Tooltip, weil das Wort ohnehin dasteht. */
-.ci {
-  display: inline-flex; align-items: center; gap: .4rem;
-  padding: .22rem .6rem .22rem .45rem; border-radius: 99px;
-  border: 1px solid rgba(255,255,255,.2); background: rgba(255,255,255,.07);
-  color: rgba(255,255,255,.82); font-size: .72rem; font-weight: 500; line-height: 1.5;
-  transition: color .15s, border-color .15s, background .15s;
+.hc-k {
+  font-size: .64rem; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--oak-light); margin-bottom: .6rem;
 }
-.ci::after { content: attr(data-tip); }
-.ci:hover { color: #fff; border-color: var(--kachel); background: rgba(255,255,255,.14); }
-.ci svg { width: 14px; height: 14px; flex: none; opacity: .85; }
+.hero-card b {
+  font-family: var(--serif); font-size: 1.45rem; font-weight: 600;
+  color: #fff; line-height: 1.15; margin-bottom: .5rem;
+}
+.hc-d { font-size: .8rem; color: rgba(255,255,255,.66); line-height: 1.5; flex: 1; }
 .hc-go {
   margin-top: 1rem; font-size: .8rem; font-weight: 600;
   color: var(--oak-light); letter-spacing: .02em;
@@ -887,45 +882,22 @@ footer {
     <div class="hero-cards">
       <a class="hero-card" href="arbeitssicherheit.html">
           <b>Arbeitssicherheit</b>
-          <span class="hc-ico">
-            <span class="ci" data-tip="Gefährdungsbeurteilung" role="img" aria-label="Gefährdungsbeurteilung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="4" width="15" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 11l1.6 1.6L13.5 9M8.5 16.5h7"/></svg></span>
-            <span class="ci" data-tip="Gefahrstoffe" role="img" aria-label="Gefahrstoffe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3.5v5.6L5.2 18.8a1.8 1.8 0 0 0 1.6 2.7h10.4a1.8 1.8 0 0 0 1.6-2.7L14 9.1V3.5"/><path d="M8.7 3.5h6.6M8.2 14.5h7.6"/></svg></span>
-            <span class="ci" data-tip="Psychische Gefährdungsbeurteilung" role="img" aria-label="Psychische Gefährdungsbeurteilung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 21v-2.7a7.6 7.6 0 1 0-7.2 0V21"/><path d="M9.9 12.6c1.1-1.1 2.2-1.1 3.3 0"/></svg></span>
-            <span class="ci" data-tip="Sicherheitskultur" role="img" aria-label="Sicherheitskultur"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7.6" r="3.4"/><path d="M3.4 20.6c0-3.1 2.5-5.4 5.6-5.4s5.6 2.3 5.6 5.4"/><path d="M16.2 5.2a3.3 3.3 0 0 1 0 6.4M17.6 15.7c1.9.8 3 2.6 3 4.9"/></svg></span>
-            <span class="ci" data-tip="Schulungen" role="img" aria-label="Schulungen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3.5h5.5A3.5 3.5 0 0 1 12 7v14a2.8 2.8 0 0 0-2.8-2.3H3z"/><path d="M21 3.5h-5.5A3.5 3.5 0 0 0 12 7v14a2.8 2.8 0 0 1 2.8-2.3H21z"/></svg></span>
-          </span>
+          <span class="hc-d">Gefährdungsbeurteilung&nbsp;· Gefahrstoffe&nbsp;· Psych. GBU&nbsp;· Sicherheitskultur&nbsp;· Schulungen</span>
           <span class="hc-go">Mehr erfahren →</span>
         </a>
       <a class="hero-card" href="umweltschutz.html">
           <b>Umweltschutz</b>
-          <span class="hc-ico">
-            <span class="ci" data-tip="Immissionsschutz" role="img" aria-label="Immissionsschutz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18"/><path d="M5.5 21V9.5l5 3.2V9.5l5 3.2V3.5h4V21"/></svg></span>
-            <span class="ci" data-tip="Störfallrecht" role="img" aria-label="Störfallrecht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 4.3 3.9 17.9a1.8 1.8 0 0 0 1.6 2.7h13a1.8 1.8 0 0 0 1.6-2.7L13.3 4.3a1.5 1.5 0 0 0-2.6 0z"/><path d="M12 10v4"/><circle cx="12" cy="17.4" r=".8" fill="currentColor" stroke="none"/></svg></span>
-            <span class="ci" data-tip="ISO 14001" role="img" aria-label="ISO 14001"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9.6" r="6.6"/><path d="m7.6 15.5-1.2 5.5 5.6-2.8 5.6 2.8-1.2-5.5"/></svg></span>
-            <span class="ci" data-tip="Gefahrgut" role="img" aria-label="Gefahrgut"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 9-9 9-9-9z"/><path d="M12 8.4v4.6"/><circle cx="12" cy="16.4" r=".8" fill="currentColor" stroke="none"/></svg></span>
-            <span class="ci" data-tip="Gewässerschutz" role="img" aria-label="Gewässerschutz"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2s6.6 7 6.6 11.1A6.6 6.6 0 0 1 5.4 14.3C5.4 10.2 12 3.2 12 3.2z"/></svg></span>
-            <span class="ci" data-tip="CO₂-Bilanzierung" role="img" aria-label="CO₂-Bilanzierung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.5 14h9a3.7 3.7 0 0 0 .4-7.4 5.3 5.3 0 0 0-10-1.3A3.7 3.7 0 0 0 7.5 14z"/><path d="M12 16.5v4.2M9.6 18.6 12 21l2.4-2.4"/></svg></span>
-          </span></span>
+          <span class="hc-d">Immissionsschutz&nbsp;· Störfall&nbsp;· ISO 14001&nbsp;· Gefahrgut&nbsp;· Gewässerschutz&nbsp;· <span class="nb">CO₂-Bilanzierung</span></span>
           <span class="hc-go">Mehr erfahren →</span>
         </a>
       <a class="hero-card" href="ki-digitalisierung.html">
           <b>KI &amp; Digitalisierung</b>
-          <span class="hc-ico">
-            <span class="ci" data-tip="KI-Auswertung" role="img" aria-label="KI-Auswertung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="10" y="10" width="4" height="4"/><path d="M9.5 3.2V6M14.5 3.2V6M9.5 18v2.8M14.5 18v2.8M3.2 9.5H6M3.2 14.5H6M18 9.5h2.8M18 14.5h2.8"/></svg></span>
-            <span class="ci" data-tip="Automatisierung" role="img" aria-label="Automatisierung"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><path d="M12 3.5v2.3M12 18.2v2.3M20.5 12h-2.3M5.8 12H3.5M18 6l-1.6 1.6M7.6 16.4 6 18M18 18l-1.6-1.6M7.6 7.6 6 6"/></svg></span>
-            <span class="ci" data-tip="Dashboards" role="img" aria-label="Dashboards"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="13.5" rx="2"/><path d="M8 14v-3.2M12 14V8M16 14v-4.2"/><path d="M9 21h6"/></svg></span>
-          </span>
+          <span class="hc-d">KI-Auswertung&nbsp;· Automatisierung&nbsp;· Dashboards</span>
           <span class="hc-go">Mehr erfahren →</span>
         </a>
       <a class="hero-card" href="schulungen.html">
           <b>Schulungsangebot</b>
-          <span class="hc-ico">
-            <span class="ci" data-tip="Arbeitssicherheit" role="img" aria-label="Arbeitssicherheit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.8s7.2-3.6 7.2-9V5.3L12 3 4.8 5.3v6.5c0 5.4 7.2 9 7.2 9z"/></svg></span>
-            <span class="ci" data-tip="Umweltrecht" role="img" aria-label="Umweltrecht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.2v16.3M7.5 20.5h9M3.5 8h17"/><path d="M6.6 8.4 3.6 15h6z"/><path d="M17.4 8.4 14.4 15h6z"/></svg></span>
-            <span class="ci" data-tip="ISO 14001" role="img" aria-label="ISO 14001"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9.6" r="6.6"/><path d="m7.6 15.5-1.2 5.5 5.6-2.8 5.6 2.8-1.2-5.5"/></svg></span>
-            <span class="ci" data-tip="KI" role="img" aria-label="KI"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="10" y="10" width="4" height="4"/><path d="M9.5 3.2V6M14.5 3.2V6M9.5 18v2.8M14.5 18v2.8M3.2 9.5H6M3.2 14.5H6M18 9.5h2.8M18 14.5h2.8"/></svg></span>
-            <span class="ci" data-tip="Online, vor Ort & inhouse" role="img" aria-label="Online, vor Ort & inhouse"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="12.5" rx="2"/><path d="M8.5 20.5h7M12 16.5v4"/></svg></span>
-          </span>
+          <span class="hc-d">Arbeitssicherheit&nbsp;· Umweltrecht&nbsp;· ISO 14001&nbsp;· KI – online, vor Ort &amp; inhouse</span>
           <span class="hc-go">Mehr erfahren →</span>
         </a>
     </div>
