@@ -80,13 +80,16 @@ nav{position:sticky;top:0;z-index:130;display:flex;align-items:center;justify-co
 .nav-dd-btn .nav-ico{margin-right:0;}
 .nav-dd-menu a{padding-left:1.6rem;}
 
-/* Im Drawer haengt das Untermenue direkt unter dem Punkt – auf ALLEN Breiten, nicht nur mobil. */
+/* Im Drawer haengt das Untermenue direkt unter dem Punkt – auf ALLEN Breiten, nicht nur mobil.
+   „Leistungen" ist dort nur Rubrik-Ueberschrift: kein Chevron, kein Icon (wie auf der Website). */
 .nav-links .nav-dd{flex-direction:column;align-items:stretch;}
-.nav-links .nav-dd-btn{padding:.25rem 0;justify-content:flex-start;width:100%;text-transform:none;letter-spacing:0;font-size:.95rem;}
-/* Chevron nach rechts schieben – ohne space-between, sonst rutscht der Text in die Mitte,
-   sobald ein drittes Kind (das Icon) dazukommt. */
-.nav-links .nav-dd-btn>svg:last-child{margin-left:auto;}
-.nav-links .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem 1rem;}
+.nav-links .nav-dd-btn{padding:.25rem 0;justify-content:flex-start;width:100%;cursor:default;
+  text-transform:uppercase;letter-spacing:.1em;font-size:.7rem;font-weight:600;color:var(--muted);}
+.nav-links .nav-dd-btn>svg:last-child{display:none;}
+.nav-links .nav-dd-btn .nav-ico{display:none;}
+.nav-links .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem;}
+/* Keine Unterstreichung in der Navigation – im Portal setzt eine Grundregel sie sonst. */
+.nav-links a,.nav-logo{text-decoration:none;}
 .nav-links .nav-dd-menu a{font-size:.92rem;padding:.35rem 0;}
 .nav-links .nav-search{width:100%;height:42px;}
 .nav-links .nav-search input{width:100%;font-size:.95rem;}
@@ -97,19 +100,8 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
   color:var(--ink) !important;font-weight:500;text-align:left;font-size:.95rem !important;letter-spacing:0;}
 .nav-links .nav-cta:hover,.nav-links .nav-login:hover{color:var(--oak);}
 
-@media(max-width:1200px){
-  .nav-links{display:none;position:fixed;top:68px;left:0;right:0;flex-direction:column;align-items:stretch;
-    background:var(--white);border-bottom:1px solid var(--border);padding:1.2rem 6vw;gap:1.1rem;z-index:99;
-    text-transform:none;letter-spacing:0;font-size:.95rem;}
-  .nav-links a{padding:.25rem 0;}
-  .nav-dd{flex-direction:column;align-items:stretch;}
-  .nav-dd-btn{padding:.25rem 0;justify-content:space-between;width:100%;text-transform:none;letter-spacing:0;font-size:.95rem;}
-  .nav-dd-menu{position:static;transform:none;display:flex;min-width:0;border:none;box-shadow:none;background:transparent;padding:.1rem 0 .3rem 1rem;}
-  .nav-dd-menu a{font-size:.92rem;padding:.35rem 0;}
-  .nav-search{width:100%;height:42px;}
-  .nav-search input{width:100%;font-size:.95rem;}
-  .nav-cta{text-align:center;}
-}
+/* (Die frühere Vollbreiten-Navigation ist entfallen – sie setzte .nav-links unter 1200px auf
+   display:none/left:0 und legte damit den Drawer lahm. Die Drawer-Regeln oben gelten überall.) */
 
 /* Rechtliche Pflichtlinks – muessen von jeder Seite erreichbar sein (§ 5 DDG) */
 .site-bottom{max-width:400px;margin:0 auto 4vh;padding:0 18px;display:flex;flex-wrap:wrap;

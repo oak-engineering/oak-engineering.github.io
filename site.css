@@ -79,8 +79,9 @@ nav{position:sticky;top:0;z-index:130;display:flex;align-items:center;justify-co
 
 /* ── CONTENT ─────────────────────────────────────────── */
 main,.sub-layout{max-width:var(--seite);margin:0 auto;padding:3rem var(--rand) 4rem;}
-/* Lesbarkeit ueber die Zeilenlaenge, nicht ueber den Container – der Textanfang bleibt gleich. */
-.prose p,.prose ul,.prose ol{max-width:70ch;}
+/* Text laeuft ueber die volle Seitenbreite – die Begrenzung auf 70 Zeichen liess rechts
+   eine leere Haelfte stehen und riss die Absaetze in kurze Zeilen. */
+.prose p,.prose ul,.prose ol{max-width:none;}
 .prose h2{font-family:var(--serif);font-size:1.7rem;font-weight:600;color:var(--oak-deep);
   margin:2.4rem 0 .8rem;}
 .prose h2:first-child{margin-top:0;}
@@ -117,6 +118,14 @@ main,.sub-layout{max-width:var(--seite);margin:0 auto;padding:3rem var(--rand) 4
 .btn-ghost:hover{border-color:var(--oak);}
 
 /* Kontaktangaben */
+/* Kontaktseite: Formular links, Kontaktdaten rechts – nutzt die Seitenbreite aus. */
+.kontakt-layout{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(280px,1fr);gap:3rem;align-items:start;}
+.kontakt-layout h2:first-child{margin-top:0;}
+.kontakt-info{background:var(--oak-ghost);border:1px solid var(--oak-pale);border-radius:10px;
+  padding:1.4rem 1.6rem 1.6rem;}
+.kontakt-info .btn-row{margin-top:1.4rem;flex-direction:column;align-items:stretch;}
+.kontakt-info .btn{justify-content:center;}
+@media(max-width:860px){.kontakt-layout{grid-template-columns:1fr;gap:2rem;}}
 .kontakt-rows{margin-top:1.5rem;display:flex;flex-direction:column;gap:.7rem;}
 .kontakt-rows div{font-size:.95rem;color:var(--ink-2);}
 .kontakt-rows a{color:var(--oak);font-weight:500;}

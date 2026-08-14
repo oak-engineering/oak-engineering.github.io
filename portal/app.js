@@ -281,6 +281,9 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "vf-arbeitssicherheit"){ renderVorfaelle(wrap, "arbeitssicherheit"); return; }
   if(kat === "vf-umwelt"){ renderVorfaelle(wrap, "umwelt"); return; }               // vorfaelle.js
   if(kat === "energie-massnahmen"){ renderEnergie(wrap); return; }                  // energie.js
+  /* Unterweisungen: erst die Nachweise aus dem Terminal (unterweisungen.js), darunter wie
+     gehabt die hinterlegten Unterlagen - beides gehoert zum selben Reiter. */
+  if(kat === "unterweisungen") renderUnterweisungen(wrap);
   const rows = katRows(kat);
   if(!rows.length){
     const leer = document.createElement("section"); leer.className = "sektion";
@@ -413,6 +416,7 @@ async function ladePortal(){
     }catch(e){ FREIGABE = {}; }
     await ladeVorfaelle();
     await ladeEnergie();
+    await ladeNachweise();
     AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null) : null;
     AKTIVE_DOM = null; AKTIVE_SUB = null;
     setKundeName();
