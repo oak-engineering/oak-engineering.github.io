@@ -204,6 +204,7 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
   line-height: 1.1;
   color: #fff;
   margin-bottom: 1.6rem;
+  text-wrap: balance;          /* verteilt die Zeilen gleichmaessig, ersetzt das frueher harte <br> */
   text-shadow: 0 2px 30px rgba(0,0,0,.28);
   opacity: 0; animation: fadeUp .8s var(--ease) .4s forwards;
 }
@@ -212,6 +213,7 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
   font-size: 1.05rem; font-weight: 300;
   color: rgba(255,255,255,.8); line-height: 1.7;
   max-width: 560px;
+  text-wrap: pretty;           /* verhindert einzelne Woerter am Zeilenende */
   margin-bottom: 3rem;
   text-shadow: 0 1px 16px rgba(0,0,0,.25);
   opacity: 0; animation: fadeUp .8s var(--ease) .6s forwards;
@@ -825,7 +827,7 @@ footer {
   <canvas id="gridCanvas" aria-hidden="true"></canvas>
   <div class="hero-overlay"></div>
   <div class="hero-content">
-    <h1 class="hero-title">EHS neu gedacht –<br><em>digital und KI-unterstützt</em></h1>
+    <h1 class="hero-title">EHS neu gedacht – <em>digital und KI-unterstützt</em></h1>
     <p class="hero-sub">Externe Expertise für Arbeitssicherheit und Umweltschutz – verbunden mit KI und Automatisierung, damit Sie mehr Zeit für das Wesentliche haben.</p>
     <div class="hero-cards">
       <a class="hero-card" href="arbeitssicherheit.html">

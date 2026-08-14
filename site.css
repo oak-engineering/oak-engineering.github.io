@@ -38,6 +38,9 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .nav-dd:hover .nav-dd-btn,.nav-dd:focus-within .nav-dd-btn{color:var(--oak);}
 .nav-dd:hover .nav-dd-btn svg,.nav-dd.open .nav-dd-btn svg{transform:rotate(180deg);}
 .nav-dd-menu{position:absolute;top:calc(100% + 16px);left:50%;transform:translateX(-50%);min-width:215px;background:var(--white);border:1px solid var(--border);border-radius:10px;box-shadow:0 14px 34px rgba(27,67,50,.13);padding:.5rem;display:none;flex-direction:column;z-index:200;}
+/* Unsichtbare Bruecke ueber die 16px Abstand: sonst verlaesst die Maus .nav-dd auf dem Weg
+   ins Menue, :hover endet und das Dropdown klappt weg, bevor man es erreicht. */
+.nav-dd-menu::before{content:'';position:absolute;top:-16px;left:0;right:0;height:16px;}
 .nav-dd:hover .nav-dd-menu,.nav-dd:focus-within .nav-dd-menu,.nav-dd.open .nav-dd-menu{display:flex;}
 .nav-dd-menu a{text-transform:none;letter-spacing:0;font-size:.9rem;color:var(--ink-2);padding:.55rem .7rem;border-radius:7px;}
 .nav-dd-menu a:hover{background:var(--oak-ghost);color:var(--oak);}
@@ -79,10 +82,10 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .sub-eyebrow{font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;
   color:var(--oak-light);display:flex;align-items:center;gap:.6rem;margin-bottom:1rem;}
 .sub-eyebrow::before{content:'';width:24px;height:1px;background:var(--oak-light);}
-.sub-hero h1{font-family:var(--serif);font-size:clamp(2rem,4vw,3.2rem);font-weight:300;
+.sub-hero h1{font-family:var(--serif);font-size:clamp(2rem,4vw,3.2rem);font-weight:300;text-wrap:balance;
   line-height:1.12;margin-bottom:1rem;}
 .sub-hero h1 em{font-style:italic;color:var(--oak-light);}
-.sub-hero p{font-size:1rem;font-weight:300;color:rgba(255,255,255,.82);max-width:640px;}
+.sub-hero p{font-size:1rem;font-weight:300;color:rgba(255,255,255,.82);max-width:640px;text-wrap:pretty;}
 
 /* ── CONTENT ─────────────────────────────────────────── */
 main{max-width:940px;margin:0 auto;padding:3.5rem 8vw 4rem;}
