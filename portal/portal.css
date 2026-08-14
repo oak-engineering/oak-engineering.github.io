@@ -306,3 +306,22 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .ck-hinweisbox{font-size:13.5px;line-height:1.55;background:#fdecea;border:1px solid #f5b7b1;color:#922b21;
   border-radius:10px;padding:11px 13px;margin-top:14px;}
 .v-aushang{display:inline-block;margin-top:8px;font-weight:600;}
+
+/* ---- Unterweisungen: Nachweise aus dem Terminal ----
+   Bewusst schmucklos: eine Zeile je Person mit dem juengsten Stand. Kein Punktestand -
+   gespeichert wird nur bestanden ja/nein (Datenminimierung, siehe unterweisungen.js). */
+.uw-tab{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+.uw-tab th{text-align:left;font-size:12px;font-weight:600;color:var(--grau);
+  border-bottom:1px solid var(--rand);padding:6px 8px 6px 0}
+.uw-tab td{padding:9px 8px 9px 0;border-bottom:1px solid var(--rand);vertical-align:top}
+.uw-tab tr:last-child td{border-bottom:none}
+.uw-mod{color:var(--grau);font-size:12.5px}
+.uw-badge{font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:11px;
+  border:1px solid var(--rand);white-space:nowrap}
+.uw-badge.uw-gut{background:var(--akzent);color:var(--dunkel);border-color:var(--hellgruen)}
+.uw-badge.uw-warnung{background:#fdf6e3;color:#8a6d0b;border-color:#f0d99b}
+.uw-badge.uw-kritisch{background:#fdecea;color:#922b21;border-color:#f5b7b1}
+.uw-warn{font-size:12px;color:#922b21;font-weight:600}
+.btn-klein{font:inherit;font-size:13px;font-weight:600;color:var(--gruen);background:#fff;
+  border:1px solid var(--gruen);border-radius:8px;padding:6px 12px;cursor:pointer}
+.btn-klein:hover{background:var(--akzent)}
