@@ -109,6 +109,7 @@ document.addEventListener('click', e => {
   const open = item.classList.contains('open');
   // optional: andere offen lassen (kein Auto-Close) – Klavier-Stil mit Mehrfach-Öffnen
   item.classList.toggle('open', !open);
+  head.setAttribute('aria-expanded', String(!open));
 });
 
 /* ── 3) Mobiles Menü (Burger) + Dropdown „Leistungen" ── */
