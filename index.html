@@ -215,8 +215,8 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
 .hero-sub {
   font-size: 1.05rem; font-weight: 300;
   color: rgba(255,255,255,.8); line-height: 1.7;
-  max-width: 560px;
-  text-wrap: pretty;           /* verhindert einzelne Woerter am Zeilenende */
+  max-width: 620px;
+  text-wrap: balance;          /* verteilt die Zeilen gleichmaessig; "und" haengt per &nbsp; am Folgewort */
   margin-bottom: 3rem;
   text-shadow: 0 1px 16px rgba(0,0,0,.25);
   opacity: 0; animation: fadeUp .8s var(--ease) .6s forwards;
@@ -831,7 +831,7 @@ footer {
   <div class="hero-overlay"></div>
   <div class="hero-content">
     <h1 class="hero-title">Wir digitalisieren <em>EHS-Management</em></h1>
-    <p class="hero-sub">Externe Expertise für Arbeitssicherheit und Umweltschutz – verbunden mit KI und Automatisierung, damit Sie mehr Zeit für das Wesentliche haben.</p>
+    <p class="hero-sub">Externe Expertise für Arbeitssicherheit und&nbsp;Umweltschutz – verbunden mit KI und&nbsp;Automatisierung, damit Sie mehr Zeit für das Wesentliche haben.</p>
     <div class="hero-cards">
       <a class="hero-card" href="arbeitssicherheit.html">
         <span class="hc-k">Leistung</span>
@@ -866,15 +866,25 @@ footer {
 .region{padding:clamp(3rem,7vw,5rem) 6vw;background:var(--oak-ghost,#F0FAF3);border-top:1px solid var(--border,#D6E4DA);}
 .region-inner{max-width:980px;margin:0 auto;}
 .region h2{font-family:var(--serif,'Cormorant Garamond',serif);font-weight:300;font-size:clamp(1.4rem,3.5vw,2rem);color:var(--oak-deep,#1B4332);line-height:1.2;margin:0 0 1rem;}
-.region p{font-size:1rem;line-height:1.7;color:var(--ink-2,#2C3A30);max-width:75ch;margin:0 0 1rem;}
+.region p{font-size:1rem;line-height:1.7;color:var(--ink-2,#2C3A30);margin:0 0 1rem;}
+/* Zwei Spalten ab 1000px: nutzt die Containerbreite aus, haelt die Zeile aber bei ~58 Zeichen.
+   Ohne Spalten muesste der Absatz auf 75ch begrenzt bleiben – sonst wird die Zeile zu lang. */
+.region-text{max-width:75ch;}
+@media(min-width:1000px){
+  .region-text{max-width:none;columns:2;column-gap:3.2rem;}
+  .region-text p{break-inside:avoid;}
+  .region-text p:last-child{margin-bottom:0;}
+}
 .region p strong{color:var(--oak-deep,#1B4332);font-weight:600;}
 .region-tags{font-size:.8rem;color:var(--muted,#6B7C70);letter-spacing:.01em;}
 </style>
 <section class="region reveal">
   <div class="region-inner">
+    <div class="region-text">
     <p>Wir begleiten <strong>Industrie und Mittelstand</strong> in der <strong>Arbeitssicherheit</strong> und im <strong>Umweltschutz</strong>. Neben den gängigen Managementsystemen unterstützen wir bei der Erstellung rechtskonformer Dokumentation – von der Gefährdungsbeurteilung über Betriebsanweisungen bis zum vollständigen Kataster.</p>
     <p>Unser Ansatz ist die <strong>Digitalisierung anlagenbezogener Dokumente</strong>: Was sonst im Aktenordner liegt, ist bei uns direkt an der Anlage abrufbar – per QR-Code, immer auf dem aktuellen Stand. Das verkürzt Suchzeiten, erleichtert Prüfungen und macht den Stand der Dokumentation jederzeit belegbar.</p>
     <p>Wir sind in <strong>Augsburg</strong> und <strong>München</strong> persönlich vor Ort und betreuen Unternehmen in Schwaben, Oberbayern und – remote-gestützt – bundesweit.</p>
+    </div>
     <p class="region-tags">Arbeitsschutz-Beratung Augsburg · Arbeitsschutz-Beratung München · Immissionsschutz München · Arbeitssicherheit Bayern · Gefahrstoffmanagement · ISO 14001 · Störfall-Verordnung · Gefahrgutbeauftragter · CO₂-Bilanz</p>
   </div>
 </section>
