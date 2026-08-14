@@ -164,3 +164,17 @@ select.v-status{padding:5px 8px;border:1px solid var(--rand);border-radius:8px;f
 .v-notiz-ro{margin-top:11px;font-size:13.5px;background:#f6faf8;border-radius:8px;padding:9px 11px;color:#3c5b4e;}
 .v-fuss{font-size:11.5px;color:#8aa;margin-top:10px;}
 .v-check{display:flex;align-items:center;gap:9px;font-size:14px;margin:8px 0;}
+
+/* Vorfälle eingeklappt: eine Zeile je Meldung, Details auf Klick. */
+details.v-karte{padding:0;overflow:hidden;}
+details.v-karte > summary{list-style:none;cursor:pointer;padding:11px 16px;margin:0;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+details.v-karte > summary::-webkit-details-marker{display:none;}
+details.v-karte > summary::before{content:"▸";color:#8aa;font-size:13px;flex:0 0 auto;}
+details.v-karte[open] > summary::before{content:"▾";}
+details.v-karte[open] > summary{border-bottom:1px solid var(--rand);background:#fbfdfc;}
+details.v-karte > summary:hover{background:#f6faf8;}
+.v-kurz{font-size:13.5px;color:#5a6b64;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px;}
+details.v-karte > *:not(summary){padding-left:16px;padding-right:16px;}
+details.v-karte > .v-fuss{padding-bottom:12px;}
+.v-kopf-innen{padding-top:10px;}

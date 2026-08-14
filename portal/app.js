@@ -26,7 +26,8 @@ const DOMAENEN = [
      in vorfaelle.js. Sie stehen bewusst als eigene Domäne neben Arbeitssicherheit und Umwelt,
      weil eine Meldung beides betreffen kann (z. B. Ölaustritt). */
   { key: "vorfaelle", label: "Vorfälle", subs: [
-      { kat: "vorfaelle", label: "Unfälle &amp; Beinahe-Unfälle" },
+      { kat: "vorfaelle",        label: "Unfälle &amp; Beinahe-Unfälle" },
+      { kat: "vorfall-aushang",  label: "Aushang &amp; QR-Code" },
   ]},
   { key: "weitere", label: "Weitere Unterlagen", subs: [
       { kat: "sonstige", label: "Weitere Unterlagen" },

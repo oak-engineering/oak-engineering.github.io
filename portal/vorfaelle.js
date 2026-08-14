@@ -64,19 +64,25 @@ function vKarte(v){
            placeholder="Was wurde veranlasst?">${esc(v.bearbeitung || "")}</textarea></label>`
     : (v.bearbeitung ? `<div class="v-notiz-ro"><b>Bearbeitung:</b> ${esc(v.bearbeitung)}</div>` : "");
 
-  return `<article class="v-karte" style="border-left:5px solid ${a.farbe}">
-    <div class="v-kopf">
+  /* Eingeklappt: eine Zeile je Meldung. Aufgeklappt erst auf Klick – bei mehreren Meldungen
+     mit Fotos ist die Seite sonst nicht mehr überblickbar (Nikolai, 14.08.2026). */
+  const kurz = (v.beschreibung || "").replace(/\s+/g, " ").slice(0, 90);
+  return `<details class="v-karte" style="border-left:5px solid ${a.farbe}">
+    <summary class="v-kopf">
       <span class="v-art" style="background:${a.bg};color:${a.farbe}">${a.label}</span>
       <span class="v-datum">${vDatum(v.ereignis_am)}</span>
-      <span class="v-spacer"></span>${statusFeld}
-    </div>
+      <span class="v-kurz">${esc(v.ort || kurz)}</span>
+      <span class="v-spacer"></span>
+      <span class="v-badge v-${esc(v.status)}">${esc(V_STATUS[v.status] || v.status)}</span>
+    </summary>
+    <div class="v-kopf v-kopf-innen"><span class="v-spacer"></span>${statusFeld}</div>
     <div class="v-text">${esc(v.beschreibung).replace(/\n/g, "<br>")}</div>
     <div class="v-merkmale">${merkmale}</div>
     <table class="v-daten">${zeilen.map(([k, w]) => `<tr><th>${k}</th><td>${w}</td></tr>`).join("")}</table>
     ${vFoto(v.foto)}
     ${notiz}
     <div class="v-fuss">Eingegangen ${vDatum(v.angelegt_am)}${v.quelle === "portal" ? " · im Portal erfasst" : " · über den Meldelink"}</div>
-  </article>`;
+  </details>`;
 }
 
 function renderVorfaelle(wrap){
