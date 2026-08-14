@@ -72,6 +72,8 @@
   --sans:  'Jost', sans-serif;
 
   --ease: cubic-bezier(.4,0,.2,1);
+  --seite: 1140px;
+  --rand: clamp(1.2rem,4vw,3rem);
 }
 
 /* ── RESET ──────────────────────────────────────────────────────────── */
@@ -155,7 +157,13 @@ nav.scrolled { box-shadow: 0 2px 24px rgba(27,67,50,.08); }
   transition: background .2s;
 }
 .nav-cta:hover { background: var(--oak) !important; }
-.nav-burger { display: none; background: none; border: none; cursor: pointer; padding: 4px; }
+.nav-burger { display: block; background: none; border: none; cursor: pointer; padding: 4px; }
+/* Burger auf ALLE Breiten – Panel oeffnet ueber .open */
+.nav-links { display: none; position: fixed; top: 68px; left: 0; right: 0; flex-direction: column;
+  align-items: stretch; background: var(--white); border-bottom: 1px solid var(--border);
+  padding: 1.4rem var(--rand) 1.6rem; gap: 1.1rem; z-index: 99; text-transform: none; letter-spacing: 0;
+  font-size: .95rem; box-shadow: 0 12px 28px rgba(27,67,50,.10); }
+.nav-links.open { display: flex; }
 .nav-burger span {
   display: block; width: 22px; height: 1.5px;
   background: var(--ink); margin: 5px 0;
@@ -767,7 +775,6 @@ footer {
 
 /* ── MOBILE ─────────────────────────────────────────────────────────── */
 @media (max-width: 1200px) {
-  .nav-burger { display: block; }
   .nav-links {
     display: none; position: fixed; top: 68px; left: 0; right: 0;
     flex-direction: column; align-items: stretch;
@@ -831,28 +838,24 @@ footer {
   <div class="hero-overlay"></div>
   <div class="hero-content">
     <h1 class="hero-title">Wir digitalisieren <em>EHS-Management</em></h1>
-    <p class="hero-sub">Externe Expertise für Arbeitssicherheit und Umweltschutz – KI-gestützt.</p>
+    <p class="hero-sub">Externe Expertise für Arbeitssicherheit und Umweltschutz.</p>
     <div class="hero-cards">
       <a class="hero-card" href="arbeitssicherheit.html">
-        <span class="hc-k">Leistung</span>
         <b>Arbeitssicherheit</b>
         <span class="hc-d">Gefährdungsbeurteilung · Gefahrstoffe · Psych. GBU · Sicherheitskultur · Schulungen</span>
         <span class="hc-go">Mehr erfahren →</span>
       </a>
       <a class="hero-card" href="umweltschutz.html">
-        <span class="hc-k">Leistung</span>
         <b>Umweltschutz</b>
         <span class="hc-d">Immissionsschutz · Störfall · ISO 14001 · Gefahrgut · Gewässerschutz · CO₂</span>
         <span class="hc-go">Mehr erfahren →</span>
       </a>
       <a class="hero-card" href="ki-digitalisierung.html">
-        <span class="hc-k">Querschnitt</span>
         <b>KI &amp; Digitalisierung</b>
         <span class="hc-d">Digitalisierung für Arbeits- &amp; Umweltschutz: KI-Auswertung, Automatisierung, Dashboards</span>
         <span class="hc-go">Mehr erfahren →</span>
       </a>
       <a class="hero-card" href="schulungen.html">
-        <span class="hc-k">Weiterbildung</span>
         <b>Schulungsangebot</b>
         <span class="hc-d">11 Schulungen: Arbeitssicherheit · Umweltrecht · ISO 14001 · KI – online, vor Ort &amp; inhouse</span>
         <span class="hc-go">Mehr erfahren →</span>

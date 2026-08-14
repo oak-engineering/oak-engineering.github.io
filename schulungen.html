@@ -11,10 +11,7 @@
 <link rel="stylesheet" href="site.css">
 <style>
 /* ── Schulungs-spezifische Komponenten (OAK-CI) ─────────────────── */
-/* Gleiche Inhaltsbreite wie die Leistungsseiten (.sub-layout, 1140px) – sonst springt die
-   Breite beim Wechsel aus dem Leistungen-Menue von 1140 auf die 940px des Textlayouts. */
-main.prose{max-width:1140px;}
-.sched-intro{max-width:900px;margin:0 auto 1.6rem;}
+.sched-intro{margin:0 0 1.6rem;}
 .legend-typ{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:center;margin:.4rem 0 1.4rem;font-size:.78rem;color:var(--muted);}
 .legend-typ span{display:inline-flex;align-items:center;gap:.35rem;}
 .typ-badge{display:inline-block;font-size:.64rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:.18rem .55rem;border-radius:99px;}
@@ -155,7 +152,6 @@ main.prose{max-width:1140px;}
   <div class="accordion" id="kursList"><!-- Kurse via JS --></div>
 
   <div class="sec-head" id="kalender">
-    <div class="ey">Terminübersicht</div>
     <h2>Nächste Termine</h2>
   </div>
   <div class="cal-wrap">
@@ -165,7 +161,6 @@ main.prose{max-width:1140px;}
   </div>
 
   <div class="sec-head" id="anmeldung">
-    <div class="ey">Anmeldung</div>
     <h2>Zum Kurs anmelden</h2>
   </div>
   <div class="anm-card">

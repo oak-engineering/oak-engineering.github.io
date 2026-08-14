@@ -63,8 +63,14 @@ nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-co
 .nav-search button:hover{background:var(--oak-ghost);}
 .nav-search:focus-within{border-color:var(--oak);box-shadow:0 0 0 3px var(--oak-pale);}
 
+/* Burger auf allen Breiten – wie auf der Website */
+.nav-burger{display:block;}
+.nav-links{display:none;position:fixed;top:68px;left:0;right:0;flex-direction:column;align-items:stretch;
+  background:var(--white);border-bottom:1px solid var(--border);padding:1.4rem 6vw 1.6rem;gap:1.1rem;z-index:99;
+  text-transform:none;letter-spacing:0;font-size:.95rem;box-shadow:0 12px 28px rgba(27,67,50,.10);}
+/* Panel oeffnen: gilt auf allen Breiten, nicht nur mobil */
+.nav-links.open{display:flex;}
 @media(max-width:1200px){
-  .nav-burger{display:block;}
   .nav-links{display:none;position:fixed;top:68px;left:0;right:0;flex-direction:column;align-items:stretch;
     background:var(--white);border-bottom:1px solid var(--border);padding:1.2rem 6vw;gap:1.1rem;z-index:99;
     text-transform:none;letter-spacing:0;font-size:.95rem;}
