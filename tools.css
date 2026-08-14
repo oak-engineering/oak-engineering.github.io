@@ -16,7 +16,7 @@ img{max-width:100%;display:block;}
 
 /* NAV (identisch zur Website) */
 nav{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;
-  padding:0 5vw;height:68px;background:rgba(253,252,250,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+  padding:0 5vw;height:68px;background:var(--white);border-bottom:1px solid var(--border);}
 nav .nav-logo{display:flex;align-items:center;gap:10px;}
 nav .nav-logo img{height:38px;width:auto;}
 .nav-wordmark{display:flex;flex-direction:column;line-height:1;font-family:var(--serif);font-size:1.25rem;font-weight:600;color:var(--oak-deep);letter-spacing:.02em;}

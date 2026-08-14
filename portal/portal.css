@@ -24,7 +24,7 @@ a{color:var(--gruen)}
    weil sich :root, body und .btn mit dem Portal-CSS ueberschneiden. */
 /* ── NAV ─────────────────────────────────────────────── */
 nav{position:sticky;top:0;z-index:130;display:flex;align-items:center;justify-content:space-between;
-  padding:0 5vw;height:68px;background:rgba(253,252,250,.92);backdrop-filter:blur(12px);
+  padding:0 5vw;height:68px;background:#fff;
   border-bottom:1px solid var(--border);}
 .nav-logo{display:flex;align-items:center;gap:10px;}
 .nav-logo img{height:38px;width:auto;}
