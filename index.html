@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202608141202">
+<link rel="stylesheet" href="fonts.css?v=202608141205">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -263,19 +263,29 @@ body.nav-offen::after{content:'';position:fixed;inset:0;background:rgba(17,26,20
   opacity: 0; animation: fadeUp .8s var(--ease) .8s forwards;
 }
 @media (max-width: 1024px) { .hero-cards { grid-template-columns: repeat(2, 1fr); max-width: 560px; } }
+/* Die Kacheln waren dunkler als der Hero und gingen darin unter. Jetzt ein eigener, hellerer
+   Gruenton mit sanftem Verlauf – plus je Bereich eine feine Akzentkante oben. */
 .hero-card {
-  pointer-events: auto;
+  pointer-events: auto; position: relative; overflow: hidden;
   display: flex; flex-direction: column;
-  background: #16382A;
-  border: 1px solid rgba(255,255,255,.14);
+  background: linear-gradient(158deg, #2A6650, #173D2D);
+  border: 1px solid rgba(255,255,255,.18);
   border-radius: 8px;
   padding: 1.4rem 1.4rem 1.2rem;
   box-shadow: 0 8px 30px rgba(0,0,0,.25);
   transition: background .2s, border-color .2s, transform .15s;
 }
+.hero-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--kachel, var(--oak-light));
+}
+.hero-card:nth-child(1) { --kachel: #74C69D; }
+.hero-card:nth-child(2) { --kachel: #52B788; }
+.hero-card:nth-child(3) { --kachel: #95D5B2; }
+.hero-card:nth-child(4) { --kachel: #40916C; }
 .hero-card:hover {
-  background: #1F4C39;
-  border-color: var(--oak-light);
+  background: linear-gradient(158deg, #35785F, #1E4A37);
+  border-color: var(--kachel);
   transform: translateY(-3px);
 }
 .hc-k {
