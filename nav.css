@@ -8,7 +8,10 @@
 a{text-decoration:none;}
 /* Grundwerte, damit der Kopf auch dort stimmt, wo eine Seite eigene Tokens mitbringt
    (Portal). Seiten mit eigenem :root ueberschreiben sie danach. */
-:root{--seite:1140px;--kopf-rand:clamp(1.2rem,4vw,3rem);--ease:cubic-bezier(.4,0,.2,1);}
+:root{--seite:1140px;--kopf-rand:clamp(1.2rem,4vw,3rem);--ease:cubic-bezier(.4,0,.2,1);
+  /* Hoehe der festen Fussleiste – Freiraum unter dem Inhalt und Auflagekante des
+     Auswahlblatts haengen daran, deshalb an einer Stelle gepflegt. */
+  --tb-h:69px;}
 
 /* ── NAV ─────────────────────────────────────────────── */
 nav{position:sticky;top:0;z-index:130;display:flex;align-items:center;justify-content:space-between;
@@ -165,3 +168,75 @@ body.kopf-fest .kopf-balken{transform:translateY(0);}
   .hero-clip img,.hero-clip video{animation:none;}
 }
 
+
+/* ── TAB BAR (feste Fussleiste, nur schmale Geraete) ──────────────────
+   Auf dem Handy fuehrte bisher jeder Weg ueber den Burger oben rechts: antippen,
+   Drawer abwarten, Ziel suchen. Die Feld-Tools machen es seit 14.08.2026 anders –
+   feste Fussleiste, jede Funktion immer an derselben Stelle, ein Daumendruck.
+   Muster uebernommen aus tools/OAK_Begehungsbogen.html (.fussblock/.tabbar).
+   Ab 900px verschwindet die Leiste wieder – am Desktop bleibt es beim Drawer.
+   Wird von site.js (Website) bzw. portal/app.js (Portal) eingehaengt, NICHT
+   ins Seiten-HTML kopiert: das <nav> liegt schon elfmal dupliziert vor. */
+/* Die Leiste ist ein <nav> – damit erbt sie die Kopfzeilen-Regel ganz oben
+   (position:sticky; top:0; height:68px; padding:0 5vw; border-bottom). Ohne die
+   Rueckstellungen haengt sie am oberen Rand statt unten: bei gesetztem top UND
+   bottom und automatischer Hoehe gewinnt top. */
+.tabbar-fest{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:125;display:none;
+  height:auto;padding:0;border-bottom:none;
+  background:var(--white);border-top:1px solid var(--border);
+  box-shadow:0 -2px 12px rgba(27,67,50,.10);
+  padding-bottom:env(safe-area-inset-bottom);}
+.tabbar-fest .tb-reihe{display:flex;max-width:560px;margin:0 auto;padding:4px 6px 6px;}
+.tab-i{flex:1;background:none;border:0;border-radius:10px;padding:7px 2px 6px;cursor:pointer;
+  font-family:var(--sans);font-size:11.5px;font-weight:500;letter-spacing:0;text-transform:none;
+  color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;
+  -webkit-tap-highlight-color:transparent;transition:color .15s,background .15s;}
+/* Symbol nimmt die Farbe seines Reiters an – auch im aktiven Zustand. */
+.tab-i svg{width:23px;height:23px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.tab-i.on{color:var(--oak);font-weight:600;background:var(--oak-ghost);}
+.tab-i:active{transform:scale(.96);}
+/* „Mehr" traegt die Klasse nav-burger, damit der bestehende Menue-Handler greift.
+   Damit erbt seine Beschriftung aber die Burger-Striche (.nav-burger span: 22x2px,
+   eingefaerbt) – hier wieder zu normalem Text machen. */
+.tabbar-fest .nav-burger span{display:inline;width:auto;height:auto;
+  background:none;margin:0;border-radius:0;}
+
+/* Auswahlblatt: faehrt von unten ueber die Leiste, statt sie zu verdecken.
+   Bewusst kein zweiter Drawer – der Weg zu den Leistungen soll kurz bleiben. */
+.tb-blatt{position:fixed;left:0;right:0;bottom:calc(var(--tb-h) + env(safe-area-inset-bottom));z-index:127;display:none;
+  background:var(--white);border-radius:16px 16px 0 0;box-shadow:0 -10px 34px rgba(27,67,50,.22);
+  padding:.9rem 1.1rem calc(1.1rem + env(safe-area-inset-bottom));
+  transform:translateY(100%);transition:transform .24s var(--ease);}
+.tb-blatt.auf{transform:translateY(0);}
+.tb-blatt h2{font-family:var(--sans);font-size:.7rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--muted);margin:0 0 .5rem;}
+.tb-blatt a{display:flex;align-items:center;gap:.7rem;padding:.62rem 0;
+  font-size:.98rem;color:var(--ink);border-top:1px solid var(--border);}
+.tb-blatt a:first-of-type{border-top:none;}
+.tb-blatt a svg{width:19px;height:19px;flex:none;opacity:.55;fill:none;stroke:currentColor;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+/* Abdunklung endet ueber der Leiste: die vier Reiter bleiben sichtbar UND antippbar,
+   man kann bei offenem Blatt direkt zu einem anderen Bereich wechseln. Ginge sie bis
+   ganz unten, faenge sie jeden Druck auf die Leiste ab. */
+body.tb-blatt-auf::before{content:'';position:fixed;top:0;left:0;right:0;
+  bottom:calc(var(--tb-h) + env(safe-area-inset-bottom));
+  background:rgba(17,26,20,.35);z-index:126;}
+/* Ist der Drawer offen, gilt er allein – sonst laege die Leiste (125) ueber ihm (120)
+   und schnitte seine unteren Punkte ab. Ein Menue zur Zeit. */
+body.nav-offen .tabbar-fest{display:none;}
+/* Im Portal vor der Anmeldung: die Reiter zeigten ins Leere. site.js setzt die Klasse. */
+body.tb-aus .tabbar-fest,body.tb-aus .tb-blatt{display:none;}
+body.tb-aus{padding-bottom:0;}
+
+@media(max-width:900px){
+  .tabbar-fest{display:block;}
+  .tb-blatt{display:block;}
+  /* Inhalt darf nicht unter der Leiste enden – Hoehe der Leiste plus Reserve. */
+  body{padding-bottom:calc(var(--tb-h) + 8px + env(safe-area-inset-bottom));}
+  /* Der schwebende Portal-Hinweis sass genau dort, wo jetzt die Leiste klebt. */
+  .update-banner{bottom:calc(88px + env(safe-area-inset-bottom));}
+  /* Falls das Chat-Widget je eingebunden wird: nicht auf der Leiste parken. */
+  .oakc-launch{bottom:calc(86px + env(safe-area-inset-bottom));}
+}
+@media print{.tabbar-fest,.tb-blatt{display:none !important;}}

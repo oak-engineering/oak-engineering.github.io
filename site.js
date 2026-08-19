@@ -142,7 +142,12 @@ document.addEventListener('click', e => {
   if(ddBtn){ ddBtn.closest('.nav-dd').classList.toggle('open'); return; }
   const burger = e.target.closest('.nav-burger');
   if(burger){
-    const links = burger.closest('nav').querySelector('.nav-links');
+    /* Der Menue-Knopf sitzt nicht mehr nur im Kopf, sondern auch als „Mehr" in der
+       Fussleiste – und die ist selbst ein <nav>. Nur im eigenen <nav> zu suchen fand
+       dort nichts; die Liste gibt es je Seite ohnehin genau einmal. */
+    const eigenesNav = burger.closest('nav');
+    const links = (eigenesNav && eigenesNav.querySelector('.nav-links'))
+               || document.querySelector('.nav-links');
     if(links){ links.classList.toggle('open');
       document.body.classList.toggle('nav-offen', links.classList.contains('open')); }
     return;
@@ -190,4 +195,238 @@ document.addEventListener('click', e => {
   window.addEventListener('scroll', anstossen, { passive: true });
   window.addEventListener('resize', anstossen);
   pruefen();
+})();
+
+/* ── 5) Tab Bar: feste Fussleiste auf schmalen Geraeten ──
+   Auf dem Handy fuehrte jeder Weg ueber den Burger oben rechts. Jetzt klebt unten eine
+   Leiste, deren Reiter immer an derselben Stelle stehen – dasselbe Muster wie in den
+   Feld-Tools (tools/OAK_Begehungsbogen.html, .fussblock). Sichtbarkeit regelt allein das
+   CSS (nav.css, ab 900px aus); hier wird nur gebaut.
+   Bewusst per JS eingehaengt: das <nav>-Markup liegt elfmal kopiert in den Seiten, ein
+   zwoelfter Block waere die naechste Quelle fuer Auseinanderlaufen. */
+(function(){
+  const SVG = {
+    haus:    '<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/>',
+    raster:  '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+    brief:   '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m21 7-9 6-9-6"/>',
+    menue:   '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    tafel:   '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/>',
+    warnung: '<path d="M12 3.5 2.8 20h18.4L12 3.5z"/><path d="M12 10v4.2M12 17.4h.01"/>',
+    schloss: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+    /* Leistungsseiten – dieselben Symbole wie im Drawer, damit nichts zweierlei aussieht */
+    schild:  '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+    blattIco:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z"/><path d="M2 21c0-3 1.9-5.4 5.1-6C9.5 14.5 12 13 13 12"/>',
+    chip:    '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>',
+    buch:    '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'
+  };
+  /* Nur die fest verdrahteten SVG-Pfade kommen als Markup ins Dokument. Jeder Text –
+     auch Beschriftungen, die aus dem Portal gelesen werden – geht ueber textContent. */
+  function icoEl(n){
+    const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    s.setAttribute('viewBox', '0 0 24 24');
+    s.setAttribute('aria-hidden', 'true');
+    s.innerHTML = SVG[n] || '';
+    return s;
+  }
+
+  const imPortal = /\/portal\//.test(location.pathname);
+  const datei = location.pathname.split('/').pop() || 'index.html';
+  const LEISTUNGSSEITEN = ['arbeitssicherheit.html','umweltschutz.html','ki-digitalisierung.html','schulungen.html'];
+
+  /* Vor der Anmeldung kann der Kunde nichts abrufen – der Mitarbeiter aber melden.
+     Deshalb traegt der Anmeldeschirm eine eigene, kurze Leiste. */
+  const ZIELE_WEBSITE = [
+    { href:'index.html',   label:'Start',      ico:'haus'   },
+    { id:'leistungen',     label:'Leistungen', ico:'raster' },
+    { href:'kontakt.html', label:'Kontakt',    ico:'brief'  }
+  ];
+  const ZIELE_PORTAL_AN = [
+    { id:'ueberblick', label:'Übersicht', ico:'tafel'   },
+    { id:'bereiche',   label:'Bereiche',  ico:'raster'  },
+    { id:'vorfaelle',  label:'Vorfälle',  ico:'warnung' }
+  ];
+  const ZIELE_PORTAL_AUS = [
+    { id:'anmelden',      label:'Anmelden', ico:'schloss' },
+    { href:'melden.html', label:'Melden',   ico:'warnung' }
+  ];
+
+  /* ── Leiste bauen ── */
+  const leiste = document.createElement('nav');
+  leiste.className = 'tabbar-fest';
+  leiste.setAttribute('aria-label', 'Hauptbereiche');
+  const reihe = document.createElement('div');
+  reihe.className = 'tb-reihe';
+  leiste.appendChild(reihe);
+
+  function fuellen(ziele){
+    reihe.textContent = '';
+    ziele.forEach(z => {
+      const k = document.createElement(z.href ? 'a' : 'button');
+      k.className = 'tab-i';
+      if(z.href){ k.href = z.href; } else { k.type = 'button'; k.dataset.blatt = z.id; }
+      k.dataset.ziel = z.href || z.id;
+      const t = document.createElement('span');
+      t.textContent = z.label;
+      k.appendChild(icoEl(z.ico));
+      k.appendChild(t);
+      reihe.appendChild(k);
+    });
+    /* „Mehr" traegt bewusst die Klasse nav-burger: der bestehende Handler weiter oben
+       oeffnet damit denselben Drawer – keine zweite Menue-Logik daneben. */
+    const mehr = document.createElement('button');
+    mehr.type = 'button';
+    mehr.className = 'tab-i nav-burger';
+    mehr.setAttribute('aria-label', 'Weitere Punkte');
+    const mt = document.createElement('span');
+    mt.textContent = 'Mehr';
+    mehr.appendChild(icoEl('menue'));
+    mehr.appendChild(mt);
+    reihe.appendChild(mehr);
+    aktivSetzen();
+  }
+
+  /* ── Aktiven Reiter markieren ── */
+  function aktivSetzen(){
+    if(document.body.classList.contains('tb-blatt-auf')) return;
+    reihe.querySelectorAll('.tab-i').forEach(t => t.classList.remove('on'));
+    let treffer = null;
+    if(imPortal){
+      if(reihe.querySelector('[data-ziel="anmelden"]')){
+        treffer = reihe.querySelector('[data-ziel="anmelden"]');
+      } else {
+        /* Das Portal ist eine einzige Seite – der aktive Reiter folgt dem geoeffneten
+           Unterbereich, nicht der Adresse. Cockpit heisst ck-…, Meldungen vf-… */
+        const sub = document.querySelector('#subTabs .sub-tab.aktiv');
+        const kat = sub ? (sub.dataset.sub || '') : '';
+        treffer = kat.indexOf('vf-') === 0 ? reihe.querySelector('[data-ziel="vorfaelle"]')
+                : kat.indexOf('ck-') === 0 ? reihe.querySelector('[data-ziel="ueberblick"]')
+                : null;
+      }
+    } else if(LEISTUNGSSEITEN.indexOf(datei) >= 0){
+      treffer = reihe.querySelector('[data-ziel="leistungen"]');
+    } else {
+      treffer = reihe.querySelector('[data-ziel="' + datei + '"]');
+    }
+    if(treffer) treffer.classList.add('on');
+  }
+
+  /* ── Auswahlblatt (faehrt von unten hoch, sitzt auf der Leiste auf) ── */
+  let blatt = null;
+  function blattZu(){
+    if(!blatt) return;
+    blatt.classList.remove('auf');
+    document.body.classList.remove('tb-blatt-auf');
+    aktivSetzen();
+  }
+  /* eintraege: [{href, ico, text, domZiel?}] – Text immer per textContent */
+  function blattAuf(titel, eintraege, knopf){
+    if(!blatt){
+      blatt = document.createElement('div');
+      blatt.className = 'tb-blatt';
+      document.body.appendChild(blatt);
+    }
+    blatt.textContent = '';
+    const h = document.createElement('h2');
+    h.textContent = titel;
+    blatt.appendChild(h);
+    eintraege.forEach(e => {
+      const a = document.createElement('a');
+      a.href = e.href;
+      if(e.domZiel) a.dataset.domZiel = e.domZiel;
+      a.appendChild(icoEl(e.ico));
+      a.appendChild(document.createTextNode(e.text));
+      blatt.appendChild(a);
+    });
+    /* Erst im naechsten Frame die Klasse setzen: sonst sieht der Browser das Element
+       im selben Durchgang neu UND geoeffnet – der Uebergang faellt aus, es springt. */
+    requestAnimationFrame(() => {
+      blatt.classList.add('auf');
+      document.body.classList.add('tb-blatt-auf');
+    });
+    reihe.querySelectorAll('.tab-i').forEach(t => t.classList.remove('on'));
+    knopf.classList.add('on');
+  }
+
+  document.body.appendChild(leiste);
+  fuellen(imPortal ? ZIELE_PORTAL_AUS : ZIELE_WEBSITE);
+
+  /* Das Portal blendet #appView per Klasse „hidden" um – daran haengt sich die Leiste,
+     statt den Anmeldezustand ein zweites Mal zu erraten. */
+  if(imPortal){
+    const app = document.getElementById('appView');
+    if(app){
+      let warAn = null;
+      const stand = () => {
+        const an = !app.classList.contains('hidden');
+        if(an === warAn) return;
+        warAn = an;
+        fuellen(an ? ZIELE_PORTAL_AN : ZIELE_PORTAL_AUS);
+      };
+      new MutationObserver(stand).observe(app, { attributes:true, attributeFilter:['class'] });
+      stand();
+    }
+    /* Der aktive Reiter folgt dem Unterbereich – der wechselt auch ohne Zutun der Leiste. */
+    const subs = document.getElementById('subTabs');
+    if(subs) new MutationObserver(() => aktivSetzen()).observe(subs, { childList:true, subtree:true });
+  }
+
+  /* ── Klicks ── */
+  document.addEventListener('click', e => {
+    // Klick auf die Abdunklung neben dem Blatt schliesst es
+    if(document.body.classList.contains('tb-blatt-auf')
+       && !e.target.closest('.tb-blatt') && !e.target.closest('.tab-i')){ blattZu(); return; }
+
+    // Auswahl im Bereiche-Blatt: den echten Portal-Reiter ausloesen
+    const dz = e.target.closest('[data-dom-ziel]');
+    if(dz){
+      e.preventDefault();
+      const echt = document.querySelector('#katTabs .kat-tab[data-dom="' + dz.dataset.domZiel + '"]');
+      if(echt) echt.click();
+      blattZu();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if(e.target.closest('.tb-blatt a')){ blattZu(); return; }
+
+    const k = e.target.closest('.tab-i[data-blatt]');
+    if(!k) return;
+
+    // Zweiter Druck auf denselben Reiter schliesst wieder
+    if(document.body.classList.contains('tb-blatt-auf') && k.classList.contains('on')){ blattZu(); return; }
+
+    if(k.dataset.blatt === 'leistungen'){
+      blattAuf('Leistungen', [
+        { href:'arbeitssicherheit.html',  ico:'schild',   text:'Arbeitssicherheit' },
+        { href:'umweltschutz.html',       ico:'blattIco', text:'Umweltschutz' },
+        { href:'ki-digitalisierung.html', ico:'chip',     text:'KI & Digitalisierung' },
+        { href:'schulungen.html',         ico:'buch',     text:'Schulungen' }
+      ], k);
+
+    } else if(k.dataset.blatt === 'bereiche'){
+      /* Die Bereiche stehen bereits als Reiter im Portal – von dort lesen und beim
+         Antippen den vorhandenen Reiter ausloesen. So bleibt die Portal-Logik die eine
+         Wahrheit, statt die Bereichsliste hier ein zweites Mal zu pflegen. */
+      const tabs = Array.prototype.slice.call(document.querySelectorAll('#katTabs .kat-tab'));
+      if(!tabs.length) return;
+      blattAuf('Bereiche', tabs.map(t => ({
+        href: '#', ico: 'raster', domZiel: t.dataset.dom,
+        /* Der Reiter fuehrt hinter dem Label noch einen Zaehler – nur das Label uebernehmen. */
+        text: (t.childNodes[0] && t.childNodes[0].textContent || t.textContent || '').trim()
+      })), k);
+
+    } else if(k.dataset.blatt === 'ueberblick' || k.dataset.blatt === 'vorfaelle'){
+      const praefix = k.dataset.blatt === 'vorfaelle' ? 'vf-' : 'ck-';
+      const ziel = document.querySelector('#subTabs .sub-tab[data-sub^="' + praefix + '"]');
+      if(ziel) ziel.click();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      aktivSetzen();
+
+    } else if(k.dataset.blatt === 'anmelden'){
+      const feld = document.querySelector('#loginView input[type="email"], #loginView input');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if(feld) feld.focus();
+    }
+  });
+
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') blattZu(); });
 })();

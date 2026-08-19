@@ -2,10 +2,10 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Vorfall melden – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202608190839">
+<link rel="stylesheet" href="portal.css?v=202608190932">
 <style>
 /* Meldeformular: bewusst eigene, sehr grosse Bedienelemente - es wird am Handy in der Halle
    ausgefuellt, oft mit Handschuhen und unter Zeitdruck. */
@@ -62,6 +62,18 @@ textarea{min-height:130px;resize:vertical;line-height:1.5;}
   <div class="notruf">
     <b>Erst helfen, dann melden.</b> Bei Verletzten oder akuter Gefahr zuerst
     <b>Notruf 112</b> und Vorgesetzte informieren. Dieses Formular ersetzt keine Sofortmeldung.
+  </div>
+
+  <!-- Ohne Betriebscode weiss niemand, zu welchem Betrieb die Meldung gehoert. Wer ueber
+       den QR-Aushang kommt, bringt ihn im Link mit und sieht diesen Kasten nie. -->
+  <div class="karte" id="codeKarte" hidden>
+    <h2>Betriebscode</h2>
+    <div class="hint">Der Code steht auf dem Aushang „Vorfall melden“ – unter dem QR-Code.
+      Er wird auf diesem Gerät gemerkt, beim nächsten Mal geht es direkt.</div>
+    <input id="codeFeld" type="text" inputmode="latin" autocomplete="off" spellcheck="false"
+           placeholder="z. B. betrieb-1a2b3c4d5e6f">
+    <button type="button" class="btn-gross" id="codeOk">Weiter</button>
+    <div class="fehlerbox" id="codeFehler" hidden></div>
   </div>
 
   <form id="form">
@@ -172,13 +184,47 @@ const CFG = {
   url: "https://ayieotppxrjrzdpeofkx.supabase.co",
   anon: "sb_publishable_fz1o6tjpwa7gjiNb17uuEg_-ZwNdFcS",
 };
-/* Token: aus ?t=... oder aus einem gebackenen Wert (Kurzlink /m/<token>/). */
-const TOKEN = (new URLSearchParams(location.search).get("t") || window.OAK_MELDE_TOKEN || "").trim();
+/* Token: aus ?t=... oder aus einem gebackenen Wert (Kurzlink /m/<token>/).
+   Der Token sagt, zu welchem Betrieb die Meldung gehoert – ohne ihn landet sie nirgends.
+   Damit Melden auch ohne Aushang-QR geht (Weg ueber das Kundenportal, ohne Anmeldung),
+   merkt sich das Geraet einen einmal benutzten Code: beim naechsten Mal geht es direkt.
+   Bewusst nur im Geraet (localStorage) – der Code ist kein Login, er ordnet nur zu. */
+const CODE_SPEICHER = "oak_melde_token";
+function tokenMerken(t){
+  try{ if(t) localStorage.setItem(CODE_SPEICHER, t); }catch(e){/* privates Fenster: dann eben nicht */}
+}
+function tokenGemerkt(){
+  try{ return (localStorage.getItem(CODE_SPEICHER) || "").trim(); }catch(e){ return ""; }
+}
+let TOKEN = (new URLSearchParams(location.search).get("t") || window.OAK_MELDE_TOKEN || "").trim();
+if(TOKEN) tokenMerken(TOKEN); else TOKEN = tokenGemerkt();
 
 const $ = s => document.querySelector(s);
 let ART = "";
 
 document.getElementById("datum").valueAsDate = new Date();
+
+/* Kein Code da -> erst danach fragen, statt das Formular ins Leere laufen zu lassen.
+   Frueher kam die Absage erst beim Absenden, nachdem alles ausgefuellt war. */
+function codeStand(){
+  const fehlt = !TOKEN;
+  $("#codeKarte").hidden = !fehlt;
+  $("#form").hidden = fehlt;
+}
+$("#codeOk").addEventListener("click", () => {
+  const wert = $("#codeFeld").value.trim();
+  const f = $("#codeFehler");
+  if(wert.length < 6){
+    f.textContent = "Bitte den vollständigen Code vom Aushang eingeben.";
+    f.hidden = false; return;
+  }
+  f.hidden = true;
+  TOKEN = wert;
+  tokenMerken(TOKEN);
+  codeStand();
+});
+$("#codeFeld").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); $("#codeOk").click(); } });
+codeStand();
 
 document.getElementById("arten").addEventListener("click", ev => {
   const b = ev.target.closest(".art"); if(!b) return;
@@ -221,7 +267,7 @@ $("#form").addEventListener("submit", async ev => {
   ev.preventDefault();
   const fehler = $("#fehler");
   fehler.hidden = true;
-  if(!TOKEN){ fehler.textContent = "Dieser Meldelink ist unvollständig. Bitte den QR-Code am Aushang erneut scannen."; fehler.hidden = false; return; }
+  if(!TOKEN){ codeStand(); window.scrollTo({top:0,behavior:"smooth"}); return; }
   if(!ART){ fehler.textContent = "Bitte oben auswählen, was passiert ist."; fehler.hidden = false; window.scrollTo({top:0,behavior:"smooth"}); return; }
   const btn = $("#senden"); btn.disabled = true; btn.textContent = "Wird gesendet …";
   try{
@@ -246,9 +292,21 @@ $("#form").addEventListener("submit", async ev => {
     }
     $("#form").hidden = true; $("#fertig").hidden = false; window.scrollTo({top:0});
   }catch(e){
-    fehler.textContent = "Die Meldung konnte nicht gesendet werden: " + (e.message || e)
-      + " – bitte Vorgesetzte direkt informieren.";
-    fehler.hidden = false;
+    const meldung = String(e && e.message || e);
+    /* Weist der Server den Code ab, ist ein gemerkter Code falsch – sonst haengt das
+       Geraet daran fest und jeder weitere Versuch scheitert stumm auf dieselbe Art. */
+    if(/token|unbekannt|not found|ungültig|ungueltig/i.test(meldung)){
+      try{ localStorage.removeItem(CODE_SPEICHER); }catch(x){}
+      TOKEN = "";
+      fehler.textContent = "Der Betriebscode wird nicht erkannt. Bitte den Code vom Aushang neu eingeben.";
+      fehler.hidden = false;
+      codeStand();
+      window.scrollTo({top:0,behavior:"smooth"});
+    } else {
+      fehler.textContent = "Die Meldung konnte nicht gesendet werden: " + meldung
+        + " – bitte Vorgesetzte direkt informieren.";
+      fehler.hidden = false;
+    }
   }finally{
     btn.disabled = false; btn.textContent = "Meldung absenden";
   }
