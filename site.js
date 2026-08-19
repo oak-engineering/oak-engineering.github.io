@@ -350,6 +350,27 @@ document.addEventListener('click', e => {
   document.body.appendChild(leiste);
   fuellen(imPortal ? ZIELE_PORTAL_AUS : ZIELE_WEBSITE);
 
+  /* Die Leiste am sichtbaren Ausschnitt halten, nicht am Layout-Viewport.
+     Beim Seitenaufruf faehrt die Browser-Adressleiste unten in voller Hoehe aus; ein
+     Element mit „bottom:0" steckt dann dahinter und taucht erst beim Scrollen auf –
+     genau das war zu beheben. Dieselbe Rechnung faengt spaeter die Tastatur ab.
+     Der Begehungsbogen filtert dort bewusst mit diff>90, um NUR die Tastatur zu
+     erwischen; hier soll gerade auch der kleine Betrag der Adressleiste wirken. */
+  if(window.visualViewport){
+    const vv = window.visualViewport;
+    let laeuft = false;
+    const messen = () => {
+      laeuft = false;
+      const verdeckt = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--tb-versatz', Math.round(verdeckt) + 'px');
+    };
+    const anstossen = () => { if(!laeuft){ laeuft = true; requestAnimationFrame(messen); } };
+    vv.addEventListener('resize', anstossen);
+    vv.addEventListener('scroll', anstossen);
+    window.addEventListener('orientationchange', anstossen);
+    messen();
+  }
+
   /* Das Portal blendet #appView per Klasse „hidden" um – daran haengt sich die Leiste,
      statt den Anmeldezustand ein zweites Mal zu erraten. */
   if(imPortal){
