@@ -168,6 +168,10 @@ document.addEventListener('click', e => {
    Eigenes fixed-Element statt eines schrumpfenden sticky-Kopfes: dessen Hoehenaenderung
    verkuerzt das Dokument, die Umschaltschwelle kippt hin und her und die Ueberschrift zittert. */
 (function(){
+  /* Im Kundenportal nicht: dort traegt die Seite einen eigenen, dauerhaften Kopf, und der
+     gruene Farbbalken gehoert allein zur Anmeldeseite. Nach dem Anmelden wird die
+     ausgeblendet – ein Titelbalken dafuer waere nur noch ein Streifen ueber dem Inhalt. */
+  if(/\/portal\//.test(location.pathname)) return;
   const hero = document.querySelector('.sub-hero');
   const h1 = hero && hero.querySelector('h1');
   if(!hero || !h1 || !window.IntersectionObserver) return;
@@ -186,6 +190,15 @@ document.addEventListener('click', e => {
   let laeuft = false;
   const pruefen = () => {
     laeuft = false;
+    /* Ist der Kopf gar nicht eingeblendet, gibt es auch nichts zu ersetzen. Ohne diese
+       Pruefung meldet ein ausgeblendeter Kopf die Unterkante 0 – das las sich wie
+       „ganz weggescrollt", und der Titelbalken fuhr ein und legte sich ueber den Inhalt.
+       Im Kundenportal passierte genau das nach dem Anmelden: dort wird der Login-Bereich
+       samt seinem Kopf versteckt, und „Kundenportal" klebte ueber der Ueberschrift. */
+    if(!hero.getClientRects().length){
+      document.body.classList.remove('kopf-fest');
+      return;
+    }
     const unten = hero.getBoundingClientRect().bottom;
     const fest = document.body.classList.contains('kopf-fest');
     if(!fest && unten < 100) document.body.classList.add('kopf-fest');

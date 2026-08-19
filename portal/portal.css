@@ -18,7 +18,7 @@ body{margin:0;font-family:'Jost','Segoe UI',Arial,sans-serif;color:var(--text);o
   background:linear-gradient(160deg,#f3f7f5,#e7efeb);min-height:100vh;}
 h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;color:var(--dunkel);margin:0;}
 a{color:var(--gruen)}
-.wrap{max-width:1060px;margin:0 auto;padding:0 18px;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 18px;}
 
 /* Navigation: kommt aus ../nav.css (gemeinsame Quelle fuer Website und Portal).
    Der Import steht oben in dieser Datei. */
@@ -41,7 +41,16 @@ a{color:var(--gruen)}
 .unter{font-size:12.5px;color:var(--gruen);margin-top:3px;font-weight:500;}
 .marke .wort{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:22px;color:var(--dunkel);letter-spacing:.3px;}
 .marke .sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gruen);font-weight:600;}
-.kopf .rechts{display:flex;align-items:center;gap:14px;font-size:13px;}
+.kopf .rechts{display:flex;align-items:center;gap:14px;font-size:13px;flex:0 0 auto;}
+/* Am Handy passten Marke (189px) und die drei Elemente rechts (215px) nicht nebeneinander –
+   die Knoepfe liefen aus dem Bild. Unter 620px darum: Zeile umbrechen lassen, die
+   E-Mail-Adresse weg (sie steht ohnehin im Passwort-Dialog) und die Knoepfe nach links. */
+@media(max-width:620px){
+  .kopf .wrap{flex-wrap:wrap;gap:8px;padding:12px 18px;}
+  .kopf .rechts{width:100%;justify-content:flex-start;gap:10px;}
+  .kopf .rechts #userMail{display:none;}
+  .marke .wort{font-size:19px;}
+}
 .btn{font-family:inherit;font-size:14px;font-weight:600;border:1px solid var(--gruen);background:var(--gruen);
   color:#fff;border-radius:8px;padding:9px 16px;cursor:pointer;text-decoration:none;display:inline-block;}
 .btn.sek{background:#fff;color:var(--gruen);}
@@ -99,27 +108,55 @@ tbody tr:hover{background:#f6faf8}
 .doc-td{text-align:right;}
 .doc-open{display:inline-block;font-size:13px;font-weight:600;color:var(--gruen);border:1px solid var(--rand);border-radius:8px;padding:5px 12px;text-decoration:none;white-space:nowrap;}
 .doc-open:hover{background:var(--akzent);}
-/* Kategorie-Tabs (Oberkategorien im Header) */
-.kat-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:18px 0 4px;padding-bottom:2px;}
-.kat-tab{font-family:inherit;font-size:14px;font-weight:600;color:var(--gruen);background:#fff;
-  border:1px solid var(--rand);border-radius:999px;padding:9px 16px;cursor:pointer;display:inline-flex;
-  align-items:center;gap:7px;white-space:nowrap;transition:background .12s,color .12s,border-color .12s;}
-.kat-tab:hover{background:var(--akzent);}
-.kat-tab.aktiv{background:var(--gruen);color:#fff;border-color:var(--gruen);}
-.kat-tab .tab-n{font-size:12px;font-weight:700;background:var(--akzent);color:var(--dunkel);
-  border-radius:999px;padding:1px 8px;min-width:20px;text-align:center;}
-.kat-tab.aktiv .tab-n{background:rgba(255,255,255,.24);color:#fff;}
-@media (max-width:640px){.kat-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}}
-/* Sub-Reiter (Ebene 2, dezenter: Unterstrich-Stil) */
-.sub-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:2px 0 4px;border-bottom:1px solid var(--rand);}
-.sub-tab{font-family:inherit;font-size:13.5px;font-weight:600;color:var(--grau);background:none;border:0;
-  border-bottom:2px solid transparent;padding:8px 12px;margin-bottom:-1px;cursor:pointer;display:inline-flex;
-  align-items:center;gap:6px;white-space:nowrap;transition:color .12s,border-color .12s;}
-.sub-tab:hover{color:var(--dunkel);}
-.sub-tab.aktiv{color:var(--dunkel);border-bottom-color:var(--gruen);}
-.sub-tab .tab-n{font-size:11px;font-weight:700;background:var(--akzent);color:var(--dunkel);border-radius:999px;padding:0 7px;}
-.sub-tab.aktiv .tab-n{background:var(--gruen);color:#fff;}
-@media (max-width:640px){.sub-tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}}
+/* ---- Reiter, zwei Ebenen ----------------------------------------------
+   ACHTUNG, Falle: Beide Leisten sind <nav>-Elemente, und portal.css importiert
+   oben nav.css. Dort gilt eine nackte Regel `nav{…}` fuer JEDES nav – die brachte
+   hier `justify-content:space-between` (Reiter ueber die Breite auseinandergezogen),
+   `padding:0 5vw` (Einzug, dadurch flucht nichts mit der Ueberschrift), `height:68px`
+   (zweite Reiterzeile lief aus der Box) und `position:sticky`. Darum stehen die
+   Rueckstellungen hier ausdruecklich drin – sie sind kein Zierrat.
+
+   Beide Leisten laufen bewusst EINZEILIG: bricht eine Reiterreihe um, verschiebt sich
+   der ganze Inhalt darunter und die Seite wirkt unruhig. Wird der Platz knapp, laesst
+   sich die Reihe schieben, statt zu springen. */
+.kat-tabs,.sub-tabs{position:static;height:auto;padding:0;background:none;
+  justify-content:flex-start;align-items:stretch;
+  display:flex;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;
+  -webkit-overflow-scrolling:touch;}
+.kat-tabs::-webkit-scrollbar,.sub-tabs::-webkit-scrollbar{display:none;}
+/* Klasse .mehr setzt app.js, sobald die Reihe breiter ist als der Platz. */
+.kat-tabs.mehr,.sub-tabs.mehr{
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 30px),transparent);
+          mask-image:linear-gradient(90deg,#000 calc(100% - 30px),transparent);}
+
+/* Ebene 1: die drei Fachbereiche. Keine Pillen mehr – ruhige Textreiter mit
+   Unterstrich, wie Register in einer Akte. Die Ebene erkennt man an der Groesse,
+   nicht an einer Farbflaeche. */
+.kat-tabs{gap:26px;margin:22px 0 0;border-bottom:1px solid var(--rand);}
+.kat-tab{font-family:inherit;font-size:15.5px;font-weight:600;color:var(--grau);
+  background:none;border:0;border-bottom:2px solid transparent;border-radius:0;
+  padding:0 0 9px;margin-bottom:-1px;cursor:pointer;display:inline-flex;
+  align-items:center;gap:7px;white-space:nowrap;flex:0 0 auto;
+  transition:color .12s,border-color .12s;}
+.kat-tab:hover{color:var(--dunkel);background:none;}
+.kat-tab.aktiv{color:var(--dunkel);background:none;border-bottom-color:var(--gruen);}
+/* Zaehler: nur eine Zahl. Als gefuellte Pille zog sie mehr Blick auf sich als der
+   Bereichsname selbst. */
+.kat-tab .tab-n{font-size:12.5px;font-weight:500;background:none;color:var(--grau);
+  border-radius:0;padding:0;min-width:0;}
+.kat-tab.aktiv .tab-n{background:none;color:var(--gruen);}
+
+/* Ebene 2: Unterbereiche des gewaehlten Fachbereichs – kleiner, ohne eigene Trennlinie
+   (die Linie von Ebene 1 traegt beide). */
+.sub-tabs{gap:2px;margin:0 0 6px;border-bottom:none;}
+.sub-tab{font-family:inherit;font-size:13.5px;font-weight:500;color:var(--grau);background:none;border:0;
+  border-bottom:2px solid transparent;padding:10px 10px 8px;margin-bottom:0;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:0 0 auto;
+  transition:color .12s,background .12s;border-radius:7px 7px 0 0;}
+.sub-tab:hover{color:var(--dunkel);background:var(--oak-ghost);}
+.sub-tab.aktiv{color:var(--dunkel);font-weight:600;border-bottom-color:var(--gruen);background:var(--oak-ghost);}
+.sub-tab .tab-n{font-size:11.5px;font-weight:500;background:none;color:var(--grau);border-radius:0;padding:0;}
+.sub-tab.aktiv .tab-n{background:none;color:var(--gruen);}
 /* Admin-Leiste (nur fuer OAK-Admins sichtbar) */
 #adminBar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--akzent);
   border:1px solid var(--hellgruen);border-radius:10px;padding:10px 14px;margin:18px 0 2px;font-size:14px;}
@@ -197,7 +234,15 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .v-kopf-innen{padding-top:10px;}
 
 /* ---- Cockpit: Kennzahl-Kacheln je Domäne ---- */
-.ck-reihe{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin:6px 0 4px;}
+/* Kennzahlen links, Ring rechts: die Reihe traegt die Lage, der Ring das Verhaeltnis.
+   Erst ab 900px nebeneinander – darunter braucht die Kachelreihe die volle Breite. */
+.ck-oben{display:grid;grid-template-columns:1fr;gap:18px;align-items:start;margin:6px 0 4px;}
+@media(min-width:900px){.ck-oben{grid-template-columns:1fr auto;gap:28px;}}
+/* Festes Raster statt auto-fit: auto-fit fuellte die Zeile mit fuenf Kacheln und liess die
+   sechste allein darunter stehen. Drei Spalten gehen bei sechs Kacheln glatt auf. */
+.ck-reihe{display:grid;grid-template-columns:1fr;gap:12px;margin:0;}
+@media(min-width:560px){.ck-reihe{grid-template-columns:repeat(2,1fr);}}
+@media(min-width:900px){.ck-reihe{grid-template-columns:repeat(3,1fr);}}
 .ck-kachel{background:#fff;border:1px solid var(--rand);border-left:4px solid var(--rand);
   border-radius:12px;padding:13px 15px;}
 .ck-zahl{font-family:'Cormorant Garamond',Georgia,serif;font-size:33px;font-weight:700;color:var(--dunkel);line-height:1.05;}
@@ -207,6 +252,27 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .ck-kachel.ck-kritisch .ck-zahl{color:var(--rot);}
 .ck-kachel.ck-warnung{border-left-color:var(--orange);}
 .ck-kachel.ck-gut{border-left-color:var(--hellgruen);}
+/* Ring: ein Kreis je Segment, Laenge ueber stroke-dasharray (cockpit.js: ckRing).
+   Um -90deg gedreht, damit das erste Segment oben beginnt und nicht rechts. */
+.ck-ring-block{display:flex;flex-direction:column;align-items:center;gap:12px;}
+.ck-ring{position:relative;width:150px;height:150px;flex:none;}
+.ck-ring svg{width:100%;height:100%;transform:rotate(-90deg);}
+.ck-ring circle{fill:none;stroke-width:13;}
+.ck-bahn{stroke:#eef4f1;}
+.ck-bogen.ck-kritisch{stroke:var(--rot);}
+.ck-bogen.ck-warnung{stroke:var(--orange);}
+.ck-bogen.ck-gut{stroke:var(--hellgruen);}
+.ck-bogen.ck-neutral{stroke:#c8d5cf;}
+/* „geplant" (Energie) braucht eine eigene Farbe – in Grau las es sich wie „nicht bewertet".
+   Blau ist dort bereits die Planungsfarbe (E_FARBE in energie.js). */
+.ck-bogen.ck-plan{stroke:#1f6f8b;}
+.ck-punkt.ck-plan{background:#1f6f8b;}
+/* Mittelzahl: dieselbe Schrift wie die Kachelzahlen, damit beides zusammengehoert. */
+.ck-ring-mitte{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;pointer-events:none;line-height:1.05;}
+.ck-ring-mitte b{font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;font-weight:700;color:var(--dunkel);}
+.ck-ring-mitte span{font-size:12px;font-weight:500;color:var(--grau);margin-top:2px;}
+.ck-ring-block .ck-legende{flex-direction:column;gap:5px;margin-top:0;align-items:flex-start;}
 .ck-balken-block{margin:16px 0 4px;}
 .ck-balken{display:flex;gap:2px;height:15px;border-radius:8px;overflow:hidden;background:#eef4f1;}
 .ck-seg{display:block;}

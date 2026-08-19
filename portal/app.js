@@ -317,6 +317,18 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   wrap.appendChild(sec);
 }
 
+/* Beide Reiterleisten laufen einzeilig; wird der Platz knapp, laesst sich schieben.
+   Der Scrollbalken ist ausgeblendet (er machte die Zeile unruhig) – ohne Hinweis merkt
+   aber niemand, dass rechts noch Reiter stehen. Darum blendet die Kante dann weich aus. */
+function reiterUeberlauf(nav){
+  if(!nav) return;
+  nav.classList.toggle("mehr", nav.scrollWidth > nav.clientWidth + 1);
+}
+function reiterUeberlaufPruefen(){
+  reiterUeberlauf($("#katTabs")); reiterUeberlauf($("#subTabs"));
+}
+window.addEventListener("resize", reiterUeberlaufPruefen);
+
 /* Ebene 1: Domänen-Tabs */
 function renderTabs(){
   const nav = $("#katTabs"); if(!nav) return;
@@ -333,6 +345,7 @@ function renderTabs(){
   nav.querySelectorAll(".kat-tab").forEach(b => b.addEventListener("click", () => {
     AKTIVE_DOM = b.dataset.dom; AKTIVE_SUB = null; renderTabs(); renderSubTabs(); renderSektionen();
   }));
+  reiterUeberlauf(nav);
 }
 
 /* Ebene 2: Sub-Reiter der aktiven Domäne (verborgen, wenn nur ein Sub sichtbar) */
@@ -354,6 +367,7 @@ function renderSubTabs(){
   nav.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => {
     AKTIVE_SUB = b.dataset.sub; renderSubTabs(); renderSektionen();
   }));
+  reiterUeberlauf(nav);
 }
 
 function renderSektionen(){
