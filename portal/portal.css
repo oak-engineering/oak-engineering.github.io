@@ -296,6 +296,15 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 /* ---- Unterweisungen: Nachweise aus dem Terminal ----
    Bewusst schmucklos: eine Zeile je Person mit dem juengsten Stand. Kein Punktestand -
    gespeichert wird nur bestanden ja/nein (Datenminimierung, siehe unterweisungen.js). */
+/* Hochlade-Zeile fuer Foliensaetze: eine Zeile, drei Felder, ein Knopf - mehr braucht es
+   nicht, und mehr wuerde vom Wesentlichen ablenken. */
+.fol-upload{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;
+  padding:12px;background:var(--oak-ghost);border:1px solid var(--rand);border-radius:10px;}
+.fol-upload input[type=text]{flex:1 1 220px;min-width:160px;padding:7px 10px;
+  border:1px solid var(--rand);border-radius:8px;font-family:inherit;font-size:13.5px;}
+.fol-upload select{padding:7px 10px;border:1px solid var(--rand);border-radius:8px;
+  font-family:inherit;font-size:13.5px;background:#fff;}
+.fol-upload input[type=file]{font-size:13px;max-width:230px;}
 /* „Was ist neu" sitzt ueber der Nachweisliste in derselben Sektion – die Linie trennt die
    beiden Themen, ohne dass es zwei Kaesten nebeneinander braucht. */
 .uw-block{margin-bottom:26px;padding-bottom:20px;border-bottom:1px solid var(--rand);}

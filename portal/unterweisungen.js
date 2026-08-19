@@ -28,6 +28,7 @@ async function ladeNachweise(){
     BAUSTEINE = await apiGet("/rest/v1/portal_uw_baustein?select=*&order=sortierung.asc,gueltig_ab.desc",
                              false) || [];
   }catch(e){ BAUSTEINE = []; }
+  await ladeFolien();
 }
 
 /* Darf freigeben: OAK-Admin oder die Fachkraft des Betriebs. Die Geschäftsführung liest mit,
@@ -192,7 +193,7 @@ function renderUnterweisungen(wrap){
     : `<div class="ck-fuss">Noch keine Nachweise. Sobald am Terminal eine Unterweisung
         abgeschlossen wird, erscheint sie hier – auch wenn das Gerät zwischendurch offline war.</div>`;
 
-  sec.innerHTML = `${renderBausteine(sec)}
+  sec.innerHTML = `${renderFolien()}${renderBausteine(sec)}
     <div class="sek-kopf"><h2>Unterweisungen</h2>
       ${rows.length ? '<button class="btn-klein" id="uwCsv">Als CSV exportieren</button>' : ""}</div>
     ${kacheln}${liste}
@@ -209,4 +210,179 @@ function renderUnterweisungen(wrap){
     b.addEventListener("click", () => uwBausteinSetzen(b.dataset.frei, "freigegeben")));
   sec.querySelectorAll("[data-verw]").forEach(b =>
     b.addEventListener("click", () => uwBausteinSetzen(b.dataset.verw, "verworfen")));
+
+  sec.querySelectorAll("[data-fgeb]").forEach(b =>
+    b.addEventListener("click", () => folienStatus(b.dataset.fgeb, "freigegeben")));
+  sec.querySelectorAll("[data-fzur]").forEach(b =>
+    b.addEventListener("click", () => folienStatus(b.dataset.fzur, "zurueckgezogen")));
+  sec.querySelectorAll("[data-ffrage]").forEach(b =>
+    b.addEventListener("click", () => {
+      const f = FOLIEN.find(x => x.id === b.dataset.ffrage);
+      if(f) frageAnlegen(f);
+    }));
+  const fgo = sec.querySelector("#folGo");
+  if(fgo) fgo.addEventListener("click", () => {
+    const d = sec.querySelector("#folDatei").files[0];
+    if(!d){ alert("Bitte eine Datei wählen."); return; }
+    const r = sec.querySelector("#folRolle").value;
+    fgo.disabled = true; fgo.textContent = "lädt …";
+    folienHochladen(d, sec.querySelector("#folTitel").value.trim(), r ? [r] : [])
+      .finally(() => { fgo.disabled = false; fgo.textContent = "Hochladen"; });
+  });
+}
+
+/* ---- Foliensätze: Unterweisungen als hochgeladene Präsentation ----------------------
+   Der einfachste Weg, den es gibt: in PowerPoint bauen, als PDF speichern, hier hochladen,
+   Rollen ankreuzen, freigeben. Kein Editor, keine Datei auf den USB-Stick.
+   Das Terminal kann PDF längst abspielen; es holt die Datei über seinen Geräte-Token. */
+let FOLIEN = [];
+
+async function ladeFolien(){
+  try{
+    FOLIEN = await apiGet("/rest/v1/portal_uw_folien?select=*&order=sortierung.asc,titel.asc",
+                          false) || [];
+  }catch(e){ FOLIEN = []; }
+}
+function folienSichtbar(){ return AKTIV ? FOLIEN.filter(f => f.kunde_slug === AKTIV) : FOLIEN; }
+
+/* Hochladen: PDF wird angezeigt, PPTX nur verwahrt. Serverseitig zu konvertieren hieße
+   LibreOffice auf einem Server – für einen Schritt, den PowerPoint mit „Speichern unter"
+   selbst besser kann. Darum sagt das Portal das offen, statt die Datei stumm abzulehnen. */
+async function folienHochladen(datei, titel, rollen){
+  const slug = AKTIV || (getSession() && window.__oakSlug) || AKTIV;
+  if(!slug){ alert("Kein Betrieb gewählt."); return; }
+  const endung = (datei.name.split(".").pop() || "").toLowerCase();
+  if(["pdf", "pptx", "ppt"].indexOf(endung) < 0){
+    alert("Bitte eine PDF- oder PowerPoint-Datei wählen."); return;
+  }
+  const rein = datei.name.replace(/[^A-Za-z0-9._-]+/g, "-");
+  const pfad = slug + "/unterweisungen/" + rein;
+
+  const t = await token();
+  const r = await fetch(CFG.url + "/storage/v1/object/" + CFG.bucket + "/" + pfad, {
+    method: "POST",
+    headers: { apikey: CFG.anon, Authorization: "Bearer " + t, "x-upsert": "true" },
+    body: datei,
+  });
+  if(!r.ok){ alert("Hochladen fehlgeschlagen: " + r.status); return; }
+
+  const istPdf = endung === "pdf";
+  const key = rein.replace(/\.[^.]+$/, "").toLowerCase();
+  await apiSend("POST", "/rest/v1/portal_uw_folien", {
+    kunde_slug: slug, kunde: (folienSichtbar()[0] || {}).kunde || null,
+    modul_key: key, titel: titel || rein.replace(/\.[^.]+$/, ""),
+    datei_pfad: istPdf ? pfad : null,
+    original_pfad: istPdf ? null : pfad,
+    rollen: rollen || [], status: "entwurf",
+  }, "resolution=merge-duplicates");
+
+  await ladeFolien();
+  renderSektionen();
+  if(!istPdf){
+    alert("Die Präsentation ist gespeichert.\n\nFür die Anzeige am Terminal wird noch eine "
+        + "PDF-Fassung gebraucht: in PowerPoint „Speichern unter → PDF“ und diese Datei "
+        + "hier ebenfalls hochladen.");
+  }
+}
+
+async function folienStatus(id, status){
+  try{
+    await apiSend("PATCH", "/rest/v1/portal_uw_folien?id=eq." + encodeURIComponent(id), {
+      status: status,
+      freigegeben_am: status === "freigegeben" ? new Date().toISOString() : null,
+      freigegeben_von: status === "freigegeben" ? (window.__oakName || "Portal") : null,
+      updated_at: new Date().toISOString(),
+    });
+    await ladeFolien();
+    renderSektionen();
+  }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
+}
+
+async function folienRollen(id, rollen){
+  try{
+    await apiSend("PATCH", "/rest/v1/portal_uw_folien?id=eq." + encodeURIComponent(id),
+                  { rollen: rollen, updated_at: new Date().toISOString() });
+    await ladeFolien();
+  }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
+}
+
+/* Verständnisfrage anlegen – im selben Schema, das die bestehenden Module nutzen:
+   after = nach welcher Folie sie erscheint, answer = Index der richtigen Antwort. */
+async function frageAnlegen(f){
+  const nachFolie = prompt("Nach welcher Folie soll die Frage erscheinen?\n"
+                         + "(Zahl; bei " + (f.seiten || "?") + " Folien insgesamt)", "1");
+  if(nachFolie === null) return;
+  const text = prompt("Frage:");
+  if(!text) return;
+  const a1 = prompt("Richtige Antwort:");
+  if(!a1) return;
+  const a2 = prompt("Falsche Antwort 1:");
+  const a3 = prompt("Falsche Antwort 2:");
+  const optionen = [{ de: a1 }];
+  if(a2) optionen.push({ de: a2 });
+  if(a3) optionen.push({ de: a3 });
+  const fragen = (f.fragen || []).concat([{
+    after: parseInt(nachFolie, 10) || 1, type: "mc",
+    q: { de: text }, options: optionen, answer: 0,
+    ok: { de: "Richtig." }, bad: { de: "Nicht ganz – richtig ist: " + a1 },
+  }]);
+  try{
+    await apiSend("PATCH", "/rest/v1/portal_uw_folien?id=eq." + encodeURIComponent(f.id),
+                  { fragen: fragen, updated_at: new Date().toISOString() });
+    await ladeFolien();
+    renderSektionen();
+  }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
+}
+
+function renderFolien(){
+  const rows = folienSichtbar();
+  const darf = uwDarfFreigeben();
+  if(!rows.length && !darf) return "";
+
+  const rollenNamen = ["Maschinenbediener", "Schichtführer", "Instandhaltung",
+                       "Lager/Logistik", "Büro/Verwaltung"];
+
+  const zeile = f => {
+    const bereit = !!f.datei_pfad;
+    const badge = !bereit ? '<span class="uw-badge uw-warnung">PDF fehlt</span>'
+                : f.status === "freigegeben" ? '<span class="uw-badge uw-gut">am Terminal</span>'
+                : '<span class="uw-badge uw-warnung">Entwurf</span>';
+    const knoepfe = !darf ? "" : (
+      (bereit && f.status !== "freigegeben"
+        ? `<button class="btn-klein" data-fgeb="${esc(f.id)}">freigeben</button>` : "") +
+      (f.status === "freigegeben"
+        ? `<button class="btn-klein" data-fzur="${esc(f.id)}">zurückziehen</button>` : "") +
+      `<button class="btn-klein" data-ffrage="${esc(f.id)}">Frage +</button>`);
+    const rollen = (f.rollen || []).length ? esc((f.rollen || []).join(", ")) : "—";
+    return `<tr>
+      <td>${badge}</td>
+      <td><b>${esc(f.titel)}</b><div class="ck-hinweis">${f.seiten ? f.seiten + " Folien · " : ""}${
+            (f.fragen || []).length} Frage(n)</div></td>
+      <td class="uw-mod">${rollen}</td>
+      <td>${knoepfe}</td>
+    </tr>`;
+  };
+
+  const liste = rows.length
+    ? `<table class="uw-tab"><thead><tr><th>Stand</th><th>Foliensatz</th><th>für Rollen</th><th></th></tr></thead>
+         <tbody>${rows.map(zeile).join("")}</tbody></table>`
+    : `<div class="ck-fuss">Noch keine Foliensätze. Präsentation in PowerPoint bauen,
+         als <b>PDF</b> speichern und hier hochladen.</div>`;
+
+  const hochladen = darf ? `<div class="fol-upload">
+      <input type="file" id="folDatei" accept=".pdf,.pptx,.ppt">
+      <input type="text" id="folTitel" placeholder="Titel (z. B. Gefahrstoffe 2026)">
+      <select id="folRolle"><option value="">für alle Rollen</option>
+        ${rollenNamen.map(r => `<option>${esc(r)}</option>`).join("")}</select>
+      <button class="btn-klein" id="folGo">Hochladen</button>
+    </div>` : "";
+
+  return `<div class="uw-block">
+    <div class="sek-kopf"><h2>Foliensätze</h2></div>
+    ${liste}${hochladen}
+    <div class="ck-fuss">In PowerPoint bauen, als <b>PDF</b> speichern, hochladen, Rollen
+      zuordnen, freigeben – das Terminal holt sich den Foliensatz von selbst und zeigt ihn
+      seitenweise. Verständnisfragen lassen sich je Folie ergänzen. Eine hochgeladene
+      <b>.pptx</b> wird verwahrt, angezeigt wird aber die PDF-Fassung.</div>
+  </div>`;
 }
