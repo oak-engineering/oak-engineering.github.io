@@ -296,8 +296,19 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 /* ---- Unterweisungen: Nachweise aus dem Terminal ----
    Bewusst schmucklos: eine Zeile je Person mit dem juengsten Stand. Kein Punktestand -
    gespeichert wird nur bestanden ja/nein (Datenminimierung, siehe unterweisungen.js). */
+/* „Was ist neu" sitzt ueber der Nachweisliste in derselben Sektion – die Linie trennt die
+   beiden Themen, ohne dass es zwei Kaesten nebeneinander braucht. */
+.uw-block{margin-bottom:26px;padding-bottom:20px;border-bottom:1px solid var(--rand);}
+.uw-block .sek-kopf{margin-top:0;}
+.uw-block .uw-tab td:last-child{white-space:nowrap;text-align:right;}
+.uw-block .btn-klein + .btn-klein{margin-left:6px;}
 .uw-tab{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+/* Diese Liste steht INNERHALB einer Sektion und braucht keinen zweiten farbigen Balken.
+   Die Zeile setzte bisher nur die Schriftfarbe auf Grau, erbte den gruenen Grund aber von
+   der allgemeinen `thead th`-Regel weiter oben - grau auf dunkelgruen war kaum lesbar
+   (rund 2,4:1). Jetzt konsequent dezent: keine Flaeche, dafuer lesbarer Text. */
 .uw-tab th{text-align:left;font-size:12px;font-weight:600;color:var(--grau);
+  background:none;text-transform:none;letter-spacing:0;
   border-bottom:1px solid var(--rand);padding:6px 8px 6px 0}
 .uw-tab td{padding:9px 8px 9px 0;border-bottom:1px solid var(--rand);vertical-align:top}
 .uw-tab tr:last-child td{border-bottom:none}

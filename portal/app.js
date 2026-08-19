@@ -421,6 +421,12 @@ async function ladePortal(){
         + encodeURIComponent(s.user.id), false);
     ADMIN = !!(me && me[0] && me[0].rolle === "admin");
     ADMIN_NAME = (me && me[0] && me[0].name) || (s && s.user && s.user.email) || "OAK engineering";
+    /* Dritte Rolle: die Fachkraft (SiFa/Sibe) des Betriebs darf entscheiden – heute die
+       Freigabe der Unterweisungs-Bausteine. Die Geschaeftsfuehrung ('kunde') liest mit.
+       Die Rechte haengen serverseitig an portal_ist_fachkraft(); das Flag hier steuert nur,
+       welche Knoepfe erscheinen. */
+    window.__oakFachkraft = !!(me && me[0] && me[0].rolle === "fachkraft");
+    window.__oakName = ADMIN_NAME;
 
     const rows = await apiGet("/rest/v1/portal_dokumente?select=*&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc", false);
     ALLE = rows || [];
