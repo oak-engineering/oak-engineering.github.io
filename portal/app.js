@@ -463,6 +463,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   $("#logoutBtn").addEventListener("click", ()=>{ clearSession(); ALLE=[]; zurLogin(); });
 
+  /* Kiosk-Betrieb (?kiosk=1, gesetzt vom Unterweisungs-Terminal): Das Geraet steht offen in
+     der Halle - eine angemeldete Sitzung darf dort nicht stehenbleiben, im Portal liegen
+     Gefaehrdungsbeurteilungen, Maengellisten und Nachweise. Nach kurzer Untaetigkeit wird
+     darum von selbst abgemeldet. Die Kennung wird gemerkt, damit sie einen Seitenwechsel
+     ueberlebt; am Buero-PC (ohne den Parameter) aendert sich nichts. */
+  const KIOSK_KEY = "oak_portal_kiosk", KIOSK_MINUTEN = 5;
+  try{
+    if(new URLSearchParams(location.search).get("kiosk") === "1") sessionStorage.setItem(KIOSK_KEY, "1");
+  }catch(e){}
+  let kioskIstKiosk = false;
+  try{ kioskIstKiosk = sessionStorage.getItem(KIOSK_KEY) === "1"; }catch(e){}
+  if(kioskIstKiosk){
+    let uhr = null;
+    const abmelden = ()=>{ clearSession(); ALLE=[]; zurLogin(); };
+    const neuStellen = ()=>{ clearTimeout(uhr); uhr = setTimeout(abmelden, KIOSK_MINUTEN*60000); };
+    ["click","keydown","pointerdown","wheel","touchstart"].forEach(ev =>
+      document.addEventListener(ev, neuStellen, { passive:true }));
+    neuStellen();
+  }
+
   // Passwort aendern
   const pwDlg=$("#pwDlg"), pwMsg=$("#pwMsg");
   $("#pwBtn").addEventListener("click", ()=>{
