@@ -19,7 +19,16 @@ const DOMAENEN = [
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
       { kat: "begehungen",    label: "Begehungen" },
       { kat: "vf-arbeitssicherheit", label: "Vorfälle" },
-      { kat: "unterweisungen", label: "Unterweisungen" },
+  ]},
+  /* Unterweisungen sind eine eigene Domäne, kein Unterpunkt der Arbeitssicherheit:
+     Katalog, Mitarbeiter, Nachweise und Inhalte gehören zusammen - das ist das
+     Unterweisungswerkzeug. Erster Sub ist der Überblick, er wird zur Startansicht. */
+  { key: "unterweisungen", label: "Unterweisungen", subs: [
+      { kat: "uw-ueberblick", label: "Überblick" },
+      { kat: "uw-katalog",    label: "Modulkatalog" },
+      { kat: "personen",      label: "Mitarbeiter" },
+      { kat: "unterweisungen", label: "Nachweise" },
+      { kat: "kapitel",       label: "Inhalte" },
   ]},
   { key: "umwelt", label: "Umwelt", subs: [
       { kat: "ck-umwelt", label: "Überblick" },
@@ -137,7 +146,7 @@ async function updateWaechterStarten(){
   document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) updatePruefen(); });
 }
 
-let ALLE = [], ADMIN = false, AKTIV = null;
+let ALLE = [], ADMIN = false, AKTIV = null, MITGLIED = null;
 /* Admin sieht alle Mandanten -> AKTIV filtert auf den gewaehlten Kunden.
    Normale Kunden: AKTIV bleibt null, RLS liefert ohnehin nur den eigenen Mandanten. */
 function sichtbar(){ return AKTIV ? ALLE.filter(r => r.kunde_slug===AKTIV) : ALLE; }
@@ -254,6 +263,7 @@ function docZeile(r){
 let AKTIVE_DOM = null, AKTIVE_SUB = null;
 function katRows(kat){
   if(kat.indexOf("ck-") === 0) return [];                        // Cockpit hat keinen Zähler
+  if(kat.indexOf("uw-") === 0) return [];                        // Überblick/Katalog rechnen selbst
   if(kat === "vf-arbeitssicherheit") return vBereich("arbeitssicherheit");
   if(kat === "vf-umwelt") return vBereich("umwelt");
   if(kat === "energie-massnahmen") return eSichtbar();           // Register statt Dokumentliste
@@ -283,6 +293,10 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "energie-massnahmen"){ renderEnergie(wrap); return; }                  // energie.js
   /* Unterweisungen: erst die Nachweise aus dem Terminal (unterweisungen.js), darunter wie
      gehabt die hinterlegten Unterlagen - beides gehoert zum selben Reiter. */
+  if(kat === "uw-ueberblick"){ renderUwUeberblick(wrap); return; }   // unterweisungen-start.js
+  if(kat === "uw-katalog"){ renderUwKatalog(wrap); return; }
+  if(kat === "personen"){ renderPersonen(wrap); return; }
+  if(kat === "kapitel"){ renderKapitel(wrap); return; }
   if(kat === "unterweisungen") renderUnterweisungen(wrap);
   const rows = katRows(kat);
   if(!rows.length){
@@ -357,6 +371,7 @@ function renderSubTabs(){
   // Standard-Sub: das Cockpit, wenn die Domäne eines hat – sonst der erste Reiter mit Inhalt.
   if(!AKTIVE_SUB || !subs.some(s => s.kat===AKTIVE_SUB))
     AKTIVE_SUB = (subs.find(s => s.kat.indexOf("ck-")===0)
+               || subs.find(s => s.kat === "uw-ueberblick")
                || subs.find(s => katRows(s.kat).length) || subs[0]).kat;
   nav.classList.remove("hidden");
   nav.innerHTML = subs.map(s => {
@@ -427,6 +442,7 @@ async function ladePortal(){
        welche Knoepfe erscheinen. */
     window.__oakFachkraft = !!(me && me[0] && me[0].rolle === "fachkraft");
     window.__oakName = ADMIN_NAME;
+    MITGLIED = (me && me[0]) || null;
 
     const rows = await apiGet("/rest/v1/portal_dokumente?select=*&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc", false);
     ALLE = rows || [];
@@ -437,7 +453,12 @@ async function ladePortal(){
     await ladeVorfaelle();
     await ladeEnergie();
     await ladeNachweise();
-    AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null) : null;
+    /* AKTIV ist der Mandant, in dem gearbeitet wird. Fuer Admins der im Umschalter
+       gewaehlte Kunde, fuer alle anderen der eigene - sonst schickt das Portal beim
+       Anlegen kunde_slug: null und die Zeile wird von RLS abgewiesen. */
+    AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null)
+                  : (MITGLIED && MITGLIED.kunde_slug) || null;
+    await ladeUwStart();
     AKTIVE_DOM = null; AKTIVE_SUB = null;
     setKundeName();
     renderAdminBar();

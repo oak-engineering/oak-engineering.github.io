@@ -331,3 +331,50 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .btn-klein{font:inherit;font-size:13px;font-weight:600;color:var(--gruen);background:#fff;
   border:1px solid var(--gruen);border-radius:8px;padding:6px 12px;cursor:pointer}
 .btn-klein:hover{background:var(--akzent)}
+
+/* ---- Unterweisungen: Überblick und Modulkatalog (unterweisungen-start.js) ---- */
+/* Der Unterweisungs-Überblick hat vier Kacheln - die sollen in eine Reihe,
+   nicht 3 + 1 umbrechen. */
+@media(min-width:1100px){ .uw-vier{grid-template-columns:repeat(4,1fr);} }
+.uw-zweispalt{display:grid;grid-template-columns:1fr;gap:18px;margin-top:18px;}
+@media (min-width:900px){ .uw-zweispalt{grid-template-columns:1fr 1fr;} }
+.uw-block{background:#fff;border:1px solid var(--rand);border-radius:10px;padding:18px 20px;}
+.uw-block h3{font-size:17px;margin:0 0 12px;padding-bottom:7px;border-bottom:1px solid var(--rand);}
+.uw-liste{display:flex;flex-direction:column;}
+.uw-zeile{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--rand);}
+.uw-zeile:last-child{border-bottom:0;}
+.uw-name{flex:1;min-width:0;font-size:14.5px;font-weight:600;color:var(--text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.uw-datum{flex:none;font-size:13px;color:var(--grau);font-variant-numeric:tabular-nums;}
+.uw-zettel{flex:none;font-size:12px;font-weight:600;border-radius:999px;padding:3px 11px;
+  border:1px solid var(--rand);background:#f6f9f8;color:var(--grau);}
+.uw-zettel.uw-kritisch{background:#fdecea;border-color:#f0b6b0;color:var(--rot);}
+.uw-zettel.uw-warnung{background:#fdf4e6;border-color:#e8c98c;color:#9a6708;}
+.uw-zettel.uw-gut{background:var(--akzent);border-color:var(--hellgruen);color:var(--dunkel);}
+.uw-zettel.uw-schloss{background:#f1f4f3;border-color:var(--rand);color:var(--grau);}
+
+.uw-gruppe{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--grau);font-family:inherit;margin:22px 0 10px;}
+.uw-raster{display:grid;grid-template-columns:1fr;gap:14px;}
+@media (min-width:760px){ .uw-raster{grid-template-columns:1fr 1fr;} }
+@media (min-width:1200px){ .uw-raster{grid-template-columns:1fr 1fr 1fr;} }
+.uw-modul{background:#fff;border:1px solid var(--rand);border-left:4px solid var(--hellgruen);
+  border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:7px;}
+.uw-modul.uw-gesperrt{border-left-color:var(--rand);background:#fafbfb;}
+.uw-modul.uw-gesperrt .uw-modul-kopf b{color:var(--grau);}
+.uw-modul-kopf{display:flex;align-items:center;gap:10px;justify-content:space-between;}
+.uw-modul-kopf b{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:700;
+  color:var(--dunkel);line-height:1.15;}
+.uw-modul-unter{font-size:13px;color:var(--gruen);font-weight:600;}
+.uw-modul-text{font-size:13.5px;color:var(--text);line-height:1.55;margin:2px 0 0;}
+.uw-modul-fuss{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--grau);margin-top:4px;}
+.uw-praxis{color:#9a6708;font-weight:600;}
+.uw-recht{font-size:11.5px;color:var(--grau);line-height:1.5;border-top:1px solid var(--rand);
+  padding-top:7px;margin-top:2px;}
+.uw-admin{margin-top:6px;}
+.btn-klein{font-family:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--gruen);
+  background:#fff;color:var(--gruen);border-radius:7px;padding:7px 13px;cursor:pointer;}
+.btn-klein:hover{background:var(--akzent);}
+.btn-klein:disabled{opacity:.5;cursor:default;}
+.uw-oeffnen{margin-top:8px;}
+.uw-oeffnen .btn{display:inline-block;text-decoration:none;padding:9px 16px;font-size:13.5px;}
