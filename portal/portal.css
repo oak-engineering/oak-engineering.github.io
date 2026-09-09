@@ -378,3 +378,22 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .btn-klein:disabled{opacity:.5;cursor:default;}
 .uw-oeffnen{margin-top:8px;}
 .uw-oeffnen .btn{display:inline-block;text-decoration:none;padding:9px 16px;font-size:13.5px;}
+
+/* ---- Modul-Detail: Nutzergruppen und eigene Inhalte ---- */
+.uw-gruppenwahl{display:grid;grid-template-columns:1fr;gap:10px;}
+@media(min-width:700px){ .uw-gruppenwahl{grid-template-columns:1fr 1fr;} }
+.uw-gruppe-wahl{display:flex;align-items:center;gap:12px;border:1.5px solid var(--rand);
+  border-radius:10px;padding:12px 14px;cursor:pointer;background:#fff;min-height:60px;}
+.uw-gruppe-wahl.an{border-color:var(--hellgruen);background:var(--akzent);}
+.uw-gruppe-wahl input{width:22px;height:22px;accent-color:var(--gruen);flex:none;}
+.uw-gruppe-wahl span{display:flex;flex-direction:column;min-width:0;}
+.uw-gruppe-wahl b{font-size:14.5px;color:var(--text);}
+.uw-gruppe-wahl em{font-style:normal;font-size:12px;color:var(--grau);}
+
+.uw-zusatz{border-bottom:1px solid var(--rand);padding:14px 0;}
+.uw-zusatz:last-child{border-bottom:0;}
+.uw-zusatz-kopf{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:6px;}
+.uw-zusatz-kopf b{font-size:15px;color:var(--dunkel);}
+.uw-zusatz-text{margin:0;font-size:14px;line-height:1.6;color:var(--text);white-space:pre-line;}
+.uw-zusatz-knoepfe{display:flex;gap:8px;margin-top:9px;}
+.uw-zusatz-neu{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
