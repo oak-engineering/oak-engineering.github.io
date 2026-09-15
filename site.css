@@ -141,6 +141,10 @@ footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 8vw;disp
 
 /* ── Subpage-Layout: Akkordeon (2/3) + Tools-Panel (1/3) ── */
 .leist-col h2{font-family:var(--serif);font-size:1.5rem;font-weight:600;color:var(--oak-deep);margin-bottom:1.2rem;}
+/* Auditierung: mehrere Abschnitte untereinander – jede weitere Ueberschrift bekommt Luft nach oben. */
+.leist-col h2:not(:first-child){margin-top:2.6rem;}
+.acc-body-inner a{color:var(--oak);font-weight:500;}
+.acc-body-inner a:hover{text-decoration:underline;}
 
 .accordion{border-top:1px solid var(--border);}
 .acc-item{border-bottom:1px solid var(--border);position:relative;transition:background .2s;}

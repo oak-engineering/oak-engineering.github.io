@@ -50,7 +50,7 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202609151002">
+<link rel="stylesheet" href="fonts.css?v=202609151444">
 <link rel="stylesheet" href="nav.css">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
@@ -156,11 +156,11 @@ a { color: inherit; text-decoration: none; }
   opacity: 0; animation: fadeUp .8s var(--ease) .6s forwards;
 }
 .hero-cards {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.1rem;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.1rem;
   margin-top: auto;   /* schiebt die Kacheln an den unteren Rand – dazwischen steht das Signet */
   opacity: 0; animation: fadeUp .8s var(--ease) .8s forwards;
 }
-@media (max-width: 1024px) { .hero-cards { grid-template-columns: repeat(2, 1fr); max-width: 560px; } }
+@media (max-width: 1024px) { .hero-cards { grid-template-columns: repeat(2, 1fr); max-width: 560px; } .hero-card:nth-child(5) { grid-column: span 2; } }
 /* Leicht transparent, damit das Gitter durchscheint – der Grundton bleibt heller als der Hero,
    sonst geht die Kachel darin unter. Je Bereich eine feine Akzentkante oben. */
 .hero-card {
@@ -182,6 +182,7 @@ a { color: inherit; text-decoration: none; }
 .hero-card:nth-child(2) { --kachel: #52B788; }
 .hero-card:nth-child(3) { --kachel: #95D5B2; }
 .hero-card:nth-child(4) { --kachel: #40916C; }
+.hero-card:nth-child(5) { --kachel: #B7E4C7; }
 .hero-card:hover {
   background: linear-gradient(158deg, rgba(53,120,95,.78), rgba(30,74,55,.78));
   border-color: var(--kachel);
@@ -738,7 +739,8 @@ footer {
       <div class="nav-dd-menu">
         <a href="arbeitssicherheit.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Arbeitssicherheit</a>
         <a href="umweltschutz.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z"/><path d="M2 21c0-3 1.9-5.4 5.1-6C9.5 14.5 12 13 13 12"/></svg> Umweltschutz</a>
-        <a href="ki-digitalisierung.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg> KI &amp; Digitalisierung</a>
+        <a href="auditierung.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Auditierung</a>
+        <a href="ki-digitalisierung.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/></svg> EHS 3.0</a>
         <a href="schulungen.html"><svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> Schulungen</a>
       </div>
     </div>
@@ -767,9 +769,13 @@ footer {
           <b>Umweltschutz</b>
           <span class="hc-d">Immissionsschutz&nbsp;· Störfall&nbsp;· ISO 14001&nbsp;· Gefahrgut&nbsp;· Gewässerschutz&nbsp;· <span class="nb">CO₂-Bilanzierung</span></span>
         </a>
+      <a class="hero-card" href="auditierung.html">
+          <b>Auditierung</b>
+          <span class="hc-d">Interne Audits&nbsp;· ISO 14001&nbsp;· ISO 45001&nbsp;· Kombi-Audit&nbsp;· <span class="nb">Compliance-Audit</span></span>
+        </a>
       <a class="hero-card" href="ki-digitalisierung.html">
-          <b>KI &amp; Digitalisierung</b>
-          <span class="hc-d">KI-Auswertung&nbsp;· Automatisierung&nbsp;· Dashboards</span>
+          <b>EHS 3.0</b>
+          <span class="hc-d">KI &amp; Digitalisierung&nbsp;· Automatisierung&nbsp;· Dashboards</span>
         </a>
       <a class="hero-card" href="schulungen.html">
           <b>Schulungsangebot</b>
@@ -841,6 +847,6 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
 // Gitter, Signet und Menue kommen aus site.js (gemeinsam fuer alle Seiten)
 </script>
-<script src="site.js?v=202609151002"></script>
+<script src="site.js?v=202609151444"></script>
 </body>
 </html>

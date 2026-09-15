@@ -229,6 +229,7 @@ document.addEventListener('click', e => {
     /* Leistungsseiten – dieselben Symbole wie im Drawer, damit nichts zweierlei aussieht */
     schild:  '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
     blattIco:'<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.5 19 2c1 2 2 4.2 2 8 0 5.5-4.8 10-10 10z"/><path d="M2 21c0-3 1.9-5.4 5.1-6C9.5 14.5 12 13 13 12"/>',
+    pruef:   '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
     chip:    '<rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v2M15 2v2M9 20v2M15 20v2M2 9h2M2 15h2M20 9h2M20 15h2"/>',
     buch:    '<path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>'
   };
@@ -244,7 +245,7 @@ document.addEventListener('click', e => {
 
   const imPortal = /\/portal\//.test(location.pathname);
   const datei = location.pathname.split('/').pop() || 'index.html';
-  const LEISTUNGSSEITEN = ['arbeitssicherheit.html','umweltschutz.html','ki-digitalisierung.html','schulungen.html'];
+  const LEISTUNGSSEITEN = ['arbeitssicherheit.html','umweltschutz.html','auditierung.html','ki-digitalisierung.html','schulungen.html'];
 
   /* Vor der Anmeldung kann der Kunde nichts abrufen – der Mitarbeiter aber melden.
      Deshalb traegt der Anmeldeschirm eine eigene, kurze Leiste. */
@@ -432,7 +433,8 @@ document.addEventListener('click', e => {
       blattAuf('Leistungen', [
         { href:'arbeitssicherheit.html',  ico:'schild',   text:'Arbeitssicherheit' },
         { href:'umweltschutz.html',       ico:'blattIco', text:'Umweltschutz' },
-        { href:'ki-digitalisierung.html', ico:'chip',     text:'KI & Digitalisierung' },
+        { href:'auditierung.html',        ico:'pruef',    text:'Auditierung' },
+        { href:'ki-digitalisierung.html', ico:'chip',     text:'EHS 3.0' },
         { href:'schulungen.html',         ico:'buch',     text:'Schulungen' }
       ], k);
 
