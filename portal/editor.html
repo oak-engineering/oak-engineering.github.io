@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Unterweisung bearbeiten – OAK Kundenportal</title>
-<link rel="stylesheet" href="portal.css?v=202609151527">
+<link rel="stylesheet" href="portal.css?v=202609151529">
 <style>
 /* Editor: das Modul laeuft im Rahmen genau so wie am Terminal, nur mit Stift. Oben eine
    schmale Leiste: Modulwahl, Stand, Vorschau/Bearbeiten. Kein zweites Werkzeug - der Player
@@ -56,7 +56,10 @@ function stand(t, cls){ var s = $('stand'); s.textContent = t; s.className = 'st
 
 async function start(){
   if(!getSession()){ location.replace('index.html'); return; }
-  var me = await apiGet('/rest/v1/portal_mitglied?select=rolle,kunde_slug,name&limit=1');
+  // eigene Mitgliedszeile: der Admin sieht alle Mitglieder, deshalb nach der eigenen user_id filtern
+  var sub = '';
+  try{ sub = JSON.parse(atob((getSession().access_token.split('.')[1] || '').replace(/-/g,'+').replace(/_/g,'/'))).sub || ''; }catch(e){}
+  var me = await apiGet('/rest/v1/portal_mitglied?select=rolle,kunde_slug,name&user_id=eq.' + encodeURIComponent(sub) + '&limit=1');
   var rolle = (me && me[0] && me[0].rolle) || 'kunde';
   if(rolle !== 'admin'){
     document.querySelector('.ed').innerHTML = '<div class="hinweisbox"><b>Nur für OAK engineering.</b><br>Der Grundstock der '
