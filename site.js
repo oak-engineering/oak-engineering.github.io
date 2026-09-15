@@ -434,7 +434,7 @@ document.addEventListener('click', e => {
         { href:'arbeitssicherheit.html',  ico:'schild',   text:'Arbeitssicherheit' },
         { href:'umweltschutz.html',       ico:'blattIco', text:'Umweltschutz' },
         { href:'auditierung.html',        ico:'pruef',    text:'Auditierung' },
-        { href:'ki-digitalisierung.html', ico:'chip',     text:'EHS 3.0' },
+        { href:'ki-digitalisierung.html', ico:'chip',     text:'EHS 4.0' },
         { href:'schulungen.html',         ico:'buch',     text:'Schulungen' }
       ], k);
 
