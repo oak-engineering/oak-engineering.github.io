@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Unterweisungs-Terminal – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202609151444">
+<link rel="stylesheet" href="portal.css?v=202609151448">
 <style>
 /* Unterweisungs-Terminal ohne Login: Das Geraet traegt einen Token (wie melden.html),
    die Person tippt Name und Gruppe, bekommt ihre Module und arbeitet sie im Rahmen durch.
@@ -17,7 +17,9 @@ body{margin:0;background:#F3F6F4;color:var(--ink,#111A14);font-family:var(--sans
 .tk{display:flex;flex-direction:column;height:100vh;height:100dvh}
 .tk-kopf{flex:none;background:#fff;border-bottom:1px solid var(--border,#D6E4DA);padding:12px 22px;
   display:flex;align-items:center;gap:14px;min-height:60px}
-.tk-kopf img{height:30px;width:auto}
+.tk-kopf img.oak{height:26px;width:auto;opacity:.85}
+.tk-kopf img.kunde{height:56px;max-width:260px;width:auto;object-fit:contain;margin-left:10px}
+.tk-kopf{min-height:76px}
 .tk-kopf .firma{font-weight:600;font-size:15px;color:var(--ink-2,#2C3A30)}
 .tk-kopf .titel{font-size:13px;color:var(--muted,#6B7C70)}
 .tk-kopf .rechts{margin-left:auto;display:flex;gap:10px;align-items:center}
@@ -61,11 +63,12 @@ input[type=text]:focus{outline:none;border-color:var(--oak,#2D6A4F);box-shadow:0
 <body>
 <div class="tk" id="tk">
   <header class="tk-kopf">
-    <img src="../assets/oak-logo.png" alt="OAK engineering">
+    <img class="oak" src="../assets/oak-logo.png" alt="OAK engineering">
     <span><span class="firma" id="kFirma">Unterweisungs-Terminal</span><br><span class="titel" id="kTitel">Kundenportal · OAK engineering</span></span>
     <span class="rechts">
       <button class="knopf" id="kZurueck" hidden>Zur Übersicht</button>
       <button class="knopf" id="kNeu" hidden>Andere Person</button>
+      <img class="kunde" id="kLogo" alt="" hidden>
     </span>
   </header>
   <div class="tk-rumpf">
@@ -98,6 +101,8 @@ input[type=text]:focus{outline:none;border-color:var(--oak,#2D6A4F);box-shadow:0
       <p class="unter" id="mUnter"></p>
       <div class="kacheln" id="mListe"></div>
       <div class="hinweis" id="mHinweis" hidden></div>
+      <div class="zeile-knoepfe"><button class="knopf haupt" id="mStart" hidden>Unterweisung starten</button>
+        <span class="klein" id="mStartInfo"></span></div>
     </section>
 
     <section class="schirm" id="sModul" style="max-width:none;height:100%">
@@ -121,6 +126,9 @@ var K = null;                 // Konfiguration vom Portal
 var person = {name:'', rolle:null};
 var erledigt = {};            // thema -> true (nur diese Person)
 var aktivesModul = null;
+/* Lauf = alle Module der Gruppe nacheinander, EIN Nachweis am Ende (wie der alte Kiosk).
+   ergebnisse sammelt je fertigem Modul Titel und Selbsttest-Ergebnis fuer den Sammelnachweis. */
+var lauf = null;              // {module:[...], index, ergebnisse:[{thema,titel,richtig,gesamt,prozent,bestanden,bausteine}]}
 
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
@@ -191,9 +199,10 @@ function fortschrittLoeschen(){
   }catch(e){}
 }
 function startAnzeigen(){
-  person = {name:'', rolle:null}; erledigt = {}; aktivesModul = null;
+  person = {name:'', rolle:null}; erledigt = {}; aktivesModul = null; lauf = null;
   fortschrittLoeschen();
   $('kFirma').textContent = (K && K.kunde) || 'Unterweisungs-Terminal';
+  var lg = $('kLogo'); if(K && K.logo){ lg.src = K.logo; lg.hidden = false; } else { lg.hidden = true; }
   $('kTitel').textContent = 'Unterweisungs-Terminal';
   $('sFirma').textContent = (K && K.kunde) ? K.kunde + ' – gib deinen Namen ein und wähle deine Gruppe.' : '';
   $('sName').value = '';
@@ -244,14 +253,30 @@ function moduleAnzeigen(){
     b.className = 'kachel' + (erledigt[m.thema] ? ' erledigt' : '');
     b.innerHTML = esc(m.titel) + '<small>' + esc(m.untertitel||'') + (m.dauer_min ? (m.untertitel?' · ':'') + 'ca. ' + m.dauer_min + ' Min.' : '') + '</small>'
                 + (erledigt[m.thema] ? '<span class="haken">✓ heute abgeschlossen</span>' : '');
-    b.onclick = function(){ modulOeffnen(m); };
+    b.onclick = function(){
+      if(erledigt[m.thema]) return;
+      var offen = mods.filter(function(x){ return !erledigt[x.thema]; });
+      laufStarten(offen.slice(offen.indexOf(m)));
+    };
     liste.appendChild(b);
   });
   var h = $('mHinweis');
   if(!mods.length){ h.hidden=false; h.className='hinweis warn';
     h.textContent = 'Für deine Gruppe ist noch keine Unterweisung freigeschaltet. Bitte an die Fachkraft für Arbeitssicherheit wenden.'; }
   else h.hidden = true;
+  var offen = mods.filter(function(m){ return !erledigt[m.thema]; });
+  var min = offen.reduce(function(a,m){ return a + (m.dauer_min||0); }, 0);
+  var st = $('mStart'); st.hidden = !offen.length;
+  st.textContent = offen.length === mods.length ? 'Unterweisung starten' : 'Weiter mit den offenen Modulen';
+  st.onclick = function(){ laufStarten(offen); };
+  $('mStartInfo').textContent = offen.length ? (offen.length + (offen.length===1?' Modul':' Module nacheinander') + (min ? ', etwa ' + min + ' Minuten' : '') + ', ein Nachweis am Ende') : '';
+  $('mUnter').textContent = person.rolle ? ('Gruppe: ' + person.rolle.name + '. Alle Module laufen nacheinander durch, am Ende unterschreibst du einmal.') : '';
   zeige('sModule');
+}
+function laufStarten(module){
+  if(!module.length) return;
+  lauf = {module: module, index: 0, ergebnisse: []};
+  modulOeffnen(module[0]);
 }
 $('kNeu').onclick = function(){ startAnzeigen(); };
 
@@ -270,11 +295,14 @@ function modulOeffnen(m){
   toast('Modul wird geladen …', 8000);
   modulDatei(m.pfad).then(function(html){
     var kontext = {name: person.name, rolle: person.rolle ? person.rolle.name : '', thema: m.thema, titel: m.titel,
-                   zusaetze: (K.zusaetze && K.zusaetze[m.thema]) || []};
+                   zusaetze: (K.zusaetze && K.zusaetze[m.thema]) || [],
+                   logo: K.logo || null,
+                   lauf: lauf ? {nr: lauf.index + 1, gesamt: lauf.module.length, letztes: lauf.index === lauf.module.length - 1,
+                                 bisher: lauf.ergebnisse} : null};
     var tag = '<script>window.__OAK_TERMINAL=' + JSON.stringify(kontext).replace(/</g,'\\u003c') + ';</scr' + 'ipt>';
     html = html.replace(/<head([^>]*)>/i, function(x){ return x + tag; });
     aktivesModul = m;
-    $('kTitel').textContent = m.titel;
+    $('kTitel').textContent = (lauf && lauf.module.length > 1 ? 'Modul ' + (lauf.index + 1) + ' von ' + lauf.module.length + ' · ' : '') + m.titel;
     var f = $('rahmen');
     f.srcdoc = html;                      // gleicher Origin wie das Portal: Token und Warteschlange sind erreichbar
     zeige('sModul');
@@ -284,16 +312,28 @@ function modulOeffnen(m){
   });
 }
 $('kZurueck').onclick = function(){
-  if(aktivesModul && !erledigt[aktivesModul.thema] && !confirm('Unterweisung abbrechen? Der Fortschritt geht verloren.')) return;
+  if(aktivesModul && !erledigt[aktivesModul.thema] && !confirm('Unterweisung abbrechen? Der Fortschritt dieses Moduls geht verloren.')) return;
   $('rahmen').srcdoc = '';
-  aktivesModul = null; $('kTitel').textContent = 'Unterweisungs-Terminal';
+  aktivesModul = null; lauf = null; $('kTitel').textContent = 'Unterweisungs-Terminal';
   moduleAnzeigen();
 };
 window.addEventListener('message', function(ev){
   var f = $('rahmen');
   if(!f || ev.source !== f.contentWindow) return;
   var d = ev.data || {};
-  if(d.type === 'oak-uw-nachweis' && aktivesModul){ erledigt[aktivesModul.thema] = true; }
+  if(d.type === 'oak-uw-modul-fertig' && lauf && aktivesModul){
+    // Modul im Lauf geschafft: Ergebnis merken, naechstes Modul laden
+    lauf.ergebnisse.push({thema: aktivesModul.thema, titel: aktivesModul.titel, richtig: d.richtig||0, gesamt: d.gesamt||0,
+                          prozent: d.prozent||0, bestanden: d.bestanden !== false, bausteine: d.bausteine || []});
+    erledigt[aktivesModul.thema] = true;
+    lauf.index += 1;
+    if(lauf.index < lauf.module.length){ modulOeffnen(lauf.module[lauf.index]); }
+    else { aktivesModul = null; lauf = null; moduleAnzeigen(); }
+  }
+  if(d.type === 'oak-uw-nachweis'){
+    if(lauf) lauf.module.forEach(function(m){ erledigt[m.thema] = true; });
+    else if(aktivesModul) erledigt[aktivesModul.thema] = true;
+  }
   if(d.type === 'oak-uw-naechste'){ startAnzeigen(); }
 });
 
