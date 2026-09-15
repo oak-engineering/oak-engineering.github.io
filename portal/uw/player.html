@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Unterweisung</title>
+<style>
+/* Lernplattform-Aufbau: links die Kapitel als Zeitleiste, rechts EIN Schritt je
+   Bildschirm, oben der Fortschritt. Kein Endlos-Scrollen, keine Riesenschrift.
+   Die Variablen bleiben, weil der Nachweis-Dialog (kurs_uebersicht.html) sie nutzt. */
+:root{
+  --schrift-familie:"Segoe UI",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --marke:#003078; --marke-tief:#001D4D; --marke-zart:#E8EEF8;
+  --grund:#F3F5F8; --flaeche:#FFFFFF; --tief:#EEF1F5;
+  --schrift:#1B2431; --schrift-mit:#46536A; --schrift-leise:#6F7C90; --linie:#DDE3EB;
+  --gut:#1B6E48; --gut-bg:#E6F3EC; --gut-linie:#9CCCB4;
+  --warn:#9A5B00; --warn-bg:#FDF4E6; --warn-linie:#E3BE85;
+  --gefahr:#A3272B; --gefahr-bg:#FBECEC; --gefahr-linie:#E0A4A6;
+  --schatten:0 1px 2px rgba(16,32,60,.06);
+  --karte-innen:20px;
+  --rand:40px;
+  --kopf-hoehe:76px; --rail-breite:300px; --nav-hoehe:72px;
+}
+*{box-sizing:border-box; min-width:0}
+[hidden]{display:none !important}
+html,body{height:100%}
+body{margin:0; background:var(--grund); color:var(--schrift);
+  font:400 17px/1.55 var(--schrift-familie); -webkit-text-size-adjust:100%; overflow:hidden}
+button{font-family:inherit; touch-action:manipulation; -webkit-tap-highlight-color:transparent}
+a, .kap-zeile, .schritte li{-webkit-tap-highlight-color:transparent}
+a{color:var(--marke)}
+
+/* ---- Rahmen ---- */
+.app{display:flex; flex-direction:column; height:100vh; height:100dvh}
+.kopf{flex:none; height:var(--kopf-hoehe); background:var(--flaeche); border-bottom:1px solid var(--linie);
+  display:flex; align-items:center; gap:14px; padding:0 20px; position:relative; z-index:40}
+.kopf-logo{height:58px; max-width:300px; width:auto; object-fit:contain; margin-left:8px}
+.kopf-titel{display:flex; flex-direction:column; min-width:0; line-height:1.2}
+.kopf-titel b{font-size:14px; font-weight:600; color:var(--schrift-mit); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.kopf-titel span{font-size:16px; font-weight:650; color:var(--marke-tief); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.kopf-rechts{margin-left:auto; display:flex; align-items:center; gap:10px}
+.fort-text{font-size:14px; color:var(--schrift-leise); font-variant-numeric:tabular-nums; white-space:nowrap}
+.fortschritt{position:absolute; left:0; right:0; bottom:-1px; height:3px; background:var(--linie)}
+.fortschritt i{display:block; height:100%; width:0; background:var(--marke); transition:width .3s}
+.knopf-leise, .stift{border:1.5px solid var(--linie); background:var(--flaeche); border-radius:9px;
+  min-height:44px; padding:0 14px; cursor:pointer; display:inline-flex; align-items:center;
+  gap:8px; font:500 14px/1 var(--schrift-familie); color:var(--schrift-mit); text-decoration:none}
+.knopf-leise svg, .stift svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.stift.an{background:var(--marke); border-color:var(--marke); color:#fff}
+.menue{display:none; border:1.5px solid var(--linie); background:var(--flaeche); border-radius:9px;
+  width:42px; height:40px; cursor:pointer; place-items:center; color:var(--schrift-mit)}
+.menue svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round}
+
+.rumpf{flex:1; display:flex; min-height:0}
+
+/* ---- Kapitel-Leiste: eine Zeitleiste, weil die Unterweisung wirklich eine Folge ist ---- */
+.rail{flex:none; width:var(--rail-breite); background:var(--flaeche); border-right:1px solid var(--linie);
+  overflow-y:auto; padding:18px 0 24px}
+.rail-kopf{padding:0 20px 12px; font-size:13px; font-weight:600; color:var(--schrift-leise)}
+.kap{padding:0 12px}
+.kap-zeile{display:flex; align-items:center; gap:12px; padding:12px 10px; min-height:52px; border-radius:10px;
+  cursor:pointer; color:var(--schrift-mit); font-size:15px; line-height:1.3}
+.kap-zeile:hover{background:var(--tief)}
+.kap-zeile .nr{flex:none; width:28px; height:28px; border-radius:50%; border:1.5px solid var(--linie);
+  display:grid; place-items:center; font-size:13px; font-weight:600; color:var(--schrift-leise);
+  background:var(--flaeche); font-variant-numeric:tabular-nums}
+.kap-zeile .nr svg{width:14px; height:14px; stroke:#fff; fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round}
+.kap-zeile .txt{flex:1; min-width:0}
+.kap-zeile .txt small{display:block; font-size:12px; color:var(--schrift-leise); margin-top:2px}
+.kap.fertig .nr{background:var(--gut); border-color:var(--gut); color:#fff}
+.kap.aktiv .kap-zeile{background:var(--marke-zart); color:var(--marke-tief); font-weight:600}
+.kap.aktiv .nr{border-color:var(--marke); color:var(--marke)}
+.kap.gesperrt .kap-zeile{cursor:default; opacity:.7}
+.schritte{list-style:none; margin:2px 0 6px; padding:0 0 0 23px; position:relative}
+.schritte::before{content:""; position:absolute; left:23px; top:4px; bottom:4px; width:2px; background:var(--linie)}
+.schritte li{position:relative; padding:10px 10px 10px 24px; min-height:42px; display:flex; align-items:center; font-size:14px; color:var(--schrift-leise);
+  cursor:pointer; border-radius:8px; line-height:1.3}
+.schritte li::before{content:""; position:absolute; left:-4px; top:15px; width:10px; height:10px;
+  border-radius:50%; background:var(--flaeche); border:2px solid var(--linie)}
+.schritte li:hover{color:var(--schrift)}
+.schritte li.war::before{background:var(--marke); border-color:var(--marke)}
+.schritte li.ist{color:var(--marke-tief); font-weight:600; background:var(--tief)}
+.schritte li.ist::before{background:var(--flaeche); border-color:var(--marke); box-shadow:0 0 0 3px var(--marke-zart)}
+.schritte li.frage-punkt::before{border-radius:3px}
+.rail-fuss{margin:18px 12px 0; padding:14px 10px 0; border-top:1px solid var(--linie)}
+.rail-fuss button{width:100%; border:1.5px solid var(--linie); background:var(--flaeche); border-radius:10px;
+  min-height:50px; font:500 14px/1 var(--schrift-familie); color:var(--schrift-mit); cursor:pointer}
+.rail-fuss button.bereit{background:var(--marke-tief); border-color:var(--marke-tief); color:#fff}
+
+/* ---- Bühne: ein Schritt ---- */
+.buehne-huelle{flex:1; display:flex; flex-direction:column; min-width:0; min-height:0}
+.schritt-kopf{flex:none; padding:14px var(--rand) 0; font-size:13px; color:var(--schrift-leise);
+  font-variant-numeric:tabular-nums; display:flex; gap:10px; align-items:center}
+.schritt-kopf b{font-weight:600; color:var(--schrift-mit)}
+main.buehne{flex:1; overflow-y:auto; padding:14px var(--rand) 30px; scroll-behavior:smooth; position:relative}
+.buehne-huelle{position:relative}
+.mehr-hinweis{position:absolute; left:0; right:0; bottom:var(--nav-hoehe); height:64px; pointer-events:none; z-index:5;
+  background:linear-gradient(to bottom, rgba(243,245,248,0), var(--grund) 70%); display:none; align-items:flex-end; justify-content:center; padding-bottom:8px}
+.mehr-hinweis span{background:var(--marke-tief); color:#fff; border-radius:999px; font-size:13px; font-weight:600; padding:6px 14px; display:inline-flex; gap:6px; align-items:center}
+.mehr-hinweis svg{width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round}
+.buehne-huelle.mehr .mehr-hinweis{display:flex}
+body.bearbeiten .mehr-hinweis, .buehne-huelle.tafel-an .mehr-hinweis{display:none !important}
+/* Jeder Schritt ist eine weiße Karte in der Mitte - der Rest der Bühne ist bewusst Rahmen,
+   keine leere Seitenleiste. */
+.schritt{display:none; background:var(--flaeche); border:1px solid var(--linie); border-radius:14px;
+  padding:26px 34px 30px; max-width:920px; margin:0 auto 16px}
+.schritt.mit-bild{max-width:1240px}
+.schritt.ist{display:block}
+body.bearbeiten .schritt{display:block; margin-bottom:20px; border:1px dashed var(--linie)}
+body.bearbeiten .schritt-kopf, body.bearbeiten .nav{display:none}
+.buehne-huelle.tafel-an .schritt-kopf, .buehne-huelle.tafel-an .nav{display:none}
+body.bearbeiten main.buehne{padding-bottom:120px}
+
+h1{font-size:30px; line-height:1.2; font-weight:650; margin:6px 0 16px; color:var(--marke-tief);
+  letter-spacing:-.01em; text-wrap:balance}
+h2{font-size:26px; line-height:1.25; font-weight:650; margin:6px 0 16px; color:var(--marke-tief);
+  letter-spacing:-.01em; text-wrap:balance}
+p{margin:0 0 14px}
+strong{font-weight:640; color:var(--marke-tief)}
+.text-spalte p, .text-spalte .liste, .text-spalte .hinweis{max-width:none}
+
+.zweispaltig{display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,40%); gap:32px; align-items:start}
+.text-spalte{min-width:0}
+.medien-spalte{min-width:0; display:flex; flex-direction:column; gap:16px; position:sticky; top:0}
+@media (max-width:1050px){
+  .zweispaltig{grid-template-columns:1fr; gap:18px}
+  .medien-spalte{position:static}
+}
+
+.liste{margin:0 0 16px; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px}
+.liste li{position:relative; padding-left:24px}
+.liste li::before{content:""; position:absolute; left:5px; top:.7em; width:7px; height:7px; border-radius:2px; background:var(--marke); opacity:.8}
+.hinweis{background:var(--marke-zart); border-left:4px solid var(--marke); border-radius:0 8px 8px 0;
+  padding:14px 18px; margin:0 0 16px; font-size:16px; color:var(--marke-tief)}
+.hinweis p{margin:0; max-width:none}
+
+figure{margin:0; text-align:center; background:var(--flaeche); border:1px solid var(--linie); border-radius:10px; padding:8px}
+figure img{max-width:100%; max-height:calc(100vh - 300px); height:auto; border-radius:6px; display:block; margin:0 auto; object-fit:contain}
+figcaption{font-size:13px; color:var(--schrift-leise); margin-top:8px; line-height:1.4}
+.bild-fehlt{padding:20px; color:var(--schrift-leise); font-size:14px}
+
+.karte{background:var(--flaeche); border:1px solid var(--linie); border-radius:12px; padding:var(--karte-innen); margin:0 0 18px; overflow:hidden}
+.karte h3{font-size:16px; font-weight:640; margin:0 0 14px; color:var(--schrift)}
+
+.wahl{display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap}
+.wahl button{flex:1 1 120px; min-height:60px; border:1.5px solid var(--linie); background:var(--flaeche);
+  border-radius:10px; font:600 15px/1.3 var(--schrift-familie); color:var(--schrift-mit); cursor:pointer;
+  padding:10px 12px; transition:border-color .15s, background .15s, color .15s}
+.wahl button:hover{border-color:var(--marke)}
+.wahl button:focus-visible{outline:2px solid var(--marke); outline-offset:2px}
+.wahl button.aktiv{background:var(--marke); border-color:var(--marke); color:#fff}
+.ergebnis{padding:16px var(--karte-innen); border:1px solid; border-left:0; border-right:0; margin:0 calc(-1 * var(--karte-innen))}
+.ergebnis .kopfz{display:flex; align-items:center; gap:10px; font-weight:640; font-size:17px; margin-bottom:6px}
+.ergebnis .kopfz svg{width:19px; height:19px; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; flex:none}
+.ergebnis p{margin:0; font-size:15px; max-width:none; color:var(--schrift)}
+.st-gut{background:var(--gut-bg); border-color:var(--gut-linie); color:var(--gut)}
+.st-warnung{background:var(--warn-bg); border-color:var(--warn-linie); color:var(--warn)}
+.st-gefahr{background:var(--gefahr-bg); border-color:var(--gefahr-linie); color:var(--gefahr)}
+.quelle{font:500 13px/1.5 var(--schrift-familie); color:var(--schrift-leise); margin-top:12px}
+
+.vergleich{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px}
+@media (max-width:640px){ .vergleich{grid-template-columns:1fr} }
+.spalte{border:1px solid; border-radius:12px; padding:var(--karte-innen); background:var(--flaeche)}
+.spalte.st-gut{border-color:var(--gut-linie); background:var(--gut-bg)}
+.spalte.st-gefahr{border-color:var(--gefahr-linie); background:var(--gefahr-bg)}
+.spalte h4{margin:0 0 12px; font-size:16px; font-weight:640; display:flex; align-items:center; gap:9px}
+.spalte h4 svg{width:18px; height:18px; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round; flex:none}
+.spalte ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px}
+.spalte li{font-size:15px; line-height:1.5; padding-left:16px; position:relative; color:var(--schrift)}
+.spalte li::before{content:""; position:absolute; left:2px; top:.6em; width:6px; height:6px; border-radius:50%; background:currentColor; opacity:.45}
+.check{margin:0 0 6px; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px}
+.check li{display:flex; gap:12px; align-items:flex-start; border:1.5px solid var(--linie); border-radius:10px;
+  padding:12px 14px; min-height:52px; cursor:pointer; font-size:15px; line-height:1.45; background:var(--flaeche);
+  -webkit-tap-highlight-color:transparent}
+.check li .box{flex:none; width:24px; height:24px; border-radius:6px; border:1.5px solid var(--linie); margin-top:1px;
+  display:grid; place-items:center; background:var(--flaeche)}
+.check li .box svg{width:14px; height:14px; stroke:#fff; fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; opacity:0}
+.check li.an{border-color:var(--gut-linie); background:var(--gut-bg)}
+.check li.an .box{background:var(--gut); border-color:var(--gut)}
+.check li.an .box svg{opacity:1}
+.check-stand{font-size:13px; color:var(--schrift-leise); margin:0 0 16px}
+.fazit-zeile{margin:0 0 18px; padding:14px var(--karte-innen); background:var(--tief); border-radius:10px; font-size:15px}
+
+.merk{margin:0 0 18px; padding:0; list-style:none; border:1px solid var(--linie); border-radius:12px; overflow:hidden; background:var(--flaeche)}
+.merk li{position:relative; padding:13px var(--karte-innen) 13px calc(var(--karte-innen) + 20px); border-bottom:1px solid var(--linie); font-size:15px; line-height:1.5}
+.merk li:last-child{border-bottom:0}
+.merk li::before{content:""; position:absolute; left:var(--karte-innen); top:calc(13px + .55em); width:7px; height:7px; border-radius:50%; background:var(--marke)}
+.fazit{background:var(--marke-tief); color:#fff; border-radius:12px; padding:var(--karte-innen) 24px; margin:0 0 18px}
+.fazit .kicker{font-size:13px; font-weight:600; color:#9DC0EA; margin-bottom:12px}
+.fazit ul{margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:10px}
+.fazit li{padding-left:22px; position:relative; font-size:15px; line-height:1.55}
+.fazit li::before{content:""; position:absolute; left:2px; top:.6em; width:8px; height:8px; border-radius:2px; background:#7FB2E8}
+.fazit strong{color:#CFE1F7}
+
+/* ---- Tipp-Bild: Foto mit antippbaren Stellen (aus den Originalmodulen: hotspotimg) ---- */
+.tippbild{position:relative; margin:0 0 12px; border:1px solid var(--linie); border-radius:10px; overflow:hidden; background:var(--flaeche)}
+.tippbild img{display:block; width:100%; height:auto; max-height:calc(100vh - 320px); object-fit:contain}
+.tippbild .punkt{position:absolute; width:38px; height:38px; margin:-19px 0 0 -19px; border-radius:50%; border:3px solid #fff;
+  background:var(--marke); color:#fff; font:700 15px/1 var(--schrift-familie); display:grid; place-items:center; cursor:pointer;
+  box-shadow:0 0 0 4px rgba(0,48,120,.25), 0 4px 12px rgba(0,0,0,.25); animation:pulsen 1.8s ease-in-out infinite}
+.tippbild .punkt.war{animation:none; background:var(--gut); box-shadow:0 0 0 3px rgba(27,110,72,.25)}
+.tippbild .punkt.ist{animation:none; transform:scale(1.15); background:var(--marke-tief)}
+@keyframes pulsen{0%,100%{box-shadow:0 0 0 4px rgba(0,48,120,.25)} 50%{box-shadow:0 0 0 12px rgba(0,48,120,.08)}}
+.tipp-aus{min-height:64px; padding:14px 18px; border:1px solid var(--linie); border-radius:10px; background:var(--tief); margin-bottom:8px}
+.tipp-aus b{display:block; color:var(--marke-tief); margin-bottom:4px}
+.tipp-aus p{margin:0; font-size:15px}
+.tipp-stand{font-size:13px; color:var(--schrift-leise); margin-bottom:14px}
+/* ---- Karten zum Umdrehen (aus den Originalmodulen: flip) ---- */
+.karten{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; margin:0 0 16px}
+.karte-flip{position:relative; min-height:130px; cursor:pointer; perspective:900px; -webkit-tap-highlight-color:transparent}
+.karte-flip .innen{position:relative; width:100%; height:100%; min-height:130px; transition:transform .45s; transform-style:preserve-3d}
+.karte-flip.um .innen{transform:rotateY(180deg)}
+.karte-flip .seite{position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; padding:16px; display:flex; align-items:center; justify-content:center; text-align:center; font-size:15px; line-height:1.4}
+.karte-flip .vorn{background:var(--marke); color:#fff; font-weight:650; font-size:17px}
+.karte-flip .hinten{background:var(--flaeche); border:1.5px solid var(--marke); color:var(--schrift); transform:rotateY(180deg)}
+.karten-stand{font-size:13px; color:var(--schrift-leise); margin:-6px 0 14px}
+@media (prefers-reduced-motion:reduce){ .tippbild .punkt{animation:none} .karte-flip .innen{transition:none} }
+
+.rechner-aus{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px}
+@media (max-width:520px){ .rechner-aus{grid-template-columns:1fr} }
+.rechner-aus div{background:var(--tief); border-radius:10px; padding:12px 14px}
+.rechner-aus b{display:block; font:650 26px/1.1 var(--schrift-familie); color:var(--marke-tief); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.rechner-aus span{font-size:13px; color:var(--schrift-leise); display:block; margin-top:2px}
+.rechner-aus em{font-style:normal; font-size:13px; color:var(--schrift-mit); display:block; margin-top:6px}
+.gross-wert{font:650 34px/1 var(--schrift-familie); color:var(--marke-tief); font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.gross-wert small{font-size:16px; font-weight:500; color:var(--schrift-leise); margin-left:4px}
+input[type=range]{width:100%; margin:16px 0 4px; accent-color:var(--marke); height:40px}
+.skala{display:flex; justify-content:space-between; font-size:13px; color:var(--schrift-leise); font-variant-numeric:tabular-nums; margin-bottom:12px}
+
+/* ---- Frage als eigener Schritt ---- */
+.frage-schritt .frage{max-width:none}
+.frage-zaehler{font-size:13px; color:var(--schrift-leise); margin:6px 0 8px}
+.frage h3{margin:0 0 16px; font-size:22px; line-height:1.3; font-weight:650; color:var(--marke-tief)}
+.opts{display:flex; flex-direction:column; gap:10px}
+.opt{text-align:left; font:400 16px/1.45 var(--schrift-familie); color:var(--schrift); background:var(--flaeche);
+  border:1.5px solid var(--linie); border-radius:10px; padding:14px 16px; cursor:pointer;
+  display:flex; gap:12px; align-items:flex-start; min-height:60px; transition:border-color .15s}
+.opt:hover:not([disabled]){border-color:var(--marke)}
+.opt:focus-visible{outline:2px solid var(--marke); outline-offset:2px}
+.opt .mark{width:22px; height:22px; border-radius:50%; border:1.5px solid var(--linie); flex:none; margin-top:1px; display:grid; place-items:center}
+.opt.richtig{border-color:var(--gut-linie); background:var(--gut-bg)}
+.opt.richtig .mark{border-color:var(--gut); background:var(--gut)}
+.opt.falsch{border-color:var(--gefahr-linie); background:var(--gefahr-bg)}
+.opt svg{width:12px; height:12px; stroke:#fff; fill:none; stroke-width:2.8; stroke-linecap:round; stroke-linejoin:round}
+.echo{margin-top:12px; font-size:15px; color:var(--schrift-mit); min-height:1.5em}
+.echo.gut{color:var(--gut); font-weight:600}
+
+/* ---- Navigation unten ---- */
+.nav{flex:none; height:var(--nav-hoehe); border-top:1px solid var(--linie); background:var(--flaeche);
+  display:flex; align-items:center; gap:12px; padding:0 var(--rand)}
+.nav .stand{font-size:14px; color:var(--schrift-leise); margin:0 auto; font-variant-numeric:tabular-nums; text-align:center}
+.btn{font:600 16px/1 var(--schrift-familie); border-radius:10px; padding:0 24px; min-height:54px;
+  border:1.5px solid var(--marke); background:var(--marke); color:#fff; cursor:pointer; display:inline-flex; align-items:center; gap:8px}
+.btn svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round}
+.btn.neben{background:var(--flaeche); color:var(--marke); }
+.btn[disabled]{opacity:.35; cursor:not-allowed}
+.btn.gut{background:var(--gut); border-color:var(--gut)}
+
+/* ---- Tafel (Start / Abschluss) ---- */
+.tafel{max-width:76ch; margin:0 auto; padding-top:16px}
+.tafel h1{font-size:32px}
+.tafel .unter{font-size:18px; color:var(--schrift-mit); margin:0 0 24px}
+.tafel-stand{display:flex; align-items:center; gap:22px; padding:18px 22px; border:1px solid var(--linie);
+  border-radius:12px; background:var(--flaeche); margin-bottom:22px; flex-wrap:wrap}
+.tafel-stand .ring{position:relative; width:72px; height:72px; flex:none}
+.tafel-stand .ring svg{transform:rotate(-90deg)}
+.tafel-stand .ring circle{fill:none; stroke-width:8; stroke-linecap:round}
+.tafel-stand .ring .bahn{stroke:var(--tief)}
+.tafel-stand .ring .fort{stroke:var(--marke); transition:stroke-dasharray .4s}
+.tafel-stand .ring b{position:absolute; inset:0; display:grid; place-items:center; font:650 16px/1 var(--schrift-familie); color:var(--marke-tief); font-variant-numeric:tabular-nums}
+.tafel-stand .txt h2{margin:0 0 4px; font-size:19px}
+.tafel-stand .txt p{margin:0; color:var(--schrift-mit); font-size:15px}
+.tafel-stand .btn{margin-left:auto}
+.tafel-liste{display:flex; flex-direction:column; gap:8px; margin-bottom:22px}
+.tafel-liste .zeile{display:flex; align-items:center; gap:12px; padding:12px 14px; border:1px solid var(--linie); border-radius:10px; background:var(--flaeche); cursor:pointer; font-size:15px}
+.tafel-liste .zeile:hover{border-color:var(--marke)}
+.tafel-liste .zeile.fertig{background:var(--gut-bg); border-color:var(--gut-linie)}
+.tafel-liste .zeile .nr{flex:none; width:28px; height:28px; border-radius:50%; border:1.5px solid var(--linie); display:grid; place-items:center; font-size:13px; font-weight:600; color:var(--schrift-leise); background:var(--flaeche)}
+.tafel-liste .zeile.fertig .nr{background:var(--gut); border-color:var(--gut); color:#fff}
+.tafel-liste .zeile .nr svg{width:13px; height:13px; stroke:#fff; fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round}
+.tafel-liste .zeile span{flex:1}
+.tafel-liste .zeile small{color:var(--schrift-leise); font-size:13px}
+.tafel-hinweis{font-size:14px; color:var(--schrift-leise); max-width:60ch}
+
+/* ---------------- Bearbeitungsmodus ---------------- */
+body.bearbeiten [data-nr]{position:relative; outline:1px dashed transparent; border-radius:8px; transition:outline-color .15s}
+body.bearbeiten [data-nr]:hover{outline-color:var(--marke)}
+body.bearbeiten [contenteditable]{outline:1px dashed var(--linie); border-radius:6px; padding:2px 4px; margin:-2px -4px}
+body.bearbeiten [contenteditable]:focus{outline:2px solid var(--marke); background:#fff}
+.werkzeug{position:absolute; top:8px; right:8px; display:none; gap:4px; z-index:20}
+body.bearbeiten [data-nr]:hover > .werkzeug{display:flex}
+.werkzeug button{width:32px; height:32px; border-radius:8px; border:1px solid var(--linie); background:#fff; cursor:pointer; display:grid; place-items:center; box-shadow:var(--schatten); color:var(--schrift-mit)}
+.werkzeug button:hover{border-color:var(--marke); color:var(--marke)}
+.werkzeug svg{width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+.einfuegen{display:none; margin:12px 0; text-align:center}
+body.bearbeiten .einfuegen{display:block}
+.einfuegen button{border:1.5px dashed var(--linie); background:transparent; color:var(--schrift-leise); border-radius:10px; min-height:40px; padding:0 18px; cursor:pointer; font:500 14px/1 var(--schrift-familie)}
+.einfuegen button:hover{border-color:var(--marke); color:var(--marke)}
+.speicher{position:fixed; bottom:88px; right:28px; z-index:65; background:var(--marke-tief); color:#fff; border-radius:10px; padding:12px 18px; font-size:14px; box-shadow:var(--schatten); display:none}
+.speicher.zeig{display:block}
+.wahlbox{position:fixed; inset:0; background:rgba(8,16,30,.55); z-index:80; display:none; align-items:center; justify-content:center; padding:24px}
+.wahlbox.auf{display:flex}
+.wahlbox-in{background:#fff; border-radius:16px; max-width:1000px; width:100%; max-height:84vh; display:flex; flex-direction:column; overflow:hidden}
+.wahlbox-kopf{padding:18px 22px; border-bottom:1px solid var(--linie); display:flex; align-items:center; gap:12px}
+.wahlbox-kopf h3{margin:0 auto 0 0; font-size:17px; font-weight:640}
+.bildgitter{padding:18px 22px; overflow-y:auto; display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px}
+.bildgitter figure{cursor:pointer; padding:8px; margin:0}
+.bildgitter figure:hover{border-color:var(--marke)}
+.bildgitter img{max-height:120px; object-fit:contain; width:100%}
+.bildgitter figcaption{font-size:12px; margin-top:6px; word-break:break-word}
+
+/* ---- schmale Bildschirme: Leiste als Einblendung ---- */
+@media (max-width:900px){
+  :root{--rand:14px}
+  .schritt{padding:18px 16px 22px; border-radius:10px}
+  .menue{display:grid}
+  .rail{position:absolute; top:var(--kopf-hoehe); bottom:0; left:0; width:min(320px,88vw); z-index:45;
+    transform:translateX(-102%); transition:transform .2s; box-shadow:0 0 0 100vw rgba(10,20,40,0); }
+  body.rail-auf .rail{transform:none; box-shadow:0 0 0 100vw rgba(10,20,40,.35)}
+  .kopf-titel b{display:none}
+  .fort-text{display:none}
+  .nav{padding:0 14px}
+  .btn{padding:0 16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none !important; scroll-behavior:auto !important}}
+@media print{ .rail,.kopf,.nav{display:none} main.buehne{overflow:visible} .schritt{display:block} }
+</style>
+</head>
+<body>
+<div class="app">
+<header class="kopf">
+  <button class="menue" id="menue" aria-label="Kapitel anzeigen"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a href="/" class="knopf-leise" id="uebersicht" title="Zur Übersicht">
+    <svg viewBox="0 0 24 24"><path d="M3 12 12 4l9 8M6 10v10h12V10"/></svg><span>Übersicht</span></a>
+  <div class="kopf-titel"><b id="mFirma"></b><span id="mModul"></span></div>
+  <div class="kopf-rechts">
+    <span class="fort-text" id="fortText"></span>
+    <button class="stift" id="stift">
+      <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      <span id="stiftText">Bearbeiten</span>
+    </button>
+    <img id="logo" class="kopf-logo" alt="" hidden>
+  </div>
+  <div class="fortschritt"><i id="fortBalken"></i></div>
+</header>
+<div class="rumpf">
+  <nav class="rail" id="rail" aria-label="Kapitel"></nav>
+  <section class="buehne-huelle">
+    <div class="schritt-kopf" id="schrittKopf"></div>
+    <main id="buehne" class="buehne"></main>
+    <div class="mehr-hinweis" aria-hidden="true"><span>Weiter unten geht es weiter<svg viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></svg></span></div>
+    <footer class="nav">
+      <button class="btn neben" id="zurueck"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Zurück</button>
+      <span class="stand" id="stand"></span>
+      <button class="btn" id="weiter">Weiter<svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+      <button class="btn gut" id="fertig" hidden><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Kapitel abschließen</button>
+    </footer>
+  </section>
+</div>
+</div>
+<div class="speicher" id="speicher"></div>
+
+<div class="wahlbox" id="wahlbox"><div class="wahlbox-in">
+  <div class="wahlbox-kopf"><h3>Bild einsetzen</h3>
+    <button class="knopf-leise" id="wahlZu">Schließen</button></div>
+  <div class="bildgitter" id="bildgitter"></div>
+</div></div>
+
+<script id="daten" type="application/json">__DATEN__</script>
+<script>
+(function(){
+"use strict";
+var D = JSON.parse(document.getElementById('daten').textContent);
+var antworten = {}, bearbeiten = false, zielNr = null;
+var SCHRITTE = [], aktiv = 0, gesehen = {};   // gesehen: Schritt-Index -> true
+
+function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls;
+  if(html!=null) e.innerHTML=html; return e; }
+function md(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>'); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function entmd(node){
+  var h = node.innerHTML.replace(/<strong>(.*?)<\/strong>/gi,'**$1**').replace(/<[^>]+>/g,'');
+  return h.replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').trim();
+}
+var ICON = {
+  gut:'<svg viewBox="0 0 24 24" stroke="currentColor"><path d="M20 6 9 17l-5-5"/></svg>',
+  warnung:'<svg viewBox="0 0 24 24" stroke="currentColor"><path d="M12 9v4M12 17h.01M10.3 3.9 2.4 17.5A1.9 1.9 0 0 0 4 20.4h16a1.9 1.9 0 0 0 1.6-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0Z"/></svg>',
+  gefahr:'<svg viewBox="0 0 24 24" stroke="currentColor"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+  haken:'<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>'
+};
+var WZ = {
+  hoch:'<svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg>',
+  runter:'<svg viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>',
+  weg:'<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>',
+  tausch:'<svg viewBox="0 0 24 24"><path d="M21 15V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9M8.5 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M21 14l-5-5-6 6"/></svg>'
+};
+function zahl(n){ return String(n).replace('.', ','); }
+function feld(knoten, pfad){ knoten.dataset.pfad = pfad; return knoten; }
+
+/* ---------------- Bausteine ---------------- */
+function baueWahl(d){
+  var k = el('div','karte');
+  k.appendChild(feld(el('h3', null, md(d.titel)), 'titel'));
+  var reihe = el('div','wahl');
+  var erg = el('div','ergebnis');
+  (d.optionen||[]).forEach(function(o, idx){
+    var b = document.createElement('button');
+    b.type='button'; b.textContent = o.knopf;
+    feld(b, 'optionen.' + idx + '.knopf');
+    b.onclick = function(){
+      reihe.querySelectorAll('button').forEach(function(x){ x.classList.remove('aktiv'); });
+      b.classList.add('aktiv');
+      erg.className = 'ergebnis st-' + o.stufe;
+      erg.innerHTML = '<div class="kopfz">' + (ICON[o.stufe]||'')
+                    + '<span data-pfad="optionen.' + idx + '.kopf">' + md(o.kopf) + '</span></div>'
+                    + '<p data-pfad="optionen.' + idx + '.text">' + md(o.text) + '</p>';
+      if(bearbeiten) editorAn(erg);
+    };
+    reihe.appendChild(b);
+    if(idx === 0) setTimeout(function(){ b.click(); }, 0);
+  });
+  k.appendChild(reihe); k.appendChild(erg);
+  if(d.quelle) k.appendChild(feld(el('div','quelle', md(d.quelle)), 'quelle'));
+  return k;
+}
+function baueVergleich(d){
+  var k = el('div');
+  var g = el('div','vergleich');
+  ['links','rechts'].forEach(function(seite){
+    var s = d[seite];
+    if(!s) return;
+    var sp = el('div','spalte st-' + (s.stufe||'gut'));
+    sp.appendChild(el('h4', null, (ICON[s.stufe]||'')
+      + '<span data-pfad="' + seite + '.kopf">' + md(s.kopf) + '</span>'));
+    var ul = el('ul');
+    (s.punkte||[]).forEach(function(p, i){
+      ul.appendChild(feld(el('li', null, md(p)), seite + '.punkte.' + i));
+    });
+    sp.appendChild(ul); g.appendChild(sp);
+  });
+  k.appendChild(g);
+  if(d.fazit) k.appendChild(feld(el('p','fazit-zeile', md(d.fazit)), 'fazit'));
+  return k;
+}
+function baueCheckliste(d){
+  var k = el('div','karte');
+  if(d.titel) k.appendChild(feld(el('h3', null, md(d.titel)), 'titel'));
+  var ul = el('ul','check'), stand = el('div','check-stand');
+  var punkte = d.punkte || [];
+  function zaehle(){ var an = ul.querySelectorAll('li.an').length;
+    stand.textContent = an + ' von ' + punkte.length + ' Punkten abgehakt' + (an === punkte.length && punkte.length ? ' - alles geprüft.' : ''); }
+  punkte.forEach(function(pkt, i){
+    var li = el('li', null, '<span class="box">' + ICON.haken + '</span>');
+    li.appendChild(feld(el('span', null, md(pkt)), 'punkte.' + i));
+    li.onclick = function(ev){ if(bearbeiten) return; li.classList.toggle('an'); zaehle(); };
+    ul.appendChild(li);
+  });
+  k.appendChild(ul); k.appendChild(stand); zaehle();
+  return k;
+}
+/* Tipp-Bild: Foto mit nummerierten Stellen, jede Stelle zeigt beim Antippen ihren Text.
+   Daten: bild (Dateiname aus dem Vorrat), titel, punkte[{x,y (Prozent), kopf, text}] */
+function baueTippbild(d){
+  var k = el('div','karte');
+  if(d.titel) k.appendChild(feld(el('h3', null, md(d.titel)), 'titel'));
+  var box = el('div','tippbild');
+  if(D.bilder[d.bild]){ var im = document.createElement('img'); im.src = D.bilder[d.bild]; im.alt = d.titel || ''; box.appendChild(im); }
+  else box.appendChild(el('div','bild-fehlt','Bild fehlt: ' + esc(d.bild)));
+  var aus = el('div','tipp-aus', '<p>' + esc(d.hinweis || 'Tippe die Punkte im Bild an.') + '</p>');
+  var stand = el('div','tipp-stand');
+  var punkte = d.punkte || [], gesehen = {};
+  function zaehle(){ var n = Object.keys(gesehen).length;
+    stand.textContent = n + ' von ' + punkte.length + ' Stellen angesehen' + (n === punkte.length && punkte.length ? ' - alle geschafft.' : ''); }
+  punkte.forEach(function(p, i){
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'punkt';
+    b.style.left = (parseFloat(p.x) || 0) + '%'; b.style.top = (parseFloat(p.y) || 0) + '%';
+    b.textContent = String(i + 1); b.setAttribute('aria-label', p.kopf || ('Stelle ' + (i + 1)));
+    b.onclick = function(){
+      box.querySelectorAll('.punkt').forEach(function(x){ x.classList.remove('ist'); });
+      b.classList.add('ist', 'war'); gesehen[i] = true;
+      aus.innerHTML = '<b data-pfad="punkte.' + i + '.kopf">' + md(p.kopf || ('Stelle ' + (i + 1))) + '</b>'
+                    + '<p data-pfad="punkte.' + i + '.text">' + md(p.text || '') + '</p>';
+      if(bearbeiten) editorAn(aus);
+      zaehle();
+    };
+    box.appendChild(b);
+  });
+  k.appendChild(box); k.appendChild(aus); k.appendChild(stand); zaehle();
+  return k;
+}
+/* Karten zum Umdrehen: vorn die Frage/der Begriff, hinten die Antwort.
+   Daten: titel, karten[{vorn, hinten}] */
+function baueKarten(d){
+  var k = el('div');
+  if(d.titel) k.appendChild(feld(el('h3', null, md(d.titel)), 'titel'));
+  var raster = el('div','karten'), stand = el('div','karten-stand');
+  var karten = d.karten || [], um = {};
+  function zaehle(){ var n = Object.keys(um).length;
+    stand.textContent = n + ' von ' + karten.length + ' Karten umgedreht' + (n === karten.length && karten.length ? ' - alle gesehen.' : ''); }
+  karten.forEach(function(c, i){
+    var kf = el('div','karte-flip');
+    kf.innerHTML = '<div class="innen"><div class="seite vorn" data-pfad="karten.' + i + '.vorn">' + md(c.vorn || '') + '</div>'
+                 + '<div class="seite hinten" data-pfad="karten.' + i + '.hinten">' + md(c.hinten || '') + '</div></div>';
+    kf.onclick = function(){ if(bearbeiten) return; kf.classList.toggle('um'); um[i] = true; zaehle(); };
+    raster.appendChild(kf);
+  });
+  k.appendChild(raster); k.appendChild(stand); zaehle();
+  return k;
+}
+function baueMerkliste(d){
+  var ul = el('ul','merk');
+  (d.punkte||[]).forEach(function(p, i){
+    ul.appendChild(feld(el('li', null, md(p)), 'punkte.' + i)); });
+  return ul;
+}
+function baueFazit(d){
+  var box = el('div','fazit');
+  box.appendChild(el('div','kicker','Kurz gefasst'));
+  var ul = el('ul');
+  (d.punkte||[]).forEach(function(p, i){
+    ul.appendChild(feld(el('li', null, md(p)), 'punkte.' + i)); });
+  box.appendChild(ul);
+  return box;
+}
+function baueRechner(d){
+  var k = el('div','karte');
+  k.appendChild(feld(el('h3', null, md(d.titel)), 'titel'));
+  var wert = el('div','gross-wert'); k.appendChild(wert);
+  var r = document.createElement('input');
+  r.type='range'; r.min=d.min; r.max=d.max; r.step=d.schritt||0.25; r.value=d.start;
+  r.setAttribute('aria-label', d.eingabe||'Wert'); k.appendChild(r);
+  k.appendChild(el('div','skala',
+    '<span>'+zahl(d.min)+' '+(d.einheit||'')+'</span><span>'+zahl(d.max)+' '+(d.einheit||'')+'</span>'));
+  var aus = el('div','rechner-aus'); k.appendChild(aus);
+  if(d.hinweis) k.appendChild(feld(el('div','quelle', md(d.hinweis)), 'hinweis'));
+  function zeige(){
+    var v = parseFloat(r.value);
+    wert.innerHTML = zahl(v) + '<small>' + (d.einheit||'') + ' ' + (d.eingabe||'') + '</small>';
+    aus.innerHTML = '';
+    (d.ausgaben||[]).forEach(function(o, i){
+      var plus = parseFloat(String(o.formel).replace('+',''));
+      aus.appendChild(el('div', null,
+        '<b>' + zahl(Math.round((v + plus)*100)/100) + ' ' + (d.einheit||'') + '</b>'
+        + '<span data-pfad="ausgaben.' + i + '.kopf">' + md(o.kopf) + '</span>'
+        + (o.text ? '<em data-pfad="ausgaben.' + i + '.text">' + md(o.text) + '</em>' : '')));
+    });
+    if(bearbeiten) editorAn(aus);
+  }
+  r.addEventListener('input', zeige); zeige();
+  return k;
+}
+function baueBild(t){
+  var f = el('figure');
+  if(D.bilder[t.datei]){
+    var im = document.createElement('img');
+    im.src = D.bilder[t.datei]; im.alt = t.text || ''; im.loading='lazy';
+    f.appendChild(im);
+  } else {
+    f.appendChild(el('div','bild-fehlt','Bild fehlt: ' + esc(t.datei)));
+  }
+  var cap = el('figcaption', null, md(t.text || ''));
+  cap.dataset.feld = 'text';
+  f.appendChild(cap);
+  return f;
+}
+function huelle(teil, knoten){
+  var w = el('div');
+  w.dataset.nr = teil.nr;
+  w.dataset.art = teil.art;
+  w.appendChild(knoten);
+  var wz = el('div','werkzeug');
+  [['hoch','hoch','nach oben'],['runter','runter','nach unten'],
+   (teil.art==='bild' ? ['tausch','tausch','Bild tauschen'] : null),
+   ['weg','weg','entfernen']].forEach(function(a){
+    if(!a) return;
+    var b = document.createElement('button');
+    b.type='button'; b.title = a[2]; b.innerHTML = WZ[a[1]];
+    b.onclick = function(ev){ ev.stopPropagation(); aktion(a[0], teil.nr); };
+    wz.appendChild(b);
+  });
+  w.appendChild(wz);
+  return w;
+}
+
+/* ---------------- Schritte bilden ----------------
+   Ein Schritt je Zwischenüberschrift (##), davor der Einstieg mit der Kapitel-
+   überschrift, danach je Frage ein eigener Schritt. So passt ein Gedanke auf
+   einen Bildschirm, statt dass ein Kapitel eine 6000-px-Seite wird. */
+function schritteBilden(){
+  SCHRITTE = [];
+  var akt = {art:'inhalt', titel: D.meta.titel || '', teile: [], einstieg: true};
+  D.teile.forEach(function(t){
+    if(t.art === 'h2'){
+      if(akt.teile.length || akt.einstieg) SCHRITTE.push(akt);
+      akt = {art:'inhalt', titel: t.text, kopfTeil: t, teile: []};
+      return;
+    }
+    if(t.art === 'h1'){ akt.kopfTeil = t; akt.titel = t.text; return; }
+    akt.teile.push(t);
+  });
+  SCHRITTE.push(akt);
+  // Ein Einstieg ohne eigenen Inhalt wäre ein leerer Bildschirm - dann trägt
+  // die Kapitelüberschrift den ersten Abschnitt.
+  if(SCHRITTE.length > 1 && SCHRITTE[0].einstieg && !SCHRITTE[0].teile.length){
+    var k = SCHRITTE.shift();
+    SCHRITTE[0].kapitelTitel = k.titel; SCHRITTE[0].kapitelTeil = k.kopfTeil;
+  }
+  (D.fragen||[]).forEach(function(q, i){
+    SCHRITTE.push({art:'frage', titel:'Frage ' + (i+1), frage:q, qi:i});
+  });
+}
+
+function baueInhalt(s, idx){
+  var box = el('section','schritt');
+  box.dataset.schritt = idx;
+  if(s.teile.some(function(t){ return t.art === 'bild'; })) box.classList.add('mit-bild');
+  if(s.kapitelTeil){
+    var h1 = el('h1', null, md(s.kapitelTitel)); h1.dataset.feld='text';
+    box.appendChild(huelle(s.kapitelTeil, h1));
+  }
+  if(s.kopfTeil){
+    var h = el(s.einstieg ? 'h1' : 'h2', null, md(s.titel)); h.dataset.feld='text';
+    box.appendChild(huelle(s.kopfTeil, h));
+  }
+  var hatBild = s.teile.some(function(t){ return t.art === 'bild'; });
+  var raster = el('div', hatBild ? 'zweispaltig' : '');
+  var links = el('div','text-spalte'), rechts = el('div','medien-spalte');
+  raster.appendChild(links); if(hatBild) raster.appendChild(rechts);
+  box.appendChild(raster);
+
+  s.teile.forEach(function(t){
+    var knoten = null, ziel = links;
+    if(t.art === 'text'){ knoten = el('p', null, md(t.text)); knoten.dataset.feld='text'; }
+    else if(t.art === 'liste'){
+      var ul = el('ul','liste');
+      t.punkte.forEach(function(p){ var li = el('li', null, md(p)); li.dataset.feld='punkt'; ul.appendChild(li); });
+      knoten = ul;
+    }
+    else if(t.art === 'hinweis'){ knoten = el('div','hinweis','<p>' + md(t.text) + '</p>');
+      knoten.querySelector('p').dataset.feld='text'; }
+    else if(t.art === 'merkliste'){ knoten = baueMerkliste(t.daten||{}); }
+    else if(t.art === 'checkliste'){ knoten = baueCheckliste(t.daten||{}); }
+    else if(t.art === 'tippbild'){ knoten = baueTippbild(t.daten||{}); }
+    else if(t.art === 'karten'){ knoten = baueKarten(t.daten||{}); }
+    else if(t.art === 'fazit'){ knoten = baueFazit(t.daten||{}); }
+    else if(t.art === 'bild'){ knoten = baueBild(t); ziel = rechts; }
+    else if(t.art === 'wahl'){ knoten = baueWahl(t.daten||{}); }
+    else if(t.art === 'rechner'){ knoten = baueRechner(t.daten||{}); }
+    else if(t.art === 'vergleich'){ knoten = baueVergleich(t.daten||{}); }
+    if(knoten) ziel.appendChild(huelle(t, knoten));
+  });
+
+  var ein = el('div','einfuegen');
+  var b1 = document.createElement('button');
+  b1.type='button'; b1.textContent = '+ Bild in diesen Schritt einsetzen';
+  b1.onclick = function(){ bildWaehlen(s); };
+  ein.appendChild(b1); box.appendChild(ein);
+  return box;
+}
+
+function baueFrage(s, idx){
+  var box = el('section','schritt frage-schritt');
+  box.dataset.schritt = idx;
+  var q = s.frage, qi = s.qi;
+  box.appendChild(el('div','frage-zaehler','Frage ' + (qi + 1) + ' von ' + D.fragen.length + ' · Selbsttest zum Kapitel'));
+  var fr = el('div','frage');
+  fr.appendChild(el('h3', null, md(q.frage)));
+  var opts = el('div','opts'), echo = el('div','echo');
+  // Antworten mischen - sonst steht die richtige Antwort in jedem Block an derselben Stelle.
+  var reihe = q.optionen.map(function(_, i){ return i; });
+  for(var r = reihe.length - 1; r > 0; r--){ var z = Math.floor(Math.random() * (r + 1)); var tmp = reihe[r]; reihe[r] = reihe[z]; reihe[z] = tmp; }
+  reihe.forEach(function(oi){
+    var o = q.optionen[oi];
+    var btn = el('button','opt',
+      '<span class="mark">' + ICON.haken + '</span><span>'+md(o)+'</span>');
+    btn.type='button';
+    btn.onclick = function(){
+      if(bearbeiten) return;
+      antworten[qi] = (oi === q.richtig);
+      opts.querySelectorAll('.opt').forEach(function(x){ x.disabled = true; });
+      opts.children[reihe.indexOf(q.richtig)].classList.add('richtig');
+      if(oi !== q.richtig) btn.classList.add('falsch');
+      echo.textContent = (oi === q.richtig) ? 'Richtig.' : 'Nicht ganz. Die richtige Antwort ist grün markiert.';
+      echo.classList.toggle('gut', oi === q.richtig);
+      navAktualisieren();
+    };
+    opts.appendChild(btn);
+  });
+  fr.appendChild(opts); fr.appendChild(echo);
+  box.appendChild(fr);
+  return box;
+}
+
+function bauen(){
+  var b = document.getElementById('buehne');
+  b.innerHTML = '';
+  b.classList.remove('tafel-modus');
+  schritteBilden();
+  SCHRITTE.forEach(function(s, i){
+    b.appendChild(s.art === 'frage' ? baueFrage(s, i) : baueInhalt(s, i));
+  });
+  if(bearbeiten) editorAn();
+  railBauen();
+  zeigeSchritt(Math.min(aktiv, SCHRITTE.length - 1));
+}
+
+/* ---------------- Anzeige / Navigation ---------------- */
+function kurs(){ return window.OAKPlayer && window.OAKPlayer.kurs; }
+
+function mehrPruefen(){
+  var b = document.getElementById('buehne');
+  var rest = b.scrollHeight - b.clientHeight - b.scrollTop;
+  document.querySelector('.buehne-huelle').classList.toggle('mehr', rest > 24);
+}
+document.getElementById('buehne').addEventListener('scroll', mehrPruefen, {passive:true});
+window.addEventListener('resize', mehrPruefen);
+function zeigeSchritt(i){
+  if(!SCHRITTE.length) return;
+  aktiv = Math.max(0, Math.min(i, SCHRITTE.length - 1));
+  gesehen[aktiv] = true;
+  document.querySelectorAll('#buehne .schritt').forEach(function(s, n){
+    s.classList.toggle('ist', n === aktiv);
+  });
+  document.getElementById('buehne').scrollTop = 0;
+  var k = kurs(), kopf = document.getElementById('schrittKopf');
+  var kapText = k ? ('Kapitel ' + (k.aktiv + 1) + ' von ' + k.bloecke.length) : (D.meta.titel || '');
+  kopf.innerHTML = '<b>' + esc(kapText) + '</b><span>·</span><span>Schritt ' + (aktiv + 1) + ' von '
+                 + SCHRITTE.length + '</span>'
+                 + (D.meta.dauer_min ? '<span>·</span><span>ca. ' + D.meta.dauer_min + ' Min.</span>' : '');
+  railSchritte();
+  navAktualisieren();
+  fortschritt();
+  document.body.classList.remove('rail-auf');
+  setTimeout(mehrPruefen, 50);
+  // Bilder laden nach - danach noch einmal messen
+  document.querySelectorAll('#buehne .schritt.ist img').forEach(function(im){ im.addEventListener('load', mehrPruefen, {once:true}); });
+}
+function fragenOffen(){
+  return (D.fragen||[]).filter(function(q, i){ return antworten[i] === undefined; }).length;
+}
+function navAktualisieren(){
+  var s = SCHRITTE[aktiv] || {};
+  var letzter = aktiv >= SCHRITTE.length - 1;
+  var zurueck = document.getElementById('zurueck'), weiter = document.getElementById('weiter');
+  var fertig = document.getElementById('fertig'), stand = document.getElementById('stand');
+  zurueck.disabled = (aktiv === 0);
+  var offen = (s.art === 'frage' && antworten[s.qi] === undefined);
+  weiter.hidden = letzter;
+  weiter.disabled = offen;
+  fertig.hidden = !letzter;
+  fertig.disabled = offen || fragenOffen() > 0;
+  var ges = (D.fragen||[]).length, n = ges - fragenOffen();
+  stand.textContent = (s.art === 'frage')
+    ? (offen ? 'Antwort wählen, dann weiter' : (n + ' von ' + ges + ' Fragen beantwortet'))
+    : ((aktiv + 1) + ' / ' + SCHRITTE.length);
+}
+function fortschritt(){
+  var k = kurs(), proz = 0, text = '';
+  var anteil = SCHRITTE.length ? (aktiv + 1) / SCHRITTE.length : 0;
+  if(k){
+    var st = k.stand(), fertig = k.bloecke.filter(function(b){ return st[b.block]; }).length;
+    var aktFertig = (k.aktiv < 0) || !!st[k.bloecke[k.aktiv].block];
+    proz = Math.round(((fertig + (aktFertig ? 0 : anteil)) / k.bloecke.length) * 100);
+    text = proz + ' %';
+  } else {
+    proz = Math.round(anteil * 100); text = proz + ' %';
+  }
+  document.getElementById('fortBalken').style.width = proz + '%';
+  document.getElementById('fortText').textContent = text;
+}
+
+/* Kapitel-Leiste links */
+function railBauen(){
+  var r = document.getElementById('rail'); r.innerHTML = '';
+  var k = kurs();
+  r.appendChild(el('div','rail-kopf', k ? 'Kapitel' : 'Inhalt'));
+  if(!k){
+    var solo = el('div','kap aktiv');
+    solo.appendChild(el('div','kap-zeile','<span class="nr">1</span><span class="txt">' + esc(D.meta.titel||'') + '</span>'));
+    solo.appendChild(el('ol','schritte'));
+    r.appendChild(solo);
+    return;
+  }
+  var st = k.stand();
+  k.bloecke.forEach(function(b, i){
+    var kap = el('div','kap' + (st[b.block] ? ' fertig' : '') + (i === k.aktiv ? ' aktiv' : ''));
+    var z = el('div','kap-zeile');
+    z.appendChild(el('span','nr', st[b.block] ? ICON.haken : String(i + 1)));
+    z.appendChild(el('span','txt', esc(b.titel || b.block)
+      + (b.dauer ? '<small>ca. ' + b.dauer + ' Min.</small>' : '')));
+    z.onclick = function(){ if(k.oeffne) k.oeffne(i); };
+    kap.appendChild(z);
+    if(i === k.aktiv) kap.appendChild(el('ol','schritte'));
+    r.appendChild(kap);
+  });
+  var fuss = el('div','rail-fuss');
+  var alle = k.bloecke.every(function(b){ return st[b.block]; });
+  var nb = document.createElement('button');
+  nb.type = 'button'; nb.textContent = alle ? 'Nachweis erstellen' : 'Zur Übersicht';
+  nb.className = alle ? 'bereit' : '';
+  nb.onclick = function(){ if(k.uebersicht) k.uebersicht(); };
+  fuss.appendChild(nb); r.appendChild(fuss);
+}
+function railSchritte(){
+  var ol = document.querySelector('#rail .kap.aktiv .schritte');
+  if(!ol) return;
+  ol.innerHTML = '';
+  SCHRITTE.forEach(function(s, i){
+    var li = el('li', (i === aktiv ? 'ist' : (gesehen[i] ? 'war' : '')) + (s.art === 'frage' ? ' frage-punkt' : ''),
+                esc(s.art === 'frage' ? ('Frage ' + (s.qi + 1)) : (s.titel || 'Einstieg')));
+    li.onclick = function(){ if(!bearbeiten && (gesehen[i] || i <= aktiv + 1)) zeigeSchritt(i); };
+    ol.appendChild(li);
+  });
+}
+
+document.getElementById('weiter').onclick = function(){ zeigeSchritt(aktiv + 1); };
+document.getElementById('zurueck').onclick = function(){ zeigeSchritt(aktiv - 1); };
+document.getElementById('menue').onclick = function(){ document.body.classList.toggle('rail-auf'); };
+(function(){
+  var x0 = null, y0 = null, buehne = document.getElementById('buehne');
+  buehne.addEventListener('touchstart', function(ev){
+    if(ev.touches.length !== 1){ x0 = null; return; }
+    x0 = ev.touches[0].clientX; y0 = ev.touches[0].clientY;
+  }, {passive:true});
+  buehne.addEventListener('touchend', function(ev){
+    if(x0 === null || bearbeiten) return;
+    var t = ev.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0; x0 = null;
+    if(Math.abs(dx) < 90 || Math.abs(dy) > 60) return;
+    var tag = (ev.target && ev.target.tagName) || '';
+    if(tag === 'INPUT' || tag === 'BUTTON') return;
+    var w = document.getElementById('weiter');
+    if(dx < 0 && !w.hidden && !w.disabled) zeigeSchritt(aktiv + 1);
+    if(dx > 0) zeigeSchritt(aktiv - 1);
+  }, {passive:true});
+})();
+document.addEventListener('keydown', function(ev){
+  if(bearbeiten || document.querySelector('.dialog.auf')) return;
+  var t = ev.target && ev.target.tagName;
+  if(t === 'INPUT' || t === 'TEXTAREA') return;
+  if(ev.key === 'ArrowRight' && !document.getElementById('weiter').hidden
+     && !document.getElementById('weiter').disabled) zeigeSchritt(aktiv + 1);
+  if(ev.key === 'ArrowLeft') zeigeSchritt(aktiv - 1);
+});
+
+/* ---------------- Bearbeiten ---------------- */
+var BEARBEITBAR = '[data-feld],[data-pfad]';
+function editorAn(wurzel){
+  (wurzel || document).querySelectorAll(BEARBEITBAR).forEach(function(n){
+    n.setAttribute('contenteditable','true');
+    if(!n._gebunden){ n._gebunden = true; n.addEventListener('blur', speichern); }
+  });
+}
+function editorAus(){
+  document.querySelectorAll(BEARBEITBAR).forEach(function(n){ n.removeAttribute('contenteditable'); });
+}
+function melde(txt, dauer){
+  var s = document.getElementById('speicher');
+  s.textContent = txt; s.classList.add('zeig');
+  clearTimeout(melde._t);
+  melde._t = setTimeout(function(){ s.classList.remove('zeig'); }, dauer||2200);
+}
+function setzePfad(objekt, pfad, wert){
+  var teile = pfad.split('.'), ziel = objekt;
+  for(var i = 0; i < teile.length - 1; i++){
+    var s = teile[i];
+    if(ziel == null || typeof ziel !== 'object') return false;
+    ziel = Array.isArray(ziel) ? ziel[parseInt(s,10)] : ziel[s];
+  }
+  if(ziel == null || typeof ziel !== 'object') return false;
+  var letzter = teile[teile.length - 1];
+  if(Array.isArray(ziel)) ziel[parseInt(letzter,10)] = wert; else ziel[letzter] = wert;
+  return true;
+}
+function sammle(){
+  document.querySelectorAll('[data-nr]').forEach(function(w){
+    var nr = parseInt(w.dataset.nr,10);
+    var teil = D.teile.filter(function(t){ return t.nr === nr; })[0];
+    if(!teil) return;
+    var haupt = w.querySelector('[data-feld="text"]');
+    if(haupt) teil.text = entmd(haupt);
+    var punkte = w.querySelectorAll('[data-feld="punkt"]');
+    if(punkte.length) teil.punkte = [].map.call(punkte, entmd);
+    if(teil.daten){
+      w.querySelectorAll('[data-pfad]').forEach(function(n){
+        setzePfad(teil.daten, n.dataset.pfad, entmd(n));
+      });
+    }
+  });
+}
+var letzterStand = null;
+function speichern(){
+  sammle();
+  var jetzt = JSON.stringify({t: D.teile, f: D.fragen});
+  if(letzterStand === null){ letzterStand = jetzt; return; }
+  if(jetzt === letzterStand) return;
+  letzterStand = jetzt;
+  var nutzlast = {thema:D.thema, block:D.block, teile:D.teile, fragen:D.fragen, meta:D.meta};
+  /* Im Portal-Editor speichert der Rahmen (Datenbank, Portal-Login); ohne Rahmen der Wiki-Dienst. */
+  if(window.OAK_SPEICHERN){
+    Promise.resolve(window.OAK_SPEICHERN(nutzlast)).then(function(){ melde('Gespeichert'); })
+      .catch(function(e){ melde('Nicht gespeichert: ' + (e && e.message || e), 5000); });
+    return;
+  }
+  fetch('/speichern', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(nutzlast)
+  }).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    melde('Gespeichert');
+  }).catch(function(e){
+    melde('Nicht gespeichert: ' + e.message + ' (läuft der Wiki-Dienst?)', 5000);
+  });
+}
+function aktion(was, nr){
+  var i = D.teile.findIndex(function(t){ return t.nr === nr; });
+  if(i < 0) return;
+  if(was === 'weg'){ D.teile.splice(i,1); }
+  if(was === 'hoch' && i > 0){ var a = D.teile[i]; D.teile[i]=D.teile[i-1]; D.teile[i-1]=a; }
+  if(was === 'runter' && i < D.teile.length-1){ var b2 = D.teile[i]; D.teile[i]=D.teile[i+1]; D.teile[i+1]=b2; }
+  if(was === 'tausch'){ zielNr = nr; bildWaehlen(null); return; }
+  D.teile.forEach(function(t,k){ t.nr = k; });
+  bauen(); speichern();
+}
+function bildWaehlen(schritt){
+  var box = document.getElementById('wahlbox');
+  var gitter = document.getElementById('bildgitter');
+  gitter.innerHTML = '';
+  (D.bildliste||[]).forEach(function(name){
+    if(!D.bilder[name]) return;
+    var f = el('figure');
+    var im = document.createElement('img'); im.src = D.bilder[name]; im.alt = name; im.loading='lazy';
+    f.appendChild(im); f.appendChild(el('figcaption', null, name));
+    f.onclick = function(){
+      if(zielNr != null){
+        var t = D.teile.filter(function(x){ return x.nr === zielNr; })[0];
+        if(t) t.datei = name;
+        zielNr = null;
+      } else {
+        // hinter den letzten Teil dieses Schritts einsetzen
+        var pos = D.teile.length;
+        if(schritt && schritt.teile.length){
+          pos = D.teile.findIndex(function(x){ return x.nr === schritt.teile[schritt.teile.length-1].nr; }) + 1;
+        } else if(schritt && schritt.kopfTeil){
+          pos = D.teile.findIndex(function(x){ return x.nr === schritt.kopfTeil.nr; }) + 1;
+        }
+        D.teile.splice(pos, 0, {art:'bild', datei:name, text:'', nr:pos, spalte:'rechts'});
+      }
+      D.teile.forEach(function(t,k){ t.nr = k; });
+      box.classList.remove('auf'); bauen(); speichern();
+    };
+    gitter.appendChild(f);
+  });
+  box.classList.add('auf');
+}
+document.getElementById('wahlZu').onclick = function(){
+  zielNr = null; document.getElementById('wahlbox').classList.remove('auf');
+};
+(function(){
+  var stift = document.getElementById('stift');
+  if(!stift) return;
+  if(window.OAK_STIFT){ return; }      // Portal-Editor: Stift ist immer da, gespeichert wird ueber OAK_SPEICHERN
+  fetch('/dienst', {cache:'no-store'})
+    .then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); })
+    .catch(function(){
+      stift.disabled = true;
+      stift.title = 'Zum Bearbeiten den Wiki-Dienst starten: python tools/wiki_server.py --thema <thema>';
+      var t = stift.querySelector('#stiftText');
+      if(t) t.textContent = 'Nur lesen';
+      stift.style.opacity = '.45'; stift.style.cursor = 'not-allowed';
+    });
+})();
+var stiftKnopf = document.getElementById('stift');
+if(stiftKnopf) stiftKnopf.onclick = function(){
+  bearbeiten = !bearbeiten;
+  document.body.classList.toggle('bearbeiten', bearbeiten);
+  this.classList.toggle('an', bearbeiten);
+  document.getElementById('stiftText').textContent = bearbeiten ? 'Fertig' : 'Bearbeiten';
+  if(bearbeiten){ editorAn();
+    melde('Alle Schritte untereinander. Text anklicken und tippen, Klick daneben speichert.', 4000); }
+  else { sammle(); editorAus(); speichern(); zeigeSchritt(aktiv); }
+};
+
+/* ---------------- Kapitel abschließen ---------------- */
+document.getElementById('fertig').onclick = function(){
+  var ges = (D.fragen||[]).length;
+  var r = Object.keys(antworten).filter(function(k){ return antworten[k]; }).length;
+  var grenze = ges ? (r/ges >= 0.8) : true;
+  if(!grenze){
+    melde('Nur ' + r + ' von ' + ges + ' richtig. Schau dir das Kapitel noch einmal an, dann klappt es.', 6000);
+    antworten = {};
+    document.querySelectorAll('#buehne .frage-schritt').forEach(function(s, i){
+      var neu = baueFrage(SCHRITTE[SCHRITTE.length - ges + i], SCHRITTE.length - ges + i);
+      s.parentNode.replaceChild(neu, s);
+    });
+    zeigeSchritt(0);
+    return;
+  }
+  try{
+    var K = 'oak-uw-stand-' + D.thema;
+    var s = JSON.parse(localStorage.getItem(K) || '{}');
+    s[D.block] = {am: new Date().toISOString(), richtig: r, gesamt: ges};
+    localStorage.setItem(K, JSON.stringify(s));
+  }catch(e){}
+  if(window.OAKPlayer && typeof window.OAKPlayer.beiAbschluss === 'function'){
+    window.OAKPlayer.beiAbschluss(); return;
+  }
+  location.href = '/';
+};
+
+/* ---------------- Marke, Kopf ---------------- */
+(function(){
+  var m = D.marke || {};
+  if(m.farbe) document.documentElement.style.setProperty('--marke', m.farbe);
+  if(m.farbe_tief) document.documentElement.style.setProperty('--marke-tief', m.farbe_tief);
+  if(m.logo){ var l = document.getElementById('logo'); l.src = m.logo; l.hidden = false; }
+  document.getElementById('mFirma').textContent = m.firma || '';
+  document.getElementById('mModul').textContent = D.titel || D.meta.titel || '';
+  document.title = (D.meta.titel || 'Unterweisung') + (m.firma ? ' · ' + m.firma : '');
+})();
+
+/* Schnittstelle für die Einzeldatei (modul_schale.js): dort liegen alle Kapitel
+   beisammen, die Schale schaltet um und liefert Kapitelliste, Stand und Tafeln. */
+window.OAKPlayer = {
+  daten: D,
+  melde: melde,
+  bearbeiten: function(an){ if(stiftKnopf && (an !== bearbeiten)) stiftKnopf.click(); },
+  istBearbeiten: function(){ return bearbeiten; },
+  kurs: null,                       // {bloecke:[{block,titel,dauer}], aktiv, stand(), oeffne(i), uebersicht()}
+  setzeBlock: function(b){
+    D.meta = b.meta; D.teile = b.teile; D.fragen = b.fragen; D.block = b.block;
+    antworten = {}; gesehen = {}; aktiv = 0;
+    document.getElementById('mModul').textContent = D.titel || D.meta.titel || '';
+    document.title = (D.titel || D.meta.titel || 'Unterweisung') + ((D.marke && D.marke.firma) ? ' · ' + D.marke.firma : '');
+    document.querySelector('.buehne-huelle').classList.remove('tafel-an');
+    bauen();
+  },
+  zeigeTafel: function(html){
+    var b = document.getElementById('buehne');
+    b.innerHTML = ''; SCHRITTE = [];
+    var t = el('div','tafel', html); b.appendChild(t);
+    document.querySelector('.buehne-huelle').classList.add('tafel-an');
+    document.querySelector('.buehne-huelle').classList.remove('mehr');
+    railBauen();
+    b.scrollTop = 0;
+    document.body.classList.remove('rail-auf');
+    return t;
+  },
+  fortschritt: fortschritt,
+  beiAbschluss: null
+};
+
+bauen();
+sammle(); letzterStand = JSON.stringify({t: D.teile, f: D.fragen});
+})();
+</script>
+</body>
+</html>

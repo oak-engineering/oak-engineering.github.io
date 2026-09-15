@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Unterweisungs-Terminal – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202609151504">
+<link rel="stylesheet" href="portal.css?v=202609151527">
 <style>
 /* Unterweisungs-Terminal ohne Login: Das Geraet traegt einen Token (wie melden.html),
    die Person tippt Name und Gruppe, bekommt ihre Module und arbeitet sie im Rahmen durch.
@@ -113,6 +113,7 @@ input[type=text]:focus{outline:none;border-color:var(--oak,#2D6A4F);box-shadow:0
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="uw/bauen.js?v=2026-09-15b"></script>
 <script>
 (function(){
 "use strict";
@@ -293,14 +294,28 @@ function modulDatei(pfad){
 function modulOeffnen(m){
   if(navigator.onLine === false){ toast('Kein Netz: Das Modul kann gerade nicht geladen werden. Bitte später noch einmal.', 5000); return; }
   toast('Modul wird geladen …', 8000);
-  modulDatei(m.pfad).then(function(html){
-    var kontext = {name: person.name, rolle: person.rolle ? person.rolle.name : '', thema: m.thema, titel: m.titel,
-                   zusaetze: (K.zusaetze && K.zusaetze[m.thema]) || [],
-                   logo: K.logo || null,
-                   lauf: lauf ? {nr: lauf.index + 1, gesamt: lauf.module.length, letztes: lauf.index === lauf.module.length - 1,
-                                 bisher: lauf.ergebnisse} : null};
-    var tag = '<script>window.__OAK_TERMINAL=' + JSON.stringify(kontext).replace(/</g,'\\u003c') + ';</scr' + 'ipt>';
-    html = html.replace(/<head([^>]*)>/i, function(x){ return x + tag; });
+  var kontext = {name: person.name, rolle: person.rolle ? person.rolle.name : '', thema: m.thema, titel: m.titel,
+                 zusaetze: (K.zusaetze && K.zusaetze[m.thema]) || [],
+                 logo: K.logo || null,
+                 lauf: lauf ? {nr: lauf.index + 1, gesamt: lauf.module.length, letztes: lauf.index === lauf.module.length - 1,
+                               bisher: lauf.ergebnisse} : null};
+  var kopf = 'window.__OAK_TERMINAL=' + JSON.stringify(kontext).replace(/</g,'\u003c') + ';';
+  /* Zuerst aus der Datenbank (Bloecke, wie im Portal-Editor bearbeitet); gibt es dort nichts,
+     die im Portal hinterlegte Einzeldatei (Edge Function). */
+  var z = zugang();
+  var ausDb = (window.OAKUW && m.bloecke) ? rpc('unterweisung_bloecke', {p_token: z.token, p_thema: m.thema}).then(function(r){
+      if(!r || !r.bloecke || !r.bloecke.length) throw new Error('keine Bloecke');
+      return OAKUW.laden('uw/').then(function(t){
+        return OAKUW.html(t, {modul: r.modul, bloecke: r.bloecke, marke: K.marke || {firma: K.kunde, logo: K.logo}, stift: false, kopfSkript: kopf});
+      });
+    }) : Promise.reject(new Error('keine Bloecke'));
+  ausDb.catch(function(){
+    if(!m.pfad) throw new Error('Modul hat weder Bloecke noch Datei');
+    return modulDatei(m.pfad).then(function(html){
+      var tag = '<script>' + kopf + '</scr' + 'ipt>';
+      return html.replace(/<head([^>]*)>/i, function(x){ return x + tag; });
+    });
+  }).then(function(html){
     aktivesModul = m;
     $('kTitel').textContent = (lauf && lauf.module.length > 1 ? 'Modul ' + (lauf.index + 1) + ' von ' + lauf.module.length + ' · ' : '') + m.titel;
     var f = $('rahmen');

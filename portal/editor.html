@@ -1,0 +1,135 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Unterweisung bearbeiten – OAK Kundenportal</title>
+<link rel="stylesheet" href="portal.css?v=202609151527">
+<style>
+/* Editor: das Modul laeuft im Rahmen genau so wie am Terminal, nur mit Stift. Oben eine
+   schmale Leiste: Modulwahl, Stand, Vorschau/Bearbeiten. Kein zweites Werkzeug - der Player
+   ist der Editor (Text antippen, tippen, Klick daneben speichert in die Datenbank). */
+html,body{height:100%}
+body{margin:0;overflow:hidden;font-family:var(--sans,'Jost',system-ui,sans-serif);background:#F3F6F4;color:var(--ink,#111A14)}
+.ed{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.ed-kopf{flex:none;display:flex;align-items:center;gap:12px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--border,#D6E4DA);flex-wrap:wrap}
+.ed-kopf img{height:24px}
+.ed-kopf b{font-size:14px;color:var(--ink-2,#2C3A30)}
+.ed-kopf select{font-family:inherit;font-size:15px;padding:8px 10px;border:1.5px solid var(--border,#D6E4DA);border-radius:9px;background:#fff;min-width:260px}
+.ed-kopf .rechts{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.knopf{border:1.5px solid var(--border,#D6E4DA);background:#fff;color:var(--ink-2,#2C3A30);border-radius:9px;min-height:40px;padding:0 14px;font:500 14px/1 inherit;font-family:inherit;cursor:pointer}
+.knopf.haupt{background:var(--oak,#2D6A4F);border-color:var(--oak,#2D6A4F);color:#fff;font-weight:600}
+.knopf.an{background:var(--oak-pale,#D8F3DC);border-color:var(--oak,#2D6A4F);color:var(--oak-deep,#1B4332)}
+.stand{font-size:13px;color:var(--muted,#6B7C70)}
+.stand.ok{color:var(--oak,#2D6A4F)}
+.stand.fehler{color:var(--rot,#c0392b)}
+#rahmen{flex:1;width:100%;border:0;background:#fff}
+.hinweisbox{margin:40px auto;max-width:640px;background:#fff;border:1px solid var(--border,#D6E4DA);border-radius:12px;padding:20px 24px;font-size:15px}
+</style>
+</head>
+<body>
+<div class="ed">
+  <header class="ed-kopf">
+    <img src="../assets/oak-logo.png" alt="OAK engineering">
+    <b>Unterweisung bearbeiten</b>
+    <select id="modul" aria-label="Modul"></select>
+    <span class="stand" id="stand"></span>
+    <span class="rechts">
+      <button class="knopf" id="kVorschau" title="Ohne Stift ansehen, wie es die Beschäftigten sehen">Vorschau</button>
+      <button class="knopf an" id="kBearbeiten" title="Stift an: Text antippen und ändern">Bearbeiten</button>
+      <a class="knopf" href="index.html">Zum Portal</a>
+    </span>
+  </header>
+  <iframe id="rahmen" title="Modul"></iframe>
+</div>
+<script src="auth.js?v=2026-09-15b"></script>
+<script src="uw/bauen.js?v=2026-09-15b"></script>
+<script>
+(function(){
+"use strict";
+var $ = function(id){ return document.getElementById(id); };
+var modul = null, bloecke = [], marke = {}, bearbeiten = true, fassungen = {};
+var thema = new URLSearchParams(location.search).get('thema') || '';
+
+function stand(t, cls){ var s = $('stand'); s.textContent = t; s.className = 'stand ' + (cls || ''); }
+
+async function start(){
+  if(!getSession()){ location.replace('index.html'); return; }
+  var me = await apiGet('/rest/v1/portal_mitglied?select=rolle,kunde_slug,name&limit=1');
+  var rolle = (me && me[0] && me[0].rolle) || 'kunde';
+  if(rolle !== 'admin'){
+    document.querySelector('.ed').innerHTML = '<div class="hinweisbox"><b>Nur für OAK engineering.</b><br>Der Grundstock der '
+      + 'Unterweisungen wird von OAK gepflegt. Eigene Inhalte des Betriebs pflegen Sie im Portal unter '
+      + '<a href="index.html">Unterweisungen → Modulkatalog → Gruppen &amp; eigene Inhalte</a>.</div>';
+    return;
+  }
+  var module = await apiGet('/rest/v1/uw_modul?select=thema,titel,untertitel,bestehen_prozent,stand&aktiv=is.true&order=reihenfolge,thema');
+  var sel = $('modul'); sel.innerHTML = '';
+  module.forEach(function(m){
+    var o = document.createElement('option'); o.value = m.thema; o.textContent = m.titel + (m.stand === 'fertig' ? '' : ' (' + m.stand + ')');
+    sel.appendChild(o);
+  });
+  if(!thema && module.length) thema = module[0].thema;
+  sel.value = thema;
+  sel.onchange = function(){ thema = sel.value; history.replaceState(null, '', 'editor.html?thema=' + encodeURIComponent(thema)); laden(); };
+  laden();
+}
+
+async function laden(){
+  stand('Lade …');
+  try{
+    var t = await OAKUW.laden('uw/');
+    var m = await apiGet('/rest/v1/uw_modul?select=thema,titel,untertitel,bestehen_prozent&thema=eq.' + encodeURIComponent(thema));
+    modul = m[0];
+    bloecke = await apiGet('/rest/v1/uw_block?select=block,meta,teile,fragen,bilder,fassung,sortierung,pflicht&thema=eq.'
+                           + encodeURIComponent(thema) + '&kunde_key=eq.&order=sortierung,block');
+    fassungen = {}; bloecke.forEach(function(b){ fassungen[b.block] = b.fassung || 1; });
+    if(!bloecke.length){ stand('Für dieses Modul liegen noch keine Blöcke in der Datenbank (tools/block_sync.py --hoch).', 'fehler'); $('rahmen').srcdoc = ''; return; }
+    // Vorschau-Marke: OAK-Farben; die Kundenfarbe kommt erst am Terminal aus der Kundenkonfiguration
+    marke = {firma: 'Vorschau · Grundstock', farbe: '#2D6A4F', farbe_tief: '#1B4332'};
+    var brief = 'window.__OAK_EDITOR=true;'
+      + 'window.OAK_SPEICHERN=function(d){return new Promise(function(res,rej){var id=String(Date.now())+Math.random();'
+      + 'window.__oakW=window.__oakW||{};window.__oakW[id]={res:res,rej:rej};parent.postMessage({type:"oak-uw-speichern",id:id,daten:d},"*");});};'
+      + 'window.addEventListener("message",function(ev){var d=ev.data||{};if(d.type==="oak-uw-gespeichert"&&window.__oakW&&window.__oakW[d.id]){'
+      + '(d.ok?window.__oakW[d.id].res(d):window.__oakW[d.id].rej(new Error(d.fehler||"Fehler")));delete window.__oakW[d.id];}});';
+    var html = OAKUW.html(t, {modul: modul, bloecke: bloecke, marke: marke, stift: bearbeiten, kopfSkript: brief});
+    $('rahmen').srcdoc = html;
+    stand(bloecke.length + ' Kapitel · ' + (bearbeiten ? 'Bearbeiten: Stift oben rechts im Modul, Klick daneben speichert' : 'Vorschau'), 'ok');
+  }catch(e){
+    if(e.message === 'AUTH'){ location.replace('index.html'); return; }
+    stand('Fehler: ' + e.message, 'fehler');
+  }
+}
+
+/* Speichern aus dem Rahmen: ein Block (teile, fragen, meta) -> uw_block, Fassung +1 */
+window.addEventListener('message', async function(ev){
+  var f = $('rahmen');
+  if(!f || ev.source !== f.contentWindow) return;
+  var d = ev.data || {};
+  if(d.type !== 'oak-uw-speichern') return;
+  var b = d.daten || {};
+  try{
+    var neu = (fassungen[b.block] || 1) + 1;
+    var me = getSession();
+    await apiSend('PATCH', '/rest/v1/uw_block?thema=eq.' + encodeURIComponent(b.thema) + '&block=eq.' + encodeURIComponent(b.block) + '&kunde_key=eq.',
+      {teile: b.teile, fragen: b.fragen, meta: b.meta, fassung: neu, geaendert_am: new Date().toISOString(),
+       geaendert_von: (me && me.user && me.user.email) || 'portal'});
+    fassungen[b.block] = neu;
+    // lokale Kopie nachziehen, damit ein Kapitelwechsel den neuen Stand zeigt
+    bloecke.forEach(function(x){ if(x.block === b.block){ x.teile = b.teile; x.fragen = b.fragen; x.meta = b.meta; } });
+    stand('Gespeichert: ' + (b.meta && b.meta.titel || b.block) + ' (Fassung ' + neu + ')', 'ok');
+    f.contentWindow.postMessage({type:'oak-uw-gespeichert', id: d.id, ok: true}, '*');
+  }catch(e){
+    stand('Nicht gespeichert: ' + e.message, 'fehler');
+    f.contentWindow.postMessage({type:'oak-uw-gespeichert', id: d.id, ok: false, fehler: e.message}, '*');
+  }
+});
+
+$('kVorschau').onclick = function(){ bearbeiten = false; $('kVorschau').classList.add('an'); $('kBearbeiten').classList.remove('an'); laden(); };
+$('kBearbeiten').onclick = function(){ bearbeiten = true; $('kBearbeiten').classList.add('an'); $('kVorschau').classList.remove('an'); laden(); };
+start();
+})();
+</script>
+</body>
+</html>
