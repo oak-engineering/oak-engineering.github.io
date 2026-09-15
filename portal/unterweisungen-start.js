@@ -217,7 +217,9 @@ function renderUwKatalog(wrap){
               return (g || n) ? `(${g} Gruppen · ${n} Inhalte)` : ""; })()}</button></div>` : ""}
       ${uwDarfBuchen() ? `<div class="uw-admin">
           <button type="button" class="btn-klein" data-buchen="${esc(m.thema)}" data-frei="${frei ? 1 : 0}">
-            ${frei ? "Freischaltung zurücknehmen" : "Für diesen Kunden freischalten"}</button></div>` : ""}
+            ${frei ? "Freischaltung zurücknehmen" : "Für diesen Kunden freischalten"}</button>
+          <a class="btn-klein" href="editor.html?thema=${encodeURIComponent(m.thema)}" target="_blank" rel="noopener"
+             title="Grundstock-Inhalte direkt im Browser bearbeiten (Stift im Modul)">Inhalte bearbeiten</a></div>` : ""}
     </div>`;
   };
 
