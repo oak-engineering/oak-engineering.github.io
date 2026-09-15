@@ -1,0 +1,312 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Unterweisungs-Terminal – OAK engineering</title>
+<link rel="stylesheet" href="portal.css?v=202609151002">
+<style>
+/* Unterweisungs-Terminal ohne Login: Das Geraet traegt einen Token (wie melden.html),
+   die Person tippt Name und Gruppe, bekommt ihre Module und arbeitet sie im Rahmen durch.
+   Bewusst grosse Bedienelemente - Touchscreen in der Halle. */
+html,body{height:100%}
+[hidden]{display:none !important}
+body{margin:0;background:#F3F6F4;color:var(--ink,#111A14);font-family:var(--sans,'Jost',system-ui,sans-serif);
+  font-size:17px;line-height:1.5;overflow:hidden}
+.tk{display:flex;flex-direction:column;height:100vh;height:100dvh}
+.tk-kopf{flex:none;background:#fff;border-bottom:1px solid var(--border,#D6E4DA);padding:12px 22px;
+  display:flex;align-items:center;gap:14px;min-height:60px}
+.tk-kopf img{height:30px;width:auto}
+.tk-kopf .firma{font-weight:600;font-size:15px;color:var(--ink-2,#2C3A30)}
+.tk-kopf .titel{font-size:13px;color:var(--muted,#6B7C70)}
+.tk-kopf .rechts{margin-left:auto;display:flex;gap:10px;align-items:center}
+.knopf{border:1.5px solid var(--border,#D6E4DA);background:#fff;color:var(--ink-2,#2C3A30);border-radius:10px;
+  min-height:44px;padding:0 16px;font:500 15px/1 inherit;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.knopf.haupt{background:var(--oak,#2D6A4F);border-color:var(--oak,#2D6A4F);color:#fff;font-weight:600;min-height:52px;padding:0 26px;font-size:17px}
+.knopf[disabled]{opacity:.4;cursor:not-allowed}
+.tk-rumpf{flex:1;min-height:0;overflow-y:auto;padding:28px 22px 40px}
+.schirm{display:none;max-width:860px;margin:0 auto}
+.schirm.an{display:block}
+h1{font-family:var(--serif,'Cormorant Garamond',Georgia,serif);font-weight:600;font-size:38px;line-height:1.1;margin:0 0 6px;color:var(--oak-deep,#1B4332)}
+.unter{color:var(--muted,#6B7C70);margin:0 0 26px;font-size:17px}
+label.feld{display:block;font-weight:600;font-size:15px;margin:18px 0 8px;color:var(--ink-2,#2C3A30)}
+input[type=text]{width:100%;box-sizing:border-box;border:1.5px solid var(--border,#D6E4DA);border-radius:12px;padding:16px 18px;
+  font:400 20px/1.3 inherit;font-family:inherit;background:#fff;color:var(--ink,#111A14)}
+input[type=text]:focus{outline:none;border-color:var(--oak,#2D6A4F);box-shadow:0 0 0 3px var(--oak-pale,#D8F3DC)}
+.kacheln{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.kachel{border:1.5px solid var(--border,#D6E4DA);background:#fff;border-radius:14px;padding:18px 18px;cursor:pointer;
+  text-align:left;font-family:inherit;font-size:17px;font-weight:600;color:var(--ink,#111A14);min-height:78px;
+  display:flex;flex-direction:column;gap:6px;justify-content:center;transition:border-color .15s,background .15s}
+.kachel small{font-weight:400;font-size:13.5px;color:var(--muted,#6B7C70);line-height:1.35}
+.kachel:hover{border-color:var(--oak,#2D6A4F)}
+.kachel.aktiv{border-color:var(--oak,#2D6A4F);background:var(--oak-pale,#D8F3DC);box-shadow:0 0 0 3px rgba(45,106,79,.12)}
+.kachel.erledigt{background:var(--oak-ghost,#F0FAF3);border-color:var(--oak-light,#74C69D)}
+.kachel .haken{color:var(--oak,#2D6A4F);font-size:14px;font-weight:600}
+.zeile-knoepfe{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap;align-items:center}
+.hinweis{background:#fff;border:1px solid var(--border,#D6E4DA);border-left:4px solid var(--oak,#2D6A4F);border-radius:0 10px 10px 0;
+  padding:12px 16px;margin:14px 0;font-size:15px;color:var(--ink-2,#2C3A30)}
+.hinweis.warn{border-left-color:var(--orange,#e08e0b)}
+.hinweis.fehler{border-left-color:var(--rot,#c0392b)}
+.klein{font-size:13px;color:var(--muted,#6B7C70)}
+/* Rahmen fuer das Modul: fuellt alles unter dem Kopf */
+.tk.modul .tk-rumpf{padding:0;overflow:hidden}
+#rahmen{width:100%;height:100%;border:0;background:#fff;display:block}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--oak-deep,#1B4332);color:#fff;
+  padding:12px 18px;border-radius:10px;font-size:15px;box-shadow:0 8px 24px rgba(0,0,0,.18);display:none;z-index:50;max-width:90vw}
+.toast.zeig{display:block}
+@media (max-width:600px){ h1{font-size:30px} .tk-rumpf{padding:20px 14px 30px} .tk-kopf{padding:10px 14px} .tk-kopf .firma{display:none} }
+</style>
+</head>
+<body>
+<div class="tk" id="tk">
+  <header class="tk-kopf">
+    <img src="../assets/oak-logo.png" alt="OAK engineering">
+    <span><span class="firma" id="kFirma">Unterweisungs-Terminal</span><br><span class="titel" id="kTitel">Kundenportal · OAK engineering</span></span>
+    <span class="rechts">
+      <button class="knopf" id="kZurueck" hidden>Zur Übersicht</button>
+      <button class="knopf" id="kNeu" hidden>Andere Person</button>
+    </span>
+  </header>
+  <div class="tk-rumpf">
+
+    <section class="schirm" id="sEinrichten">
+      <h1>Terminal einrichten</h1>
+      <p class="unter">Dieses Gerät ist noch nicht mit dem Kundenportal verbunden. Den Geräte-Code bekommt der Betrieb von OAK engineering.</p>
+      <label class="feld" for="eToken">Geräte-Code</label>
+      <input type="text" id="eToken" autocomplete="off" spellcheck="false" placeholder="z. B. firma-term-…">
+      <div class="zeile-knoepfe"><button class="knopf haupt" id="eVerbinden">Terminal verbinden</button></div>
+      <div class="hinweis" id="eMeldung" hidden></div>
+    </section>
+
+    <section class="schirm" id="sStart">
+      <h1>Unterweisung starten</h1>
+      <p class="unter" id="sFirma"></p>
+      <label class="feld" for="sName">Dein Vor- und Nachname</label>
+      <input type="text" id="sName" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="z. B. Maria Schneider">
+      <label class="feld">Deine Gruppe</label>
+      <div class="kacheln" id="sRollen"></div>
+      <div class="hinweis warn" id="sHinweis" hidden></div>
+      <div class="zeile-knoepfe">
+        <button class="knopf haupt" id="sWeiter" disabled>Weiter</button>
+        <span class="klein" id="sStand"></span>
+      </div>
+    </section>
+
+    <section class="schirm" id="sModule">
+      <h1 id="mHallo">Deine Unterweisungen</h1>
+      <p class="unter" id="mUnter"></p>
+      <div class="kacheln" id="mListe"></div>
+      <div class="hinweis" id="mHinweis" hidden></div>
+    </section>
+
+    <section class="schirm" id="sModul" style="max-width:none;height:100%">
+      <iframe id="rahmen" title="Unterweisung"></iframe>
+    </section>
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+var CFG = { url: "https://ayieotppxrjrzdpeofkx.supabase.co",
+            anon: "sb_publishable_fz1o6tjpwa7gjiNb17uuEg_-ZwNdFcS" };
+var TERMKEY = 'oak-uw-terminal';           // {token, kunde} – dieselbe Ablage wie im Modul-Transport
+var CFGKEY  = 'oak-uw-terminal-config';    // letzte Antwort von unterweisung_terminal (Start ohne Netz)
+var LEERLAUF_MIN = 15;
+
+var K = null;                 // Konfiguration vom Portal
+var person = {name:'', rolle:null};
+var erledigt = {};            // thema -> true (nur diese Person)
+var aktivesModul = null;
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function toast(t, ms){ var x=$('toast'); x.textContent=t; x.classList.add('zeig');
+  clearTimeout(toast._t); toast._t=setTimeout(function(){ x.classList.remove('zeig'); }, ms||3500); }
+function zeige(id){
+  ['sEinrichten','sStart','sModule','sModul'].forEach(function(s){ $(s).classList.toggle('an', s===id); });
+  document.getElementById('tk').classList.toggle('modul', id==='sModul');
+  $('kZurueck').hidden = (id!=='sModul');
+  $('kNeu').hidden = !(id==='sModule');
+  document.querySelector('.tk-rumpf').scrollTop = 0;
+}
+
+/* ---- Geraete-Token ---------------------------------------------------------- */
+function zugang(){ try{ return JSON.parse(localStorage.getItem(TERMKEY)||'null'); }catch(e){ return null; } }
+function zugangSetzen(token, kunde){ try{ localStorage.setItem(TERMKEY, JSON.stringify({token:token, kunde:kunde||''})); }catch(e){} }
+(function tokenAusAdresse(){
+  var m = (location.hash + '&' + location.search).match(/[#?&]t=([^&]+)/);
+  if(m){ zugangSetzen(decodeURIComponent(m[1]), ''); history.replaceState(null, '', location.pathname); }
+})();
+
+/* ---- Portal ------------------------------------------------------------------ */
+function rpc(name, body){
+  return fetch(CFG.url + '/rest/v1/rpc/' + name, {
+    method:'POST', headers:{'Content-Type':'application/json', apikey:CFG.anon, Authorization:'Bearer '+CFG.anon},
+    body: JSON.stringify(body)
+  }).then(function(r){
+    if(!r.ok) return r.json().catch(function(){ return {}; }).then(function(j){ throw new Error(j.message || ('Server '+r.status)); });
+    return r.json();
+  });
+}
+function konfigLaden(){
+  var z = zugang();
+  if(!z || !z.token){ zeige('sEinrichten'); return Promise.resolve(null); }
+  return rpc('unterweisung_terminal', {p_token: z.token}).then(function(k){
+    K = k; try{ localStorage.setItem(CFGKEY, JSON.stringify(k)); }catch(e){}
+    zugangSetzen(z.token, k.kunde || '');
+    return k;
+  }).catch(function(e){
+    if(/unbekannt|gesperrt/i.test(e.message)){
+      try{ localStorage.removeItem(TERMKEY); localStorage.removeItem(CFGKEY); }catch(x){}
+      $('eMeldung').hidden=false; $('eMeldung').className='hinweis fehler';
+      $('eMeldung').textContent='Der Geräte-Code ist unbekannt oder gesperrt. Bitte bei OAK engineering melden.';
+      zeige('sEinrichten'); return null;
+    }
+    try{ K = JSON.parse(localStorage.getItem(CFGKEY)||'null'); }catch(x){ K=null; }
+    if(K){ toast('Kein Netz: Angezeigt wird der letzte bekannte Stand.', 5000); return K; }
+    $('eMeldung').hidden=false; $('eMeldung').className='hinweis fehler';
+    $('eMeldung').textContent='Keine Verbindung zum Kundenportal: ' + e.message;
+    zeige('sEinrichten'); return null;
+  });
+}
+$('eVerbinden').onclick = function(){
+  var t = $('eToken').value.trim();
+  if(!t){ $('eToken').focus(); return; }
+  zugangSetzen(t, '');
+  konfigLaden().then(function(k){ if(k) startAnzeigen(); });
+};
+
+/* ---- Start: Name + Gruppe ------------------------------------------------------- */
+function fortschrittLoeschen(){
+  // Der Stand einer Unterweisung liegt je Thema im Browser - die naechste Person
+  // darf nicht mit dem halben Kurs des Vorgaengers anfangen.
+  try{
+    var weg = [];
+    for(var i=0;i<localStorage.length;i++){ var k=localStorage.key(i); if(k && k.indexOf('oak-uw-stand-')===0) weg.push(k); }
+    weg.forEach(function(k){ localStorage.removeItem(k); });
+  }catch(e){}
+}
+function startAnzeigen(){
+  person = {name:'', rolle:null}; erledigt = {}; aktivesModul = null;
+  fortschrittLoeschen();
+  $('kFirma').textContent = (K && K.kunde) || 'Unterweisungs-Terminal';
+  $('kTitel').textContent = 'Unterweisungs-Terminal';
+  $('sFirma').textContent = (K && K.kunde) ? K.kunde + ' – gib deinen Namen ein und wähle deine Gruppe.' : '';
+  $('sName').value = '';
+  var box = $('sRollen'); box.innerHTML = '';
+  var rollen = (K && K.rollen) || [];
+  rollen.forEach(function(r){
+    var b = document.createElement('button'); b.type='button'; b.className='kachel';
+    var n = (r.module||[]).length;
+    b.innerHTML = esc(r.name) + '<small>' + (n ? (n + (n===1?' Unterweisung':' Unterweisungen')) : 'keine Zuordnung') + '</small>';
+    b.onclick = function(){
+      box.querySelectorAll('.kachel').forEach(function(x){ x.classList.remove('aktiv'); });
+      b.classList.add('aktiv'); person.rolle = r; pruefeStart();
+    };
+    box.appendChild(b);
+  });
+  var h = $('sHinweis');
+  if(!rollen.length){ h.hidden=false; h.textContent='Für diesen Betrieb sind noch keine Gruppen angelegt (Kundenportal → Unterweisungen → Gruppen).'; }
+  else if(K && !K.zuweisungen){ h.hidden=false; h.textContent='Den Gruppen sind noch keine Unterweisungen zugeordnet. Bis dahin siehst du alle freigeschalteten Module.'; }
+  else h.hidden = true;
+  $('sStand').textContent = (K && K.module) ? (K.module.length + ' Modul' + (K.module.length===1?'':'e') + ' freigeschaltet') : '';
+  pruefeStart();
+  zeige('sStart');
+  setTimeout(function(){ $('sName').focus(); }, 50);
+}
+function pruefeStart(){
+  person.name = $('sName').value.trim();
+  $('sWeiter').disabled = !(person.name.length >= 3 && person.rolle);
+}
+$('sName').addEventListener('input', pruefeStart);
+$('sName').addEventListener('keydown', function(ev){ if(ev.key==='Enter' && !$('sWeiter').disabled) $('sWeiter').click(); });
+$('sWeiter').onclick = function(){ moduleAnzeigen(); };
+
+/* ---- Modulliste der Gruppe -------------------------------------------------------- */
+function meineModule(){
+  var alle = (K && K.module) || [];
+  if(!K || !K.zuweisungen) return alle;                   // noch nichts zugeordnet: alles zeigen
+  var themen = (person.rolle && person.rolle.module) || [];
+  return alle.filter(function(m){ return themen.indexOf(m.thema) >= 0; });
+}
+function moduleAnzeigen(){
+  var vorname = person.name.split(' ')[0];
+  $('mHallo').textContent = 'Hallo ' + vorname + ', deine Unterweisungen';
+  $('mUnter').textContent = person.rolle ? ('Gruppe: ' + person.rolle.name + '. Tippe ein Modul an, um zu beginnen.') : '';
+  var liste = $('mListe'); liste.innerHTML = '';
+  var mods = meineModule();
+  mods.forEach(function(m){
+    var b = document.createElement('button'); b.type='button';
+    b.className = 'kachel' + (erledigt[m.thema] ? ' erledigt' : '');
+    b.innerHTML = esc(m.titel) + '<small>' + esc(m.untertitel||'') + (m.dauer_min ? (m.untertitel?' · ':'') + 'ca. ' + m.dauer_min + ' Min.' : '') + '</small>'
+                + (erledigt[m.thema] ? '<span class="haken">✓ heute abgeschlossen</span>' : '');
+    b.onclick = function(){ modulOeffnen(m); };
+    liste.appendChild(b);
+  });
+  var h = $('mHinweis');
+  if(!mods.length){ h.hidden=false; h.className='hinweis warn';
+    h.textContent = 'Für deine Gruppe ist noch keine Unterweisung freigeschaltet. Bitte an die Fachkraft für Arbeitssicherheit wenden.'; }
+  else h.hidden = true;
+  zeige('sModule');
+}
+$('kNeu').onclick = function(){ startAnzeigen(); };
+
+/* ---- Modul laden und einbetten ------------------------------------------------------ */
+function modulDatei(pfad){
+  var z = zugang();
+  return fetch(CFG.url + '/functions/v1/unterweisung-datei', {
+    method:'POST', headers:{'Content-Type':'application/json', apikey:CFG.anon},
+    body: JSON.stringify({token: z.token, pfad: pfad})
+  }).then(function(r){ return r.json().then(function(j){ if(!r.ok) throw new Error(j.fehler || ('Server '+r.status)); return j; }); })
+    .then(function(j){ return fetch(j.url); })
+    .then(function(r){ if(!r.ok) throw new Error('Datei nicht ladbar ('+r.status+')'); return r.text(); });
+}
+function modulOeffnen(m){
+  if(navigator.onLine === false){ toast('Kein Netz: Das Modul kann gerade nicht geladen werden. Bitte später noch einmal.', 5000); return; }
+  toast('Modul wird geladen …', 8000);
+  modulDatei(m.pfad).then(function(html){
+    var kontext = {name: person.name, rolle: person.rolle ? person.rolle.name : '', thema: m.thema, titel: m.titel,
+                   zusaetze: (K.zusaetze && K.zusaetze[m.thema]) || []};
+    var tag = '<script>window.__OAK_TERMINAL=' + JSON.stringify(kontext).replace(/</g,'\\u003c') + ';</scr' + 'ipt>';
+    html = html.replace(/<head([^>]*)>/i, function(x){ return x + tag; });
+    aktivesModul = m;
+    $('kTitel').textContent = m.titel;
+    var f = $('rahmen');
+    f.srcdoc = html;                      // gleicher Origin wie das Portal: Token und Warteschlange sind erreichbar
+    zeige('sModul');
+    $('toast').classList.remove('zeig');
+  }).catch(function(e){
+    toast('Modul konnte nicht geladen werden: ' + e.message, 6000);
+  });
+}
+$('kZurueck').onclick = function(){
+  if(aktivesModul && !erledigt[aktivesModul.thema] && !confirm('Unterweisung abbrechen? Der Fortschritt geht verloren.')) return;
+  $('rahmen').srcdoc = '';
+  aktivesModul = null; $('kTitel').textContent = 'Unterweisungs-Terminal';
+  moduleAnzeigen();
+};
+window.addEventListener('message', function(ev){
+  var f = $('rahmen');
+  if(!f || ev.source !== f.contentWindow) return;
+  var d = ev.data || {};
+  if(d.type === 'oak-uw-nachweis' && aktivesModul){ erledigt[aktivesModul.thema] = true; }
+  if(d.type === 'oak-uw-naechste'){ startAnzeigen(); }
+});
+
+/* ---- Leerlauf: nach 15 Minuten ohne Bedienung zurueck zum Start ---------------- */
+var leer = null;
+function leerlauf(){ clearTimeout(leer); leer = setTimeout(function(){ if(K) startAnzeigen(); }, LEERLAUF_MIN*60*1000); }
+['pointerdown','keydown','touchstart'].forEach(function(e){ document.addEventListener(e, leerlauf, {passive:true}); });
+leerlauf();
+
+/* ---- Start ------------------------------------------------------------------------- */
+konfigLaden().then(function(k){ if(k) startAnzeigen(); });
+window.addEventListener('online', function(){ if(!K) konfigLaden().then(function(k){ if(k) startAnzeigen(); }); });
+})();
+</script>
+</body>
+</html>
