@@ -774,14 +774,14 @@ function uwGeraeteToken(){
    „Link sperren und neu erzeugen" macht einen weitergegebenen Link dauerhaft unbrauchbar. */
 let UW_MOBIL = null;   // {an, bis}
 function uwMobilText(s){
-  if(!s || !s.an) return "QR-Code aktivieren";
+  if(!s || !s.an) return "Link aktivieren";
   const bis = s.bis ? new Date(s.bis).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) : "";
-  return "QR-Code aktiv" + (bis ? " bis " + bis + " Uhr" : "");
+  return "Link aktiv" + (bis ? " bis " + bis + " Uhr" : "");
 }
 /* Oben auf der Seite nur ein Punkt am Teilen-Knopf: gruen = QR-Code gerade aktiv */
 function uwMobilMarke(){
   const an = !!(UW_MOBIL && UW_MOBIL.an);
-  document.querySelectorAll("#uwTeilen").forEach(b => { b.classList.toggle("an", an); b.title = an ? "QR-Code ist aktiv" : "QR-Code für Handy & Tablet"; });
+  document.querySelectorAll("#uwTeilen").forEach(b => { b.classList.toggle("an", an); b.title = an ? "Link ist aktiv" : "QR-Code und Link für Handy & Tablet"; });
   document.querySelectorAll(".uw-teilen-qr").forEach(q => q.classList.toggle("aus", !an));
 }
 async function uwMobilStatusLaden(){
@@ -820,7 +820,7 @@ async function uwTeilenDialog(neu){
   try{ const q = qrcode(0, "M"); q.addData(url); q.make(); qrSvg = q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }); }catch(e){ qrSvg = ""; }
   dlg.innerHTML = `<form method="dialog">
       <h3>Unterweisung am Handy & Tablet</h3>
-      <p class="pw-hint">QR-Code aktivieren und scannen lassen – das Cockpit öffnet sich, ohne Login. Mehrere Beschäftigte können gleichzeitig unterweisen, alle Nachweise landen hier. Danach wieder ausschalten; um 23:59 Uhr geht er von selbst aus.</p>
+      <p class="pw-hint">Link aktivieren und QR-Code scannen lassen – das Cockpit öffnet sich, ohne Login. Mehrere Beschäftigte können gleichzeitig unterweisen, alle Nachweise landen hier. Danach wieder ausschalten; um 23:59 Uhr geht er von selbst aus.</p>
       <div class="uw-teilen-qr${UW_MOBIL.an ? "" : " aus"}">${qrSvg}</div>
       <div class="uw-teilen-schalter" data-uwmobil-platz></div>
       <div class="uw-teilen-link"><input type="text" readonly id="uwTeilenUrl" value="${esc(url)}"><button type="button" class="btn sek" id="uwTeilenKopie">Link kopieren</button></div>
