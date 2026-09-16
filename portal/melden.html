@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Vorfall melden – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202609161037">
+<link rel="stylesheet" href="portal.css?v=202609161041">
+<script src="marke.js?v=2026-09-16b"></script>
 <style>
 /* Meldeformular: bewusst eigene, sehr grosse Bedienelemente - es wird am Handy in der Halle
    ausgefuellt, oft mit Handschuhen und unter Zeitdruck. */
@@ -318,6 +319,18 @@ $("#form").addEventListener("submit", async ev => {
 });
 
 $("#nochmal").addEventListener("click", () => location.reload());
+</script>
+
+<script>
+/* Kundenmarke ohne Login: der Melde-Token verraet den Betrieb (RPC melde_marke), Farben + Logo wie im Portal. */
+(function(){
+  try{
+    const tk = (new URLSearchParams(location.search).get("t") || localStorage.getItem("oak-melde-code") || "").replace(/^"|"$/g, "").trim();
+    if(!tk || !window.OAK_MARKE) return;
+    fetch(CFG.url + "/rest/v1/rpc/melde_marke", { method:"POST", headers:{ apikey: CFG.anon, "Content-Type":"application/json" }, body: JSON.stringify({ p_token: tk }) })
+      .then(r => r.ok ? r.json() : null).then(j => { if(j && j.marke){ OAK_MARKE.setzen(j.marke, j.kunde); const lg = document.querySelector("img.oak-logo, .kopf img"); if(lg && j.marke.logo){ lg.src = j.marke.logo; lg.alt = j.kunde || ""; lg.style.height = "44px"; } } }).catch(() => {});
+  }catch(e){}
+})();
 </script>
 </body>
 </html>

@@ -545,3 +545,16 @@ body.auf-start .fuss .fuss-text,body.app-modus .fuss .fuss-text{display:none}
 .kopf #adminBar .admin-hint{display:none}
 .kopf #adminBar select{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--rand);border-radius:8px;background:#fff;min-height:36px}
 @media(max-width:620px){.kopf #adminBar{width:100%;margin:6px 0 0}}
+
+/* ---- Maengel-To-Do (16.09.2026) ---- */
+.mg-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 12px}
+.mg-tab td{vertical-align:top}
+.mg-label{font-weight:600;line-height:1.35}
+.mg-massnahme{max-width:360px;font-size:13.5px;line-height:1.4}
+.mg-check{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;cursor:pointer}
+.mg-check input{width:26px;height:26px;margin:0;accent-color:var(--gruen);cursor:pointer}
+tr.mg-erledigt td{opacity:.6}
+tr.mg-erledigt .mg-label{text-decoration:line-through}
+.start-zahlen{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.start-zahlen{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.start-zahlen{grid-template-columns:1fr}}

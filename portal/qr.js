@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const t = await token();
   if(!t){ location.replace("index.html"); return; }
   const slug = q("k"), mid = q("mid");
+  if(window.OAK_MARKE) OAK_MARKE.anwenden(slug);
   try{
     const rows = await apiGet("/rest/v1/portal_dokumente?select=maschine,maschinen_id,maschinentyp,qr_svg,kunde"
       + "&kategorie=eq.anlagen&kunde_slug=eq." + encodeURIComponent(slug) + "&maschinen_id=eq." + encodeURIComponent(mid), false);

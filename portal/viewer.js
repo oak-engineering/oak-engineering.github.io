@@ -164,7 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(istShell){
       // Live-Kontext: Mandant aus dem Storage-Pfad (<slug>/...), Nutzername fuers Log.
       LIVE.slug = String(p).split("/")[0] || "";
-      if(window.OAK_MARKE) OAK_MARKE.anwenden(LIVE.slug);   // Farben des Betriebs auch in der Dokument-Ansicht
+      if(window.OAK_MARKE) await OAK_MARKE.anwenden(LIVE.slug);   // Farben des Betriebs auch in der Dokument-Ansicht
       LIVE.mid = param("mid") || "";
       LIVE.docTyp = LIVE_TYPEN[typ] ? typ : "";
       const s = getSession();
@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("logModal").addEventListener("click", ev=>{ if(ev.target.id==="logModal") ev.target.classList.add("hidden"); });
         badge(liveState ? "Stand geladen (zuletzt gespeicherte Version)" : "Bereit – Änderungen werden automatisch gespeichert");
       }
-      frame.srcdoc = mitLightbox(html, typ);
+      frame.srcdoc = mitLightbox(html, typ).replace(/<\/head>/i, (window.OAK_MARKE ? OAK_MARKE.styleBlock() : "") + "</head>");   // Kundenmarke ins Dokument
     } else if(typ==="html"){
       if(/\/(vom-betrieb|anfragen)\//.test(p)) throw new Error("Vom Betrieb hochgeladene Dateien werden nicht als Seite angezeigt.");
       frame.srcdoc = await apiGet(storagePfad(p), true);

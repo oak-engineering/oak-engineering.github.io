@@ -497,6 +497,7 @@ document.addEventListener('click', e => {
         { portal:'arbeitssicherheit/gefahrstoffe', ico:'schild',  text:'Gefahrstoffe' },
         { portal:'arbeitssicherheit/allg-gbu',     ico:'schild',  text:'Allgemeine Gefährdungsbeurteilungen' },
         { kopf:'Arbeitsschutz' },
+        { portal:'arbeitssicherheit/maengel',        ico:'pruef',  text:'Mängel · To-Do-Liste' },
         { portal:'arbeitssicherheit/unterweisungen', ico:'buch',   text:'Unterweisungen · Wer ist fällig' },
         { portal:'arbeitssicherheit/vf-arbeitssicherheit', ico:'warnung', text:'Gemeldete Vorfälle & Mängel' },
         { kopf:'Kontakt' },

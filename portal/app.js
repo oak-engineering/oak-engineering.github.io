@@ -15,6 +15,7 @@ const DOMAENEN = [
       { kat: "ck-arbeitssicherheit", label: "Überblick" },
       { kat: "hallenplan",    label: "Hallenplan" },
       { kat: "anlagen",       label: "Anlagen &amp; Maschinensicherheit" },
+      { kat: "maengel",       label: "Mängel" },
       { kat: "allg-gbu",      label: "Allgemeine GBU" },
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
       { kat: "begehungen",    label: "Begehungen" },
@@ -184,7 +185,8 @@ const START_SVG = {
   warnung:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 9v5M12 17v.5"/></svg>',
   begehung: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8.5 11l2 2 4.5-4.5M8.5 16.5h7"/></svg>',
   dokument: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>',
-  brief:    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>'
+  brief:    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  haken:    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7.5 12.5 3 3 6-7"/></svg>'
 };
 function renderStart(wrap){
   const tok = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
@@ -203,6 +205,7 @@ function renderStart(wrap){
                   : "#arbeitssicherheit/begehungen",
                "Maschine prüfen", "Checkliste zur Maschinensicherheit", START_SVG.begehung, true)}
       ${kachel("#arbeitssicherheit/anlagen", "Unterlagen einsehen", "Betriebsanweisungen, Gefährdungsbeurteilungen, Mängellisten", START_SVG.dokument, false)}
+      ${kachel("#arbeitssicherheit/maengel", "Mängel abarbeiten", (typeof mgOffen === "function" && MAENGEL.length ? mgOffen() + " offen · " : "") + "To-Do-Liste nach Priorität", START_SVG.haken, false)}
       ${kachel("#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto – Antwort ins Portal und per Mail", START_SVG.brief, false)}
     </div>
     ${startZahlen()}
@@ -224,6 +227,7 @@ function startZahlen(){
   const z = (n, label, href, stufe) => `<a class="start-zahl${n ? " sz-" + stufe : ""}" href="${href}"><b>${n}</b><span>${label}</span></a>`;
   return `<div class="start-zahlen">
     ${z(gefahr, "Anlagen im Gefahrbereich", "#arbeitssicherheit/anlagen?status=gefahr", "kritisch")}
+    ${z((typeof mgOffen === "function") ? mgOffen() : 0, "offene Mängel", "#arbeitssicherheit/maengel", "kritisch")}
     ${z(vorf, "offene Vorfälle", "#arbeitssicherheit/vf-arbeitssicherheit", "warnung")}
     ${z(faellig, "Unterweisungen fällig", "#arbeitssicherheit/unterweisungen", "warnung")}
   </div>`;
@@ -374,6 +378,7 @@ window.addEventListener("popstate", () => {
 function katRows(kat){
   if(kat.indexOf("ck-") === 0) return [];                        // Cockpit hat keinen Zähler
   if(kat.indexOf("uw-") === 0) return [];                        // Überblick/Katalog rechnen selbst
+  if(kat === "maengel") return [];                               // eigene Tabelle
   if(kat === "vf-arbeitssicherheit") return vBereich("arbeitssicherheit");
   if(kat === "vf-umwelt") return vBereich("umwelt");
   if(kat === "energie-massnahmen") return eSichtbar();           // Register statt Dokumentliste
@@ -409,6 +414,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "kapitel"){ renderKapitel(wrap); return; }
   if(kat === "unterweisungen"){ renderUnterweisungen(wrap); return; }   // unterweisungen.js: eine Seite, drei Abschnitte
   if(kat === "anfragen"){ renderAnfragen(wrap); return; }             // anfragen.js: Frage an OAK (Formular)
+  if(kat === "maengel"){ renderMaengel(wrap); return; }               // maengel.js: To-Do-Liste
   if(kat === "upload"){ renderUpload(wrap); return; }                 // upload.js: Dokument hochladen
   const rows = katRows(kat);
   if(!rows.length){
@@ -589,7 +595,7 @@ async function ladePortal(){
     Promise.all([
       apiGet("/rest/v1/portal_freigabe?select=kunde_slug,maschinen_id,freigegeben_am,freigegeben_von&freigegeben=eq.true", false)
         .then(fgr => { FREIGABE = {}; (fgr||[]).forEach(x=> FREIGABE[(x.kunde_slug||"")+"|"+(x.maschinen_id||"")]=x); }).catch(() => { FREIGABE = {}; }),
-      ladeEnergie().catch(() => {}), ladeNachweiseRest().catch(() => {}), ladeUwStart().catch(() => {})
+      ladeEnergie().catch(() => {}), ladeNachweiseRest().catch(() => {}), ladeUwStart().catch(() => {}), ladeMaengel().catch(() => {})
     ]).then(() => { renderSektionen(); updateWaechterStarten(); });
   }catch(e){
     if(e.message==="AUTH"){ zurLogin(); return; }

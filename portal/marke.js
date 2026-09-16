@@ -3,8 +3,14 @@
    genau wie app.js es auf der Hauptseite tut. Ohne Marke bleibt alles OAK-gruen. */
 "use strict";
 window.OAK_MARKE = {
+  aktuell: null,
+  /* <style>-Block fuer eingebettete Dokumente (Shells laufen in einer eigenen Origin, erben die :root-Variablen nicht) */
+  styleBlock(){
+    const m = this.aktuell || {}; if(!m.farbe) return "";
+    return '<style id="marke-kunde">:root{--gruen:' + m.farbe + ';--dunkel:' + (m.farbe_tief || m.farbe) + ';--hell:' + (m.farbe_hell || m.farbe) + ';--akzent:' + (m.akzent || '#eef2f8') + ';--primary:' + m.farbe + '}</style>';
+  },
   setzen(m, name){
-    m = m || {};
+    m = m || {}; this.aktuell = m;
     const st = document.documentElement.style;
     const setz = (k, v) => { if(v) st.setProperty(k, v); else st.removeProperty(k); };
     setz("--gruen", m.farbe);          setz("--oak", m.farbe);

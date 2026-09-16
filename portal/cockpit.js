@@ -107,7 +107,7 @@ function renderCockpit(wrap, bereich){
       <div class="ck-oben">
         <div class="ck-reihe">
           ${ckTile(z.gefahr, "Anlagen im Gefahrbereich", z.gefahr ? "vorrangig abstellen – Liste öffnen" : "keine", z.gefahr ? "kritisch" : "gut", "arbeitssicherheit/anlagen?status=gefahr")}
-          ${ckTile(z.maengel, "Mängel im Gefahrbereich", "aus den Mängellisten der Anlagen", z.maengel ? "kritisch" : "gut", "arbeitssicherheit/anlagen?status=gefahr")}
+          ${ckTile(z.maengel, "Mängel im Gefahrbereich", "aus den Mängellisten der Anlagen", z.maengel ? "kritisch" : "gut", "arbeitssicherheit/maengel")}
           ${ckTile(z.gesamt - z.offen, "Maßnahmen wirksam", "von " + z.gesamt + " dokumentierten", (z.gesamt && !(z.gesamt - z.offen)) ? "warnung" : "", "arbeitssicherheit/anlagen")}
           ${ckTile(vOffenN, "offene Vorfälle", unfaelle + " Unfälle · " + beinahe + " Beinahe-Unfälle", vOffenN ? "warnung" : "gut", "arbeitssicherheit/vf-arbeitssicherheit")}
           ${ckTile(z.freigegeben + "/" + z.anlagen, "Anlagen-Dokumente freigegeben", "durch die Sicherheitsfachkraft", "", "arbeitssicherheit/anlagen")}
