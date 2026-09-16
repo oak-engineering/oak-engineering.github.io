@@ -226,7 +226,66 @@ function renderStart(wrap){
 }
 
 /* Terminal, Meldeformular und Maschinen-Checkliste laufen im Portal (Rahmen), damit die Seitenleiste bleibt. */
+/* ---- Unterweisungs-Terminal im Vollbild, gesperrt (Nikolai 16.09.2026) -----------------------
+   Ab „Unterweisung starten" bedienen Mitarbeiter das Geraet. Das Terminal liegt ueber dem ganzen Fenster
+   (und im Vollbild), Seitenleiste, Zurueck und Neuladen fuehren nicht ins Portal. Beenden mit Rueckfrage
+   (nicht gespeicherte Fortschritte gehen verloren). */
+const TERM_SPERRE = "oak_terminal_gesperrt";
+function terminalVollbild(){
+  const tok = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
+  if(!tok){ alert("Für diesen Betrieb ist noch kein Terminal eingerichtet – bitte bei OAK engineering melden."); return; }
+  let o = document.getElementById("terminalSperre");
+  if(!o){
+    o = document.createElement("div"); o.id = "terminalSperre"; o.className = "terminal-sperre";
+    o.innerHTML = `<iframe title="Unterweisungs-Terminal" allow="fullscreen; camera; microphone"></iframe>
+      <div class="ts-leiste"><button type="button" class="ts-vollbild" hidden>Vollbild</button><button type="button" class="ts-ende">Terminal beenden</button></div>`;
+    document.body.appendChild(o);
+    o.querySelector("iframe").src = "kiosk.html#t=" + encodeURIComponent(tok);
+    o.querySelector(".ts-ende").addEventListener("click", terminalBeendenFragen);
+    o.querySelector(".ts-vollbild").addEventListener("click", () => terminalVollbildAn(o));
+  }
+  document.documentElement.classList.add("terminal-aktiv");
+  try{ sessionStorage.setItem(TERM_SPERRE, "1"); }catch(e){}
+  terminalVollbildAn(o);
+}
+function terminalVollbildAn(el){
+  try{ const r = el.requestFullscreen ? el.requestFullscreen({ navigationUI: "hide" }) : null; if(r && r.catch) r.catch(() => terminalVollbildKnopf()); }catch(e){ terminalVollbildKnopf(); }
+}
+function terminalVollbildKnopf(){
+  const b = document.querySelector("#terminalSperre .ts-vollbild"); if(b) b.hidden = !!document.fullscreenElement;
+}
+document.addEventListener("fullscreenchange", terminalVollbildKnopf);
+function terminalBeendenFragen(){
+  const o = document.getElementById("terminalSperre"); if(!o) return;
+  let dlg = document.getElementById("tsDlg");
+  if(!dlg){ dlg = document.createElement("dialog"); dlg.id = "tsDlg"; dlg.className = "pw-dlg"; o.appendChild(dlg); }
+  dlg.innerHTML = `<form method="dialog">
+      <h3>Terminal wirklich beenden?</h3>
+      <p class="pw-hint">Nicht gespeicherte Fortschritte gehen verloren. Eine angefangene Unterweisung muss dann neu begonnen werden.</p>
+      <div class="pw-akt"><button type="button" class="btn sek" id="tsAbbr">Nein, weiter</button><button type="submit" class="btn">Ja, beenden</button></div>
+    </form>`;
+  dlg.querySelector("#tsAbbr").addEventListener("click", () => dlg.close());
+  dlg.querySelector("form").addEventListener("submit", ev => { ev.preventDefault(); dlg.close(); terminalSchliessen(); });
+  dlg.showModal();
+}
+function terminalSchliessen(){
+  const o = document.getElementById("terminalSperre"); if(o) o.remove();
+  document.documentElement.classList.remove("terminal-aktiv");
+  try{ sessionStorage.removeItem(TERM_SPERRE); }catch(e){}
+  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+}
+/* Jeder Link auf das Terminal oeffnet es gesperrt im Vollbild (direkt im Klick, sonst verweigert der Browser das Vollbild) */
+document.addEventListener("click", ev => {
+  const a = ev.target.closest && ev.target.closest('a[href="#mehr/terminal"]');
+  if(!a) return;
+  ev.preventDefault(); ev.stopPropagation(); terminalVollbild();
+}, true);
+
 function renderEinbettung(wrap, was){
+  if(was === "terminal"){   // Adresse direkt aufgerufen: Terminal gesperrt oeffnen, dahinter die Unterweisungsseite
+    terminalVollbild();
+    const n = navNormal("mehr", "unterweisungen"); AKTIVE_DOM = n[0]; AKTIVE_SUB = n[1]; hashSetzen(true); renderSektionen(); return;
+  }
   const tok = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
   const mt  = (MELDE_TOK.find(x => x.kunde_slug === AKTIV) || {}).token || "";
   const kunde = (ALLE.find(x => x.kunde_slug === AKTIV) || {}).kunde || "";
@@ -420,6 +479,7 @@ window.portalKontext = function(){
            meldeToken: ((typeof MELDE_TOK !== "undefined" ? MELDE_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "" };
 };
 window.addEventListener("popstate", () => {
+  if(document.documentElement.classList.contains("terminal-aktiv")){ try{ history.pushState(null, "", location.href); }catch(e){} return; }   // Terminal gesperrt: kein Zurueck
   if(!PORTAL_BEREIT) return;
   if(!hashLesen()){ AKTIVE_DOM = "start"; AKTIVE_SUB = null; }
   renderSektionen(); hashSetzen(true); window.scrollTo(0, 0);
@@ -753,6 +813,7 @@ async function ladePortal(){
     renderSubTabs();
     renderSektionen();                        // Startseite steht – der Rest kommt im Hintergrund
     hashSetzen(true); PORTAL_BEREIT = true;
+    try{ if(sessionStorage.getItem(TERM_SPERRE) === "1") terminalVollbild(); }catch(e){}   // nach Neuladen bleibt das Terminal gesperrt
     /* Welle 3 – im Hintergrund: Freigaben, Energie, Unterweisungs-Details; danach einmal nachzeichnen */
     Promise.all([
       apiGet("/rest/v1/portal_freigabe?select=kunde_slug,maschinen_id,freigegeben_am,freigegeben_von&freigegeben=eq.true", false)

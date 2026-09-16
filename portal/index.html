@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>OAK Kundenportal</title>
-<link rel="stylesheet" href="portal.css?v=202609161303">
+<link rel="stylesheet" href="portal.css?v=202609161322">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <script src="marke.js?v=2026-09-16d"></script>
 <script>/* Angemeldet? Dann gleich die App-Huelle zeigen statt kurz die Anmeldeseite (Nikolai 16.09.) */
 try{ if(localStorage.getItem("oak_portal_session")) document.documentElement.classList.add("hat-sitzung"); }catch(e){}
+try{ if(sessionStorage.getItem("oak_terminal_gesperrt") === "1") document.documentElement.classList.add("terminal-aktiv"); }catch(e){}
 /* Installierte App (Surface der Schichtfuehrer) = einfache Ansicht; Browser = gewohnte Ansicht mit Reitern (Nikolai 16.09.) */
 try{ if(matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: minimal-ui)").matches || navigator.standalone === true || /[?&]app=1\b/.test(location.search)) document.documentElement.classList.add("ist-app"); }catch(e){}</script>
 </head>
@@ -140,8 +141,8 @@ try{ if(matchMedia("(display-mode: standalone)").matches || matchMedia("(display
 <script src="anfragen.js?v=2026-09-16b"></script>
 <script src="upload.js?v=2026-09-16c"></script>
 <script src="maengel.js?v=2026-09-16i"></script>
-<script src="app.js?v=2026-09-16t"></script>
+<script src="app.js?v=2026-09-16u"></script>
 <script>if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }</script>
-<script src="../site.js?v=202609161303"></script>
+<script src="../site.js?v=202609161322"></script>
 </body>
 </html>

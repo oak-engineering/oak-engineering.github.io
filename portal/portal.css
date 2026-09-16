@@ -695,3 +695,13 @@ a.mg-link:hover{color:var(--gruen);text-decoration:underline}
 .uwt-stelle b{background:#fff3c4}
 .pw-msg.ok{color:#1e7b34}
 .uw-suche{font:inherit;font-size:14px;min-height:44px;padding:8px 12px;border:1px solid #d0d5dd;border-radius:8px;min-width:220px}
+
+/* Unterweisungs-Terminal gesperrt im Vollbild (Mitarbeiter bedienen, Portal dahinter unerreichbar) */
+.terminal-sperre{position:fixed;inset:0;z-index:2147483000;background:#fff}
+.terminal-sperre iframe{display:block;width:100%;height:100%;border:0}
+.ts-leiste{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;opacity:.45;z-index:2}
+.ts-leiste:hover,.ts-leiste:focus-within{opacity:1}
+.ts-leiste button{font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:12.5px;min-height:34px;padding:4px 10px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054;cursor:pointer}
+.ts-leiste button[hidden]{display:none}
+html.terminal-aktiv,html.terminal-aktiv body{overflow:hidden}
+html.terminal-aktiv #appView,html.terminal-aktiv .tabbar-fest{visibility:hidden}
