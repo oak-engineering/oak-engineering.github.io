@@ -263,7 +263,9 @@ function renderAdminBar(){
   const kunden = [...new Map(ALLE.map(r => [r.kunde_slug, r.kunde || r.kunde_slug])).entries()]
     .sort((a,b) => String(a[1]).localeCompare(String(b[1])));
   bar.classList.remove("hidden");
-  bar.innerHTML = `<span class="admin-tag">Admin</span> <label for="kundeWahl">Kundenportal:</label>
+  const kopfWrap = document.querySelector("#appView .kopf .wrap");
+  if(kopfWrap && bar.parentElement !== kopfWrap) kopfWrap.insertBefore(bar, kopfWrap.querySelector(".rechts"));   // Nikolai: in die Kopfzeile
+  bar.innerHTML = `<span class="admin-tag">Admin</span> <label for="kundeWahl">Kunde:</label>
     <select id="kundeWahl">${kunden.map(([slug,name]) =>
       `<option value="${esc(slug)}"${slug===AKTIV?" selected":""}>${esc(name)}</option>`).join("")}</select>
     <span class="admin-hint">Sie sehen die Ansicht dieses Kunden.</span>`;
@@ -563,32 +565,32 @@ async function ladePortal(){
     document.body.classList.toggle("app-modus", !ADMIN);   // Schichtfuehrer/Fachkraft: Leiste unten statt Reiter
     MITGLIED = (me && me[0]) || null;
 
-    const rows = await apiGet("/rest/v1/portal_dokumente?select=*&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc", false);
+    /* Welle 2 – alles parallel, ohne Ballast (qr_svg ist 1 MB und wird hier nie gebraucht) */
+    const SPALTEN = "id,kunde,kunde_slug,maschine,maschinen_id,maschinentyp,storage_path,typen,status,updated_at,kategorie,titel,doc_typ,stand,url,sortierung";
+    const [rows] = await Promise.all([
+      apiGet("/rest/v1/portal_dokumente?select=" + SPALTEN + "&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc", false),
+      ladeVorfaelle(), ladeNachweiseStart(), markeLaden(), meldeTokenLaden()
+    ]);
     ALLE = rows || [];
-    try{
-      const fgr = await apiGet("/rest/v1/portal_freigabe?select=kunde_slug,maschinen_id,freigegeben_am,freigegeben_von&freigegeben=eq.true", false);
-      FREIGABE = {}; (fgr||[]).forEach(x=> FREIGABE[(x.kunde_slug||"")+"|"+(x.maschinen_id||"")]=x);
-    }catch(e){ FREIGABE = {}; }
-    await ladeVorfaelle();
-    await ladeEnergie();
-    await ladeNachweise();
     /* AKTIV ist der Mandant, in dem gearbeitet wird. Fuer Admins der im Umschalter
        gewaehlte Kunde, fuer alle anderen der eigene - sonst schickt das Portal beim
        Anlegen kunde_slug: null und die Zeile wird von RLS abgewiesen. */
     AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null)
                   : (MITGLIED && MITGLIED.kunde_slug) || null;
-    await ladeUwStart();
-    await markeLaden();
-    await meldeTokenLaden();
     AKTIVE_DOM = null; AKTIVE_SUB = null;
     if(!hashLesen()) AKTIVE_DOM = "start";   // ohne Adresse: die Startseite mit den vier Knoepfen
     setKundeName();
     renderAdminBar();
     renderTabs();
     renderSubTabs();
-    renderSektionen();
+    renderSektionen();                        // Startseite steht – der Rest kommt im Hintergrund
     hashSetzen(true); PORTAL_BEREIT = true;
-    updateWaechterStarten();
+    /* Welle 3 – im Hintergrund: Freigaben, Energie, Unterweisungs-Details; danach einmal nachzeichnen */
+    Promise.all([
+      apiGet("/rest/v1/portal_freigabe?select=kunde_slug,maschinen_id,freigegeben_am,freigegeben_von&freigegeben=eq.true", false)
+        .then(fgr => { FREIGABE = {}; (fgr||[]).forEach(x=> FREIGABE[(x.kunde_slug||"")+"|"+(x.maschinen_id||"")]=x); }).catch(() => { FREIGABE = {}; }),
+      ladeEnergie().catch(() => {}), ladeNachweiseRest().catch(() => {}), ladeUwStart().catch(() => {})
+    ]).then(() => { renderSektionen(); updateWaechterStarten(); });
   }catch(e){
     if(e.message==="AUTH"){ zurLogin(); return; }
     for(const id of ["#katTabs","#subTabs"]){ const nav=$(id); if(nav){ nav.classList.add("hidden"); nav.innerHTML=""; } }

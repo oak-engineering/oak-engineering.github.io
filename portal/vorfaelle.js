@@ -39,7 +39,7 @@ function vOffen(rows){ return rows.filter(v => v.status !== "erledigt").length; 
 
 async function ladeVorfaelle(){
   try{
-    VORFAELLE = await apiGet("/rest/v1/portal_vorfaelle?select=*&order=ereignis_am.desc,angelegt_am.desc", false) || [];
+    VORFAELLE = await apiGet("/rest/v1/portal_vorfaelle?select=id,kunde_slug,kunde,art,domaene,ereignis_am,ereignis_zeit,ort,anlage,beschreibung,verletzte,erste_hilfe,stoff,menge,wohin,status,bearbeitung,quelle,angelegt_am,updated_at&order=ereignis_am.desc,angelegt_am.desc", false) || [];   // Foto (Base64, bis 2,5 MB) erst auf Klick
   }catch(e){ VORFAELLE = []; }
   V_MELDER = {};
   if(typeof ADMIN !== "undefined" && ADMIN){
@@ -90,7 +90,7 @@ function vKarte(v){
     <div class="v-text">${esc(v.beschreibung).replace(/\n/g, "<br>")}</div>
     <div class="v-merkmale">${merkmale}</div>
     <table class="v-daten">${zeilen.map(([k, w]) => `<tr><th>${k}</th><td>${w}</td></tr>`).join("")}</table>
-    ${vFoto(v.foto)}
+    ${v.foto === undefined ? `<button class="btn-klein v-foto-laden" data-id="${esc(v.id)}">Foto anzeigen</button>` : vFoto(v.foto)}
     ${notiz}
     <div class="v-fuss">Eingegangen ${vDatum(v.angelegt_am)}${v.quelle === "portal" ? " · im Portal erfasst" : " · über den Meldelink"}</div>
   </details>`;
@@ -124,6 +124,15 @@ function renderVorfaelle(wrap, bereich){
       : `<div class="leer">Bisher keine Meldungen.<br><span style="font-style:normal">Der Meldelink für die Beschäftigten hängt als QR-Aushang in der Halle.</span></div>`}`;
   wrap.appendChild(sec);
 
+  sec.querySelectorAll(".v-foto-laden").forEach(b => b.addEventListener("click", async () => {
+    b.disabled = true; b.textContent = "lädt …";
+    try{
+      const r = await apiGet("/rest/v1/portal_vorfaelle?select=foto&id=eq." + encodeURIComponent(b.dataset.id), false);
+      const v = VORFAELLE.find(x => x.id === b.dataset.id); const foto = (r && r[0] && r[0].foto) || null;
+      if(v) v.foto = foto;
+      b.insertAdjacentHTML("afterend", foto ? vFoto(foto) : '<span class="uw-leise">kein Foto</span>'); b.remove();
+    }catch(e){ b.disabled = false; b.textContent = "Foto anzeigen"; }
+  }));
   if(!ADMIN) return;
   sec.querySelectorAll(".v-status").forEach(s => s.addEventListener("change", async ev => {
     const el = ev.target; el.disabled = true;

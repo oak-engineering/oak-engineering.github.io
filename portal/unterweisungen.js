@@ -22,20 +22,24 @@ const UW_FAELLIG_TAGE = 365, UW_WARNUNG_TAGE = 335;
 const UW_SPALTEN = "kunde_slug,mitarbeiter_name,funktion,bereich,module,unterweisung," +
                    "bestanden,bestaetigung,config_version,created_at";
 
-async function ladeNachweise(){
+/* Pflichtteil fuer die Startseite (Nachweise, Beschaeftigte, Geraetecode) – der Rest kommt im Hintergrund. */
+async function ladeNachweiseStart(){
   try{
     NACHWEISE = await apiGet("/rest/v1/unterweisungsnachweise?select=" + UW_SPALTEN +
                              "&order=created_at.desc", false) || [];
   }catch(e){ NACHWEISE = []; }
+  try{ UW_P = await apiGet("/rest/v1/uw_person?select=id,name,status,kunde_slug,uw_person_rolle(rolle_id)&order=name.asc", false) || []; }catch(e){ UW_P = []; }
+  try{ UW_TOK = await apiGet("/rest/v1/portal_terminal_token?select=token,kunde_slug,bezeichnung&aktiv=is.true", false) || []; }catch(e){ UW_TOK = []; }
+}
+async function ladeNachweiseRest(){
   try{
     BAUSTEINE = await apiGet("/rest/v1/portal_uw_baustein?select=*&order=sortierung.asc,gueltig_ab.desc",
                              false) || [];
   }catch(e){ BAUSTEINE = []; }
-  try{ UW_P = await apiGet("/rest/v1/uw_person?select=id,name,status,kunde_slug,uw_person_rolle(rolle_id)&order=name.asc", false) || []; }catch(e){ UW_P = []; }
   try{ UW_R = await apiGet("/rest/v1/uw_rolle?select=id,name,typ,status,kunde_slug&order=name.asc", false) || []; }catch(e){ UW_R = []; }
-  try{ UW_TOK = await apiGet("/rest/v1/portal_terminal_token?select=token,kunde_slug,bezeichnung&aktiv=is.true", false) || []; }catch(e){ UW_TOK = []; }
   await ladeFolien();
 }
+async function ladeNachweise(){ await ladeNachweiseStart(); await ladeNachweiseRest(); }
 
 /* Darf freigeben: OAK-Admin oder die Fachkraft des Betriebs. Die Geschäftsführung liest mit,
    entscheidet aber nicht über Unterweisungsinhalte. */

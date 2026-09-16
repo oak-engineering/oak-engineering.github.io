@@ -538,3 +538,10 @@ body.marke-kunde .kopf #kundeLogo{border-right:none;padding-right:0}
 body.app-modus #pwBtn{display:none}
 @media(max-width:900px){#pwBtn{display:none}}
 body.auf-start .fuss .fuss-text,body.app-modus .fuss .fuss-text{display:none}
+
+/* Admin-Leiste (Kundenwahl) sitzt in der Kopfzeile */
+.kopf #adminBar{display:flex;align-items:center;gap:8px;margin:0 12px;padding:6px 10px;font-size:12.5px;flex:0 1 auto;
+  background:var(--akzent);border:1px solid var(--rand);border-radius:10px}
+.kopf #adminBar .admin-hint{display:none}
+.kopf #adminBar select{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--rand);border-radius:8px;background:#fff;min-height:36px}
+@media(max-width:620px){.kopf #adminBar{width:100%;margin:6px 0 0}}
