@@ -114,11 +114,13 @@ async function katalogSignaturLesen(){
   if(!Array.isArray(r)) return null;
   return r.length + "|" + ((r[0] && r[0].updated_at) || "");
 }
-function updateBannerZeigen(){
-  if(document.getElementById("updateBanner")) return;
+/* EIN Hinweis unten mittig – fuer neue Dokumente UND neue Programmversion (Nikolai 16.09.: nicht zusaetzlich ein Knopf oben rechts) */
+function updateBannerZeigen(text){
+  const alt = document.getElementById("updateBanner");
+  if(alt){ if(text && alt.dataset.text !== text) alt.querySelector("span").textContent = "Es gibt Neuerungen im Portal."; return; }
   const d = document.createElement("div");
-  d.id = "updateBanner"; d.className = "update-banner";
-  d.innerHTML = '<span>Es gibt aktualisierte Dokumente.</span>'
+  d.id = "updateBanner"; d.className = "update-banner"; d.dataset.text = text || "";
+  d.innerHTML = '<span>' + esc(text || "Es gibt aktualisierte Dokumente.") + '</span>'
     + '<button class="btn" id="updateJetzt" type="button">Jetzt aktualisieren</button>'
     + '<button class="btn sek" id="updateSpaeter" type="button">Später</button>';
   document.body.appendChild(d);
@@ -941,12 +943,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let gezeigt = false;
   function knopfZeigen(){
     if(gezeigt) return; gezeigt = true;
-    const k = document.createElement("button");
-    k.type = "button"; k.className = "neu-laden"; k.title = "Neue Version ist online – jetzt laden";
-    k.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg><span>Aktualisieren</span>';
-    k.addEventListener("click", () => location.reload());
-    const ziel = document.querySelector("#appView .kopf .rechts");
-    if(ziel) ziel.insertBefore(k, ziel.firstChild); else document.body.appendChild(k);
+    updateBannerZeigen("Eine neue Version des Portals ist online.");
   }
   async function versionPruefen(){
     if(!meins || gezeigt) return;
