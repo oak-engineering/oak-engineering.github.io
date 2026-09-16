@@ -105,7 +105,8 @@ function renderCockpit(wrap, bereich){
     const mg = mgGeladen ? mgSichtbar().filter(m => m.status !== "erledigt") : [];
     const mgZaun = mg.filter(m => mgFeld(m, "thema") === "schutzzaun").length, mgGefahr = mg.filter(m => (m.bewertung_manuell || m.band) === "gefahr").length;
     const begehungen = sichtbar().filter(r => r.kategorie === "begehungen");
-    const letzteBeg = begehungen.map(r => r.stand).concat(sichtbar().filter(r => r.kategorie === "anlagen").map(r => r.stand)).filter(Boolean).sort().slice(-1)[0] || "";
+    /* Letzte Begehung = juengstes Begehungsprotokoll (nicht das Erstelldatum eines Maschinendokuments) */
+    const letzteBeg = begehungen.map(r => r.stand).filter(Boolean).sort().slice(-1)[0] || "";
     const uwF = (typeof uwFaelligZahl === "function") ? uwFaelligZahl() : 0;
     const uwRows = (typeof uwSichtbar === "function") ? uwSichtbar() : [];
     const uwLetzt = uwRows.length ? uwRows[0].created_at : "";

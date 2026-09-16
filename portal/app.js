@@ -281,6 +281,13 @@ document.addEventListener("click", ev => {
   ev.preventDefault(); ev.stopPropagation(); terminalVollbild();
 }, true);
 
+/* Vorfälle: oben der Knopf zum Melden (Nikolai 16.09.) – öffnet das Meldeformular im Portal */
+function vorfallMeldenKnopf(wrap, bereich){
+  const sec = document.createElement("section"); sec.className = "sektion uw-hero vf-melden-hero";
+  sec.innerHTML = `<a class="uw-start" href="#mehr/melden${bereich === "umwelt" ? "?art=umwelt" : ""}">${bereich === "umwelt" ? "Umweltvorfall melden" : "Vorfall melden"}</a>
+    <p class="uw-erkl uw-hero-text">Unfall, Beinahe-Unfall, unsicherer Zustand oder Umweltvorfall – mit Foto. Die Meldung geht an OAK engineering.</p>`;
+  wrap.appendChild(sec);
+}
 function renderEinbettung(wrap, was){
   if(was === "terminal"){   // Adresse direkt aufgerufen: Terminal gesperrt oeffnen, dahinter die Unterweisungsseite
     terminalVollbild();
@@ -519,8 +526,8 @@ function renderSektion(wrap, kat, label, zeigeHeading){
       wrap.appendChild(k); }
     renderCockpit(wrap, kat.slice(3)); return;
   }
-  if(kat === "vf-arbeitssicherheit"){ renderVorfaelle(wrap, "arbeitssicherheit"); return; }
-  if(kat === "vf-umwelt"){ renderVorfaelle(wrap, "umwelt"); return; }               // vorfaelle.js
+  if(kat === "vf-arbeitssicherheit"){ vorfallMeldenKnopf(wrap, "arbeitssicherheit"); renderVorfaelle(wrap, "arbeitssicherheit"); return; }
+  if(kat === "vf-umwelt"){ vorfallMeldenKnopf(wrap, "umwelt"); renderVorfaelle(wrap, "umwelt"); return; }               // vorfaelle.js
   if(kat === "energie-massnahmen"){ renderEnergie(wrap); return; }                  // energie.js
   /* Unterweisungen: erst die Nachweise aus dem Terminal (unterweisungen.js), darunter wie
      gehabt die hinterlegten Unterlagen - beides gehoert zum selben Reiter. */
@@ -712,8 +719,8 @@ function renderSektionen(){
   seitenKopf(wrap);
   if(AKTIVE_DOM === "maengel"){ renderMaengel(wrap); return; }
   if(AKTIVE_DOM === "mehr"){
-    if(AKTIVE_SUB === "vorfaelle"){ renderVorfaelle(wrap, "arbeitssicherheit"); return; }
-    if(AKTIVE_SUB === "vf-umwelt"){ renderVorfaelle(wrap, "umwelt"); return; }
+    if(AKTIVE_SUB === "vorfaelle"){ vorfallMeldenKnopf(wrap, "arbeitssicherheit"); renderVorfaelle(wrap, "arbeitssicherheit"); return; }
+    if(AKTIVE_SUB === "vf-umwelt"){ vorfallMeldenKnopf(wrap, "umwelt"); renderVorfaelle(wrap, "umwelt"); return; }
     if(["terminal", "melden", "pruefen"].includes(AKTIVE_SUB)){ renderEinbettung(wrap, AKTIVE_SUB); return; }
     renderSektion(wrap, AKTIVE_SUB, MEHR_LABEL[AKTIVE_SUB] || "", false); return;
   }

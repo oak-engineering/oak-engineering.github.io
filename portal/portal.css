@@ -708,3 +708,7 @@ html.terminal-aktiv #appView,html.terminal-aktiv .tabbar-fest{visibility:hidden}
 
 #uwListe td{vertical-align:middle}
 #uwListe .uw-knoepfe .btn-klein{margin-top:0;margin-bottom:0}
+
+.vf-melden-hero{padding:6px 0 4px;text-align:left}
+.vf-melden-hero .uw-start{min-height:56px;font-size:17px;padding:12px 26px;min-width:0}
+.vf-melden-hero .uw-hero-text{margin:10px 0 0;max-width:none}

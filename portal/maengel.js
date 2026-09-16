@@ -172,6 +172,7 @@ function mgDialog(id){
       <h3>Mangel erledigt</h3>
       <p class="pw-hint"><b>${esc(mgMaschine(m))}</b> – ${esc(m.label)}</p>
       <label>Wer hat es erledigt?<input type="text" id="mgWer" autocomplete="name" placeholder="Vor- und Nachname" value="${esc(/^Schichtf/i.test(window.__oakName || "") ? "" : (window.__oakName || ""))}"></label>
+      <label>Erledigt am<input type="date" id="mgDatum" value="${new Date().toISOString().slice(0, 10)}" max="${new Date().toISOString().slice(0, 10)}"></label>
       <label>Was wurde gemacht?<textarea id="mgNotiz" rows="3" placeholder="z. B. Schutzzaun geschlossen, Tür verriegelt"></textarea></label>
       <label>Foto als Nachweis<input type="file" id="mgFoto" accept="image/*" capture="environment"></label>
       <img id="mgVorschau" class="mg-vorschau" alt="" hidden>
@@ -187,6 +188,8 @@ function mgDialog(id){
     const notiz = dlg.querySelector("#mgNotiz").value.trim(), datei = foto.files[0], wer = dlg.querySelector("#mgWer").value.trim();
     msg.className = "pw-msg";
     if(wer.length < 3){ msg.textContent = "Bitte eintragen, wer den Mangel erledigt hat."; msg.classList.add("fehler"); dlg.querySelector("#mgWer").focus(); return; }
+    const datumWert = dlg.querySelector("#mgDatum").value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(datumWert)){ msg.textContent = "Bitte das Datum der Erledigung eintragen."; msg.classList.add("fehler"); return; }
     if(!notiz && !datei){ msg.textContent = "Bitte kurz schreiben, was gemacht wurde, oder ein Foto aufnehmen."; msg.classList.add("fehler"); return; }
     const knopf = dlg.querySelector("#mgSpeichern"); knopf.disabled = true; msg.textContent = "Wird gespeichert …";
     try{
@@ -201,7 +204,8 @@ function mgDialog(id){
         if(!r.ok) throw new Error("Foto konnte nicht hochgeladen werden (" + r.status + ")");
       }
       const s = getSession(); const name = wer;
-      const jetzt = new Date().toISOString();
+      /* Erledigt-Datum aus dem Formular (Uhrzeit mittags, damit keine Zeitzone den Tag verschiebt); Log behaelt den echten Zeitpunkt */
+      const jetzt = (datumWert === new Date().toISOString().slice(0, 10)) ? new Date().toISOString() : datumWert + "T12:00:00";
       await apiSend("PATCH", "/rest/v1/portal_maengel?id=eq." + encodeURIComponent(m.id),
         { status: "erledigt", erledigt_am: jetzt, erledigt_von: name, notiz: notiz || null, nachweis_pfad: pfad, updated_at: jetzt }, "return=minimal");
       await apiSend("POST", "/rest/v1/portal_maengel_log", { mangel_id: m.id, kunde_slug: m.kunde_slug, aktion: "erledigt",
