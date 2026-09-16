@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unterweisungs-Terminal (Version 1.0) – OAK engineering</title>
+<!-- ONLINE-FASSUNG (portal/kiosk.html), erzeugt aus kunden/Wibo …/unterweisungen/terminal/index.html (Master).
+     Unterschiede zum Master: Module werden nicht aus dem lokalen Ordner, sondern ueber den Geraete-Code
+     geschuetzt aus dem Kundenportal geladen (Edge Function unterweisung-datei); Versions-Schalter 1.0/2.0;
+     Uebersicht-Link zeigt aufs Portal. Alles andere ist der Master, Stand 16.09.2026. -->
+<!--
+  OAK engineering – Universelle Vorlage: Online-Unterweisung (modular, PDF/Video)
+  Ablauf: Zugangscode -> Name + Rolle -> die der Rolle zugewiesenen Module (je ein PDF ODER Video)
+  werden in voller Größe durchgeklickt -> Quiz (aus den Modulen) -> Nachweis per E-Mail.
+  Im Admin (Zahnrad) lädt man pro Modul EINE Datei hoch (PDF oder Video) und pflegt die Fragen.
+  KEINE Einzelfolien-Bearbeitung. Kein Backend, keine Datenbank.
+-->
+<style>
+  :root{
+    --primary:#003078; --dark:#001d4d; --accent:#e3eaf6; --bg:#f5f7fb; --topbar:#ffffff;
+    --ink:#1b2330; --muted:#5b6472; --line:#e6e9f0; --ok:#1c7a43; --bad:#c0392b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);font-family:"Segoe UI",system-ui,Arial,sans-serif;color:var(--ink);line-height:1.45}
+  img{max-width:100%}
+  .hidden{display:none!important}
+  .wrap{max-width:1100px;margin:0 auto;padding:0 18px}
+  .wide{max-width:1320px}
+  button{font-family:inherit}
+
+  .topbar{position:sticky;top:0;z-index:30;background:var(--topbar);border-bottom:1px solid var(--line);box-shadow:0 1px 6px rgba(0,0,0,.04)}
+  .topbar .wrap{display:flex;align-items:center;gap:14px;height:64px}
+  .topbar .tb-logo{height:40px;width:auto;display:block}
+  .topbar .tb-title{font-weight:700;color:var(--primary);font-size:17px}
+  .topbar .spacer{flex:1}
+  .gear{border:none;background:transparent;cursor:pointer;font-size:20px;color:var(--muted);padding:6px;border-radius:8px}
+  .gear:hover{background:var(--accent)}
+
+  .btn{display:inline-flex;align-items:center;gap:8px;justify-content:center;border:none;border-radius:10px;
+       background:var(--primary);color:#fff;font-size:16px;font-weight:600;padding:13px 22px;cursor:pointer;transition:.15s}
+  .btn:hover{background:var(--dark)}
+  .btn.ghost{background:transparent;color:var(--primary);border:1.5px solid var(--primary)}
+  .btn.ghost:hover{background:var(--accent)}
+  .btn.sm{padding:8px 13px;font-size:14px;border-radius:8px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:30px;box-shadow:0 4px 22px rgba(20,30,60,.05)}
+  .center-screen{min-height:calc(100vh - 65px);display:flex;align-items:center;justify-content:center;padding:10px 0}
+  .center-screen .card{max-width:560px;width:100%}
+  /* Startbildschirm kompakt: muss am Terminal (1366×768) ohne Scrollen passen */
+  #screen-start .card{padding:18px 24px}
+  #screen-start h1{font-size:23px;margin-bottom:2px}
+  #screen-start .lead{font-size:14px;margin:4px 0 6px;line-height:1.45}
+  #screen-start #folderBar{padding:6px 10px!important;margin-bottom:8px!important}
+  #screen-start #roleModules{font-size:12px;line-height:1.35}
+  #screen-start label{margin:6px 0 3px;font-size:13px}
+  #screen-start input[type=text],#screen-start select{padding:8px 12px;font-size:14px}
+  #screen-start details{margin-top:8px!important}
+  #screen-start #startBtn{margin-top:12px!important;padding:11px}
+  #screen-start #startCockpit{margin-top:6px!important;padding:8px}
+  .lead{color:var(--muted);font-size:15px;margin:8px 0 22px}
+  h1{font-size:26px;color:var(--primary);margin-bottom:6px}
+  h2{font-size:21px;color:var(--primary);margin-bottom:10px}
+  label{display:block;font-weight:600;font-size:14px;margin:14px 0 6px}
+  input[type=text],input[type=email],input[type=number],input[type=password],input[type=url],select,textarea{
+    width:100%;border:1.5px solid var(--line);border-radius:10px;padding:11px 13px;font-size:15px;font-family:inherit;background:#fff}
+  textarea{resize:vertical;min-height:70px}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary)}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>*{flex:1;min-width:140px}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  .err{color:var(--bad);font-size:14px;margin-top:8px;min-height:18px}
+  .pill{display:inline-block;background:var(--accent);color:var(--dark);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:600}
+  .logo-lg{max-height:64px;margin-bottom:18px}
+
+  /* Viewer (PDF/Video in voller Größe) */
+  #screen-present{padding:14px 0 24px}
+  .rotahint{display:none;font-size:13px;color:var(--primary);text-align:center;margin-top:8px;font-weight:600}
+  #presFS:fullscreen{max-width:none;width:100vw;height:100vh;display:flex;flex-direction:column;justify-content:center;background:#0a1430;padding:6px;margin:0}
+  #presFS:fullscreen .modstrip{display:none}
+  #presFS:fullscreen .viewer{flex:1;min-height:0;border-radius:8px}
+  #presFS:fullscreen .controls{padding:6px 4px}
+  #presFS:fullscreen .rotahint,#presFS:fullscreen .tip-desktop{display:none}
+  @media (max-width:820px){ #screen-present .wrap{padding-left:6px;padding-right:6px} .viewer{min-height:42vh} .tip-desktop{display:none} }
+  @media (orientation:portrait) and (max-width:820px){ .rotahint{display:block} }
+  .viewer{min-height:60vh;display:flex;align-items:center;justify-content:center;background:#0a1430;border-radius:14px;overflow:hidden}
+  .viewer canvas.pdfpage{max-width:100%;display:block;background:#fff;cursor:pointer;box-shadow:0 8px 30px rgba(0,0,0,.35)}
+  .viewer video{max-width:100%;max-height:82vh;border-radius:10px;background:#000}
+  .viewer .ph{color:#cdd6ea;text-align:center;padding:60px 20px}
+  .controls{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .controls .cbtn{border:1.5px solid var(--line);background:#fff;border-radius:10px;min-width:46px;height:46px;font-size:15px;cursor:pointer;color:var(--primary);padding:0 16px}
+  .controls .cbtn:hover{background:var(--accent)}
+  .controls .cbtn:disabled{opacity:.4;cursor:not-allowed}
+  .controls .ctxt{font-size:14px;color:var(--muted);font-weight:600}
+  .modstrip{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+  .modstrip .m{font-size:12px;padding:4px 10px;border-radius:999px;background:#eef1f7;color:var(--muted)}
+  .modstrip .m.active{background:var(--primary);color:#fff}
+  .modstrip .m.done{background:var(--accent);color:var(--dark)}
+  /* ===== Immersiv-Modus: interaktives Modul füllt den ganzen Bildschirm (Kiosk) ===== */
+  body.imm{overflow:hidden}
+  body.imm .topbar{display:none}
+  body.imm #screen-present .wrap{max-width:none;padding:0}
+  body.imm .modstrip,body.imm .controls,body.imm .rotahint,body.imm .tip-desktop{display:none}
+  body.imm .viewer{min-height:100vh;border-radius:0;background:#fff}
+  body.imm .viewer iframe{height:100vh!important}
+  /* Mittige Dialoge (Vorlage: „Nächstes Modul"-Overlay) – ersetzen alle nativen confirm/alert im Lern-Flow */
+  .modal-ov{position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:350;display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal-ov .md-card{background:#fff;border-radius:16px;padding:26px 30px;max-width:440px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  /* Admin-Klickzone (5×-Tipp) darf im Immersiv-Modus nicht über dem Modul-iframe liegen (verdeckt sonst das ☰) */
+  body.imm #admZone{display:none}
+  #modDoneOv{position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:330;display:flex;align-items:center;justify-content:center;padding:20px}
+  #modDoneOv .md-card{background:#fff;border-radius:16px;padding:26px 30px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+  #modDoneOv.hidden{display:none}
+  #nextChip{position:fixed;right:14px;bottom:14px;z-index:320;box-shadow:0 6px 20px rgba(0,0,0,.25)}
+  /* ===== Ergebnis/Nachweis: zweispaltig & kompakt – kein Scrollen am Terminal ===== */
+  #screen-result .card.resgrid{max-width:1040px;padding:22px 26px;display:grid;grid-template-columns:1fr 1fr;gap:4px 28px;align-items:start}
+  #screen-result .resgrid .res-l,#screen-result .resgrid .res-r{min-width:0}
+  @media(max-width:900px){#screen-result .card.resgrid{grid-template-columns:1fr;max-width:720px}}
+  .askbox{border:1.5px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:10px}
+  .askbox summary{cursor:pointer;font-size:14px;color:var(--primary);font-weight:600}
+  .nachweis details summary{cursor:pointer;color:var(--primary)}
+
+  .q{border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  .q .qt{font-weight:600;margin-bottom:12px}
+  .q .qmod{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em}
+  .opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid var(--line);border-radius:9px;margin:7px 0;cursor:pointer}
+  .opt:hover{border-color:var(--primary)}
+  .opt input{width:auto;margin:0}
+  .opt.correct{border-color:var(--ok);background:#eaf7ef}
+  .opt.wrong{border-color:var(--bad);background:#fbecea}
+  .scorebox{text-align:center;padding:18px;border-radius:12px;font-size:18px;font-weight:700;margin-bottom:18px}
+  .scorebox.pass{background:#eaf7ef;color:var(--ok)} .scorebox.fail{background:#fbecea;color:var(--bad)}
+
+  .nachweis{border:1.5px dashed var(--primary);border-radius:12px;padding:20px;margin:18px 0;background:var(--accent)}
+  .nachweis dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;font-size:15px}
+  .nachweis dt{font-weight:600;color:var(--dark)}
+  .confirm{display:flex;gap:10px;align-items:flex-start;font-weight:500;font-size:14px;margin-top:16px;cursor:pointer}
+  .confirm input{width:auto;margin-top:3px;flex:0 0 auto}
+  .sigbox{border:1.5px solid var(--line);border-radius:10px;background:#fff;touch-action:none;margin-top:4px}
+  .sigbox canvas{display:block;width:100%;height:150px;border-radius:10px;cursor:crosshair}
+
+  #screen-admin{padding:24px 0 90px}
+  .admin-sec{margin-bottom:26px}
+  .admin-sec h3{color:var(--primary);font-size:17px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--accent)}
+  .editor-item{border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px;background:#fcfdff}
+  .editor-item .eh{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+  .editor-item .eh b{flex:1}
+  .thumb{height:54px;width:auto;max-width:150px;object-fit:contain;border-radius:6px;border:1px solid var(--line);background:#fff;padding:3px}
+  /* Einheitliche Admin-Karten für Rollen & Module */
+  .adm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .adm-grid .editor-item,.adm-card{margin-bottom:0}
+  .adm-card{border:1.5px solid var(--line);border-radius:12px;padding:14px;background:#fcfdff;text-align:left}
+  .adm-card.mod{cursor:pointer;display:flex;flex-direction:column;gap:4px;font:inherit;align-items:flex-start}
+  .adm-card.mod:hover{border-color:var(--primary)}
+  .adm-card.mod.active{border-color:var(--primary);background:var(--accent)}
+  .adm-card.mod b{color:var(--primary);font-size:15px}
+  .ordnum{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;font-size:12px;font-weight:700;flex:0 0 auto}
+  .ordnum.sm{width:18px;height:18px;font-size:11px;background:var(--accent);color:var(--primary)}
+  .rolename{font-weight:700;flex:1}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;background:#fff;user-select:none}
+  .chip input{display:none}
+  .chip.on{background:var(--primary);border-color:var(--primary);color:#fff}
+  .chip.on .ordnum.sm{background:#fff;color:var(--primary)}
+  .toolbar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:12px 0;z-index:40}
+  .colorgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .colorgrid label{margin:0}
+  .chk{display:flex;align-items:center;gap:8px;font-weight:500;margin:4px 0}
+  .chk input{width:auto;margin:0}
+  .assigngrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px 16px;margin-top:6px}
+  .filebox{border:1.5px dashed var(--line);border-radius:10px;padding:14px;background:#fff;margin-top:6px}
+  #printDoc{display:none}
+  @media print{
+    .no-print{display:none!important}
+    body{background:#fff!important}
+    body>*{display:none!important}
+    #printDoc{display:block!important;position:static}
+  }
+  .fassung{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .fassung .fl{flex-basis:100%;font-size:13px;color:#667}
+  .pille{flex:1 1 45%;min-height:56px;border:1.5px solid var(--primary);border-radius:12px;background:#fff;color:var(--primary);
+         font:inherit;font-weight:700;font-size:15px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:8px 10px}
+  .pille small{font-weight:400;font-size:12.5px;opacity:.85}
+  .pille.aktiv{background:var(--primary);color:#fff}
+</style>
+</head>
+<body>
+
+<!-- ===== Datenblock (kundenspezifisch befüllen) ===== -->
+<script id="content-data" type="application/json">{"_ver":"2026-07-07-quizfrei","meta":{"terminal":false,"extern":false,"customer":"WIBO Kunststofftechnik GmbH","title":"Online-Unterweisung","subtitle":"Oskar-von-Miller-Straße 7, 86405 Meitingen","customerLogo":"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAQCAwMDAgQDAwMEBAQEBQkGBQUFBQsICAYJDQsNDQ0LDAwOEBQRDg8TDwwMEhgSExUWFxcXDhEZGxkWGhQWFxb/2wBDAQQEBAUFBQoGBgoWDwwPFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhb/wAARCAGQAZADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD7+ooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKK89/aW8Z3/gv4erd6PcJBqV5dxwW7sgfaOWc7WBB+VSPxrwL/AIXj8Tv+hgi/8AIf/iaAPr+ivPv2cPHVz438C+bqb79UsJPJvJAiqJSclXCjgZHH1Br0GgAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAqtrOo2Ok6VPqWpXUdraWsZkmmkbCoo71Zrzf9qTwrfeKPhhMdOkmNxpcn2wWyMdtyqg7lK9yBkr7j3oA8o8X/ALQfiWbxyL7w4sUOjW2Y47O5iB+1Lnl5D1UnHAB4HXPNd9pP7RXg+Xw017qFpfW2ox4BsI4/MMh9Ufhdvu2CPSvl4EEAjoaKAO8+OPxNu/iLeWe7TV0+z08uYYhL5jMWxlmOAM4Xt6muDoooA7r4G/Eif4d6vdTHTjf2l8qrNEsuxlIPDKcEE9eD+denfEz9rH4ceFNAtbhU1C41G/RzDZvbMoiK4BMjgEYyR93OfavnevKf2lv+PnRv+uc380rvyzCwxWKjRns77ejZy42tKjQlUjurfmfR3gD9s3TYPGclx4r1F7jSbwhWht9PdfsXoycZYeoJJPUeh9R/4bF+Av8A0M99/wCCe5/+Ir80KK+r/wBWsH3l96/yPC/tnEdl+P8AmfrB8F/jr8N/irrl5pHgrV7i9u7C2FzOktjLAFjLBc5dQDyRwKp/Fj9on4V/DfxjJ4X8W63dWmpxQRztFHp00yhHBKncikdjXxj/AME1GZfj6wVmAa3QEA4z+8HWo/8Agpx/ydde/wDYIs//AEFq8mOUYd5lLCtvlSv0v08jvlj6qwar2V72Pq3/AIbG+Av/AEM99/4J7n/4ij/hsX4C/wDQz33/AIJ7n/4ivzQor1v9WsH3l96/yOD+2cR2X9fM/YL4S+PvDPxJ8HR+KPCV5Ld6ZLNJCkskDwsXQ4YbXAPWuE8f/tP/AAd8GeMtQ8LeINfvLfU9LlEV1EmmTyKjbQ2AyqQeGHSvNv8AglazH4T3ilmKi4kwM8D943avlX9t7/k7Dxx/2El/9Ex14mCyuhWx9XDyb5Y3t30dux6WJxtSnhYVYpXdj7b/AOGxvgL/ANDPff8Agnuf/iKP+GxfgL/0M99/4J7n/wCIr80KK9v/AFawfeX3r/I83+2cR2X9fM/ZLwL4k0nxf4Q07xPoU7z6bqtutxayvG0ZdG6EqwBH0NeW+MP2qfgv4Y8V6l4c1jxDeQ6hpN1JaXca6XcOEkQ4YBgmDyOoqt/wT3Zm/Zw0kMzELEgGTnA2DpXwN+1R/wAnLePv+xkvP/RrV4WW5ZRxOKq0pt2je1vW3Y9TGYypRowqRSuz7x/4bG+Av/Qz33/gnuf/AIikb9sf4ChSx8T32AM/8ge5/wDiK/NGmyf6tvoa93/VrB95fev8jy1nOI7L+vmftLZXEV3ZQ3cBJinjWRCRjKsMjj6GvFdb/a2+B+k61eaVfeJL1LqwuZLadBpNwwWRGKsMhMHkHkV3H7OTM/wa0RnZmPkdWOT1Nflh8X/+St+K/wDsPX3/AKUSV4GT5dRxlScajenb/hj1cwxlTDwjKFtT9Df+GxvgL/0M99/4J7n/AOIo/wCGxfgL/wBDPff+Ce5/+Ir80KK9/wD1awfeX3r/ACPK/tnEdl/XzP0v/wCGxfgL/wBDPff+Ce5/+Io/4bG+Av8A0M99/wCCe5/+Ir80KKP9WsH3l96/yD+2cR2X9fM/S8/tjfAXH/Iz33/gnuf/AIivZ/CGvaT4o8MWPiHQb2O903UoFntbiM8SIwyD6g9iDyCCDyK/Gmvqz/gml8bJPDXi5PhX4gnZtH12ctpEjHIs7s8mP2SX9H/3ia8/Msgp0aDqUG21un2+468HmsqlVQqpK59+EgDJIAHrXh2r/tc/AnTtWudPl8WTyyWkzQu9vpk8sbMpwSrqmGGRwRwe1ef/APBST47yeFtGf4WeFbl4tZ1a2D6vdRkg2dq+QI1P9+QZyey57sMfBAAAAAwB2rLKsjjiaXta7aT2t+ZeOzN0Z8lOza3P0v8A+GxfgL/0M99/4J7n/wCIo/4bG+Av/Qz33/gnuf8A4ivzQor1f9WsH3l96/yOH+2cR2X9fM/S/wD4bF+Av/Qz33/gnuf/AIij/hsb4C/9DPff+Ce5/wDiK/NCij/VrB95fev8g/tnEdl/XzP0vP7Y3wFAz/wk99/4J7n/AOIr2fwfr+keKfC9j4i0C+jvdM1KBZ7W4jPEiH9QexB5BBB5FfjTX1J/wTc+OEnhHxhH8MvEVwx0PX7nGmSucixvGOAvskpwPZ8H+JjXBmPD9OlQdTDttrdPt9x1YPNpVKqhVSSZ+glFFFfKHuhRRRQAUUUUAFFFFABRRRQAUUUUAFZ3i7WLXw/4Yv8AW70/uLC3eZxn72BkAe5OB+Ncf+0b441bwJ4NttR0aC1kuLq8Fvm5VmVAUZsgAjJ+Wvmfxn8RvGviqCS21rXp5bWXG+1iVYoWwcjKqBnn1zQBzd/cG7v57too4TcSvKY4lwiFiTtUdgM4FRUVtfD7S31jxVa2ccYkdnGxD0ZiQFB9skflQBsfD/4e6v4luligtppHIDGKPA2Ke7seFH616fbfs6yyWo8+9s4ZCOivI5H48fyr2vwV4fsvDWgxabZqCVGZpcfNM/dj/ngcVrUAfInxQ+DfibwlZyakkQvrCIZklgO8xD1IwDj3xXzF+0tzc6N/1zm/mlfqu6q6FHUMrDBBGQR6V+bn/BRnw1beFPjBb6bYxiKzmikuraMDARXKkqPYMGA9sV7GQ/8AIwp/P8mefmn+6S+X5o+e6KKK/Qj5E+hf+Cav/Jfj/wBe8f8A6MFM/wCCnH/J117/ANgiz/8AQWp//BNX/kvx/wCveP8A9GCmf8FOP+Trr3/sEWf/AKC1fPU/+R5L/D/kezL/AJFa9T59ooor6E8Y+/f+CVn/ACSm9/67v/6Mavlb9t7/AJOw8cf9hJf/AETHX1T/AMErP+SU3v8A13f/ANGNXyt+29/ydh44/wCwkv8A6Jjr5bK/+RviPn/6Uj3sb/uFP5fkeV0UUV9SeCfpt/wT1/5Nx0r/AK5p/wCgLXwP+1R/yct4+/7GS8/9GtX3x/wT1/5Nx0r/AK5p/wCgLXwP+1R/yct4+/7GS8/9GtXyeR/8jDEfP/0o+gzT/dafy/I4Gmyf6tvoadTZP9W30NfWHgLc/XL9m/8A5Izon/XA/wAzX5Y/F/8A5K34r/7D19/6USV+p37N/wDyRnRP+uB/ma/LH4v/APJW/Ff/AGHr7/0okr5Dhn+NV+X5s+gzr+HA52tLwdYQar4t0vTLlnWG9vYoJShwwVnCnHvg1m1t/DT/AJKNoH/YUt//AEYtfV1m1Tk12Z4NNJzSfc+iPi/+yVc+HvhFqXjPQZLuc6daC/Mc12j77cDc/wAoQHcEy3Xsa+XK/X7VUt5Pgjcx3mPs7eHXE27ps+zndn8M1+P8H+oT/dFeFw9jK2IpTVWV2mtfX/hj1M2w9OlKLgrXHV1nwKJHxj8NkEgjUEII7HmuTrq/gX/yWLw5/wBhBP5GvZxn+7VP8L/I8/Dfxoeq/M9K/wCCjbFv2obxmJJOj2GSep/c14VXun/BRf8A5Ogvf+wPp/8A6JFeF1jln+5Uv8K/IvHf7zP1Cux+B3gafx743j0vMyWUK+bezRD5lXoqrkEbmbAH4ntXHV9R/wDBLS3huvirqkdxGJFSOKRQegZVlKn8DzU5pXnh8HOpDdfq7DwNKNXERhLY4/8Aau/Z21X4SeHtM8RwLPNpV3N9muWlmWR7eYgsmdqjAYBh9R7ivDK/ST/gp1/yalf/APYVsv8A0aK/NusMkxVXEYTmqu7Tav8A16m2Z0IUa9oKyYV0Hwp4+J3h4jqNUt8f9/BXP1v/AAp/5Kb4f/7Clv8A+hivRxH8Gfo/yOKj/Fj6o/Xzw07yeHNPkkYu72kTMzHJYlBkmrtUPCv/ACLGm/8AXnF/6AKv1+Vn3QUUUUAFFFFABRRRQAUUUUAFFFFAHj/7aFneXfw1sXtbWadbfUlkmMUZbyk8txubHQZIGfevl3vjvX35qNpbX9jLZ3kKzQToUkjbowPY15j8Sfgn4a1XQr2TRoJLTUBCzWwDbkMgGVU7skAkY696APlGu6/ZvuIIfjFo6XBAWaYIuf73Vf1rhnR43aOVGSRCVdGGCpHBB9waksbm4sr6G8tJWiuLeRZYpF6oynIP5igD79orzP4P/GXw74s0+G11W6g0rWlULLbzuEjmb+9Ex4IP93qPfrXpRljEXmmRQmM7y3GPXNADq/PL/gqVqkOpfHCxigdXXT7E2rFf74Kuw/Dfj8K+uPjP8atC8M6dNYeH7qDVNadSqCFg8Nsf70jDgkf3Rye+K+AP2orie71XS7q6meaef7RJLK5yzszKSxPqSa9fIf8AkYU/n+TPPzT/AHSXy/NHldFFFfoZ8ifQv/BNX/kvx/690/8ARgrE/wCCgfijRPFn7UGs3ugXi3lrZW8NhJOnKNNECJAp/iAY4z0JBxxzXnXw68bav4JTVp9Bme2v9Ss/siXaNh7ZS2XZP9ojIB7Zz1xXNAADA6CvNp4JrHzxUn0SX4XO6eKX1SNBd7sKKKK9I4T7i/4JR+KtGl0PWPCDXSxatbZuVgcgGeJnJLp67SQG9Mj1r5x/be/5Ow8cf9hJf/RMdef+CfEeteEfFdh4l8O38ljqmmzCa2nj/hPcEdGUjIKnggkVqfGjxlJ8Qfihq/jSaxWym1iVJpbdH3LG4iRG2k84JUkZ7GvJw+XuhmE68X7sk/k7o9Gri1VwkaT3T/A5eiiivWPOP02/4J6/8m46V/1zT/0Ba+B/2qP+TlvH3/YyXn/o1q++P+Cev/JuOlf9c0/9AWvgf9qj/k5bx9/2Ml5/6Navk8j/AORhiPn/AOlH0Gaf7rT+X5HA02T/AFbfQ06myf6tvoa+sPAW5+uX7N//ACRnRP8Argf5mvyx+L3/ACVvxX/2Hr7/ANKJK/U79m//AJIzon/XA/zNflj8X/8Akrfiv/sPX3/pRJXyHDP8ar8vzZ9BnX8OBztavga7t7DxrpF9dyeXb21/DLM+CdqK4JOBz0FZVFfWzipRcX1Pn4y5ZJ9j7y/aD/ag+G037M2o+HfBXib+0fEOo6WmmpAlpNH5KyIElcs6AfKm/oepFfBo4GB2oorjwGX0sFBwp3d9dTpxWLqYmSlPoFeofsp+CtV8TfEi01a1jcWmkXCuWC5M0x4SFfUnOT6D6ivL6++P+CY114R1zwHILZIINa8PnyprEdRv5+18/e38rn+EqR6VzZ3iKlDBycFvo32T/qxtllKFTELme2vqfPf/AAUbR4/2ptQjcYZNJsFYehEArwuvef8AgpV/ydtrP/YPsv8A0SK8Grpyz/cqX+FfkY43/eZ+rCvqf/glT/yVnVv+vdP/AECavlivqf8A4JU/8lZ1b/r3T/0CaufPf+RfU+X5o1yv/e4fP8me+/8ABTr/AJNSv/8AsK2X/o0V+bdfpJ/wU6/5NSv/APsK2X/o0V+bdc3Df+5P/E/yRvnP+8L0Ct/4U/8AJTfD/wD2FLf/ANDFYFb/AMKf+Sm+H/8AsKW//oYr2cR/Bn6P8jzaP8WPqj9evCv/ACLGm/8AXnF/6AKv1Q8K/wDIsab/ANecX/oAq/X5WfdBRRRQAUUUUAFFFFABRRRQAUUUUAFcr8ZfGEHgjwFd6y+1rkjybKI/8tJm+6PoOWPsDXVVyfxi8DWHj3wjJpdyViuoj5ljdEZMEnr7gjgj0PqBQB8W3U891dS3VzK0s88jSSyN1d2OST9STTNrf3T+VZP7QH9t+ARN4cubSSHX7yT7LaRLzuzx5qHuMEYPqR6Vhad8LZntIvtnjDXVuNg80RXHyBscgZ5xmu2lhYOkqtWfKnto3e270OedeXO4Qje2+tjs2QkYKEj3FPL3Bi8oyzmP+5vbb+XSuWi+EsbdfGfiIf8AbcVZi+DkDdfGviT/AL/in9Xwn/P/AP8AJWT7Wv8A8+/xRuhCBgIQPYV5T+0uCLrRsgj93N/NK9Ci+Cds3/M7+Jf+/wCK5v4x/BqTSPBM+vabruq6tLp3zzQ3rBsQ/wATJjnI4J9gfSvRypYSjjITVa/T4Wt1bc5cd7eph5R5LfNdNTxCiiivuz5UKKKCQBk9KAOi+FnhG88beMbfQrSTyUcGS5uCu5beJerkd+oAHckVneLtC1Twz4nvvD+t2klpqGnTGG4hkUgqeoP0IIIPcEV9o/8ABPz4QfYtPTVtXtcTziO7vg68qOsNv/7Ow98Uz/gqV8I/tWm23xd0S1zNZKlnryovLQ5xFOf90nYT6MvZa+epZ3GeYOh9jZPz/wCDt9x7FTLXHCKp9rd+h8QUUUV9CeOFFFFAH6bf8E9f+TcdK/65p/6AtfA/7VH/ACct4+/7GS8/9GtX3x/wT1/5Nx0r/rmn/oC18D/tUf8AJy3j7/sZLz/0a1fJ5H/yMMR8/wD0o+gzT/dafy/I4Gmyf6tvoadTZP8AVt9DX1h4C3P1y/Zv/wCSM6J/1wP8zX5Y/F7/AJK34q/7D19/6USV+p37N/8AyRnRP+uB/ma/LH4v/wDJW/Ff/Yevv/SiSvkOGf41X5fmz6DOv4cDnau+G9ObV/EVhpKzLC19dR24kZchC7Bckd8ZqlW38NP+SjaB/wBhS3/9GLX1dWTjTlJbpM8Gmk5pPuemfFX9m7xn4K+H1z4vd5L6wswkk5SxeMLExA8zcSRgZH4HPavGK/XbxTpttrPwA1DSbxVa3vfDUkMgbphrYjNfkPCSYlJ6lRmvGyLH1sXTn7Z3ae/qejmmEp0JR9nomOr0n9kfxbq/g39oPw5qmk3Dxie5+y3kQPy3Nu/342H4Aj0IB7V5tXV/Av8A5LF4c/7CCfyNepjUnhqif8r/ACOLCtqvBruj0r/gpBKJv2r9WmUELJptiwB6gGAGvCq9w/4KJf8AJ0eo/wDYK0//ANJ1rw+sss/3Kl/hX5F43/eZ+rCvqf8A4JU/8lZ1b/r3T/0Cavlivqf/AIJU/wDJWdW/690/9Amrnz3/AJF9T5fmjXK/97h8/wAme+/8FOv+TUr/AP7Ctl/6NFfm3X6Sf8FOv+TUr/8A7Ctl/wCjRX5t1zcN/wC5P/E/yRvnP+8L0Ct/4U/8lN8P/wDYUt//AEMVgVv/AAp/5Kb4f/7Clv8A+hivZxH8Gfo/yPNo/wAWPqj9evCv/Isab/15xf8AoAq/VDwr/wAixpv/AF5xf+gCr9flZ90FFFFABRRRQAUUUUAFFFFABRRRQAVDqN1bWNhPe3k6QW1tE0s0sjYWNFGWYnsAATU1fLv/AAUV+It2dP074LeF7nGreKgJNWkQ/wDHrYA8hvTeVOf9lGH8QrfDUHXqqF7Lq+y6syrVPZwcv6ueLa94oufjN8ddU+Jt0rjRdPJ0/wANQSDG2FCf3uPU5LH0L4/hrpreHpxVbw3pFrpGj22mWUey3tIxHGO5x1J9yck+5rZt4faqxddVql4q0Vol2S/q78xUKbpw13er9RLaH2q/bw+1Lbw9OKvW0PtXMbCW8PTir0VujxmOSNXR1KurDIYEYII9CKdbw+1X7eGgD4n+PvgaTwH8QbjTokb+zbsfadNc94ifuZ9UOVP4HvXE19uftG/Dz/hPfhtPbWcIbV9MzdaaccuwHzRfR1GP94LXxIwKsVZSrA4IIwQfQ1+iZNj/AK3hlzP3o6P/AD+f5nyOY4X2FbT4XsJXp37LPgCbxr8QoZ5rUz2GmSo7R4yLicn91F78/MfYe9eb6baXOoahBY2ULTXNzKsUMa9XdjgD8zX6QfsRfCy18JeEre6ljVza7gJcf6+5YfvZfoPuL7D2rLPMf9Ww/JF+9LT0XVl5ZhfbVeaS91HtHw/8Pw+GvDEGmoQ0v+suZB/y0lP3j9Ow9gKu+ItK0/XdBvNF1W1S6sdQt3t7qCQZWSN1Ksp+oJq7RXwKbTuj6tq5+R/7Rfw41D4U/FvVPB175kkFu/nadcuP+Pq1ckxv9cAq3+0rVw9fpB/wUY+EX/CwfhIfE+j2vmeIPCiPcRKi/PdWvWaL3IA3qPVSB96vzfBBAIOQeRX6NlOO+t4ZSfxLR+vf5nx+Pwv1es0tnsFFFFemcJ+m3/BPX/k3HSv+uaf+gLXwP+1R/wAnLePv+xkvP/RrV98f8E9f+TcdK/65p/6AtfA/7VH/ACct4+/7GS8/9GtXyeR/8jDEfP8A9KPoM0/3Wn8vyOBpsn+rb6GnU2T/AFbfQ19YeAtz9cv2b/8AkjOif9cD/M1+WPxe/wCSt+Kv+w9ff+lElfqd+zf/AMkZ0T/rgf5mvyx+L/8AyVvxX/2Hr7/0okr5Dhn+NV+X5s+gzr+HA52tj4ezQ23j7RLi4lSKGLUoHkkdsKiiRSST2AFY9FfWzjzxce54EZcsk+x+jf7Q/wAevAmg/su6hB4d8XaNquu32kpptpaWN9HNKkksexnZVJKhFLMSe4A6mvzjUBVAHQDApQAOlFcOXZdTwMHGDvd7nVjMZPEyTkrWCur+Bf8AyWLw5/2EE/ka5SvYv2Q/hxq3irx1aa/HFKLWwuQtqFHN3cY4Uf7K5yx/D1xpmFWFLC1JTdlZr7yMHTlOvFRXUvf8FEf+TpdT/wCwVp//AKTrXh9fZv8AwUn+BuqySr8XdBE14kVnFb6/ar8xt1jQKlwnfZgYcdsBum7HxlWOUVqdXBU+R7JJ+qNMwpThiZcy31Cve/8Agnj8QdB8C/HBYvE15Bp+natC0X26eTZHbyqj7Q7HgK24jJ6HHrXglFdWKw0MTRlRnsznoVpUaiqR3R9vf8FK/jL4N1v4U6f4I8J67pmuz6rfLdXc1hdLOlrFCcgEqSAzORgeit7V8Q0AAdBiis8DgoYOj7KDv1NMViZYipzyCt/4U/8AJTfD/wD2FLf/ANDFYFem/ss+Bb/xf8SLW8ijk+y6TPHKxQczT5/dRL7k8n0APqKrG1YUsNOc3ZWZOFhKdaMYrW5+pnhX/kWNN/684v8A0AVfqroVvJaaJZ2s2PMgt4432nIyFAOPyq1X5efbhRRRQAUUUUAFFFFABRRRQAUUUUAYPxP8XaR4E8Aar4u12by7DSbZp5cH5pCOFRfVmYqoHqRXwd8OTrHi3xHrHxU8VDdrHiiYyQoeRbW3ARFz0XCqB/sqPU19YftwfDbUfif8AdS0fR5phqenyLqNlboxC3kkQb9yw/i3KW256NtNfM/wf1+38U+CbTUIo1inhUW13bqNvkyoACMdgRggehx2r0Ye5gZShvJ2l5LdL5v8rHLL3sSlLZK683/wDo7eHpxV62hp1vD7VetoenFecdQW8NXreGnW0PtV63h9qAEt4enFX7eH2pbaHpV+3h9qAEtYSCCO1fK37UPwq0rRvjTpusXMsun+GvF115dxcwKoFjeN97O7gIxIf2G/0r64t4a8U/bJ1N/EK6J8GtDghudY8SXUdxcM67hYW6EkSH+6Thjn+6rf3hXqZPWqU8TaDsmnfyXf5b/gcWPpwnR95bbevb5l/wCEn7I9/wCFPGttrLPcXLICkclzJBstt3DSgIclguQPrX1/o1hbaXpVvp9nGI4LaMRxr7D+teL+HNa13QfDWn6JZ61dywabaR2sUk+15HVFCgsxGSSBVz/hLvFBjLjVJyq9WESYH1O2uLE4irXnz1Jcz7+R0UaUKUeWCsey0V4ufF/ivYH/ALTuNrHAbyVwT6A7etRyeMfFiyeWdUuA+cbTCmc+mNtYGp7YQCMEZBr42+LP7FFje+O7/U/C19fQ6dqEz3KWkfkqlmzMSYl3EEqCePQHHavW28Y+Lsso1S53IMuPJXKj3+Xiol8a+LnB2atcNtGTthQ4Hqfl6V0YfF18M26MrXMatClWSVSNzwX/AIYi1X/oIan/AN923+NH/DEWqf8AQQ1P/vu2/wAa95t/GPjW5crbaldzEDJEVurkfktRDxr4zaYxJqt00i9UECFh+G3Ndf8AbOYf8/X+H+Rh/Z+F/kR2P7LvgfUPh58NY/DGoI4+yOEhd3RmkQIBuO0kA5zxXhHx1/Y8Pib4pax4o0vWdUmXXLuW/nX/AEdVhkkdmKLuIJAGOTXo03jLxzGheTUb1FHVmtVAH4lKYnjPx3JbNcR6jfPCvWRLVSo/EJiuajjcRRnKpTlZvc3qYelUiozjdI8O/wCGItV/6CGp/wDfdt/jSN+xDqhUj+0NT5/27b/Gva4vHHjmYFoNWvJQOpjtkYD8kplz468dQYM2rXkQPQyWyLn80rp/tnMP+fr/AA/yMf7Pwv8AIj174OaNfeHvh1p+j6hF5dxaqyMu4NxuODkccjFfLPxP/YtfUvH2qarpWs6rcQaldSXjM32ddryuzsgBIOATgGvR28cePxafav7Uvvs//Pb7Kuz/AL62YqCP4geO5n2Qa1dStjO2O3Rjj6Ba5cPjK+HbdKVm9zarh6VVJVFex5B/wxFqn/QQ1P8A77tv8aP+GItU/wCghqf/AH3bf4169c+PfiBAoabVr6JScAyWqKCfTlKSTxz8SAMjUdSA9fsS/wDxFdX9s5h/z9f4f5GH9n4X+RHkX/DEWqf9BDU/++7b/Gj/AIYi1X/oIan/AN923+NesJ4++I0sYkh1XUJEboyWasD9CEqN/iF8RRP5H9sXwlIyI/sibyPXbszR/bOYf8/X+H+Qf2fhf5EeWD9iLU8jN/qZHfElsP619Sfs9/DKz8B+HYEayit7mKLyIIEIYWsQ7ZHVmPLN3z9a8rufiF8SII/Mm1i/iTON0lmijP1KUy3+IXxKukdrTV9QuFj++YbNHC/XCcVzYjHYnEpKtNtI2o4ajRbdONrn05cRRTwPBPGksUilHR1DK6kYIIPUEV8dfFn9ibTLrxrd6j4QvL620u9czR2MTRbbInrGpcglM8r6DjtXQp8TfiFI4ji8Q3TuTgIlvGWJ9MBKYvxN+IrzeVH4hu3kJwEW2jLE+mAmanD4uvhm3Rla46tClWSVSNzzz/hiLVP+f/U/++7b/Gj/AIYi1X/oIan/AN923+Nd/wD8LP8AiMUd18RXZWL/AFjC2jITtydnH40wfFD4jujyJ4ivGSMAuy20ZCD3Ozj8a6/7ZzD/AJ+v8P8AIw/s/C/yI4P/AIYi1T/n/wBT/wC+7b/Gj/hiLVf+ghqf/fdt/jXcP8U/iSkKyt4jvFjckI5towrY64OzBpsnxR+JqXAgfxDfLK2NsZtIw5z0wuzPNH9s5h/z9f4f5B/Z+F/kRxP/AAxFqn/QQ1P/AL7tv8a+hP2VPgtD8NdJSK7tgsloW8je6u8sjffmcrxuIwoHYCvK5/iv8SopGjk8TXcbocMr20QZT6EFOKn0H4vfEGPXrJ7nxDNdQLcIZbd4olWVcjKkhMgEcZFYYjMMViI8lWbaNaWFoUpc1ONmfW1FVtGuWvdItbxkCG4gSUqDkLuUHH61ZrjOgKKKKACiiigAooooAKKKKACiiigAr4j/AGk/Ci/Bf9pKPxPaReT4N+IMpF0FGI7G/wA5Y+wYnePZpP7or7criv2hPh1pnxU+E2reDdS2o15Fvs7grk2tyvMcg+jcH1UsO9deDrRpzcanwS0fp39VuYYim5RvH4lqv68zwCCAg4xzV63h6cVwP7POu6le6RfeD/E0bQeJvCM50/UYZD8zKpKq/v02k98A/wAVenW8PtWVejKhVdOW6/q/zLpVFUgpILeH2q9bw47UttD04q/bw+1YmgltD7Vet4eKW3hAGasAYFAGX4z1/TPCnhLUPEesS+XY6ZbtNMR1bHRF/wBpiQo9yK8Z/Zh0XUtbvdW+MXiqP/iceK5G+wRt0tbIHChfQNtUD/ZQH+I1X/aD1H/hZvxk0z4QWV35Wh6O66h4ouFbAJGCsGfUAgY/vP8A7FevxXWlwW8dvbTW0UMKLHFGhAWNQMBQPQAAV6M/9mw3J9upq/KPRfPf0sci/fVr/Zj+f/AJ5OldR4Hsor/wdrFvcXSWsHnwPNMxwERTkn64HHvXHvf2R6XcP/fVWLfX4oNFutMS4tzDeOjSEn5gVORg15x1m743e5h8U2enGMQWFo8X2GNGyjRlh+8z3J7mk8RBv+FwkYOf7ShwO/8ABWDeeIVutFttNnntpEtGJglJ/eIp/hzn7v4Vop4+uFCStFpU19EmyO+khBmUYwOc4J98UAdBoFx9l+I3iq6Eay+RbXLmNuj4ZTtP1xUehaXbwR6xrGk5bStQ0W4MQ7278bom9x29q43TPET6fNeTRXEMkl/A8MzSncSH5Y9etJofia40mwvbO1uYWt7+IxzRvyORjcOeDigDb8K6vbw+EV0ttWu9BmNy0y30UDMlwMY2sRzxVTxve+INM8RQ6k2oQfaLiyXyb+w+UXMX94/7XHP0FUNH8UtZaV/Zk9tp+o2auZI4byPcImPUqQQRn0qn4l12bW7xZ7p4EWKIRQwwLsjhQdFUUAdN8W9Z1ZjY2B1Gf7NdaRBJPFn5ZGOSWPvkCr1nrjXs+lxaX4kk0G7toIoBpV5bsLaV+nUdmz35rhvEWtS6xNbyXRhBtrVLZBGCMoucZyevNakPjm6VbeS60zSL68tECQXtzblplA+7kggEjsTQBP4R1DXNK+JsWlG4ayE+rKL21tyBEzFuQB/dx09qt208/iT4yLo+u3sl1Y2+o3Bht5SNvy7iqD2O0D6VyMGs3cfiVNdeRZrxLkXJaQcM+c8gY49hVe81K5n1yTVlk8m6kuDcB4iV2OW3ZX05oA6BfHniw+KA5u5CpuPJOm7B5O3dt8rZj049a6Pw5YWukfGXxLZaXcJaQxaZM0cmfltmKxsenZSf0rnG+IOqb/tQ0rRRqRGP7SFkPPz/AHuuN3visLRde1LTNQvb2IrPPqFvLBO84LFhJ95uo+b3oAveO7/VJbO1t7vxtD4ghaXf5cLMREwHDHKjruIH412nxa1DWLTxHfNZ/EG305I7dGXTC7CTPlg4HykZY9Oe9eS+W4Iwp49qveL9Wv8AxFrsurXsMazzKisIVIXCqFGASewoA6v4Ja/ra3N9pq6ncCztNGuZbeDcNsTjBDD3BJ/Oq/wW1bUtX+LFtfarqM1xcDT50+0SnLKoQkdPTJNcz4a1bUdBu7i4soEd7m0ktXEqEgI+MkYI54png/VtS8Na5HqthaxyzRxvGFnQshDDByAR2oA1fiBqtxdaRDaH4jyeIYZZl82A2rxCIDkSEsOcHtWl8WPEet+FPFK+G/Dl/LpOl6ZbxfZkt8L5+5Axlc4+fJz144+tYXifxHcaxpRsf+EW0OxBdW86xsPKlGO27J4Pep9N8a61b6Zb2Wo6FpWtLZJstJdSs/NkgUdFDZGQPQ0Aavh69vdT+OfhjVNR0P8Asq6vAkkmBtW8Oxx54XAxu/pWh8OdB8N23xltr218cWl5eLfXDCySwlRmYiTK7zxxk8+1cQfEviRvHEPiy4X7TqEDh4xJF+7UAEBQoxhQCeBVPQNU1jR/F8fiO0s1a7imkmVZIyY9z7s8Ag4+Y96AOv8Ag7qVtpGlePdQvrFb+1iSP7Rat0ljMzqw+uCce9Tr4bj0L4deOLvTJzd6HqunW1xpl113J5pzG3+2hODXDadqmtWOla1YQ2SmLXVVbotGSygOWGznjknrmn6Xr/ibT/BupeFoYWk03U8GSOSMkxHIJKHPGcDPXpQBoeNv+SBeDf8Ar9vv/Q69M8d6S2m+JNb8XaXJa3/iZNHhk0yxLZktYQgSS5CfxOMttHt3zXi+qX+t33hPTfDs1ji10qWWSBliIkYyHLbjnB9uBV2/8U+LZ/iBD4yjtfs2pQLGi+TEwjKou3aQScgjgjPegDjriWS4meeaV5ZJWLvI7bmdjyST3JpdN/5Cdv8A9dV/nWjrsOoalq9zqH9ji1N1KZDBbRFYkJ5O0EnAzk4zVew06/S/hdrOZVWRSSU4AzQB9reE/wDkVdM/68of/QBWhWf4T/5FXTP+vKH/ANAFaFABRRRQAUUUUAFFFFABRRRQAUUUUAFBoooA+TP26fClz8P/AIkaR8fvD1qz2pZNN8WW8Q/1sLYVJj74wmfVYveum0a5sb/T7e/sbuGe1uollglVxh0YZB/I1714y0HS/FPhXUPDut2q3WnapbPbXULfxIwwceh7g9iAa+TtQ/Yg0iO+mSw1LUHtVc+Q0mphXKdtwEWM16MamHr0oxrycZR0TSvddE9Vt+RyOFWnNumrp+drP/gnpdusf/PSP/vsVegEQH+tj/77FeQf8MR2n/P/AHn/AINv/tVH/DEdp/z/AN5/4Nv/ALVU+xwP/P5/+Af/AGw/aYn/AJ9r/wAC/wCAezCSIf8ALWP/AL7Fcd8d/H9l8OvhpfeI3eKW8A8jTbfcD59ywOwY7gYLH2U+tcV/wxHaf8/95/4Nv/tVW9C/YxtdL1q01NJHuZLOZZo4rrUt8TMDkbl8sZGcHHtVwp5fGSlKo2l05bX8r3FKeKkrKCXnf/gFz9hf4TSnTLjW/FUT3N7qMn23V3mJ3TTSZZIievyhizf7TV9G/wDCvPBf/Qv2v5t/jWh4J0ODw74attLgIYxrulkxzLIeWY/U/pitauKvWlWqOpPdnRTpxpwUI7I5n/hXngv/AKF+1/Nv8aP+FeeC/wDoX7X82/xrpqKyLOZ/4V54L/6F+1/Nv8aP+FeeC/8AoX7X82/xrpqKAOZ/4V74L/6F+1/Nv8aP+FeeC/8AoX7X82/xrpqKAOZ/4V74L/6F+1/Nv8aP+Fe+C/8AoX7X82/xrpqKAOZ/4V74L/6F+1/Nv8aP+FeeC/8AoX7X82/xrpqKAOZ/4V54L/6F+1/Nv8aP+FeeC/8AoX7X82/xrpqKAOZ/4V54L/6F+1/Nv8aP+FeeC/8AoX7X82/xrpqKAOZ/4V54L/6F+1/Nv8aP+FeeC/8AoX7X82/xrpqKAOZ/4V54L/6F+1/Nv8aP+FeeC/8AoX7X82/xrpqKAOZ/4V74L/6F+1/Nv8aP+FeeC/8AoX7X82/xrpqKAOZ/4V74L/6F+1/Nv8aP+Fe+C/8AoX7X82/xrpqKAOZ/4V74L/6F+1/Nv8aP+Fe+C/8AoX7X82/xrpqKAOZ/4V74L/6F+1/Nv8aP+Fe+C/8AoX7X82/xrpqKAOZ/4V54L/6F+1/Nv8aD8PPBZGD4ftfzb/GumooAZawxW9tHbwIEiiQIijoqgYA/Kn0UUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFAH/9k=","oakLogo":"","accessCode":"WIBO-7YRH","adminPass":"wibo-admin","mailTo":"martin.weise@wibo-group.com","mailCC":"info@oak-engineering.de","mailSubject":"Unterweisungsnachweis – WIBO Kunststofftechnik GmbH","passPct":80,"welcome":"Willkommen zur Online-Unterweisung der WIBO Kunststofftechnik GmbH am Standort Meitingen. Bitte wähle deine Rolle – dir werden die passenden Module angezeigt. Klicke dich der Reihe nach durch und beantworte anschließend die Verständnisfragen.","privacy":"Deine Angaben (Name, Rolle, Module, Ergebnis) werden ausschließlich zum Nachweis der Unterweisung per E-Mail an die Sicherheitsfachkraft übermittelt und NICHT in einer Datenbank gespeichert.","privacyTerminal":"Deine Angaben (Name, Rolle, absolvierte Module, Ergebnis) und deine Unterschrift werden als PDF-Nachweis sowie als Eintrag in einer Übersichtsliste (CSV) lokal im geschützten Nachweis-Ordner des Unternehmens gespeichert und ausschließlich von der Sicherheitsfachkraft zum Nachweis der Unterweisung verwendet. Es erfolgt keine Übermittlung an Dritte und keine Speicherung im Internet.","theme":{"primary":"#003078","dark":"#001d4d","accent":"#e3eaf6","topbar":"#ffffff","bg":"#f5f7fb"}},"roles":[{"name":"Maschinenbediener","modules":["grund","spritzguss","leitern"]},{"name":"Schichtführer","modules":["grund","spritzguss","kran","flurfoerder","leitern"]},{"name":"Instandhaltung","modules":["grund","kran","flurfoerder","leitern"]},{"name":"Lager/Logistik","modules":["grund","flurfoerder","leitern"]},{"name":"Büro/Verwaltung","modules":["grund","bildschirm"]},{"name":"Externer Besucher","modules":["extern"],"extern":true}],"modules":[{"id":"grund","title":"Allgemeine Grundunterweisung","type":"interaktiv","url":"Module/Wibo_Grundunterweisung.html","quiz":[],"inhalte":["Organisation des Arbeitsschutzes","Zugehörigkeit BGHM","Verhalten bei Unfällen","Verhalten im Brandfall","Flucht- und Rettungsplan","Allgemeine Verhaltensregeln","Arbeitszeitrechtliche Grundlagen","Beschäftigungsbeschränkungen","Umgang mit Gefahrstoffen","Entsorgung","Allgemeine Hygienemaßnahmen"],"minutes":15},{"id":"spritzguss","title":"Maschinenbedienung","type":"interaktiv","url":"Module/Wibo_Maschinenbedienung.html","quiz":[],"inhalte":["Persönliche Schutzausrüstung","Maschinenbedienung","Schichtübergabe","Ordnung & Sauberkeit","Materialien & Farbe","Ausschuss","Umgang mit Leitern & Tritten","Entgraten von Bauteilen","Umgang mit Messern","Umgang mit Druckluft","Umgang mit Bohrern","Umgang mit Hubwägen","Umgang mit Reinigern","Umgang mit Heißluftföhn"],"minutes":12},{"id":"kran","title":"Krane","type":"interaktiv","url":"Module/Wibo_Krane.html","quiz":[],"inhalte":["Voraussetzungen & Pflichten","Krantechnik – kurz erklärt","Prüfungen vor Arbeitsbeginn","Sicherer Kranbetrieb","Anschlagen von Lasten","Verbote & Gefahren","Arbeiten im Freien","Störungen, Mängel & Wartung","Nach Arbeitsende & PSA","Regelwerk"],"minutes":8},{"id":"flurfoerder","title":"Gabelstapler","type":"interaktiv","url":"Module/Wibo_Flurfoerderzeuge.html","quiz":[],"inhalte":["Was sind Flurförderzeuge?","Voraussetzungen zum Führen","Betriebsanweisung & Sondereinsätze","Tägliche Prüfungen","Sicherheit der anderen Beschäftigten","Sicherheit im Verkehr","Sichern & Abstellen des Staplers","Lastentransport","Kippgefahr","Anhänger be-/entladen – Ladefläche & Sichern","Anhänger be-/entladen – Helfer & Achten auf","Befahren von Rampen","Be- und Entladen von Regalen","Paletten stapeln","Gasbetriebene Stapler","Gasflaschen wechseln","Batteriebetriebene Stapler – Wechsel","Batterien laden","Gefährdungen durch Rauschmittel"],"minutes":10},{"id":"leitern","title":"Leitern & Tritte","type":"interaktiv","url":"Module/Wibo_Leitern_Tritte.html","quiz":[],"prequiz":[],"inhalte":["Warum diese Unterweisung?","Grundlagen","Leiter als Aufstiege & Verkehrsweg","Leiter als Arbeitsplatz","Erhöhte Absturzgefahr","Zusätzliche Gefährdungen im Umgang mit Leitern","Leiterklassen","Bauarten von Leitern","Tritte","Welche Leitergröße?","Welcher Werkstoff?","Kennzeichnung von Leitern","Aufstellen von Leitern","Arbeiten auf Leitern","Leiterprüfung – Arten & Intervall","Leiterprüfung - Checkliste","Was tun bei Schäden?","Wichtige Gesetze & Regeln"],"minutes":8},{"id":"bildschirm","title":"Bildschirmarbeit","type":"interaktiv","url":"Module/Wibo_Bildschirmarbeitsplatz.html","quiz":[],"inhalte":["Die täglichen Sitzzeiten","Macht Bildschirmarbeit krank?","Ursachen für Augenbeschwerden","Tipps für gesunde Augen","Typische Bürokrankheiten","So bringt man Bewegung ins Büro","Übungen am Arbeitsplatz","Ergonomisches Sitzen","Einstellmöglichkeiten am Bürostuhl","Ausrichtung des Arbeitsplatzes","Natürliches oder künstliches Licht?"],"minutes":8},{"id":"extern","title":"Sicherheitsunterweisung für Externe","type":"interaktiv","url":"Module/Wibo_Externe.html","quiz":[],"inhalte":["Allgemeine Verhaltensregeln","Schutzausrüstung & Bereiche","Im Notfall"],"minutes":5}]}</script>
+
+<!-- ===== Topbar ===== -->
+<div class="topbar no-print">
+  <div class="wrap wide">
+    <img id="tbOak" class="tb-logo hidden" alt="OAK">
+    <img id="tbCust" class="tb-logo hidden" alt="">
+    <span class="tb-title" id="tbTitle"></span>
+    <span class="spacer"></span>
+    <button id="ckBack" title="Zurück zur Startzentrale" style="display:none;cursor:pointer;border:1.5px solid var(--primary);background:#fff;color:var(--primary);border-radius:999px;padding:7px 16px;font:inherit;font-weight:700;font-size:.92rem;margin-right:8px">◀ Cockpit</button>
+    <button class="gear" id="gearBtn" title="Admin">⚙</button>
+  </div>
+</div>
+
+<!-- ===== Cockpit (Startzentrale) ===== -->
+<style>
+.ck-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:22px}
+.ck-tile{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:18px 20px;border:1.5px solid var(--accent);border-radius:14px;background:#fff;cursor:pointer;transition:.15s;font:inherit;color:inherit}
+.ck-tile:hover{border-color:var(--primary);box-shadow:0 6px 18px rgba(0,0,0,.09);transform:translateY(-2px)}
+.ck-tile b{font-size:1.06rem;color:var(--primary)}
+.ck-ic{font-size:1.8rem;line-height:1}
+.ck-tile.wide{grid-column:1/-1;flex-direction:row;align-items:center;gap:14px}
+.ck-tile.wide b{color:var(--dark)}
+@media(max-width:640px){.ck-grid{grid-template-columns:1fr}.ck-tile.wide{grid-column:auto}}
+</style>
+<section id="screen-cockpit" class="center-screen">
+  <div class="card" style="max-width:840px;width:100%">
+    <img id="ckLogo" class="hidden" alt="" style="display:block;margin:4px auto 16px;max-height:150px;max-width:80%">
+    <h1 id="ckTitle" style="text-align:center;margin-bottom:4px"></h1>
+    <p class="lead" id="ckSub" style="text-align:center;margin-top:2px">Bitte wähle einen Bereich.</p>
+    <div class="ck-grid">
+      <button class="ck-tile" type="button" data-mode="terminal" id="ckTerm"><b>Interne Unterweisung</b><span class="small muted">Mitarbeiterinnen &amp; Mitarbeiter · Nachweis wird lokal gespeichert</span></button>
+      <button class="ck-tile" type="button" data-mode="extern"><b>Externe Unterweisung</b><span class="small muted">Besucher / Fremdfirmen · erweiterte Angaben</span></button>
+      <!-- Bewusst OHNE data-mode: das wuerde den Unterweisungs-Modus umschalten. Die Kachel
+           oeffnet das Kundenportal in einem eigenen Fenster - mit Anmeldung, denn dort liegen
+           Gefaehrdungsbeurteilungen, Maengellisten und Nachweise. An einem frei zugaenglichen
+           Geraet duerfen die nicht offen stehen. Volle Breite (.wide), damit sie den beiden
+           Unterweisungs-Kacheln nachgeordnet bleibt - das ist der Zweck des Geraets. -->
+      <button class="ck-tile wide" type="button" id="ckPortal"><b>Kundenportal</b><span class="small muted">Unterlagen, Anlagen und Nachweise · Anmeldung erforderlich</span></button>
+    </div>
+    <p class="small muted" style="text-align:center;margin-top:14px">Einstellungen sowie „Nachweise &amp; Fragen" findest du im Admin-Bereich (⚙ oben rechts · Passwort).</p>
+    <p class="small" id="ckKioskOff" style="text-align:center;margin-top:4px;display:none"><a href="#" id="ckKioskOffLink" class="muted">Kiosk-Autostart dieses Geräts deaktivieren</a></p>
+  </div>
+</section>
+
+<!-- ===== Gate ===== -->
+<section id="screen-gate" class="center-screen hidden">
+  <div class="card" style="text-align:center">
+    <h1 id="gateTitle"></h1>
+    <p class="lead" id="gateSub"></p>
+    <label for="gateCode" style="text-align:left">Zugangscode</label>
+    <input type="text" id="gateCode" placeholder="z. B. ABC-1234" autocomplete="off">
+    <div class="err" id="gateErr"></div>
+    <button class="btn" style="width:100%;margin-top:10px" id="gateBtn">Weiter</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px" id="gateCockpit">◀ Zurück zum Cockpit</button>
+  </div>
+</section>
+
+<!-- ===== Start / Anmeldung ===== -->
+<section id="screen-start" class="center-screen hidden">
+  <div class="card">
+    <div id="folderBar" class="small" style="display:none;border-radius:10px;padding:9px 12px;margin-bottom:14px;text-align:center"></div>
+    <h1 id="startTitle"></h1>
+    <p class="lead" id="startWelcome"></p>
+    <div id="fFirma" class="extf hidden"><label for="pFirma">Firma / Unternehmen</label><input type="text" id="pFirma" placeholder="Firma des Besuchers" autocomplete="off"></div>
+    <label for="pName">Vor- und Nachname</label>
+    <input type="text" id="pName" placeholder="Max Mustermann" autocomplete="off">
+    <div id="fAddr" class="extf hidden"><label for="pAddr">Adresse</label><input type="text" id="pAddr" placeholder="Straße, PLZ Ort" autocomplete="off"></div>
+    <div id="fHost" class="extf hidden"><label for="pHost">Besucht / betreut von <span class="small muted">(interne/r Mitarbeiter/in)</span></label><input type="text" id="pHost" placeholder="Name des Ansprechpartners" autocomplete="off"></div>
+    <div id="fReason" class="extf hidden"><label for="pReason">Grund des Besuchs</label><select id="pReason"><option value="">– bitte wählen –</option><option>Besprechung / Meeting</option><option>Wartung / Instandhaltung</option><option>Anlieferung / Abholung</option><option>Montage / Aufbau</option><option>Besichtigung / Führung</option><option>Schulung</option><option>Sonstiges</option></select></div>
+    <div id="fRole"><label for="pRole">Rolle / Tätigkeit</label>
+    <select id="pRole"></select>
+    <div id="roleModules" class="small muted"></div></div>
+    <div class="err" id="startErr"></div>
+    <details style="margin-top:14px"><summary class="small">Datenschutzhinweis</summary>
+      <p class="small muted" id="startPrivacy" style="margin-top:8px"></p></details>
+    <div class="fassung" id="fassungWahl" role="group" aria-label="Fassung der Inhalte">
+      <span class="fl">Fassung der Inhalte</span>
+      <button type="button" class="pille aktiv" data-f="1">Version 1.0<small>bewährte Module</small></button>
+      <button type="button" class="pille" data-f="2">Version 2.0<small>neue Module</small></button>
+    </div>
+    <button class="btn" style="width:100%;margin-top:18px" id="startBtn">Unterweisung starten ▶</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px" id="startCockpit">◀ Zurück zum Cockpit</button>
+  </div>
+</section>
+
+<!-- ===== Hinweise vor Beginn ===== -->
+<section id="screen-intro" class="center-screen hidden">
+  <div class="card" style="max-width:640px">
+    <h2 style="margin-bottom:6px">Bevor es losgeht</h2>
+    <p class="small muted" style="margin-bottom:12px" id="introWho"></p>
+    <div style="border:1.5px solid #dce3ee;border-radius:12px;padding:14px 16px;margin-bottom:12px">
+      <b>Dein Programm</b>
+      <div class="small" id="introOverview" style="margin-top:6px"></div>
+    </div>
+    <div style="background:var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:12px">
+      <b>Interaktive Aufgaben</b>
+      <p class="small" style="margin-top:4px">Einige Folien enthalten <b>interaktive Aufgaben</b> (z. B. Aufdeck-Karten, Bild-Zuordnungen, Zwischenfragen). Diese müssen <b>vollständig bearbeitet und richtig beantwortet</b> werden, bevor es zur nächsten Folie weitergeht. Nimm dir dafür kurz Zeit – so bleibt das Wichtigste besser hängen.</p>
+    </div>
+    <div style="background:var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:14px">
+      <b>Hinweis zur Sprache</b>
+      <p class="small" style="margin-top:4px">Zur besseren Lesbarkeit <b>verzichten wir auf das Gendern</b>. Personenbezeichnungen (z. B. Mitarbeiter, Schichtführer) gelten selbstverständlich für <b>alle Geschlechter</b> gleichermaßen.</p>
+    </div>
+    <label class="confirm"><input type="checkbox" id="introChk"> Ich habe die Hinweise gelesen und verstanden.</label>
+    <div class="err" id="introErr"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn ghost" style="flex:0 0 auto" id="introBack">◀ Zurück</button>
+      <button class="btn" style="flex:1" id="introGo">Los geht's ▶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Was seit der letzten Unterweisung neu ist =====
+     Kommt aus dem Kundenportal (freigegebene Bausteine: gemeldete Vorfaelle, neue
+     Betriebsanweisungen). Der Bildschirm erscheint NUR, wenn es etwas gibt - und wird
+     bei Netzstoerung stillschweigend uebersprungen: eine Unterweisung darf nie daran
+     scheitern, dass gerade kein WLAN da ist. -->
+<section id="screen-neu" class="center-screen hidden">
+  <div class="card" style="max-width:720px">
+    <h2 style="margin-bottom:6px">Aktuelles aus dem Betrieb</h2>
+    <p class="small muted" style="margin-bottom:12px">Das ist seit der letzten Unterweisung dazugekommen. Bitte kurz durchlesen.</p>
+    <div id="neuListe"></div>
+    <label class="confirm"><input type="checkbox" id="neuChk"> Ich habe die Punkte zur Kenntnis genommen.</label>
+    <div class="err" id="neuErr"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn ghost" style="flex:0 0 auto" id="neuBack">◀ Zurück</button>
+      <button class="btn" style="flex:1" id="neuGo">Weiter ▶</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Präsentation (PDF/Video) ===== -->
+<section id="screen-present" class="hidden">
+  <div class="wrap wide" id="presFS">
+    <div class="modstrip" id="modStrip"></div>
+    <div class="viewer" id="viewer"></div>
+    <div class="controls no-print">
+      <button class="cbtn" id="cPrev" title="Zurück">⏮ Zurück</button>
+      <button class="cbtn" id="cNext" title="Weiter">Weiter ⏭</button>
+      <button class="cbtn" id="cFull" title="Vollbild">⛶ Vollbild</button>
+      <span class="ctxt" id="cStatus"></span>
+      <span style="flex:1"></span>
+      <button class="btn" id="toQuiz" disabled>Weiter zum Quiz →</button>
+    </div>
+    <p class="rotahint no-print">📱 Für größere Folien: Handy quer halten oder <b>⛶ Vollbild</b> tippen.</p>
+    <p class="small muted no-print tip-desktop" style="margin-top:8px">Tipp: Auf das PDF klicken oder Pfeiltasten ← → zum Blättern.</p>
+  </div>
+  <div id="modDoneOv" class="hidden no-print"><div class="md-card">
+    <div style="font-size:44px;color:var(--ok,#1c7a43);line-height:1">✓</div>
+    <h2 style="margin:8px 0 4px">Modul abgeschlossen</h2>
+    <p class="small muted" id="mdNextInfo" style="margin-bottom:16px"></p>
+    <button class="btn" id="mdNextBtn" type="button" style="width:100%;font-size:16px;padding:13px"></button>
+    <button class="btn ghost sm" id="mdReviewBtn" type="button" style="width:100%;margin-top:8px">Modul noch einmal ansehen</button>
+  </div></div>
+  <button id="nextChip" class="btn hidden no-print" type="button"></button>
+</section>
+
+<!-- ===== Quiz ===== -->
+<section id="screen-quiz" class="center-screen hidden">
+  <div class="card" style="max-width:760px">
+    <span class="pill">Verständnisfragen</span>
+    <h1 style="margin-top:10px">Zeig, was du gelernt hast</h1>
+    <p class="lead" id="quizLead"></p>
+    <div id="quizHost"></div>
+    <div class="err" id="quizErr"></div>
+    <button class="btn" style="width:100%" id="quizSubmit">Auswerten</button>
+  </div>
+</section>
+
+<!-- ===== Ergebnis / Nachweis ===== -->
+<section id="screen-result" class="center-screen hidden">
+  <div class="card resgrid">
+    <div class="res-l">
+    <div id="scoreHost"></div>
+    <div id="reviewHost"></div>
+    <div id="nachweisHost"></div>
+    </div>
+    <div class="res-r">
+    <div id="afterPass" class="hidden">
+      <div id="askHost"></div>
+      <label class="confirm"><input type="checkbox" id="confirmChk"> Ich bestätige, dass ich die Unterweisung selbst und vollständig absolviert und den Inhalt verstanden habe.</label>
+      <label style="margin-bottom:4px">Unterschrift <span class="muted small">(im Feld unterschreiben)</span></label>
+      <div class="sigbox"><canvas id="sigCanvas"></canvas></div>
+      <div style="margin-top:6px"><button class="btn ghost sm" type="button" id="sigClear">Unterschrift löschen</button></div>
+      <div class="err" id="signErr"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <button class="btn" style="flex:1;min-width:200px" type="button" id="pdfBtn">📄 Nachweis als PDF speichern</button>
+        <button class="btn ghost" style="flex:1;min-width:200px" type="button" id="mailBtn">Per E-Mail senden ✉</button>
+      </div>
+      <button class="btn" type="button" id="finishBtn" style="width:100%;margin-top:10px;display:none;font-size:16px;padding:14px">✓ Unterweisung abschließen</button>
+      <div class="small" id="saveMsg" style="margin-top:8px"></div>
+      <button class="btn" type="button" id="nextPersonBtn" style="width:100%;margin-top:10px;display:none;background:var(--ok, #1c7a43)">Nächste Person ▶</button>
+      <p class="small muted" id="saveHint" style="margin-top:10px"><b>1.</b> „Nachweis als PDF speichern" → im Druckdialog <b>„Als PDF speichern"</b>. <b>2.</b> „Per E-Mail senden" öffnet den fertigen Entwurf an die hinterlegten Adressen – dort das <b>gespeicherte PDF anhängen</b> und abschicken.</p>
+    </div>
+    <div id="afterFail" class="hidden" style="text-align:center">
+      <p class="lead">Sieh dir die Auflösung an und versuche es erneut.</p>
+      <button class="btn ghost" id="retryBtn">Inhalte erneut ansehen</button>
+      <button class="btn" id="retryQuizBtn">Quiz wiederholen</button>
+    </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Admin ===== -->
+<section id="screen-admin" class="hidden">
+  <div class="wrap">
+    <div style="display:flex;align-items:center;gap:12px;margin:8px 0 20px">
+      <h1 style="flex:1">Admin-Bereich</h1>
+      <button class="btn ghost sm" id="adminClose">Schließen ✕</button>
+    </div>
+    <div id="adminAuth" class="card" style="max-width:420px">
+      <label for="admPass">Admin-Passwort</label>
+      <input type="password" id="admPass">
+      <div class="err" id="admErr"></div>
+      <button class="btn" style="width:100%;margin-top:10px" id="admLogin">Anmelden</button>
+    </div>
+    <div id="adminPanels" class="hidden">
+      <div class="admin-sec"><h3>Allgemein</h3><div id="metaHost"></div></div>
+      <div class="admin-sec"><h3>Farben (Markenfarbe des Kunden)</h3><div id="themeHost" class="colorgrid"></div></div>
+      <div class="admin-sec"><h3>Rollen &amp; Modul-Zuordnung</h3>
+        <p class="small muted">Jede Rolle sieht die angehakten Module – die Nummern zeigen die Reihenfolge aus dem Bereich „Module".</p>
+        <div id="rolesHost" class="adm-grid"></div>
+        <button class="btn ghost sm" id="addRole" style="margin-top:12px">+ Rolle hinzufügen</button></div>
+      <div class="admin-sec">
+        <h3>Module / Schulungen</h3>
+        <p class="small muted">Modul-Karte antippen zum Bearbeiten. Folien, Verständnisfragen und Bestehensregeln der interaktiven Module werden <b>im Modul selbst</b> gepflegt (Modul öffnen → Zahnrad → Studio → 💾 Speichern).</p>
+        <div id="modCards" class="adm-grid" style="margin:12px 0"></div>
+        <div class="row" style="align-items:center;margin:12px 0">
+          <span class="small muted" style="flex:1" id="modEditLabel"></span>
+          <button class="btn ghost sm" id="modUp" style="flex:0 0 auto" title="In der Reihenfolge nach oben">↑</button>
+          <button class="btn ghost sm" id="modDown" style="flex:0 0 auto" title="In der Reihenfolge nach unten">↓</button>
+          <button class="btn ghost sm" id="addMod" style="flex:0 0 auto">+ Neues Modul</button>
+          <button class="btn ghost sm" id="renMod" style="flex:0 0 auto">Umbenennen</button>
+          <button class="btn ghost sm" id="delMod" style="flex:0 0 auto;color:var(--bad)">Modul löschen</button>
+        </div>
+        <div id="modArea"></div>
+      </div>
+    </div>
+  </div>
+  <div class="toolbar no-print" id="adminToolbar" style="display:none">
+    <div class="wrap" style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" id="admSave">💾 Speichern (im Browser)</button>
+      <button class="btn" id="admPortalSave">☁ Ins Portal speichern &amp; freigeben</button>
+      <button class="btn ghost" id="admPortalLoad">⬇ Aus Portal laden</button>
+      <button class="btn ghost" id="admPortalZugang">🔑 Portal-Zugang dieses Geräts</button>
+      <button class="btn ghost" id="admExport">⬇ Als Datei exportieren</button>
+      <button class="btn ghost" id="admPreview">👁 Vorschau</button>
+      <button class="btn ghost" id="admUeber">📋 Nachweise &amp; Fragen</button>
+      <span class="small muted" id="admSaveMsg" style="align-self:center"></span>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ============================ Boot & State ============================ */
+const PRISTINE_HTML = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const LSKEY = 'oak-agu::'+location.pathname;
+/* Geraete-Link .../#t=<token> einmalig einloesen: Token merken, aus der Adresszeile entfernen. */
+(function terminalLinkEinloesen(){
+  try{
+    if(!location.hash || location.hash.length<2) return;
+    const p=new URLSearchParams(location.hash.slice(1));
+    const f=p.get('f'); if(f==='1'||f==='2') localStorage.setItem('oak-uw-fassung', f);
+    const t=p.get('t');
+    if(t) localStorage.setItem('oak-uw-terminal', JSON.stringify({token:t.trim(), kunde:(p.get('kn')||'').trim()}));
+    if(t||f) history.replaceState(null,'',location.pathname+location.search);
+  }catch(e){}
+})();
+/* Versions-Weiche: 1 = diese Huelle (bewaehrte Module), 2 = neues Terminal (terminal.html). Vorgabe am Geraet: 1. */
+(function fassungWeiche(){ try{ if(localStorage.getItem('oak-uw-fassung')==='2') location.replace('terminal.html'); }catch(e){} })();
+function loadContent(){
+  let base = JSON.parse($('#content-data').textContent);
+  /* Portal-Modus: Die freigegebene Fassung aus dem Kundenportal fuehrt (lokal
+     zwischengespeichert, damit das Terminal auch ohne Netz startet). */
+  try{
+    const cache = JSON.parse(localStorage.getItem('oak-uw-config')||'null');
+    if(cache && cache.daten && cache.daten.meta){ cache.daten.meta.terminal=true; return cache.daten; }
+  }catch(e){}
+  // Entwurf nur laden, wenn er zur Datei-Version passt – sonst gewinnt die (aktualisierte) Datei,
+  // damit z. B. neu angelegte Module/Reihenfolgen nicht von einem alten localStorage-Stand verdeckt werden.
+  try{ const saved = localStorage.getItem(LSKEY); if(saved){ const sv=JSON.parse(saved); if(sv && sv._ver===base._ver){ base = sv; } else { localStorage.removeItem(LSKEY); } } }catch(e){}
+  base.meta=base.meta||{}; base.roles=base.roles||[]; base.modules=base.modules||[];
+  return base;
+}
+let CONTENT = loadContent();
+let admCurMod = 0;
+const participant = {name:'', role:'', moduleIds:[], score:0, passed:false, company:'', address:'', host:'', reason:''};
+function applyAudience(){ const ex=!!CONTENT.meta.extern;
+  document.querySelectorAll('.extf').forEach(e=>e.classList.toggle('hidden',!ex));
+  const fr=$('#fRole'); if(fr) fr.style.display=ex?'none':''; }
+let runMods=[], aggQuiz=[];
+const moduleById = id => CONTENT.modules.find(m=>m.id===id);
+function assignedModules(roleName){
+  const r=CONTENT.roles.find(r=>r.name===roleName); const ids=r?(r.modules||[]):[];
+  return ids.map(moduleById).filter(Boolean);
+}
+
+/* ============================ Helpers ============================ */
+function dataUriToU8(d){ const b=atob(d.split(',')[1]||''); const a=new Uint8Array(b.length); for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a; }
+function ensurePdfJs(){
+  // pdf.js liegt lokal in libs/pdfjs/ – das Tool muss vollständig offline funktionieren (kein CDN).
+  if(window.pdfjsLib) return Promise.resolve();
+  return new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='libs/pdfjs/pdf.min.js';
+    sc.onload=()=>{ pdfjsLib.GlobalWorkerOptions.workerSrc='libs/pdfjs/pdf.worker.min.js'; res(); }; sc.onerror=rej; document.head.appendChild(sc); });
+}
+
+/* ============================ Theme & Meta ============================ */
+function applyTheme(){ const t=CONTENT.meta.theme||{},r=document.documentElement.style; ['primary','dark','accent','bg','topbar'].forEach(k=>{ if(t[k]) r.setProperty('--'+k,t[k]); }); }
+function setImg(el,src){ if(!el)return; if(src){el.src=src;el.classList.remove('hidden');}else el.classList.add('hidden'); }
+function applyMeta(){
+  const m=CONTENT.meta;
+  $('#tbTitle').textContent=m.customer||'';
+  setImg($('#tbOak'),m.oakLogo); setImg($('#tbCust'),m.customerLogo); $('#tbCust').alt=m.customer||'';
+  setImg($('#gateLogo'),m.customerLogo||m.oakLogo);
+  $('#gateTitle').textContent=m.title||'Online-Unterweisung';
+  $('#gateSub').textContent=m.customer?(m.subtitle?m.subtitle+' · '+m.customer:m.customer):(m.subtitle||'');
+  setImg($('#startLogo'),m.customerLogo||m.oakLogo);
+  // Kiosk-Modi zeigen nicht den Online-Titel („Online-Unterweisung"), sondern einen neutralen
+  $('#startTitle').textContent = m.terminal ? 'Sicherheitsunterweisung' : (m.title||'');
+  $('#startWelcome').textContent=m.welcome||'';
+  // Terminal/Extern speichern lokal (PDF+CSV) – dafür gilt der Terminal-Datenschutztext:
+  /* Im Portal-Modus gilt ein EIGENER Hinweis: Der Terminal-Text sagt ausdruecklich "keine
+     Speicherung im Internet" - das waere hier schlicht falsch (Art. 13 DSGVO). */
+  $('#startPrivacy').textContent = portalModus()
+    ? (m.privacyPortal || 'Deine Angaben (Name, Rolle, absolvierte Module, bestanden ja/nein) und deine '
+       +'Unterschrift werden als Nachweis der Unterweisung nach § 12 ArbSchG gespeichert. Verantwortlich '
+       +'ist dein Arbeitgeber; die Speicherung erfolgt in dessen geschütztem Bereich des Kundenportals '
+       +'auf Servern in der EU. OAK engineering verarbeitet die Daten ausschließlich im Auftrag. '
+       +'Ein Punktestand wird NICHT gespeichert. Auskunft und Löschung über deinen Arbeitgeber.')
+    : ((m.terminal&&m.privacyTerminal)?m.privacyTerminal:(m.privacy||''));
+  const sel=$('#pRole'); sel.innerHTML='';
+  // Bewusst KEINE Vorauswahl: jede Person muss ihre Rolle aktiv wählen
+  { const ph=document.createElement('option'); ph.value=''; ph.textContent='– bitte wählen –'; sel.appendChild(ph); }
+  CONTENT.roles.filter(r=>!r.extern).forEach(r=>{ const o=document.createElement('option'); o.value=r.name; o.textContent=r.name; sel.appendChild(o); });
+  updateRoleModules(); applyAudience();
+}
+function fmtDur(min){ min=Math.round(+min||0); if(min<=0) return '–'; if(min<60) return 'ca. '+min+' Min'; const h=Math.floor(min/60),m=min%60; return 'ca. '+h+' Std'+(m?' '+m+' Min':''); }
+function moduleOverviewHtml(mods){
+  if(!mods.length) return '<span style="color:var(--bad)">Für diese Rolle sind noch keine Module zugewiesen.</span>';
+  const total=mods.reduce((s,m)=>s+(+m.minutes||0),0);
+  const rows=mods.map((m,i)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:2px 0"><span>${i+1}. ${esc(m.title)}</span><span style="white-space:nowrap;opacity:.75">${fmtDur(m.minutes)}</span></div>`).join('');
+  return `<div style="text-align:left;margin-top:4px">${rows}<div style="display:flex;justify-content:space-between;gap:12px;border-top:1px solid #dce3ee;margin-top:6px;padding-top:6px;font-weight:700"><span>Gesamt · ${mods.length} Module</span><span style="white-space:nowrap">${fmtDur(total)}</span></div></div>`;
+}
+function updateRoleModules(){
+  const rv=$('#pRole').value;
+  if(!rv){ $('#roleModules').innerHTML='<span class="muted">Wähle deine Rolle, um dein Programm zu sehen.</span>'; return; }
+  $('#roleModules').innerHTML = moduleOverviewHtml(assignedModules(rv));
+}
+
+/* ============================ Routing ============================ */
+const SCREENS=['#screen-cockpit','#screen-gate','#screen-start','#screen-intro','#screen-neu','#screen-present','#screen-quiz','#screen-result','#screen-admin'];
+function show(id){ SCREENS.forEach(s=>$(s).classList.toggle('hidden', s!==id)); window.scrollTo(0,0);
+  if(id!=='#screen-present') document.body.classList.remove('imm');
+  document.querySelectorAll('.modal-ov').forEach(x=>x.remove());   // offene Dialoge beim Screenwechsel schließen
+  const b=$('#ckBack'); if(b) b.style.display=(id==='#screen-cockpit')?'none':'inline-block'; }
+
+/* ============================ Cockpit (Startzentrale) ============================ */
+// Zahnrad nur im Terminal-/Kiosk-Modus verstecken
+function updateGear(){ const g=$('#gearBtn'); if(g) g.style.display = CONTENT.meta.terminal ? 'none' : ''; }
+// Kiosk-Autostart: die ERSTE Wahl eines Kiosk-Modus (Terminal/Extern) wird als Geräte-Modus
+// gemerkt und überlebt Browser-Neustarts. Sie wird NICHT durch Cockpit-Besuche oder spätere
+// Moduswechsel überschrieben – nur der Link „Kiosk-Autostart deaktivieren" im Cockpit löscht sie.
+const KIOSK_AUTOKEY='oak_kiosk_autostart';
+function kioskFlag(){ try{ return localStorage.getItem(KIOSK_AUTOKEY)||''; }catch(e){ return ''; } }
+// Zurück zur Startzentrale – Modus neutralisieren; am Kiosk-Gerät ohne Online-Kachel
+function goCockpit(){
+  CONTENT.meta.terminal=false; CONTENT.meta.extern=false; applyTheme(); applyMeta(); updateGear();
+  const m=CONTENT.meta; setImg($('#ckLogo'),m.customerLogo||m.oakLogo); $('#ckTitle').textContent = m.customer ? ('Herzlich willkommen bei der '+m.customer) : 'Herzlich willkommen';
+  // Terminal-Deploy: es gibt nur Intern (Terminal-Modus) und Extern – die Online-Variante
+  // (Zugangscode/E-Mail) ist ein separates Deployment und hier bewusst ohne Kachel (nur ?start=online).
+  { const ko=$('#ckKioskOff'); if(ko) ko.style.display = kioskFlag()?'':'none'; }
+  show('#screen-cockpit'); }
+{ const kl=$('#ckKioskOffLink'); if(kl) kl.onclick=e=>{ e.preventDefault(); try{ localStorage.removeItem(KIOSK_AUTOKEY); }catch(e2){} goCockpit(); }; }
+// Einen Modus betreten (Flags zur Laufzeit setzen, restliche Logik unverändert)
+function enterMode(term,ext){ try{ if(term && !kioskFlag()) localStorage.setItem(KIOSK_AUTOKEY, ext?'extern':'terminal'); }catch(e){}
+  CONTENT.meta.terminal=!!term; CONTENT.meta.extern=!!ext; applyTheme(); applyMeta(); applyAudience(); updateGear(); goStart(); }
+document.querySelectorAll('.ck-tile[data-mode]').forEach(b=>{ b.onclick=()=>{ const md=b.dataset.mode; enterMode(md!=='online', md==='extern'); }; });
+/* Kundenportal in einem eigenen Fenster - die Unterweisung bleibt geoeffnet und laeuft
+   weiter. `kiosk=1` sagt dem Portal, dass es an einem offenen Geraet steht: es meldet
+   dann nach kurzer Untaetigkeit von selbst ab. Faellt das Fenster dem Popup-Blocker zum
+   Opfer, gehen wir im selben Fenster weiter - besser als ein Klick, der nichts tut. */
+{ const pb=$('#ckPortal'); if(pb) pb.onclick=()=>{
+    const url='https://www.oak-engineering.de/portal/?kiosk=1';
+    const w=window.open(url,'oak-portal');
+    if(!w) location.href=url;
+  }; }
+{ const u=$('#admUeber'); if(u) u.onclick=()=>{ location.href='/portal/'; }; }   // aus dem Admin-Bereich (eigenes Passwort bleibt)
+// Terminal-/Extern-Modus (Kiosk): Rückkehr ins Cockpit nur nach ausdrücklicher Bestätigung (mittiges Modal)
+function askLeaveKiosk(weiter){ if(!CONTENT.meta.terminal){ weiter(); return; }
+  showModal({titel:'Zum Cockpit zurückkehren?',text:'Die Startzentrale ist für die Sicherheitsfachkraft gedacht.',
+    okText:'▶ Nein, hier bleiben',cancelText:'Ja, zum Cockpit',onCancel:weiter}); }
+{ const bk=$('#ckBack'); if(bk) bk.onclick=()=>askLeaveKiosk(goCockpit); }
+{ const gc=$('#gateCockpit'); if(gc) gc.onclick=()=>askLeaveKiosk(goCockpit); }
+{ const sc=$('#startCockpit'); if(sc) sc.onclick=()=>askLeaveKiosk(goCockpit); }
+
+/* ============================ Gate / Start ============================ */
+$('#gateBtn').onclick=()=>{ const code=(CONTENT.meta.accessCode||'').trim();
+  if(code && $('#gateCode').value.trim().toLowerCase()!==code.toLowerCase()){ $('#gateErr').textContent='Zugangscode stimmt nicht. Bitte am Aushang prüfen.'; return; }
+  $('#gateErr').textContent=''; show('#screen-start'); };
+$('#gateCode').addEventListener('keydown',e=>{ if(e.key==='Enter') $('#gateBtn').click(); });
+$('#pRole').addEventListener('change',updateRoleModules);
+$('#startBtn').onclick=async()=>{
+  // Kiosk: ohne freigegebenen Nachweis-Ordner NICHT starten – sonst endet der Nachweis im
+  // Download-Fallback und die Zeile in der Übersichts-CSV fehlt still. Der Klick hier ist
+  // eine Nutzer-Geste, darf also direkt die Browser-Freigabe anfordern (Morgen-Routine).
+  if(CONTENT.meta.terminal && SRV){
+    // Terminal mit lokalem Server: nur kurz prüfen, dass der Dienst läuft – sonst nichts nötig
+    try{ const st=await (await fetch('/api/status',{cache:'no-store'})).json(); if(!st.ok) throw 0;
+    }catch(e){ $('#startErr').textContent='Der lokale Speicher-Dienst läuft nicht – bitte das Terminal über Start_Terminal.bat neu starten (Sicherheitsfachkraft informieren).'; return; }
+  } else if(CONTENT.meta.terminal && typeof window.showDirectoryPicker==='function'){
+    if(!mainDir){ $('#startErr').textContent='Kein Nachweis-Ordner eingerichtet – bitte die Sicherheitsfachkraft informieren (Einstellungen → Haupt-Ordner wählen).'; return; }
+    if(!(await ensurePerm(mainDir))){ $('#startErr').textContent='Der Nachweis-Ordner ist nicht freigegeben – bitte die Freigabe im Browser bestätigen oder die Sicherheitsfachkraft informieren.'; updateFolderBar(); return; }
+    if(backupDir) await ensurePerm(backupDir);   // Backup gleich mit freigeben; blockiert den Start aber nicht
+    else _toast('Hinweis: Kein Backup-Ordner (z. B. USB-Stick) eingerichtet – der Nachweis wird nur lokal gespeichert.');   // Meldung, aber kein Blocker
+    updateFolderBar();
+  }
+  const ex=!!CONTENT.meta.extern;
+  const name=$('#pName').value.trim();
+  if(name.length<3){ $('#startErr').textContent='Bitte gib deinen vollständigen Namen ein.'; return; }
+  if(ex){ const firma=$('#pFirma').value.trim(); if(firma.length<2){ $('#startErr').textContent='Bitte die Firma angeben.'; return; }
+    if(!$('#pReason').value){ $('#startErr').textContent='Bitte den Grund des Besuchs wählen.'; return; }
+    participant.company=firma; participant.address=$('#pAddr').value.trim(); participant.host=$('#pHost').value.trim(); participant.reason=$('#pReason').value; }
+  else { participant.company=''; participant.address=''; participant.host=''; participant.reason=''; }
+  const role = ex ? ((CONTENT.roles.find(r=>r.extern)||CONTENT.roles[0]||{}).name||'Extern') : ($('#pRole').value||'');
+  if(!ex && !role){ $('#startErr').textContent='Bitte wähle zuerst deine Rolle / Tätigkeit aus.'; return; }
+  const mods=assignedModules(role);
+  if(!mods.length){ $('#startErr').textContent=ex?'Für Externe ist noch kein Modul hinterlegt. Bitte an OAK/Admin wenden.':'Für diese Rolle sind keine Module hinterlegt. Bitte an OAK/Admin wenden.'; return; }
+  participant.name=name; participant.role=role; participant.moduleIds=mods.map(m=>m.id); $('#startErr').textContent='';
+  runMods=mods.map(m=>Object.assign({},m,{_doc:null,_numPages:0}));
+  showIntro();
+};
+function showIntro(){ $('#introWho').textContent=participant.name+' · '+(participant.role||'');
+  $('#introOverview').innerHTML=moduleOverviewHtml(runMods);
+  $('#introChk').checked=false; $('#introErr').textContent=''; show('#screen-intro'); }
+$('#introBack').onclick=()=>show('#screen-start');
+$('#introGo').onclick=()=>{ if(!$('#introChk').checked){ $('#introErr').textContent='Bitte die Hinweise bestätigen.'; return; } $('#introErr').textContent='';
+  try{ const el=document.documentElement; if(el.requestFullscreen && !document.fullscreenElement) el.requestFullscreen().catch(()=>{}); }catch(e){}
+  zeigeAktuelles(); };
+
+/* ===== Aktuelles aus dem Betrieb (Portal-Bausteine) =====
+   Vorfaelle und neue Betriebsanweisungen sind der Stoff, der in die naechste Unterweisung
+   gehoert - bisher musste er von Hand uebertragen werden. Das Portal liefert ihn jetzt,
+   aber nur was dort freigegeben wurde. */
+/* ===== Foliensaetze aus dem Kundenportal =====
+   Der einfachste Weg, Inhalte zu pflegen: in PowerPoint bauen, als PDF hochladen, fertig.
+   Kein Editor, keine Datei auf den Stick. Die Anzeige kann das Terminal laengst - pdf.js
+   liegt lokal. Neu ist nur der Weg von der Datei zum Geraet. */
+const FOLIENKEY='oak-uw-folien';        // Zwischenlager: Pfad -> Data-URI
+
+function folienCache(){
+  try{ return JSON.parse(localStorage.getItem(FOLIENKEY)||'{}'); }catch(e){ return {}; }
+}
+function folienCacheSetzen(c){
+  try{ localStorage.setItem(FOLIENKEY, JSON.stringify(c)); }
+  catch(e){ /* Speicher voll: dann wird eben jedes Mal geladen, solange Netz da ist */ }
+}
+async function folienDatei(pfad){
+  const c=folienCache();
+  if(c[pfad]) return c[pfad];                       // schon im Geraet - kein Netz noetig
+  const z=terminalZugang();
+  if(!z) throw new Error('kein Terminal-Zugang eingerichtet');
+  const r=await fetch(PORTAL.url+'/functions/v1/unterweisung-datei',{
+    method:'POST',
+    headers:{'Content-Type':'application/json', apikey:PORTAL.anon},
+    body:JSON.stringify({token:z.token, pfad:pfad})});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok || !d.url) throw new Error(d.fehler||('Server '+r.status));
+  const blob=await (await fetch(d.url)).blob();
+  const dataUri=await new Promise((ok,err)=>{ const fr=new FileReader(); fr.onload=()=>ok(fr.result); fr.onerror=err; fr.readAsDataURL(blob); });
+  c[pfad]=dataUri; folienCacheSetzen(c);
+  return dataUri;
+}
+/* Freigegebene Foliensaetze holen und als Module einhaengen - sie treten NEBEN die
+   bestehenden sieben, ersetzen also nichts. */
+async function folienHolen(){
+  const z=terminalZugang(); if(!z) return [];
+  try{
+    const d=await portalRpc('unterweisung_folien',{p_token:z.token});
+    return (d && d.folien) || [];
+  }catch(e){ return []; }
+}
+function folienEinhaengen(liste){
+  if(!liste || !liste.length) return;
+  const vorhanden=new Set((CONTENT.modules||[]).map(m=>m.id));
+  liste.forEach(f=>{
+    if(vorhanden.has(f.id)) return;
+    CONTENT.modules.push({id:f.id, title:f.titel, type:'pdf', pdf:'', pfad:f.pfad,
+                          quiz:f.fragen||[], minutes:f.minuten||10, inhalte:[]});
+    (f.rollen||[]).forEach(rn=>{
+      const r=(CONTENT.roles||[]).find(x=>x.name===rn);
+      if(r && r.modules.indexOf(f.id)<0) r.modules.push(f.id);
+    });
+  });
+}
+
+let BAUSTEINE=[], bausteineQuittiert=[];
+async function bausteineHolen(){
+  const z=terminalZugang();
+  if(!z) return [];
+  try{
+    const d=await portalRpc('unterweisung_aktuelles',{p_token:z.token});
+    return (d && d.bausteine) || [];
+  }catch(e){ return []; }   /* offline oder gesperrt: kein Grund, die Unterweisung zu stoppen */
+}
+async function zeigeAktuelles(){
+  BAUSTEINE=await bausteineHolen();
+  if(!BAUSTEINE.length){ startPresentation(); return; }
+  const artText={vorfall:'Vorfall im Betrieb',dokument:'Neue Betriebsanweisung',text:'Hinweis'};
+  $('#neuListe').innerHTML=BAUSTEINE.map(b=>
+    '<div style="border:1.5px solid #dce3ee;border-radius:12px;padding:12px 14px;margin-bottom:10px">'
+    + '<div class="small muted">'+esc(artText[b.art]||'Hinweis')+'</div>'
+    + '<b>'+esc(b.titel||'')+'</b>'
+    + (b.text?'<p class="small" style="margin-top:5px">'+esc(b.text)+'</p>':'')
+    + '</div>').join('');
+  $('#neuChk').checked=false; $('#neuErr').textContent='';
+  show('#screen-neu');
+}
+$('#neuBack').onclick=()=>show('#screen-intro');
+$('#neuGo').onclick=()=>{
+  if(!$('#neuChk').checked){ $('#neuErr').textContent='Bitte kurz bestätigen.'; return; }
+  $('#neuErr').textContent='';
+  bausteineQuittiert=BAUSTEINE.map(b=>b.titel);
+  startPresentation();
+};
+
+/* ============================ Präsentation (PDF/Video) ============================ */
+let mi=0, pg=1, videoEnded=false, reachedEnd=false, modResults=[], preDone={}, quizMode='post', interaktivDone={};
+function startPresentation(){ mi=0; modResults=[]; preDone={}; interaktivDone={}; show('#screen-present'); showModule(0,false); }
+function renderStrip(){
+  $('#modStrip').innerHTML=runMods.map((m,i)=>`<span class="m ${i===mi?'active':(modResults.find(r=>r.i===i)?'done':'')}">${i+1}. ${esc(m.title)}</span>`).join('');
+}
+function updateStatus(){
+  const m=runMods[mi]; const isInter=(m.type==='interaktiv'); const isPdf=(!isInter && m.type!=='video');
+  let s='Modul '+(mi+1)+'/'+runMods.length+': '+m.title;
+  if(isPdf && m._numPages) s+=' · Seite '+pg+'/'+m._numPages;
+  $('#cStatus').textContent=s;
+  $('#cPrev').style.display=$('#cNext').style.display=(isInter?'none':'');
+  $('#cPrev').disabled=(!isPdf || pg<=1);
+  const atModuleEnd = isInter ? !!interaktivDone[mi] : (isPdf ? (pg>=m._numPages || !m._numPages) : videoEnded);
+  if(atModuleEnd) reachedEnd=true;
+  const hasQuiz=(m.quiz&&m.quiz.length);
+  $('#toQuiz').textContent = hasQuiz ? 'Weiter zum Quiz →' : (mi<runMods.length-1?'Nächstes Modul →':'Abschließen →');
+  $('#toQuiz').disabled = !reachedEnd;
+  renderStrip();
+}
+async function showModule(i,toLast){
+  mi=i; pg=1; videoEnded=false; reachedEnd=false; _activeModFrame=null; const m=runMods[i];
+  // Immersiv: interaktive Module füllen den ganzen Bildschirm (Chrome ausblenden)
+  document.body.classList.toggle('imm', m.type==='interaktiv');
+  try{ $('#modDoneOv').classList.add('hidden'); $('#nextChip').classList.add('hidden'); }catch(e){}
+  if(m.prequiz && m.prequiz.length && !preDone[i]){ renderPreQuiz(i); return; }
+  const v=$('#viewer'); v.innerHTML='<div class="ph">Lädt …</div>';
+  if(m.type==='interaktiv'){ showInteraktiv(m); updateStatus(); return; }
+  if(m.type==='video'){ showVideo(m); updateStatus(); return; }
+  /* Foliensatz aus dem Kundenportal: hochgeladen statt einprogrammiert. Die Datei kommt
+     beim ersten Mal ueber den Geraete-Token und bleibt danach im Geraet - eine
+     Unterweisung darf nicht daran haengen, ob gerade WLAN da ist. */
+  if(!m.pdf && m.pfad){
+    try{ m.pdf = await folienDatei(m.pfad); }
+    catch(e){
+      v.innerHTML='<div class="ph">Der Foliensatz konnte nicht geladen werden.<br>'
+        + '<span class="small">'+esc(''+(e.message||e))+' – bitte die Sicherheitsfachkraft informieren.</span></div>';
+      m._numPages=0; updateStatus(); return;
+    }
+  }
+  if(!m.pdf){ v.innerHTML='<div class="ph">Für dieses Modul ist noch kein PDF hinterlegt.<br><span class="small">(Im Kundenportal hochladen.)</span></div>'; m._numPages=0; updateStatus(); return; }
+  try{
+    await ensurePdfJs();
+    if(!m._doc){ m._doc=await pdfjsLib.getDocument({data:dataUriToU8(m.pdf)}).promise; m._numPages=m._doc.numPages; }
+    pg = toLast ? m._numPages : 1;
+    await renderPdfPage();
+  }catch(e){ v.innerHTML='<div class="ph">PDF konnte nicht geladen werden.<br><span class="small">'+esc(''+e)+' – PDF-Betrachter fehlt: liegt der Ordner „libs" neben der index.html?</span></div>'; updateStatus(); }
+}
+async function renderPdfPage(){
+  const m=runMods[mi]; if(!m._doc) return;
+  const page=await m._doc.getPage(pg); const v=$('#viewer');
+  const vp1=page.getViewport({scale:1});
+  const maxW=Math.max(320, v.clientWidth-8), maxH=Math.max(260, (v.clientHeight||window.innerHeight*0.6)-8);
+  let disp=Math.min(maxW/vp1.width, maxH/vp1.height); if(!(disp>0)) disp=1;       // Anzeigegröße (CSS-px)
+  const dpr=Math.min(window.devicePixelRatio||1, 2);
+  let renderScale=disp*Math.max(2, dpr*2);                                         // Oversampling für Schärfe
+  const maxDim=4200, px=Math.max(vp1.width,vp1.height)*renderScale;                // Speicher begrenzen
+  if(px>maxDim){ renderScale*=maxDim/px; }
+  const vp=page.getViewport({scale:renderScale});
+  const cv=document.createElement('canvas'); cv.className='pdfpage';
+  cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+  cv.style.width=Math.round(vp1.width*disp)+'px'; cv.style.height=Math.round(vp1.height*disp)+'px';
+  cv.onclick=()=>next();
+  v.innerHTML=''; v.appendChild(cv);
+  const ctx=cv.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+  await page.render({canvasContext:ctx, viewport:vp}).promise;
+  updateStatus();
+}
+function showVideo(m){
+  const v=$('#viewer'); const src=m.video||'';
+  if(!src){ v.innerHTML='<div class="ph">Für dieses Modul ist noch kein Video hinterlegt.<br><span class="small">(Im Admin hochladen oder Link hinterlegen.)</span></div>'; return; }
+  v.innerHTML='<video controls playsinline src="'+src+'"></video>';
+  const el=v.querySelector('video'); videoEnded=false;
+  el.onended=()=>{ videoEnded=true; updateStatus(); };
+}
+let _activeModFrame=null;
+function showInteraktiv(m){
+  const v=$('#viewer');
+  if(!m.url){ v.innerHTML='<div class="ph">Für dieses Modul ist noch keine interaktive Datei hinterlegt.</div>'; return; }
+  const name=encodeURIComponent(participant.name||'');
+  const einbetten=(url)=>{ v.innerHTML='<iframe src="'+url+'" allow="fullscreen" style="width:100%;height:80vh;border:0;border-radius:10px;background:#fff"></iframe>'; _activeModFrame=v.querySelector('iframe'); };
+  const absolut=/^(https?:)?\/\//i.test(m.url);
+  if(absolut || !portalModus()){ einbetten(m.url+(m.url.indexOf('?')<0?'?':'&')+'name='+name); return; }
+  /* Online-Fassung: Die Moduldatei liegt geschuetzt im Kundenportal (Storage) und wird ueber den
+     Geraete-Code mit einer kurzlebigen signierten Adresse geholt (Edge Function unterweisung-datei).
+     Der Name haengt als ?name= dran, so wie es die Module vom lokalen Ordner her kennen. */
+  v.innerHTML='<div class="ph">Modul wird geladen …</div>';
+  const slug=(portalCache()||{}).kunde_slug||'';
+  const datei=String(m.url).split('/').pop();
+  modulAdresse(slug+'/unterweisungen/'+datei)
+    .then(url=>{ einbetten(url+(url.indexOf('?')<0?'?':'&')+'name='+name); })
+    .catch(e=>{ v.innerHTML='<div class="ph">Modul konnte nicht geladen werden.<br><span class="small">'+esc(e.message||e)+' – bitte Netzverbindung prüfen oder die Sicherheitsfachkraft informieren.</span></div>'; });
+}
+async function modulAdresse(pfad){
+  const z=terminalZugang(); if(!z) throw new Error('kein Terminal-Zugang');
+  const r=await fetch(PORTAL.url+'/functions/v1/unterweisung-datei',{method:'POST',
+    headers:{'Content-Type':'application/json', apikey:PORTAL.anon},
+    body:JSON.stringify({token:z.token, pfad:pfad})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.fehler||('Server '+r.status));
+  return j.url;
+}
+function next(){
+  const m=runMods[mi]; if(m.type==='interaktiv') return;
+  const isPdf=(m.type!=='video');
+  if(isPdf && m._numPages && pg<m._numPages){ pg++; renderPdfPage(); return; }
+  reachedEnd=true; updateStatus();   // Modulende erreicht -> Quiz/Weiter freischalten
+}
+function prev(){
+  const m=runMods[mi]; const isPdf=(m.type!=='video');
+  if(isPdf && pg>1){ pg--; renderPdfPage(); }
+}
+$('#cNext').onclick=next; $('#cPrev').onclick=prev;
+const MODKEYS={'Wibo_Grundunterweisung.html':'lt_grund','Wibo_Maschinenbedienung.html':'lt_masch','Wibo_Bildschirmarbeitsplatz.html':'lt_bsa','Wibo_Flurfoerderzeuge.html':'lt_flur','Wibo_Krane.html':'lt_kran','Wibo_Leitern_Tritte.html':'lt_leitern','Wibo_Externe.html':'lt_extern'};
+window.addEventListener('message',function(e){
+  const d=e.data||{};
+  if(!_activeModFrame || e.source!==_activeModFrame.contentWindow) return;   // nur das aktive Modul-iframe zählt
+  if(d.type==='oak-unterweisung-abort'){ showAbortDialog(); return; }        // roter „Unterweisung abbrechen"-Button im Modul-Header
+  if(d.type!=='oak-unterweisung-complete') return;
+  const m=runMods[mi]; if(!m || m.type!=='interaktiv') return;
+  const base=(m.url||'').split(/[?#]/)[0].split('/').pop();
+  const expect=MODKEYS[base];
+  if(expect && d.module && d.module!==expect) console.warn('Unerwartete Modul-ID aus '+base+':',d.module,'– erwartet:',expect);
+  if(interaktivDone[mi]) return;   // Abschluss nur einmal verarbeiten
+  interaktivDone[mi]=true; reachedEnd=true; updateStatus();
+  showModDone();   // Immersiv-Modus: „Weiter" kommt als Pop-up statt Button unten
+});
+$('#toQuiz').onclick=()=>goModuleQuiz();
+/* ---- Abschluss-Pop-up + Weiter-Chip (Immersiv-Modus) ---- */
+function _nextLabel(){ return mi<runMods.length-1 ? ('Weiter: '+runMods[mi+1].title+' ▶') : 'Zum Abschluss ▶'; }
+function showModDone(){
+  $('#mdNextInfo').textContent='Modul '+(mi+1)+' von '+runMods.length+' geschafft'+(mi<runMods.length-1?'.':' – jetzt nur noch bestätigen und unterschreiben.');
+  $('#mdNextBtn').textContent=_nextLabel(); $('#nextChip').textContent=_nextLabel();
+  $('#nextChip').classList.add('hidden'); $('#modDoneOv').classList.remove('hidden');
+}
+$('#mdNextBtn').onclick=()=>{ $('#modDoneOv').classList.add('hidden'); goModuleQuiz(); };
+$('#mdReviewBtn').onclick=()=>{ $('#modDoneOv').classList.add('hidden'); $('#nextChip').classList.remove('hidden'); };
+$('#nextChip').onclick=()=>{ $('#nextChip').classList.add('hidden'); goModuleQuiz(); };
+/* ---- Mittige Dialoge: generischer Helfer im Stil des „Nächstes Modul"-Overlays ---- */
+function showModal(o){
+  const d=document.createElement('div'); d.className='modal-ov';
+  d.innerHTML='<div class="md-card">'+(o.titel?'<h2 style="margin-bottom:6px">'+o.titel+'</h2>':'')
+    +(o.text?'<p class="small muted" style="margin-bottom:14px">'+o.text+'</p>':'')
+    +'<button class="btn" type="button" data-mo="ok" style="width:100%;font-size:16px;padding:13px'+(o.okDanger?';background:var(--bad)':'')+'">'+(o.okText||'OK')+'</button>'
+    +(o.cancelText?'<button class="btn ghost sm" type="button" data-mo="cancel" style="width:100%;margin-top:8px'+(o.cancelDanger?';color:var(--bad)':'')+'">'+o.cancelText+'</button>':'')
+    +'</div>';
+  document.body.appendChild(d);
+  const close=()=>d.remove();
+  d.querySelector('[data-mo="ok"]').onclick=()=>{ close(); if(o.onOk)o.onOk(); };
+  const c=d.querySelector('[data-mo="cancel"]'); if(c)c.onclick=()=>{ close(); if(o.onCancel)o.onCancel(); };
+  d.onclick=e=>{ if(e.target===d) close(); };
+  return d;
+}
+function showAbortDialog(){   // „Weitermachen" bleibt die große, sichere Primär-Aktion
+  showModal({titel:'Unterweisung abbrechen?',text:'Der bisherige Fortschritt geht dabei verloren.',
+    okText:'▶ Nein, weitermachen',cancelText:'Ja, abbrechen – zurück zum Start',cancelDanger:true,onCancel:resetForNext});
+}
+$('#cFull').onclick=()=>{
+  const el=$('#presFS');
+  if(!document.fullscreenElement){
+    const req=el.requestFullscreen?el.requestFullscreen():(el.webkitRequestFullscreen?el.webkitRequestFullscreen():Promise.reject());
+    Promise.resolve(req).then(()=>{ if(screen.orientation&&screen.orientation.lock){ screen.orientation.lock('landscape').catch(()=>{}); } }).catch(()=>{});
+  } else { (document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document); }
+};
+let _refitT; function _refit(){ clearTimeout(_refitT); _refitT=setTimeout(()=>{ if(!$('#screen-present').classList.contains('hidden') && runMods[mi] && runMods[mi].type!=='video' && runMods[mi]._doc){ renderPdfPage(); } },180); }
+window.addEventListener('resize',_refit);
+window.addEventListener('orientationchange',_refit);
+document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement && screen.orientation && screen.orientation.unlock){ try{screen.orientation.unlock();}catch(e){} } _refit(); });
+document.addEventListener('keydown',e=>{ if($('#screen-present').classList.contains('hidden'))return;
+  if(e.key==='ArrowRight'){ e.preventDefault(); next(); } else if(e.key==='ArrowLeft'){ prev(); } });
+
+/* ============================ Quiz pro Modul ============================ */
+function goModuleQuiz(){
+  const m=runMods[mi];
+  if(!(m.quiz&&m.quiz.length)){ afterModulePassed(0,0,100); return; }   // Modul ohne Quiz -> direkt weiter
+  renderModuleQuiz(); show('#screen-quiz');
+}
+function renderQuestionsInto(host,qs,title){ (qs||[]).forEach((q,qi)=>{ let body;
+    if(q.type==='estimate'){ body=`<input type="number" name="q${qi}" style="padding:10px;border:1px solid #ccc;border-radius:8px;font-size:16px;max-width:220px" placeholder="Deine Schätzung"> <span style="margin-left:8px;color:#555">${esc(q.unit||'')}</span>`; }
+    else { body=q.options.map((o,oi)=>`<label class="opt"><input type="radio" name="q${qi}" value="${oi}"><span>${esc(o)}</span></label>`).join(''); }
+    host.insertAdjacentHTML('beforeend',`<div class="q" data-q="${qi}"><div class="qmod">${esc(title)}</div><div class="qt">${qi+1}. ${esc(q.q)}</div>${body}</div>`); }); }
+function buildReview(qs){ return (qs||[]).map((q,i)=>{
+    if(q.type==='estimate'){ const v=$(`input[name="q${i}"]`)?.value ?? ''; const tol=(q.tol!=null?q.tol:Math.max(1,Math.abs(q.answer)*0.25)); const ok=Math.abs(parseFloat(v)-q.answer)<=tol;
+      return `<div class="q"><div class="qt">${i+1}. ${esc(q.q)}</div><div class="opt ${ok?'correct':'wrong'}">Deine Schätzung: ${esc(v)} ${esc(q.unit||'')}</div><div class="opt correct">Richtig: ${esc(String(q.answer))} ${esc(q.unit||'')}${q.explain?' – '+esc(q.explain):''}</div></div>`; }
+    const chosen=+($(`input[name="q${i}"]:checked`)?.value ?? -1);
+    const opts=q.options.map((o,oi)=>{ let cls=''; if(oi===q.correct)cls='correct'; else if(oi===chosen)cls='wrong'; return `<div class="opt ${cls}">${esc(o)}</div>`; }).join('');
+    return `<div class="q"><div class="qt">${i+1}. ${esc(q.q)}</div>${opts}</div>`; }).join(''); }
+function renderModuleQuiz(){ quizMode='post';
+  const m=runMods[mi]; const host=$('#quizHost'); host.innerHTML='';
+  $('#quizSubmit').classList.remove('hidden'); $('#quizSubmit').textContent='Auswerten';
+  $('#quizLead').textContent='Modul „'+m.title+'" – mindestens '+(CONTENT.meta.passPct||80)+' % richtig.';
+  renderQuestionsInto(host, m.quiz, m.title);
+  $('#quizErr').textContent='';
+}
+function renderPreQuiz(i){ quizMode='pre'; const m=runMods[i]; const host=$('#quizHost'); host.innerHTML='';
+  $('#quizSubmit').classList.remove('hidden'); $('#quizSubmit').textContent='Auflösung anzeigen';
+  $('#quizLead').textContent='Vorab zum Modul „'+m.title+'" – schätze bzw. überlege kurz (zählt nicht):';
+  renderQuestionsInto(host, m.prequiz, m.title);
+  $('#quizErr').textContent=''; show('#screen-quiz');
+}
+function submitPreQuiz(){ const m=runMods[mi]; const qs=m.prequiz||[];
+  for(let i=0;i<qs.length;i++){ if(qs[i].type==='estimate'){ const v=$(`input[name="q${i}"]`); if(!v||v.value===''){ $('#quizErr').textContent='Bitte beantworte alle Fragen.'; return; } } else if(!$(`input[name="q${i}"]:checked`)){ $('#quizErr').textContent='Bitte beantworte alle Fragen.'; return; } }
+  $('#quizErr').textContent=''; $('#quizSubmit').classList.add('hidden');
+  $('#quizHost').innerHTML=`<div class="scorebox pass">Auflösung</div>${buildReview(qs)}<div style="margin-top:14px"><button class="btn" id="preGo">Weiter zur Unterweisung →</button></div>`;
+  $('#preGo').onclick=()=>{ preDone[mi]=true; quizMode='post'; $('#quizSubmit').textContent='Auswerten'; show('#screen-present'); showModule(mi,false); };
+}
+$('#quizSubmit').onclick=()=>{
+  if(quizMode==='pre'){ submitPreQuiz(); return; }
+  const qs=runMods[mi].quiz||[];
+  for(let i=0;i<qs.length;i++){ if(qs[i].type==='estimate'){ const v=$(`input[name="q${i}"]`); if(!v||v.value===''){ $('#quizErr').textContent='Bitte beantworte alle Fragen.'; return; } } else if(!$(`input[name="q${i}"]:checked`)){ $('#quizErr').textContent='Bitte beantworte alle Fragen.'; return; } }
+  $('#quizErr').textContent=''; let c=0; qs.forEach((q,i)=>{ if(q.type==='estimate'){ const v=parseFloat($(`input[name="q${i}"]`).value); const tol=(q.tol!=null?q.tol:Math.max(1,Math.abs(q.answer)*0.25)); if(Math.abs(v-q.answer)<=tol) c++; } else if(+$(`input[name="q${i}"]:checked`).value===q.correct) c++; });
+  const pct=Math.round(c/qs.length*100);
+  if(pct>=(CONTENT.meta.passPct||80)) afterModulePassed(c,qs.length,pct); else renderModuleFail(c,qs.length,pct);
+};
+function afterModulePassed(correct,total,pct){
+  modResults=modResults.filter(r=>r.i!==mi); modResults.push({i:mi,title:runMods[mi].title,correct,total,pct});
+  if(mi<runMods.length-1){ show('#screen-present'); showModule(mi+1,false); } else finalize();
+}
+function renderModuleFail(c,total,pct){
+  const m=runMods[mi];
+  const rev=buildReview(m.quiz);
+  $('#quizSubmit').classList.add('hidden');
+  $('#quizHost').innerHTML=`<div class="scorebox fail">✗ Nicht bestanden – ${pct} % richtig</div><h2>Auflösung</h2>${rev}
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn ghost" id="mfReview">Modul erneut ansehen</button>
+      <button class="btn" id="mfRetry">Quiz wiederholen</button></div>`;
+  $('#mfReview').onclick=()=>{ show('#screen-present'); showModule(mi,false); };
+  $('#mfRetry').onclick=()=>renderModuleQuiz();
+}
+function finalize(){
+  let c=0,t=0; modResults.forEach(r=>{ c+=r.correct; t+=r.total; });
+  participant.score = t? Math.round(c/t*100) : 100; participant.passed=true; renderResult();
+}
+
+/* ============================ Ergebnis / Nachweis ============================ */
+async function sha256hex(s){ try{ if(window.crypto&&crypto.subtle){ const buf=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)); return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join(''); } }catch(e){}
+  let h1=0xdeadbeef,h2=0x41c6ce57; for(let i=0;i<s.length;i++){const c=s.charCodeAt(i); h1=Math.imul(h1^c,2654435761); h2=Math.imul(h2^c,1597334677);}
+  h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909); h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
+  return (h2>>>0).toString(16).padStart(8,'0')+(h1>>>0).toString(16).padStart(8,'0'); }
+function genNid(now){ const p=n=>String(n).padStart(2,'0'); const r=Math.floor(Math.random()*65536).toString(16).toUpperCase().padStart(4,'0');
+  return 'WIBO-'+now.getFullYear()+p(now.getMonth()+1)+p(now.getDate())+'-'+p(now.getHours())+p(now.getMinutes())+'-'+r; }
+function wrapLines(ctx,text,maxW){ const words=String(text).split(' '); const lines=[]; let line=''; for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW && line){ lines.push(line); line=w; } else line=t; } if(line)lines.push(line); return lines; }
+async function renderResult(){
+  const m=CONTENT.meta,p=participant; _ensureCertLogo();
+  $('#scoreHost').innerHTML=`<div class="scorebox pass">✓ Unterweisung vollständig absolviert</div>`;
+  $('#reviewHost').innerHTML='';
+  const now=new Date(); const dt=now.toLocaleDateString('de-DE')+' '+now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  const perMod=modResults.filter(r=>r.total>0).map(r=>r.title+': '+r.pct+' %').join(' · ');
+  const modList=participant.moduleIds.map(id=>{const mm=moduleById(id);return {title:mm?mm.title:id, inhalte:(mm&&mm.inhalte)||[]};});
+  const mods=modList.map(x=>x.title).join(', ');
+  const nid=genNid(now);
+  p._dt=dt; p._nid=nid; p._modList=modList; p._perMod=perMod; p._modsStr=mods;
+  const canon=[p.name,p.role,dt,nid,p.score,perMod,JSON.stringify(participant.moduleIds),JSON.stringify(modList.map(x=>x.inhalte))].join('|');
+  let hash=''; try{ hash=await sha256hex(canon); }catch(e){ hash=''; } p._hash=hash;
+  const inhalteHtml=modList.map(x=>`<b>${esc(x.title)}</b>${x.inhalte.length?': <span class="muted">'+x.inhalte.map(esc).join(' · ')+'</span>':''}`).join('<br>');
+  $('#nachweisHost').innerHTML=`<div class="nachweis"><h2>Unterweisungsnachweis</h2><dl>
+    <dt>Name</dt><dd>${esc(p.name)}</dd><dt>Rolle</dt><dd>${esc(p.role)}</dd>
+    <dt>Module</dt><dd>${esc(mods)}</dd>
+    <dt>Unterwiesene Inhalte</dt><dd class="small"><details><summary>anzeigen (stehen vollständig im PDF-Nachweis)</summary>${inhalteHtml}</details></dd>
+    <dt>Datum / Uhrzeit</dt><dd>${esc(dt)}</dd>
+    <dt>Nachweis-ID</dt><dd>${esc(nid)}</dd>
+    <dt>Prüfsumme</dt><dd class="small muted">SHA-256: ${esc((hash||'—').slice(0,40))}…</dd></dl></div>`;
+  $('#askHost').innerHTML = '<details class="askbox"><summary>❓ Fragen an die Sicherheitsfachkraft (optional)</summary>'
+    + modList.map((x,i)=>`<label for="ask_${i}" class="small" style="margin-top:6px">Frage zu „${esc(x.title)}"</label><textarea id="ask_${i}" style="min-height:54px" placeholder="Frage zu dieser Unterweisung? (optional)"></textarea>`).join('')
+    + `<label for="askGen" class="small" style="margin-top:6px">Sonstige Anmerkung</label><textarea id="askGen" style="min-height:54px" placeholder="Allgemeine Frage / Anmerkung? (optional)"></textarea></details>`;
+  $('#afterPass').classList.remove('hidden'); $('#afterFail').classList.add('hidden');
+  const term=!!CONTENT.meta.terminal;
+  // Terminal: nur EIN "Abschließen"-Button. Online: PDF + E-Mail.
+  { const fbn=$('#finishBtn'); fbn.style.display=term?'block':'none'; fbn.disabled=false; fbn.textContent='✓ Unterweisung abschließen'; }
+  $('#pdfBtn').style.display=term?'none':'';
+  $('#mailBtn').style.display=term?'none':'';
+  $('#nextPersonBtn').style.display='none';
+  $('#saveMsg').textContent='';
+  $('#saveHint').style.display=term?'none':'';
+  show('#screen-result'); setupSignature();
+}
+/* ---- Unterschrift (Canvas) ---- */
+const _sig={ctx:null,drawn:false,last:null};
+function setupSignature(){
+  const cv=$('#sigCanvas'); if(!cv) return;
+  const ratio=window.devicePixelRatio||1;
+  const w=cv.clientWidth||500, h=cv.clientHeight||150;
+  cv.width=Math.round(w*ratio); cv.height=Math.round(h*ratio);   // setzt Canvas zurück
+  const ctx=cv.getContext('2d'); ctx.scale(ratio,ratio);
+  ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#1b2330';
+  _sig.ctx=ctx; _sig.drawn=false;
+  $('#confirmChk').checked=false; $('#signErr').textContent='';
+  if(!cv._wired){
+    cv._wired=true;
+    const pos=(e)=>{ const r=cv.getBoundingClientRect(); const t=(e.touches&&e.touches[0])?e.touches[0]:e; return {x:t.clientX-r.left,y:t.clientY-r.top}; };
+    let drawing=false;
+    const start=(e)=>{ drawing=true; _sig.last=pos(e); e.preventDefault(); };
+    const move=(e)=>{ if(!drawing)return; const p=pos(e); _sig.ctx.beginPath(); _sig.ctx.moveTo(_sig.last.x,_sig.last.y); _sig.ctx.lineTo(p.x,p.y); _sig.ctx.stroke(); _sig.last=p; _sig.drawn=true; e.preventDefault(); };
+    const end=()=>{ drawing=false; };
+    cv.addEventListener('mousedown',start); cv.addEventListener('mousemove',move); window.addEventListener('mouseup',end);
+    cv.addEventListener('touchstart',start,{passive:false}); cv.addEventListener('touchmove',move,{passive:false}); cv.addEventListener('touchend',end);
+  }
+}
+$('#sigClear').onclick=()=>{ const cv=$('#sigCanvas'); if(_sig.ctx){ _sig.ctx.clearRect(0,0,cv.width,cv.height); } _sig.drawn=false; };
+function _wrap(ctx,text,x0,y0,maxW,lh){ const words=String(text).split(' '); let line='',y=y0; for(const w of words){ const t=line+w+' '; if(ctx.measureText(t).width>maxW && line){ ctx.fillText(line.trim(),x0,y); line=w+' '; y+=lh; } else line=t; } ctx.fillText(line.trim(),x0,y); return y; }
+const _certLogo=new Image();
+function _ensureCertLogo(){ const src=CONTENT.meta&&CONTENT.meta.customerLogo; if(src && _certLogo.src!==src) _certLogo.src=src; }
+function buildNachweisImage(){
+  const p=participant,m=CONTENT.meta; const W=900, PAD=40, prim=(m.theme&&m.theme.primary)||'#003078';
+  const ML=p._modList||[];
+  let mc=document.createElement('canvas'); let x=mc.getContext('2d');
+  x.font='13px Segoe UI,Arial';
+  const blocks=ML.map(mod=>({title:mod.title, lines: mod.inhalte&&mod.inhalte.length ? wrapLines(x,mod.inhalte.join(' · '),W-2*PAD-18) : ['—']}));
+  const rows=CONTENT.meta.extern
+    ? [['Firma',p.company],['Name',p.name],['Adresse',p.address],['Besucht bei',p.host],['Grund',p.reason],['Datum / Uhrzeit',p._dt],['Nachweis-ID',p._nid]].filter(r=>r[1]!=='' && r[1]!=null)
+    : [['Name',p.name],['Rolle',p.role],['Datum / Uhrzeit',p._dt],['Nachweis-ID',p._nid]];
+  let H=118 + rows.length*30 + 12 + 26;
+  blocks.forEach(b=>{ H+=22 + b.lines.length*18 + 6; });
+  H += 34 + 150 + 64;
+  mc.width=W; mc.height=Math.max(620,Math.round(H)); x=mc.getContext('2d');
+  x.fillStyle='#fff'; x.fillRect(0,0,W,mc.height); x.fillStyle=prim; x.fillRect(0,0,W,12);
+  x.fillStyle=prim; x.font='bold 28px Segoe UI,Arial'; x.fillText('Unterweisungsnachweis',PAD,58);
+  x.fillStyle='#5b6472'; x.font='14px Segoe UI,Arial'; x.fillText((m.customer||'')+(m.subtitle?' · '+m.subtitle:''),PAD,82);
+  try{ if(_certLogo.complete && _certLogo.naturalWidth){ const lh=52, lw=Math.round(lh*_certLogo.naturalWidth/_certLogo.naturalHeight); x.drawImage(_certLogo, W-PAD-lw, 28, lw, lh); } }catch(e){}
+  x.strokeStyle='#e6e9f0'; x.beginPath(); x.moveTo(PAD,98); x.lineTo(W-PAD,98); x.stroke();
+  let y=128;
+  rows.forEach(r=>{ x.fillStyle='#1b2330'; x.font='bold 15px Segoe UI,Arial'; x.fillText(r[0]+':',PAD,y); x.font='15px Segoe UI,Arial'; x.fillText(String(r[1]||''),210,y); y+=30; });
+  y+=8; x.fillStyle=prim; x.font='bold 15px Segoe UI,Arial'; x.fillText('Unterwiesene Inhalte:',PAD,y); y+=24;
+  blocks.forEach(b=>{ x.fillStyle='#1b2330'; x.font='bold 14px Segoe UI,Arial'; x.fillText('• '+b.title,PAD,y); y+=20; x.fillStyle='#3b4453'; x.font='13px Segoe UI,Arial'; b.lines.forEach(ln=>{ x.fillText(ln,PAD+18,y); y+=18; }); y+=6; });
+  y+=4; x.fillStyle='#1b2330'; x.font='15px Segoe UI,Arial'; x.fillText('☑ Selbst und vollständig absolviert, Inhalt verstanden.',PAD,y); y+=30;
+  x.fillStyle='#5b6472'; x.font='13px Segoe UI,Arial'; x.fillText('Unterschrift:',PAD,y+18);
+  const sig=$('#sigCanvas'); try{ x.drawImage(sig,210,y-4,330,110); }catch(e){}
+  x.strokeStyle='#e6e9f0'; x.beginPath(); x.moveTo(210,y+102); x.lineTo(560,y+102); x.stroke(); y+=126;
+  x.strokeStyle='#e6e9f0'; x.beginPath(); x.moveTo(PAD,y); x.lineTo(W-PAD,y); x.stroke(); y+=20;
+  x.fillStyle='#8a92a0'; x.font='11px Consolas,monospace'; x.fillText('Prüfsumme (SHA-256): '+(p._hash||'—'),PAD,y); y+=16;
+  x.font='11px Segoe UI,Arial'; x.fillText('Fälschungssicher über Nachweis-ID + Prüfsumme verifizierbar. Bitte vom Arbeitgeber archivieren.',PAD,y);
+  return mc;   // gibt die Canvas zurück (für PDF/PNG-Erzeugung)
+}
+/* ---------- PDF aus Canvas (JPEG eingebettet, ohne Fremd-Bibliothek) ---------- */
+function makePdfFromCanvas(canvas){
+  const b64=canvas.toDataURL('image/jpeg',0.92).split(',')[1]; const bin=atob(b64);
+  const jpg=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++)jpg[i]=bin.charCodeAt(i);
+  const wPx=canvas.width,hPx=canvas.height; const W=(wPx*72/96).toFixed(2),H=(hPx*72/96).toFixed(2);
+  const enc=s=>new TextEncoder().encode(s); const parts=[]; let off=0; const xref=[];
+  const add=b=>{ parts.push(b); off+=b.length; };
+  const obj=(n,body)=>{ xref[n]=off; add(enc(n+' 0 obj\n'+body+'\nendobj\n')); };
+  add(enc('%PDF-1.4\n%âãÏÓ\n'));
+  obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  obj(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+W+' '+H+'] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>');
+  xref[4]=off; add(enc('4 0 obj\n<< /Type /XObject /Subtype /Image /Width '+wPx+' /Height '+hPx+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+jpg.length+' >>\nstream\n')); add(jpg); add(enc('\nendstream\nendobj\n'));
+  const content='q '+W+' 0 0 '+H+' 0 0 cm /Im0 Do Q';
+  obj(5,'<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream');
+  const xs=off; let xr='xref\n0 6\n0000000000 65535 f \n'; for(let i=1;i<=5;i++)xr+=String(xref[i]).padStart(10,'0')+' 00000 n \n';
+  add(enc(xr)); add(enc('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xs+'\n%%EOF'));
+  let tot=0; parts.forEach(p=>tot+=p.length); const out=new Uint8Array(tot); let o=0; parts.forEach(p=>{ out.set(p,o); o+=p.length; });
+  return new Blob([out],{type:'application/pdf'});
+}
+/* ---------- USB-/Zielordner (File System Access API) + Persistenz via IndexedDB ---------- */
+let mainDir=null, backupDir=null;
+function idb(){ return new Promise((res,rej)=>{ const r=indexedDB.open('oak-terminal',1); r.onupgradeneeded=()=>r.result.createObjectStore('kv'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbSet(k,v){ try{ const db=await idb(); await new Promise((res,rej)=>{ const t=db.transaction('kv','readwrite'); t.objectStore('kv').put(v,k); t.oncomplete=res; t.onerror=()=>rej(t.error); }); }catch(e){ console.warn('idbSet:',e); } }
+async function idbGet(k){ try{ const db=await idb(); return await new Promise((res)=>{ const t=db.transaction('kv','readonly'); const rq=t.objectStore('kv').get(k); rq.onsuccess=()=>res(rq.result); rq.onerror=()=>res(null); }); }catch(e){ console.warn('idbGet:',e); return null; } }
+// Terminal-Betrieb über den lokalen Mini-Server (serve.ps1): dann speichert der SERVER die
+// Nachweise (POST /api/nachweis) – keine Browser-Ordner-Freigabe mehr nötig.
+const SRV=/^http:\/\/localhost(:\d+)?$/i.test(location.origin);
+function blobToB64(blob){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]||''); r.onerror=rej; r.readAsDataURL(blob); }); }
+
+/* ======================= Portal-Modus (seit 14.08.2026) =======================
+   Das Terminal laeuft aus dem Netz statt vom USB-Stick: ein Geraete-Link
+   .../unterweisung/#t=<token> schaltet ihn frei, der Token bestimmt den Kunden.
+   - Konfiguration (Rollen, Module, Texte) kommt aus dem Kundenportal und wird lokal
+     zwischengespeichert -> die Verwaltung bleibt in diesem Tool, gilt aber fuer alle Geraete.
+   - Nachweise gehen in den Kundenbereich des Portals. OHNE Punktestand: gespeichert werden
+     Name, Rolle, Datum, Module und bestanden ja/nein (Datenminimierung; § 12 ArbSchG verlangt
+     den Nachweis, keine Leistungsauswertung). Der genaue Wert bleibt im lokalen PDF.
+   - Ohne Netz wandert der Nachweis in eine Warteschlange und geht spaeter raus - eine
+     Unterweisung darf am WLAN nicht scheitern. */
+const PORTAL={ url:"https://ayieotppxrjrzdpeofkx.supabase.co",
+               anon:"sb_publishable_fz1o6tjpwa7gjiNb17uuEg_-ZwNdFcS" };
+const TERMKEY='oak-uw-terminal';      // {token, kunde}
+const CFGKEY ='oak-uw-config';        // {version, stand, kunde, kunde_slug, daten}
+const QKEY   ='oak-uw-warteschlange'; // [nachweis, ...]
+function terminalZugang(){
+  try{ const t=JSON.parse(localStorage.getItem(TERMKEY)||'null'); return (t&&t.token)?t:null; }catch(e){ return null; }
+}
+function portalModus(){ return !!terminalZugang(); }
+function portalCache(){
+  try{ return JSON.parse(localStorage.getItem(CFGKEY)||'null'); }catch(e){ return null; }
+}
+async function portalRpc(name, body){
+  const r=await fetch(PORTAL.url+'/rest/v1/rpc/'+name,{
+    method:'POST',
+    headers:{'Content-Type':'application/json', apikey:PORTAL.anon, Authorization:'Bearer '+PORTAL.anon},
+    body:JSON.stringify(body)});
+  if(!r.ok){ let m=''; try{ m=(await r.json()).message||''; }catch(e){} throw new Error(m||('Server '+r.status)); }
+  return await r.json();
+}
+/* Freigegebene Fassung holen. Nur eine NEUERE Version ersetzt den lokalen Stand - ein
+   Entwurf im Portal darf im Betrieb nicht auftauchen (dafuer gibt es die Freigabe). */
+async function portalConfigHolen(){
+  const z=terminalZugang(); if(!z) return null;
+  const erg=await portalRpc('unterweisung_config',{p_token:z.token});
+  if(!erg || !erg.daten) return null;
+  const alt=portalCache();
+  if(!alt || (erg.version||0) > (alt.version||0)){
+    localStorage.setItem(CFGKEY, JSON.stringify(erg));
+    return {neu:true, version:erg.version};
+  }
+  return {neu:false, version:erg.version};
+}
+function warteschlange(){ try{ return JSON.parse(localStorage.getItem(QKEY)||'[]'); }catch(e){ return []; } }
+function warteschlangeSetzen(l){ try{ localStorage.setItem(QKEY, JSON.stringify(l)); }catch(e){} }
+async function nachweisAnsPortal(n){
+  const z=terminalZugang(); if(!z) throw new Error('kein Terminal-Zugang');
+  await portalRpc('unterweisung_nachweis',{
+    p_token:z.token, p_name:n.name, p_rolle:n.rolle, p_bereich:n.bereich||null,
+    p_module:n.module||[], p_bestanden:!!n.bestanden, p_bestaetigung:!!n.bestaetigung,
+    p_nachfrage:n.nachfrage||null, p_unterschrift:n.unterschrift||null,
+    p_version:(portalCache()||{}).version||0,
+    /* Was an Aktuellem quittiert wurde, gehoert in den Nachweis - sonst ist spaeter nicht
+       belegbar, dass der Vorfall Thema war. Leer, wenn es nichts Neues gab. */
+    p_bausteine:(n.bausteine&&n.bausteine.length)?n.bausteine:null});
+}
+async function warteschlangeAbarbeiten(){
+  if(!portalModus() || navigator.onLine===false) return 0;
+  const q=warteschlange(); if(!q.length) return 0;
+  let ok=0;
+  for(const n of q.slice()){
+    try{ await nachweisAnsPortal(n); q.shift(); ok++; warteschlangeSetzen(q); }
+    catch(e){ break; }   // Reihenfolge halten: beim ersten Fehler abbrechen
+  }
+  return ok;
+}
+/* Unterschrift klein halten: 520 px breit reicht fuer den Beleg und bleibt unter der
+   Groessengrenze der Funktion. */
+function unterschriftDataUrl(){
+  const cv=$('#sigCanvas'); if(!cv || !_sig || !_sig.drawn) return null;
+  try{
+    const k=document.createElement('canvas');
+    const b=520, h=Math.round(cv.height*(b/cv.width));
+    k.width=b; k.height=h;
+    const x=k.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,b,h); x.drawImage(cv,0,0,b,h);
+    return k.toDataURL('image/png');
+  }catch(e){ return null; }
+}
+function _toast(msg){ const t=document.createElement('div'); t.textContent=msg; t.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#8a5a00;color:#fff;padding:10px 18px;border-radius:10px;z-index:360;font-weight:600;font-size:14px;box-shadow:0 6px 20px rgba(0,0,0,.3);max-width:90vw;text-align:center'; document.body.appendChild(t); setTimeout(()=>t.remove(),4000); }
+async function pickDir(kind){ if(typeof window.showDirectoryPicker!=='function'){ alert('Direktes Speichern in einen Ordner braucht Chrome oder Edge. Sonst wird der Nachweis normal heruntergeladen.'); return false; }
+  try{ const h=await window.showDirectoryPicker({mode:'readwrite',id:'oak_'+kind});
+    if(kind==='main'){
+      // Vorgesehen ist der Ordner, in dem DIESE Datei liegt – Plausibilitätsprüfung:
+      let istAppOrdner=false; try{ await h.getFileHandle('index.html'); istAppOrdner=true; }catch(e){}
+      if(!istAppOrdner && !confirm('Im gewählten Ordner liegt keine index.html.\nVorgesehen ist der Ordner der Unterweisung (dort, wo diese Datei liegt).\n\nTrotzdem diesen Ordner verwenden?')) return false;
+      mainDir=h; await idbSet('mainDir',h);
+    } else { backupDir=h; await idbSet('backupDir',h); } return true; }catch(e){ return false; } }
+async function ensurePerm(dir){ if(!dir)return false;
+  try{
+    if(typeof dir.queryPermission==='function'){ if((await dir.queryPermission({mode:'readwrite'}))==='granted') return true; }
+    if(typeof dir.requestPermission==='function'){ return (await dir.requestPermission({mode:'readwrite'}))==='granted'; }
+    return true; // ältere Chromium-Handles ohne Permission-API: Zugriff versuchen
+  }catch(e){ console.warn('ensurePerm:',e); return false; } }
+async function restoreDirs(){ try{ mainDir=await idbGet('mainDir'); backupDir=await idbGet('backupDir'); }catch(e){} }
+const _san=s=>String(s||'').replace(/[^\wäöüÄÖÜß \-]+/g,'').replace(/\s+/g,'_').slice(0,60)||'Teilnehmer';
+const _dstr=()=>{ const d=new Date(); const p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+async function withRetry(fn,tries=3){ let err;
+  for(let i=0;i<tries;i++){ try{ return await fn(); }catch(e){ if(e&&e.noRetry) throw e; err=e; console.warn('Schreibversuch '+(i+1)+' fehlgeschlagen:',e); await new Promise(r=>setTimeout(r,400*(i+1))); } }
+  throw err; }
+/* Echtes Anhängen: bestehende Zeilen werden nie neu geschrieben (createWritable mit keepExistingData
+   + seek ans Dateiende). Header nur bei leerer Datei; Header-Guard verhindert stilles Anhängen an
+   eine Datei mit altem/fremdem Format. */
+async function appendLines(dir,fileName,header,lines){
+  return withRetry(async()=>{
+    const fh=await dir.getFileHandle(fileName,{create:true});
+    const f=await fh.getFile(); const size=f.size;
+    let prefix='';
+    if(size===0){ prefix='﻿'+header+'\r\n'; }
+    else{
+      const head=(await f.slice(0,Math.min(size,400)).text()).split(/\r?\n/)[0].replace(/^﻿/,'');
+      if(head!==header){ const fe=new Error('Format der Datei „'+fileName+'" passt nicht zur aktuellen Version – bitte die Datei aus dem Nachweis-Ordner verschieben/archivieren.'); fe.noRetry=true; throw fe; }
+      const tail=await f.slice(Math.max(0,size-2)).text();
+      if(!/\n$/.test(tail)) prefix='\r\n';
+    }
+    const w=await fh.createWritable({keepExistingData:true});
+    try{ await w.seek(size); await w.write(prefix+lines.join('\r\n')+'\r\n'); await w.close(); }
+    catch(e){ try{ await w.abort(); }catch(_){} throw e; }
+  });
+}
+const CSV_Q=v=>{ v=String(v==null?'':v); return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+const NACH_HEADER='Datum;Uhrzeit;Name;Firma;Rolle;Modul;Ergebnis;Score;Nachweis-ID';
+const _nowParts=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return {dt:p(d.getDate())+'.'+p(d.getMonth()+1)+'.'+d.getFullYear(), tm:p(d.getHours())+':'+p(d.getMinutes())}; };
+/* Langformat: eine Zeile pro Person+Modul. Der Header ist fix und hängt nicht von den gerade
+   konfigurierten Modulen ab – Spalten-Drift ist damit strukturell ausgeschlossen. */
+function csvZeilenFuer(p){
+  const {dt,tm}=_nowParts();
+  return (p.moduleIds||[]).map(id=>{
+    const m=moduleById(id); const title=m?m.title:String(id);
+    const res=modResults.find(r=>r.title===title&&r.total>0);
+    return [dt,tm,p.name,p.company||'',p.role||'',title,'absolviert',res?res.pct+' %':'',p._nid||''].map(CSV_Q).join(';');
+  });
+}
+async function appendCsv(dir,p){
+  const lines=csvZeilenFuer(p);
+  if(lines.length) await appendLines(dir,'Unterweisungsnachweise.csv',NACH_HEADER,lines);
+}
+function collectFragen(p){ const out=[]; (p._modList||[]).forEach((x,i)=>{ const el=document.getElementById('ask_'+i); const v=el&&el.value.trim(); if(v) out.push({modul:x.title,frage:v}); }); const gen=(document.getElementById('askGen')||{}).value||''; if(gen.trim()) out.push({modul:'Sonstiges',frage:gen.trim()}); return out; }
+const FRAGEN_HEADER='Datum;Uhrzeit;Name;Rolle;Modul;Frage;Nachweis-ID';
+function fragenZeilenFuer(p){
+  const fragen=collectFragen(p); if(!fragen.length) return [];
+  const {dt,tm}=_nowParts();
+  return fragen.map(fr=>[dt,tm,p.name,p.role||'',fr.modul,fr.frage,p._nid||''].map(CSV_Q).join(';'));
+}
+async function appendFragenCsv(dir,p){
+  const lines=fragenZeilenFuer(p); if(!lines.length) return;
+  await appendLines(dir,'Fragen.csv',FRAGEN_HEADER,lines);
+}
+/* Schreibt PDF + beide CSVs in einen Zielordner. `state` macht Wiederholungen idempotent:
+   was schon geschrieben wurde, wird beim Retry übersprungen (keine Doppelzeilen). */
+async function writeToDir(dir,blob,p,fn,state){
+  const nd=await dir.getDirectoryHandle('Nachweise',{create:true});
+  if(!state.pdf){ await withRetry(async()=>{ const fh=await nd.getFileHandle(fn,{create:true}); const w=await fh.createWritable(); await w.write(blob); await w.close(); }); state.pdf=true; }
+  if(!state.csv){ await appendCsv(nd,p); state.csv=true; }
+  if(!state.fragen){ await appendFragenCsv(nd,p); state.fragen=true; }
+}
+let _saveBusy=false;
+async function saveNachweisLocal(){
+  if(_saveBusy) return {ok:false,busy:true};
+  _saveBusy=true;
+  try{
+    const p=participant;
+    if(!p._saveState || p._saveState.nid!==p._nid) p._saveState={nid:p._nid,main:{},backup:{},dl:false};
+    const st=p._saveState;
+    const canvas=buildNachweisImage(); const blob=makePdfFromCanvas(canvas);
+    const fn='Nachweis_'+_san(p.name)+'_'+_dstr()+(p._nid?('_'+p._nid):'')+'.pdf';
+    /* Portal-Modus: der Nachweis geht in den Kundenbereich des Portals. Klappt das nicht
+       (kein Netz), wandert er in die Warteschlange - abgeschlossen ist die Unterweisung
+       trotzdem, nichts geht verloren. */
+    if(portalModus()){
+      const chk=$('#confirmChk');
+      const n={ name:p.name, rolle:p.role, bereich:p.bereich||'',
+                module:(p.moduleIds||[]).slice(), bestanden:!!p.passed,
+                bestaetigung:!!(chk&&chk.checked), nachfrage:p.reason||p.nachfrage||'',
+                unterschrift:unterschriftDataUrl(), zeit:new Date().toISOString(), nid:p._nid||'',
+                bausteine:(bausteineQuittiert||[]).slice() };
+      try{
+        await nachweisAnsPortal(n);
+        warteschlangeAbarbeiten();                       // Liegengebliebenes gleich mitnehmen
+        return {ok:true, fn:fn, main:true, backup:false, dl:false, hasMain:true, hasBackup:false, errors:[]};
+      }catch(e){
+        const q=warteschlange(); q.push(n); warteschlangeSetzen(q);
+        return {ok:true, fn:fn, main:false, backup:false, dl:false, hasMain:true, hasBackup:false,
+                queued:true, errors:[String(e.message||e)]};
+      }
+    }
+    if(SRV){   // Terminal: der lokale Server speichert – keine Ordner-Freigabe, kein Neustart-Problem
+      try{
+        const resp=await fetch('/api/nachweis',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({pdfName:fn,pdfBase64:await blobToB64(blob),nid:p._nid,
+            csvHeader:NACH_HEADER,csvZeilen:csvZeilenFuer(p),fragenHeader:FRAGEN_HEADER,fragenZeilen:fragenZeilenFuer(p)})});
+        const r=await resp.json();
+        return {ok:!!r.main,fn:fn,main:!!r.main,backup:!!r.backup,dl:false,hasMain:true,hasBackup:!!r.backupKonfiguriert,errors:r.errors||[]};
+      }catch(e){ return {ok:false,fn:fn,main:false,backup:false,dl:false,hasMain:true,hasBackup:false,
+        errors:['Lokaler Speicher-Dienst nicht erreichbar – Terminal bitte über Start_Terminal.bat starten. ('+(e.message||e)+')']}; }
+    }
+    let main=false, backup=false, permIssue=false, writeIssue=false; const errors=[];
+    if(mainDir){
+      if(await ensurePerm(mainDir)){ try{ await writeToDir(mainDir,blob,p,fn,st.main); main=true; }catch(e){ writeIssue=true; errors.push('Haupt-Ordner: '+(e.message||e)); } }
+      else { permIssue=true; errors.push('Haupt-Ordner: Zugriff nicht freigegeben.'); }
+    }
+    if(backupDir){
+      if(await ensurePerm(backupDir)){ try{ await writeToDir(backupDir,blob,p,fn,st.backup); backup=true; }catch(e){ writeIssue=true; errors.push('Backup-Ordner: '+(e.message||e)); } }
+      else { permIssue=true; errors.push('Backup-Ordner: Zugriff nicht freigegeben.'); }
+    }
+    // Download nur als letzter Ausweg: kein Ordner konfiguriert oder Freigabe verweigert.
+    // Bei Schreibfehlern (z. B. Datei gesperrt) KEIN Download – der erneute Klick wiederholt nur die fehlenden Teile.
+    let dl=false;
+    if(!main && !backup && !st.dl && ((!mainDir&&!backupDir) || (permIssue&&!writeIssue))){
+      const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fn; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000); dl=true; st.dl=true;
+    }
+    return {ok:(main||backup||dl),fn:fn,main:main,backup:backup,dl:dl,hasMain:!!mainDir,hasBackup:!!backupDir,errors:errors};
+  } finally { _saveBusy=false; }
+}
+$('#finishBtn').onclick=()=>{
+  if(!$('#confirmChk').checked){ $('#signErr').textContent='Bitte zuerst die Bestätigung ankreuzen.'; return; }
+  if(!_sig.drawn){ $('#signErr').textContent='Bitte zuerst im Feld unterschreiben.'; return; }
+  $('#signErr').textContent='';
+  showModal({titel:'Unterweisung abschließen?',text:'Der Nachweis wird gespeichert und das Terminal für die nächste Person zurückgesetzt.',
+    okText:'✓ Ja, abschließen',cancelText:'Zurück',onOk:_doFinish});
+};
+async function _doFinish(){
+  const btn=$('#finishBtn'); btn.disabled=true; const old=btn.textContent; btn.textContent='Speichern…';
+  try{ const r=await saveNachweisLocal();
+    if(r.busy){ btn.disabled=false; btn.textContent=old; return; }
+    /* Warteschlange: ehrlich benennen - abgeschlossen ja, uebermittelt noch nicht. */
+    if(r.queued){
+      $('#saveMsg').innerHTML='<span style="color:#8a5a00;font-weight:700">✓ Abgeschlossen – Übermittlung folgt,'
+        +' sobald das Gerät wieder online ist.</span> <span class="small">Der Nachweis ist auf dem Gerät gesichert.</span>';
+      setTimeout(resetForNext,1800);
+      return;
+    }
+    const fullOk = r.hasMain ? (r.main && (!r.hasBackup || r.backup)) : r.ok;
+    if(fullOk && r.main){
+      $('#saveMsg').innerHTML='<span style="color:var(--ok);font-weight:700">✓ Abgeschlossen und gespeichert – Haupt-Ordner'+(r.backup?' + Backup':'')+'</span>';
+      setTimeout(resetForNext,1100);
+    } else if(r.backup && !r.main){
+      $('#saveMsg').innerHTML='<span style="color:#8a5a00;font-weight:700">⚠ Nur im Backup-Ordner gespeichert.</span> <span class="small">'+esc(r.errors.join(' · '))+'</span>';
+      setTimeout(resetForNext,1800);
+    } else if(r.dl){
+      $('#saveMsg').innerHTML='<span style="color:#8a5a00;font-weight:700">⚠ Nachweis nur als Download gespeichert – die Übersichts-CSV wurde NICHT ergänzt.</span> <span class="small">Bitte die Sicherheitsfachkraft informieren (Haupt-Ordner in den Einstellungen wählen/freigeben).</span>'+(r.errors.length?' <span class="small">'+esc(r.errors.join(' · '))+'</span>':'');
+      setTimeout(resetForNext,1800);
+    } else {
+      btn.disabled=false; btn.textContent=old;
+      $('#saveMsg').innerHTML='<span style="color:var(--bad);font-weight:700">Speichern fehlgeschlagen – Nachweis wurde NICHT abgelegt.</span><br><span class="small">'+esc(r.errors.join(' · ')||'Unbekannter Fehler')+'<br>Bitte erneut auf „Abschließen" klicken (es wird nur der fehlende Teil nachgeholt) oder die Sicherheitsfachkraft informieren.</span>';
+    }
+  }catch(e){ btn.disabled=false; btn.textContent=old; $('#saveMsg').innerHTML='<span style="color:var(--bad)">Speichern fehlgeschlagen: '+esc(String(e.message||e))+'</span>'; }
+};
+function goStart(){ show(CONTENT.meta.terminal ? '#screen-start' : '#screen-gate'); if(CONTENT.meta.terminal) updateFolderBar(); }
+async function updateFolderBar(){
+  const bar=$('#folderBar'); if(!bar) return;
+  if(CONTENT.meta.terminal && SRV){   // lokaler Server übernimmt die Speicherung
+    bar.style.display='';
+    try{ const st=await (await fetch('/api/status',{cache:'no-store'})).json(); if(!st.ok) throw 0;
+      bar.style.background='var(--ok-bg,#e7f5ec)';
+      bar.innerHTML='<span style="color:var(--ok);font-weight:700">✔ Nachweis-Speicherung bereit</span>'+(st.backup?' <span class="muted">(inkl. Backup)</span>':'');
+    }catch(e){ bar.style.background='#fbecea'; bar.innerHTML='<span style="color:var(--bad)">⚠ Lokaler Speicher-Dienst läuft nicht – Terminal über Start_Terminal.bat neu starten.</span>'; }
+    return;
+  }
+  if(!CONTENT.meta.terminal || typeof window.showDirectoryPicker!=='function'){ bar.style.display='none'; return; }
+  bar.style.display='';
+  const st=async(dir)=>{ if(!dir) return {set:false}; let g=false, ok=true; try{ g=(await dir.queryPermission({mode:'readwrite'}))==='granted'; }catch(e){ ok=false; console.warn('folderBar:',e); } return {set:true,name:dir.name,granted:g,ok:ok}; };
+  const m=await st(mainDir), b=await st(backupDir);
+  if(!m.set){ bar.style.background='#fbecea'; bar.innerHTML='<span style="color:var(--bad)">⚠ Kein Nachweis-Ordner eingerichtet – bitte im Admin wählen.</span>'; return; }
+  if(!m.ok){ bar.style.background='#fbecea'; bar.innerHTML='<span style="color:var(--bad)">⚠ Nachweis-Ordner nicht mehr erreichbar (gelöscht/verschoben?) – bitte im Admin neu wählen.</span>'; return; }
+  const ready = m.granted && (!b.set || b.granted);
+  if(ready){ bar.style.background='var(--ok-bg,#e7f5ec)'; bar.innerHTML='<span style="color:var(--ok);font-weight:700">✔ Nachweis-Ordner bereit</span> <span class="muted">('+esc(m.name)+(b.set?' + Backup: '+esc(b.name):'')+')</span>'+(b.set?'':' <span style="color:#8a5a00;font-weight:600">· ⚠ kein Backup-Ordner</span>'); }
+  else { bar.style.background='#fff4e5'; bar.innerHTML='<span style="color:#8a5a00;font-weight:600">Nachweis-Ordner noch nicht freigegeben</span> <button class="btn ghost sm" id="freeFolders" style="margin-left:8px">📁 Ordner freigeben</button>';
+    const fb=$('#freeFolders'); if(fb) fb.onclick=async()=>{ if(mainDir)await ensurePerm(mainDir); if(backupDir)await ensurePerm(backupDir); updateFolderBar(); }; }
+}
+function resetForNext(){ participant.name=''; participant.role=''; participant.moduleIds=[]; participant.score=0; participant.company=''; participant.address=''; participant.host=''; participant.reason='';
+  try{ $('#pName').value=''; ['pFirma','pAddr','pHost'].forEach(id=>{ const el=$('#'+id); if(el)el.value=''; }); const rs=$('#pReason'); if(rs)rs.value=''; const rl=$('#pRole'); if(rl){ rl.value=''; updateRoleModules(); } }catch(e){}
+  try{ if(_sig.ctx){ const cv=$('#sigCanvas'); _sig.ctx.clearRect(0,0,cv.width,cv.height);} _sig.drawn=false; }catch(e){}
+  try{ $('#confirmChk').checked=false; }catch(e){} $('#saveMsg').textContent=''; $('#signErr').textContent='';
+  try{ const fb=$('#finishBtn'); fb.disabled=false; fb.textContent='✓ Unterweisung abschließen'; }catch(e){}   // Button für die nächste Person reaktivieren
+  try{ bumpIdle(); }catch(e){}   // frische Idle-Uhr für die nächste Person
+  BAUSTEINE=[]; bausteineQuittiert=[];   // Aktuelles gilt je Person, nicht je Gerät
+  goStart(); }
+$('#nextPersonBtn').onclick=resetForNext;
+/* ---------- Inaktivitäts-Reset (nur Kiosk/Terminal) ----------
+   Schutz gegen verlassene Sessions: Läuft z. B. jemand mitten im Modul weg, würde die
+   nächste Person sonst unter fremdem Namen weitermachen. Nach IDLE_MIN Minuten ohne
+   Eingabe erscheint eine Warnung; reagiert IDLE_WARN_S Sekunden lang niemand → Reset.
+   Auf dem Präsentations-Bildschirm gilt die längere IDLE_PRES_MIN, weil Eingaben im
+   Modul-iframe unter file:// nicht messbar sind; laufende Videos zählen als aktiv. */
+const IDLE_MIN=10, IDLE_PRES_MIN=30, IDLE_WARN_S=60;
+let _lastAct=Date.now(), _warnStart=0, _warnCnt=0, _warnTimer=null;
+function bumpIdle(){ _lastAct=Date.now(); }
+['pointerdown','keydown','touchstart','wheel','input'].forEach(ev=>document.addEventListener(ev,bumpIdle,{capture:true,passive:true}));
+window.addEventListener('message',bumpIdle);   // Modul-Meldungen (z. B. Abschluss) zählen als Aktivität
+function _idleLimitMs(){ return ($('#screen-present').classList.contains('hidden')?IDLE_MIN:IDLE_PRES_MIN)*60*1000; }
+function _idleRelevant(){
+  if(!CONTENT.meta.terminal) return false;
+  if(!$('#screen-cockpit').classList.contains('hidden') || !$('#screen-admin').classList.contains('hidden')) return false;
+  if(!$('#screen-start').classList.contains('hidden') && !$('#pName').value.trim()) return false;   // leerer Startbildschirm: nichts zu verlieren
+  const v=document.querySelector('#viewer video'); if(v && !v.paused && !v.ended) return false;     // laufendes Video = aktiv
+  return true;
+}
+function _idleWarn(){
+  if(_warnTimer) return;
+  _warnStart=Date.now(); _warnCnt=IDLE_WARN_S;
+  const ov=document.createElement('div'); ov.id='idleOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(10,20,40,.72);z-index:400;display:flex;align-items:center;justify-content:center;padding:20px';
+  ov.innerHTML='<div style="background:#fff;border-radius:14px;padding:26px 30px;max-width:440px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.4)">'+
+    '<h2 style="margin-bottom:8px">Bist du noch da?</h2>'+
+    '<p class="small muted" style="margin-bottom:14px">Ohne Antwort wird das Terminal in <b id="idleCnt">'+_warnCnt+'</b> Sekunden für die nächste Person zurückgesetzt.</p>'+
+    '<button class="btn" id="idleStay" style="width:100%">Ja, weitermachen</button></div>';
+  document.body.appendChild(ov);
+  document.getElementById('idleStay').onclick=()=>{ bumpIdle(); _idleClose(); };
+  _warnTimer=setInterval(()=>{
+    if(_lastAct>_warnStart){ _idleClose(); return; }   // irgendeine Eingabe bricht die Warnung ab
+    _warnCnt--; const c=document.getElementById('idleCnt'); if(c) c.textContent=_warnCnt;
+    if(_warnCnt<=0){ _idleClose(); try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){} resetForNext(); }
+  },1000);
+}
+function _idleClose(){ if(_warnTimer){ clearInterval(_warnTimer); _warnTimer=null; } const ov=document.getElementById('idleOverlay'); if(ov) ov.remove(); }
+setInterval(()=>{ if(!_warnTimer && _idleRelevant() && Date.now()-_lastAct>_idleLimitMs()) _idleWarn(); },15000);
+$('#mailBtn').onclick=()=>{
+  const m=CONTENT.meta,p=participant;
+  if(!$('#confirmChk').checked){ $('#signErr').textContent='Bitte die Bestätigung ankreuzen.'; return; }
+  if(!_sig.drawn){ $('#signErr').textContent='Bitte im Feld unterschreiben.'; return; }
+  $('#signErr').textContent='';
+  const qs=[]; (p._modList||[]).forEach((x,i)=>{ const el=document.getElementById('ask_'+i); const v=el&&el.value.trim(); if(v) qs.push('  - '+x.title+': '+v); });
+  const gen=(document.getElementById('askGen')||{}).value||''; if(gen.trim()) qs.push('  - Sonstiges: '+gen.trim());
+  const inhalte=(p._modList||[]).map(mod=>'  - '+mod.title+(mod.inhalte&&mod.inhalte.length?': '+mod.inhalte.join(', '):'')).join('\r\n');
+  const lines=['Unterweisungsnachweis','','Name: '+p.name,'Rolle: '+p.role,'Datum / Uhrzeit: '+(p._dt||''),'Nachweis-ID: '+(p._nid||'')];
+  lines.push('','Unterwiesene Inhalte:',inhalte,'','Bestätigung: Ja – selbst und vollständig absolviert, Inhalt verstanden','Unterschrift: im angehängten, signierten Nachweis (PDF)','Prüfsumme (SHA-256): '+(p._hash||'—'));
+  lines.push('', qs.length?'Fragen an die Sicherheitsfachkraft:':'Fragen: keine'); if(qs.length) lines.push.apply(lines,qs);
+  lines.push('','Bitte das über „Nachweis als PDF speichern" erzeugte, signierte PDF dieser E-Mail anhängen und archivieren.');
+  const subj=(m.mailSubject||'Unterweisungsnachweis')+(m.customer?' – '+m.customer:'')+(p._nid?' ['+p._nid+']':'');
+  const cc=(m.mailCC||'').trim();
+  location.href='mailto:'+encodeURIComponent(m.mailTo||'')+'?subject='+encodeURIComponent(subj)+(cc?'&cc='+encodeURIComponent(cc):'')+'&body='+encodeURIComponent(lines.join('\r\n'));
+};
+$('#retryBtn').onclick=()=>startPresentation();
+$('#retryQuizBtn').onclick=()=>startPresentation();
+
+/* ============================ Admin ============================ */
+$('#gearBtn').onclick=()=>{ show('#screen-admin'); $('#adminAuth').classList.remove('hidden'); $('#adminPanels').classList.add('hidden'); $('#adminToolbar').style.display='none'; };
+$('#adminClose').onclick=()=>{ goCockpit(); };
+$('#admLogin').onclick=()=>{ if($('#admPass').value!==(CONTENT.meta.adminPass||'oak-admin')){ $('#admErr').textContent='Falsches Passwort.'; return; }
+  $('#admErr').textContent=''; $('#adminAuth').classList.add('hidden'); $('#adminPanels').classList.remove('hidden'); $('#adminToolbar').style.display='block';
+  admCurMod=Math.min(admCurMod,Math.max(0,CONTENT.modules.length-1)); renderAdmin(); };
+function field(label,value,key,type='text',ph=''){ return `<label>${label}</label>`+(type==='textarea'
+  ? `<textarea data-meta="${key}" placeholder="${esc(ph)}">${esc(value)}</textarea>`
+  : `<input type="${type}" data-meta="${key}" value="${esc(value)}" placeholder="${esc(ph)}">`); }
+function renderAdmin(){
+  const m=CONTENT.meta; const term=!!m.terminal;
+  $('#metaHost').innerHTML=
+    `<div class="row" style="background:#eef3fb;border-radius:10px;padding:7px 12px;margin-bottom:4px"><b style="color:var(--navy)">⚙ Einstellungen · gelten für alle Modi (Online · Terminal · Extern)</b></div>`+
+    field('Kunde / Firma',m.customer,'customer')+
+    `<div class="row">`+field('Titel',m.title,'title')+field('Untertitel',m.subtitle||'','subtitle')+`</div>`+
+    `<div class="row">`+field('Zugangscode (Online)',m.accessCode,'accessCode')+field('Admin-Passwort',m.adminPass,'adminPass')+`</div>`+
+    `<div class="row">`+field('Nachweis-E-Mail an (Online)',m.mailTo,'mailTo','email')+field('CC (Kopie an)',m.mailCC!=null?m.mailCC:'info@oak-engineering.de','mailCC','email')+`</div>`+
+    `<div class="row">`+field('Betreff der Mail',m.mailSubject,'mailSubject')+`</div>`+
+    `<div id="usbRow"><div class="row"><div style="flex:1"><label>📁 Haupt-Ordner für Nachweise <span class="small muted">(Terminal / Extern – Ordner, in dem diese Datei &amp; „Module" liegen)</span></label><div class="row" style="align-items:center"><button class="btn ghost sm" type="button" id="pickMain" style="flex:0 0 auto">Ordner wählen</button><span class="small muted" id="mainInfo"></span></div></div></div>`
+      +`<div class="row"><div style="flex:1"><label>💾 Backup-Ordner <span class="small muted">(optional – z. B. USB-Stick; identische Zweitkopie inkl. CSV)</span></label><div class="row" style="align-items:center"><button class="btn ghost sm" type="button" id="pickBackup" style="flex:0 0 auto">Ordner wählen</button><span class="small muted" id="backupInfo"></span></div></div></div></div>`+
+    `<div class="row">`+
+      `<div><label>Kundenlogo</label><div class="row" style="align-items:center"><img class="thumb" src="${m.customerLogo||''}" id="thmCust"><label class="btn ghost sm" style="cursor:pointer">Wählen<input type="file" id="upCustLogo" accept="image/*" class="hidden"></label></div></div>`+
+      `<div><label>OAK-Logo</label><div class="row" style="align-items:center"><img class="thumb" src="${m.oakLogo||''}" id="thmOak"><label class="btn ghost sm" style="cursor:pointer">Wählen<input type="file" id="upOakLogo" accept="image/*" class="hidden"></label></div></div>`+
+    `</div>`+
+    field('Begrüßungstext (Startseite)',m.welcome,'welcome','textarea')+field('Datenschutzhinweis (Online)',m.privacy,'privacy','textarea')+field('Datenschutzhinweis (Terminal/Extern – lokale Speicherung)',m.privacyTerminal||'','privacyTerminal','textarea');
+  const t=m.theme||{}; const keys=[['primary','Primärfarbe'],['dark','Dunkel'],['accent','Akzent (hell)'],['bg','Hintergrund'],['topbar','Kopfleiste']];
+  $('#themeHost').innerHTML=keys.map(([k,l])=>`<label>${l}<input type="color" data-theme="${k}" value="${t[k]||'#003078'}" style="width:100%;height:38px;padding:2px"></label>`).join('');
+  renderRolesEditor(); renderModPicker(); renderModArea();
+  const pm=$('#pickMain'); if(pm) pm.onclick=async()=>{ const ok=await pickDir('main'); const el=$('#mainInfo'); if(el) el.textContent = ok?('✔ '+mainDir.name):'nicht gewählt (oder abgebrochen)'; };
+  const pb=$('#pickBackup'); if(pb) pb.onclick=async()=>{ const ok=await pickDir('backup'); const el=$('#backupInfo'); if(el) el.textContent = ok?('✔ '+backupDir.name):'nicht gewählt (oder abgebrochen)'; };
+  const mi=$('#mainInfo'); if(mi) mi.textContent = mainDir?('✔ '+mainDir.name):'noch nicht gewählt';
+  const bi=$('#backupInfo'); if(bi) bi.textContent = backupDir?('✔ '+backupDir.name):'noch nicht gewählt';
+  const ur=$('#usbRow'); if(ur){
+    if(SRV){ ur.innerHTML='<p class="small muted" style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px">📁 Die Nachweis-Speicherung übernimmt der <b>lokale Dienst</b> (serve.ps1) – keine Ordner-Freigabe nötig. Optionaler USB-Backup: Datei <code>terminal-config.json</code> neben serve.ps1 anlegen (Vorlage: terminal-config.beispiel.json).</p>'; }
+    else ur.style.display = (typeof window.showDirectoryPicker==='function')?'':'none';
+  }
+}
+/* Rollen */
+function renderRolesEditor(){
+  const host=$('#rolesHost'); host.innerHTML='';
+  CONTENT.roles.forEach((r,ri)=>{
+    const chips=CONTENT.modules.map((mm,i)=>{ const on=(r.modules||[]).includes(mm.id);
+      return `<label class="chip${on?' on':''}"><input type="checkbox" data-assign="${esc(mm.id)}" ${on?'checked':''}><span class="ordnum sm">${i+1}</span>${esc(mm.title)}</label>`; }).join('');
+    const el=document.createElement('div'); el.className='adm-card editor-item'; el.dataset.role=ri;
+    el.innerHTML=`<div class="eh"><input type="text" data-rolename class="rolename" value="${esc(r.name)}" placeholder="Rollenname">
+      <button class="btn ghost sm" data-act="delrole" style="color:var(--bad);flex:0 0 auto" title="Rolle löschen">🗑</button></div>
+      <div class="chips">${chips||'<span class="small muted">Noch keine Module angelegt.</span>'}</div>`;
+    host.appendChild(el);
+  });
+  host.onclick=(e)=>{ const d=e.target.closest('[data-act="delrole"]'); if(d){ syncRolesFromDOM(); CONTENT.roles.splice(+d.closest('[data-role]').dataset.role,1); renderRolesEditor(); } };
+  host.onchange=(e)=>{ if(e.target.matches('[data-assign]')) e.target.closest('.chip').classList.toggle('on', e.target.checked); };
+}
+function syncRolesFromDOM(){ $$('#rolesHost .editor-item').forEach(item=>{ const r=CONTENT.roles[+item.dataset.role]; if(!r)return;
+  r.name=item.querySelector('[data-rolename]').value; r.modules=$$('[data-assign]',item).filter(c=>c.checked).map(c=>c.dataset.assign); }); }
+$('#addRole').onclick=()=>{ syncRolesFromDOM(); CONTENT.roles.push({name:'Neue Rolle',modules:[]}); renderRolesEditor(); };
+/* Modul-Auswahl */
+function curMod(){ return CONTENT.modules[admCurMod]; }
+function renderModPicker(){ const host=$('#modCards'); if(!host)return; host.innerHTML='';
+  const TYP={pdf:'📄 PDF',video:'🎬 Video',interaktiv:'🖱 Interaktiv'};
+  CONTENT.modules.forEach((mm,i)=>{ const b=document.createElement('button'); b.type='button';
+    b.className='adm-card mod'+(i===admCurMod?' active':''); b.dataset.mi=i;
+    b.innerHTML=`<span class="ordnum">${i+1}</span><b>${esc(mm.title)}</b><span class="small muted">${TYP[mm.type]||TYP.pdf}${mm.minutes?' · ca. '+mm.minutes+' Min':''}</span>`;
+    b.onclick=()=>{ syncRolesFromDOM(); admCurMod=i; renderModPicker(); renderModArea(); };
+    host.appendChild(b); });
+  if(!CONTENT.modules.length) host.innerHTML='<p class="muted small">Noch kein Modul angelegt.</p>';
+  const el=$('#modEditLabel'); const cm=curMod(); if(el) el.textContent=cm?('Ausgewählt: „'+cm.title+'"'):''; }
+function slugify(s){ return (s||'modul').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').slice(0,24)||('m'+CONTENT.modules.length); }
+$('#addMod').onclick=()=>{ const title=prompt('Name des neuen Moduls?','Neues Modul'); if(title===null)return;
+  let id=slugify(title),n=1; while(moduleById(id)){ id=slugify(title)+'-'+(++n); }
+  CONTENT.modules.push({id,title,type:'pdf',pdf:'',video:'',quiz:[]}); admCurMod=CONTENT.modules.length-1;
+  renderModPicker(); renderRolesEditor(); renderModArea(); };
+$('#renMod').onclick=()=>{ const mm=curMod(); if(!mm)return; const t=prompt('Neuer Name des Moduls?',mm.title); if(t===null)return; mm.title=t; renderModPicker(); renderRolesEditor(); };
+$('#delMod').onclick=()=>{ const mm=curMod(); if(!mm)return; if(!confirm('Modul „'+mm.title+'" wirklich löschen?'))return;
+  const id=mm.id; CONTENT.modules.splice(admCurMod,1); CONTENT.roles.forEach(r=>{ r.modules=(r.modules||[]).filter(x=>x!==id); });
+  admCurMod=Math.max(0,admCurMod-1); renderModPicker(); renderRolesEditor(); renderModArea(); };
+/* Reihenfolge der Module (= Reihenfolge der Schulungen) */
+function reorderRolesToModules(){ CONTENT.roles.forEach(r=>{ const set=new Set(r.modules||[]); r.modules=CONTENT.modules.filter(m=>set.has(m.id)).map(m=>m.id); }); }
+function moveMod(d){ const i=admCurMod, j=i+d; if(j<0||j>=CONTENT.modules.length)return; syncRolesFromDOM();
+  const t=CONTENT.modules[i]; CONTENT.modules[i]=CONTENT.modules[j]; CONTENT.modules[j]=t; admCurMod=j;
+  reorderRolesToModules(); renderModPicker(); renderRolesEditor(); renderModArea(); }
+$('#modUp').onclick=()=>moveMod(-1);
+$('#modDown').onclick=()=>moveMod(1);
+/* Modul-Inhalt: Titel, Typ, Datei */
+function fmtKB(dataUri){ if(!dataUri)return ''; const len=(dataUri.length*0.75)/1024; return len>1024?(len/1024).toFixed(1)+' MB':Math.round(len)+' KB'; }
+function renderModArea(){
+  const mm=curMod(); const host=$('#modArea');
+  if(!mm){ host.innerHTML='<p class="muted small">Kein Modul. Lege links ein Modul an.</p>'; return; }
+  const isVideo=mm.type==='video', isInter=mm.type==='interaktiv';
+  host.innerHTML=`
+    <div class="row">
+      <div style="flex:2"><label>Modul-Titel</label><input type="text" id="modTitle" value="${esc(mm.title)}"></div>
+      <div style="flex:1"><label>Inhaltstyp</label><select id="modType">
+        <option value="pdf" ${(!isVideo&&!isInter)?'selected':''}>PDF (durchklicken)</option>
+        <option value="video" ${isVideo?'selected':''}>Video</option>
+        <option value="interaktiv" ${isInter?'selected':''}>Interaktiv (HTML)</option></select></div>
+      <div style="flex:0 0 120px"><label>Dauer (Min)</label><input type="number" min="0" id="modMinutes" value="${esc(String(mm.minutes!=null?mm.minutes:''))}" placeholder="z. B. 10"></div>
+    </div>
+    <div class="filebox">
+      ${isInter ? `
+        <label>Interaktive HTML-Datei <span class="small muted">(im Studio erstellt/exportiert, in denselben Ordner legen)</span></label>
+        <div class="row" style="align-items:center">
+          <input type="text" id="modUrl" placeholder="z. B. Wibo_Leitern_Tritte.html" value="${esc(mm.url||'')}" style="flex:1">
+          <label class="btn ghost sm" style="cursor:pointer;flex:0 0 auto">📁 Durchsuchen…<input type="file" id="modUrlFile" accept=".html,text/html" class="hidden"></label>
+        </div>
+        <p class="small muted" style="margin-top:6px">Datei per Explorer wählen (übernimmt den Dateinamen) – die HTML muss im selben Ordner wie diese Index-Datei liegen. Der Abschluss zählt automatisch zum Nachweis.</p>
+      ` : isVideo ? `
+        <label>Video hochladen <span class="small muted">(kleine Dateien; große Videos besser per Link)</span></label>
+        <div class="row" style="align-items:center"><span class="small muted">${mm.video&&mm.video.startsWith('data:')?('✔ Video hinterlegt ('+fmtKB(mm.video)+')'):(mm.video?'✔ Link hinterlegt':'kein Video')}</span>
+          <label class="btn ghost sm" style="cursor:pointer">Video-Datei wählen<input type="file" id="upFile" accept="video/*" class="hidden"></label>
+          ${mm.video?`<button class="btn ghost sm" id="delFile">entfernen</button>`:''}</div>
+        <label style="margin-top:10px">…oder Video-Link (URL)</label><input type="url" id="modVideoUrl" placeholder="https://…/video.mp4" value="${mm.video&&!mm.video.startsWith('data:')?esc(mm.video):''}">
+      ` : `
+        <label>PDF hochladen <span class="small muted">(wird seitenweise in voller Größe gezeigt)</span></label>
+        <div class="row" style="align-items:center"><span class="small muted">${mm.pdf?('✔ PDF hinterlegt ('+fmtKB(mm.pdf)+')'):'kein PDF'}</span>
+          <label class="btn ghost sm" style="cursor:pointer">PDF-Datei wählen<input type="file" id="upFile" accept="application/pdf" class="hidden"></label>
+          ${mm.pdf?`<button class="btn ghost sm" id="delFile">entfernen</button>`:''}</div>
+      `}
+    </div>`;
+  $('#modTitle').oninput=e=>{ mm.title=e.target.value; renderModPicker(); renderRolesEditor(); };
+  $('#modType').onchange=e=>{ mm.type=e.target.value; renderModArea(); };
+  $('#modMinutes') && ($('#modMinutes').oninput=e=>{ const v=parseInt(e.target.value,10); mm.minutes=(isNaN(v)||v<0)?0:v; });
+  $('#modUrl') && ($('#modUrl').oninput=e=>{ mm.url=e.target.value; });
+  $('#modUrlFile') && ($('#modUrlFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; mm.url=f.name; renderModArea(); });
+  $('#modVideoUrl') && ($('#modVideoUrl').oninput=e=>{ mm.video=e.target.value; });
+  const del=$('#delFile'); if(del) del.onclick=()=>{ if(isVideo)mm.video=''; else mm.pdf=''; renderModArea(); };
+  const up=$('#upFile'); if(up) up.onchange=e=>{ const f=e.target.files[0]; if(!f)return;
+    const rd=new FileReader(); rd.onload=()=>{ if(isVideo)mm.video=rd.result; else mm.pdf=rd.result; renderModArea(); }; rd.readAsDataURL(f); };
+}
+/* Logos */
+$('#screen-admin').addEventListener('change',(e)=>{ if(e.target.id==='upCustLogo'||e.target.id==='upOakLogo'){ const f=e.target.files[0]; if(!f)return; const rd=new FileReader();
+  rd.onload=()=>{ if(e.target.id==='upCustLogo'){ CONTENT.meta.customerLogo=rd.result; $('#thmCust').src=rd.result; } else { CONTENT.meta.oakLogo=rd.result; $('#thmOak').src=rd.result; } }; rd.readAsDataURL(f); } });
+/* Save / Export / Preview */
+function collectMetaFromDOM(){
+  $$('#metaHost [data-meta]').forEach(inp=>{ const k=inp.dataset.meta; CONTENT.meta[k]=(inp.type==='checkbox')?inp.checked:((inp.type==='number')?parseFloat(inp.value):inp.value); });
+  CONTENT.meta.theme=CONTENT.meta.theme||{}; $$('#themeHost [data-theme]').forEach(inp=>{ CONTENT.meta.theme[inp.dataset.theme]=inp.value; });
+  syncRolesFromDOM();
+}
+function persist(){ try{ localStorage.setItem(LSKEY,JSON.stringify(CONTENT)); return true; }catch(e){ return false; } }
+$('#admSave').onclick=()=>{ collectMetaFromDOM(); applyTheme(); applyMeta(); $('#admSaveMsg').textContent=persist()?'Gespeichert (im Browser).':'Zu groß für Browser-Speicher – bitte „Exportieren" nutzen.'; };
+$('#admPreview').onclick=()=>{ collectMetaFromDOM(); applyTheme(); applyMeta(); goStart(); };
+
+/* ===== Konfiguration ins Kundenportal =====
+   Die Verwaltung bleibt hier im Tool (Vorgabe Nikolai 14.08.2026) - der Stand liegt aber
+   zentral, damit jedes Terminal ihn bekommt. Schreiben darf nur der Portal-Admin (echte
+   Anmeldung, nicht das Admin-Passwort dieser Datei): Sonst koennte jeder mit dem
+   Geraete-Link die Unterweisung aller Beschaeftigten umschreiben. */
+async function portalAdminToken(){
+  const s=(()=>{ try{ return JSON.parse(sessionStorage.getItem('oak-uw-adm')||'null'); }catch(e){ return null; } })();
+  if(s && s.token && s.exp>Date.now()) return s.token;
+  const mail=prompt('Portal-Anmeldung (OAK) – E-Mail:'); if(!mail) return null;
+  const pw=prompt('Passwort:'); if(!pw) return null;
+  const r=await fetch(PORTAL.url+'/auth/v1/token?grant_type=password',{
+    method:'POST', headers:{apikey:PORTAL.anon,'Content-Type':'application/json'},
+    body:JSON.stringify({email:mail.trim(), password:pw})});
+  if(!r.ok) throw new Error('Anmeldung fehlgeschlagen');
+  const d=await r.json();
+  sessionStorage.setItem('oak-uw-adm', JSON.stringify({token:d.access_token, exp:Date.now()+50*60*1000}));
+  return d.access_token;
+}
+async function portalRest(pfad, opt, token){
+  const r=await fetch(PORTAL.url+'/rest/v1'+pfad, Object.assign({}, opt, {
+    headers:Object.assign({apikey:PORTAL.anon, Authorization:'Bearer '+token,
+      'Content-Type':'application/json'}, (opt&&opt.headers)||{})}));
+  if(!r.ok) throw new Error('Portal '+r.status+' '+(await r.text()).slice(0,140));
+  const t=await r.text(); return t?JSON.parse(t):[];
+}
+$('#admPortalSave').onclick=async()=>{
+  const msg=$('#admSaveMsg');
+  try{
+    collectMetaFromDOM();
+    const z=terminalZugang();
+    const slug=prompt('Kunden-Kürzel im Portal (Slug):', (portalCache()||{}).kunde_slug || (z&&z.slug) || 'wibo');
+    if(!slug) return;
+    msg.textContent='Anmelden …';
+    const token=await portalAdminToken(); if(!token) { msg.textContent=''; return; }
+    msg.textContent='Speichere …';
+    const vorhanden=await portalRest('/portal_unterweisung_config?select=version&kunde_slug=eq.'
+      +encodeURIComponent(slug)+'&order=version.desc&limit=1', {}, token);
+    const version=((vorhanden[0]||{}).version||0)+1;
+    const clean=JSON.parse(JSON.stringify(CONTENT,(k,v)=>k.startsWith('_')?undefined:v));
+    await portalRest('/portal_unterweisung_config', {method:'POST', body:JSON.stringify({
+      kunde_slug:slug, kunde:CONTENT.meta.customer||'', version:version, daten:clean,
+      freigegeben:true, freigegeben_am:new Date().toISOString(), freigegeben_von:'OAK engineering'
+    })}, token);
+    msg.textContent='Im Portal freigegeben (Fassung '+version+'). Terminals holen sie automatisch.';
+  }catch(e){ msg.textContent='Portal: '+(e.message||e); }
+};
+/* Geraete-Zugang eintragen, ohne an der Adresszeile zu hantieren - auf einem Kiosk-Geraet
+   ist das der praktikable Weg. Leeres Feld = Portal-Anbindung dieses Geraets abschalten. */
+$('#admPortalZugang').onclick=()=>{
+  const msg=$('#admSaveMsg'); const z=terminalZugang();
+  const t=prompt('Terminal-Token dieses Geräts (leer = Portal-Anbindung aus):', (z&&z.token)||'');
+  if(t===null) return;
+  if(!t.trim()){
+    localStorage.removeItem(TERMKEY); localStorage.removeItem(CFGKEY);
+    msg.textContent='Portal-Anbindung dieses Geräts entfernt.'; return;
+  }
+  localStorage.setItem(TERMKEY, JSON.stringify({token:t.trim(), kunde:CONTENT.meta.customer||''}));
+  msg.textContent='Zugang gespeichert – Nachweise gehen ab jetzt ins Kundenportal.';
+  portalConfigHolen().then(r=>{ if(r) msg.textContent+=' Fassung '+r.version+' geladen.'; }).catch(()=>{});
+};
+$('#admPortalLoad').onclick=async()=>{
+  const msg=$('#admSaveMsg');
+  try{
+    msg.textContent='Lade …';
+    const z=terminalZugang();
+    if(z){
+      const erg=await portalRpc('unterweisung_config',{p_token:z.token});
+      if(!erg || !erg.daten) throw new Error('Im Portal ist noch keine Fassung freigegeben.');
+      localStorage.setItem(CFGKEY, JSON.stringify(erg));
+      msg.textContent='Fassung '+erg.version+' geladen – wird nach dem Neustart angezeigt.';
+      return;
+    }
+    const slug=prompt('Kunden-Kürzel im Portal (Slug):','wibo'); if(!slug) return;
+    const token=await portalAdminToken(); if(!token) { msg.textContent=''; return; }
+    const zeilen=await portalRest('/portal_unterweisung_config?select=version,daten&kunde_slug=eq.'
+      +encodeURIComponent(slug)+'&freigegeben=is.true&order=version.desc&limit=1', {}, token);
+    if(!zeilen.length) throw new Error('Keine freigegebene Fassung gefunden.');
+    CONTENT=zeilen[0].daten; persist(); applyTheme(); applyMeta();
+    msg.textContent='Fassung '+zeilen[0].version+' geladen.';
+  }catch(e){ msg.textContent='Portal: '+(e.message||e); }
+};
+$('#admExport').onclick=()=>{
+  collectMetaFromDOM();
+  // Laufzeit-Felder (_doc etc.) nicht exportieren
+  const clean=JSON.parse(JSON.stringify(CONTENT,(k,v)=>k.startsWith('_')?undefined:v));
+  const json=JSON.stringify(clean,null,2);
+  const startTag='<script id="content-data" type="application/json">'; const endTag='<\/script>';
+  const si=PRISTINE_HTML.indexOf(startTag)+startTag.length; const ei=PRISTINE_HTML.indexOf(endTag,si);
+  const html=PRISTINE_HTML.slice(0,si)+'\n'+json+'\n'+PRISTINE_HTML.slice(ei);
+  const blob=new Blob([html],{type:'text/html'}); const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=(CONTENT.meta.customer||'Unterweisung').replace(/[^\w\-]+/g,'_')+'_Unterweisung.html'; a.click();
+  URL.revokeObjectURL(url); $('#admSaveMsg').textContent='Datei exportiert.';
+};
+
+/* ============================ Nachweis als PDF (Druck) ============================ */
+function buildPrintDoc(sig){
+  const p=participant,m=CONTENT.meta; const prim=(m.theme&&m.theme.primary)||'#003078';
+  const rows=CONTENT.meta.extern
+    ? [['Firma',p.company],['Name',p.name],['Adresse',p.address],['Besucht bei',p.host],['Grund des Besuchs',p.reason],['Module',p._modsStr||''],['Datum / Uhrzeit',p._dt||''],['Nachweis-ID',p._nid||'']].filter(r=>r[1]!=='' && r[1]!=null)
+    : [['Name',p.name],['Rolle',p.role],['Module',p._modsStr||''],['Datum / Uhrzeit',p._dt||''],['Nachweis-ID',p._nid||'']];
+  const tr=rows.map(r=>`<tr><td style="padding:4px 16px 4px 0;font-weight:600;white-space:nowrap;vertical-align:top">${esc(r[0])}</td><td style="padding:4px 0">${esc(r[1])}</td></tr>`).join('');
+  const inh=(p._modList||[]).map(x=>`<div style="margin:5px 0"><b>${esc(x.title)}</b>${x.inhalte&&x.inhalte.length?'<div style="color:#3b4453;font-size:12.5px;margin-top:1px">'+x.inhalte.map(esc).join(' · ')+'</div>':''}</div>`).join('');
+  const qs=[]; (p._modList||[]).forEach((x,i)=>{const el=document.getElementById('ask_'+i);const v=el&&el.value.trim();if(v)qs.push('<li><b>'+esc(x.title)+':</b> '+esc(v)+'</li>');});
+  const gen=(document.getElementById('askGen')||{}).value||''; if(gen.trim())qs.push('<li><b>Sonstiges:</b> '+esc(gen.trim())+'</li>');
+  return `<div style="font-family:Segoe UI,Arial,sans-serif;color:#1b2330;max-width:720px;margin:0 auto;padding:10px 6px">
+    <div style="height:10px;background:${esc(prim)};margin-bottom:14px"></div>
+    ${m.customerLogo?`<img src="${esc(m.customerLogo)}" style="height:50px;float:right;margin:0 0 8px 12px">`:''}
+    <h1 style="color:${esc(prim)};font-size:24px;margin:0">Unterweisungsnachweis</h1>
+    <div style="color:#5b6472;font-size:13px;margin:2px 0 16px">${esc((m.customer||'')+(m.subtitle?' · '+m.subtitle:''))}</div>
+    <table style="font-size:14px;border-collapse:collapse;margin-bottom:16px">${tr}</table>
+    <div style="font-weight:700;color:${esc(prim)};margin-bottom:4px">Unterwiesene Inhalte</div>
+    <div style="font-size:13px;margin-bottom:16px">${inh}</div>
+    ${qs.length?'<div style="font-weight:700;color:'+esc(prim)+';margin-bottom:4px">Fragen an die Sicherheitsfachkraft</div><ul style="font-size:13px;margin:0 0 16px 18px">'+qs.join('')+'</ul>':''}
+    <div style="font-size:14px;margin-bottom:12px">☑ Selbst und vollständig absolviert, Inhalt verstanden.</div>
+    <div style="margin-bottom:16px"><div style="color:#5b6472;font-size:12px;margin-bottom:2px">Unterschrift</div>
+      <img src="${sig}" alt="Unterschrift" style="display:block;width:300px;height:100px;object-fit:contain;border-bottom:1px solid #b9c0cc"></div>
+    <div style="border-top:1px solid #e6e9f0;padding-top:8px;font-size:11px;color:#8a92a0;font-family:Consolas,monospace;word-break:break-all">Prüfsumme (SHA-256): ${esc(p._hash||'—')}</div>
+    <div style="font-size:11px;color:#8a92a0;margin-top:4px">Fälschungssicher über Nachweis-ID + Prüfsumme verifizierbar. Bitte vom Arbeitgeber archivieren.</div>
+  </div>`;
+}
+function printNachweis(){
+  if(!$('#confirmChk').checked){ $('#signErr').textContent='Bitte die Bestätigung ankreuzen.'; return false; }
+  if(!_sig.drawn){ $('#signErr').textContent='Bitte im Feld unterschreiben.'; return false; }
+  $('#signErr').textContent='';
+  let sig=''; try{ sig=$('#sigCanvas').toDataURL('image/png'); }catch(e){}
+  $('#printDoc').innerHTML=buildPrintDoc(sig);
+  window.print();
+  return true;
+}
+$('#pdfBtn').onclick=printNachweis;
+
+/* ============================ Init ============================ */
+_ensureCertLogo();
+// Landing: ?start=terminal|extern|online startet direkt einen Modus (z. B. für den Kiosk-Starter),
+// ohne Parameter erscheint das Cockpit (Startzentrale).
+(async function(){
+  await restoreDirs();   // Ordner-Handles VOR dem Routing wiederherstellen (sonst flackert „Kein Nachweis-Ordner")
+  const sp=(new URLSearchParams(location.search).get('start')||'').toLowerCase();
+  let auto=''; try{ auto=localStorage.getItem(KIOSK_AUTOKEY)||''; }catch(e){}
+  if(sp==='terminal') enterMode(true,false);
+  else if(sp==='extern') enterMode(true,true);
+  else if(sp==='online') enterMode(false,false);
+  else if(auto==='terminal') enterMode(true,false);   // gemerkter Kiosk-Modus (Autostart nach Neustart)
+  else if(auto==='extern') enterMode(true,true);
+  else goCockpit();
+})();
+/* ===== Portal-Modus: Stand holen und Liegengebliebenes nachreichen =====
+   Erst NACH dem Start, damit das Terminal ohne Netz sofort benutzbar ist. Eine neue
+   freigegebene Fassung wird nur uebernommen, solange niemand mitten in der Unterweisung
+   steckt - deshalb der Neustart nur auf dem Startbildschirm. */
+(function portalStart(){
+  if(!portalModus()) return;
+  const z=terminalZugang();
+  if(z && z.kunde && !CONTENT.meta.customer) CONTENT.meta.customer=z.kunde;
+  const lauf=()=>{
+    warteschlangeAbarbeiten().then(n=>{ if(n) _toast(n+' Nachweis(e) nachträglich übermittelt.'); });
+    /* Foliensaetze aus dem Portal einhaengen. Still: gibt es keine oder ist gerade kein
+       Netz, bleibt es bei den lokalen Modulen - die Unterweisung laeuft in jedem Fall. */
+    folienHolen().then(l=>{ folienEinhaengen(l); }).catch(()=>{});
+    portalConfigHolen().then(r=>{
+      if(!r || !r.neu) return;
+      const aufStart=!!document.querySelector('#screen-start:not(.hidden), #screen-cockpit:not(.hidden)');
+      if(aufStart) location.reload();
+      else _toast('Neuer Unterweisungs-Stand geladen – wird beim nächsten Start aktiv.');
+    }).catch(()=>{});
+  };
+  setTimeout(lauf, 1200);
+  window.addEventListener('online', lauf);
+  setInterval(lauf, 15*60*1000);      // Terminal laeuft den ganzen Tag
+})();
+/* Versions-Schalter auf dem Startbildschirm: Wahl merken; 2 wechselt zum neuen Terminal. */
+(function(){
+  const KEY='oak-uw-fassung';
+  document.querySelectorAll('#fassungWahl .pille').forEach(b=>{ b.onclick=()=>{ try{ localStorage.setItem(KEY, b.dataset.f); }catch(e){} if(b.dataset.f==='2') location.href='terminal.html'; }; });
+})();
+// Versteckter Admin-Zugang immer verfügbar (greift, wenn das Zahnrad im Kiosk verborgen ist):
+// 5× oben links tippen ODER Strg+Alt+A. Admin-Passwort bleibt Pflicht.
+(function(){
+  let _n=0,_t=0; const zone=document.createElement('div'); zone.id='admZone'; zone.style.cssText='position:fixed;top:0;left:0;width:64px;height:64px;z-index:150'; document.body.appendChild(zone);
+  zone.addEventListener('click',()=>{ const now=Date.now(); if(now-_t>2500)_n=0; _t=now; _n++; if(_n>=5){ _n=0; $('#gearBtn').click(); } });
+  document.addEventListener('keydown',(e)=>{ if(e.ctrlKey&&e.altKey&&(e.key==='a'||e.key==='A')) $('#gearBtn').click(); });
+})();
+</script>
+<div id="printDoc"></div>
+</body>
+</html>
