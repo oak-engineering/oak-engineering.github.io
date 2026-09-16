@@ -815,3 +815,10 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .uw-einst-dlg .pw-akt{align-items:center;flex-wrap:wrap}
 .uw-einst-stand{margin-right:auto}
 .uw-rolle-weg{color:#98a2b3}
+
+/* Matrix: Kaestchen mittig unter der Spaltenueberschrift (.pw-dlg input machte sie zu Block-Feldern mit Innenabstand) */
+.uw-einst-dlg .uw-matrix th,.uw-einst-dlg .uw-matrix td{padding-left:8px;padding-right:8px}
+.uw-einst-dlg .uw-matrix th:not(:first-child){text-align:center;vertical-align:bottom}
+.uw-einst-dlg .uw-matrix td.uw-matrix-zelle{text-align:center;vertical-align:middle}
+.uw-einst-dlg .uw-matrix input[type=checkbox]{display:inline-block;width:22px;height:22px;margin:0;padding:0;border:0;box-shadow:none;vertical-align:middle}
+.uw-einst-dlg .uw-matrix td:first-child{vertical-align:middle}
