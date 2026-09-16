@@ -627,7 +627,7 @@ function renderSeitenleiste(){
       ${erweitert}
     </div>
     <div class="sl-fuss">
-      <button type="button" class="sl-eintrag" data-aktion-id="pwBtn"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.schloss}</svg><span>Passwort ändern</span></button>
+      ${/^Schichtf/i.test(window.__oakName || "") ? "" : `<button type="button" class="sl-eintrag" data-aktion-id="pwBtn"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.schloss}</svg><span>Passwort ändern</span></button>`}
       <button type="button" class="sl-eintrag" data-aktion-id="logoutBtn"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.tuer}</svg><span>Abmelden</span></button>
     </div>`;
   el.querySelectorAll("[data-nav]").forEach(b => b.addEventListener("click", () => {
