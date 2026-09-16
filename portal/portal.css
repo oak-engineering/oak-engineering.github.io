@@ -502,3 +502,14 @@ a.ck-kachel.ck-link .ck-hinweis::after{content:" ›";color:var(--gruen);font-we
 .start-zahl.sz-kritisch{border-left-color:var(--rot)} .start-zahl.sz-kritisch b{color:var(--rot)}
 .start-zahl.sz-warnung{border-left-color:var(--orange)} .start-zahl.sz-warnung b{color:var(--orange)}
 .start-zahl:hover{border-color:var(--gruen)}
+
+/* ---- App-Modus (Rolle kunde/fachkraft): keine Reiter, Leiste unten auf allen Breiten (16.09.2026) ---- */
+body.app-modus #katTabs,body.app-modus #subTabs{display:none !important}
+body.app-modus .tabbar-fest,body.app-modus .tb-blatt{display:block}
+body.app-modus{padding-bottom:calc(var(--tb-h,69px) + 8px + env(safe-area-inset-bottom,0px))}
+body.app-modus .titelzeile .unter{display:none}
+/* Admin am Handy: ebenfalls Leiste statt Reiter */
+@media(max-width:900px){ #appView #katTabs,#appView #subTabs{display:none !important} }
+.tb-blatt{max-height:min(78vh,720px);overflow:auto}
+.tb-blatt h2.tb-kopf2{margin-top:.9rem}
+.tb-blatt a[data-portal],.tb-blatt a[data-aktion]{min-height:44px}

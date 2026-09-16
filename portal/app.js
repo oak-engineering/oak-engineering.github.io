@@ -199,11 +199,11 @@ function renderStart(wrap){
                "Vorfall melden", "Unfall, Beinahe-Unfall oder Mangel an einer Maschine", START_SVG.warnung, !!mt)}
       ${kachel(mt ? "https://www.oak-engineering.de/oak-tools/begehung/?modus=kunde&kt=" + encodeURIComponent(mt) + "&kn=" + encodeURIComponent(kunde)
                   : "#arbeitssicherheit/begehungen",
-               "Begehung durchführen", "Begehungsbogen öffnen und Anlagen erfassen", START_SVG.begehung, true)}
+               "Maschine prüfen", "Checkliste zur Maschinensicherheit", START_SVG.begehung, true)}
       ${kachel("#arbeitssicherheit/anlagen", "Unterlagen einsehen", "Betriebsanweisungen, Gefährdungsbeurteilungen, Mängellisten", START_SVG.dokument, false)}
     </div>
     ${startZahlen()}
-    <p class="start-mehr"><a href="#arbeitssicherheit/ck-arbeitssicherheit">Ausführlicher Überblick</a></p>`;
+    <p class="start-mehr"><a href="#mehr/anfragen">Frage an OAK engineering</a> · <a href="#arbeitssicherheit/ck-arbeitssicherheit">Ausführlicher Überblick</a></p>`;
   wrap.appendChild(sec);
   document.body.classList.add("auf-start");
 }
@@ -349,6 +349,19 @@ function hashLesen(){
   HASH_Q = q ? new URLSearchParams(q) : null;
   return true;
 }
+/* Oeffentliche Portal-API fuer die Leiste unten (site.js): ein Aufruf statt DOM-Klicks. */
+const MEHR_LABEL = { "uw-katalog": "Modulkatalog", "personen": "Mitarbeiter", "kapitel": "Unterweisungs-Inhalte",
+                     "uw-ueberblick": "Unterweisungen – Überblick", "anfragen": "Frage an OAK engineering", "upload": "Dokument hochladen" };
+window.portalGehe = function(dom, sub){
+  AKTIVE_DOM = dom; AKTIVE_SUB = sub || null;
+  renderTabs(); renderSubTabs(); renderSektionen(); hashSetzen(false);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+window.portalKontext = function(){
+  return { admin: !!ADMIN, fachkraft: !!window.__oakFachkraft, aktiv: AKTIV,
+           meldeToken: ((typeof MELDE_TOK !== "undefined" ? MELDE_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "",
+           domaenen: (typeof verfuegbareDomaenen === "function") ? verfuegbareDomaenen() : [] };
+};
 window.addEventListener("popstate", () => {
   if(!PORTAL_BEREIT) return;
   hashLesen(); renderTabs(); renderSubTabs(); renderSektionen(); hashSetzen(true);
@@ -439,7 +452,7 @@ window.addEventListener("resize", reiterUeberlaufPruefen);
 function renderTabs(){
   const nav = $("#katTabs"); if(!nav) return;
   const doms = verfuegbareDomaenen();
-  if(AKTIVE_DOM === "start"){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }   // Startseite ohne Reiter
+  if(AKTIVE_DOM === "start" || AKTIVE_DOM === "mehr"){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }   // Startseite/Mehr ohne Reiter
   if(!doms.length){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
   // Standard-Tab: erste Domäne MIT Inhalt (Kunde landet auf Dokumenten, nicht auf leerem Bereich).
   if(!AKTIVE_DOM || !doms.some(d => d.key===AKTIVE_DOM)) AKTIVE_DOM = (doms.find(domHatInhalt) || doms[0]).key;
@@ -459,6 +472,7 @@ function renderTabs(){
 function renderSubTabs(){
   const nav = $("#subTabs"); if(!nav) return;
   if(AKTIVE_DOM === "start"){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = null; return; }
+  if(AKTIVE_DOM === "mehr"){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
   const dom = verfuegbareDomaenen().find(d => d.key===AKTIVE_DOM);
   const subs = verfuegbareSubs(dom);
   if(subs.length <= 1){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = subs[0] ? subs[0].kat : null; return; }
@@ -481,8 +495,9 @@ function renderSubTabs(){
 
 function renderSektionen(){
   const wrap = $("#sektionen"); wrap.innerHTML = "";
-  document.body.classList.remove("auf-start");
+  document.body.classList.remove("auf-start"); document.body.classList.remove("auf-mehr");
   if(AKTIVE_DOM === "start"){ renderStart(wrap); return; }
+  if(AKTIVE_DOM === "mehr"){ document.body.classList.add("auf-mehr"); renderSektion(wrap, AKTIVE_SUB || "", MEHR_LABEL[AKTIVE_SUB] || KAT_LABEL[AKTIVE_SUB] || "", true); return; }
   const doms = verfuegbareDomaenen();
   if(!doms.length){ wrap.innerHTML = `<div class="leer">Für Sie sind derzeit keine Unterlagen hinterlegt.</div>`; return; }
   const dom = doms.find(d => d.key===AKTIVE_DOM) || doms[0];
@@ -540,6 +555,7 @@ async function ladePortal(){
        welche Knoepfe erscheinen. */
     window.__oakFachkraft = !!(me && me[0] && me[0].rolle === "fachkraft");
     window.__oakName = ADMIN_NAME;
+    document.body.classList.toggle("app-modus", !ADMIN);   // Schichtfuehrer/Fachkraft: Leiste unten statt Reiter
     MITGLIED = (me && me[0]) || null;
 
     const rows = await apiGet("/rest/v1/portal_dokumente?select=*&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc", false);

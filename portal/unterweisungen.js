@@ -280,9 +280,16 @@ function renderUnterweisungen(wrap){
         <td>${n.bestanden ? '<span class="uw-badge uw-gut">bestanden</span>' : '<span class="uw-badge uw-kritisch">nicht bestanden</span>'}</td>
       </tr>`).join("")}</tbody></table></div>${rows.length > 8 ? `<div class="uw-leise" style="margin-top:6px">Die letzten 8 von ${rows.length}. Alle stehen in der Excel-Tabelle.</div>` : ""}`
     : `<div class="uw-leise">Noch keine Nachweise.</div>`;
+  /* Nachweise sieht jeder (kurz, Excel hat alles) */
+  const sekNach = document.createElement("section"); sekNach.className = "sektion";
+  sekNach.innerHTML = `<div class="sek-kopf"><h3 class="uw-h3" style="margin:0">Nachweise</h3><span class="zaehler">${rows.length}</span>
+      ${rows.length ? '<button class="btn sek" id="uwCsvAlle">Alle als Excel-Tabelle</button>' : ""}</div>${nachweisKurz}`;
+  wrap.appendChild(sekNach);
+  const btnAlle = sekNach.querySelector("#uwCsvAlle"); if(btnAlle) btnAlle.addEventListener("click", uwExport);
+  if(!(istAdmin || window.__oakFachkraft)) return;   // Erweiterte Funktionen nur fuer Admin/Fachkraft
   const sekMehr = document.createElement("section"); sekMehr.className = "sektion uw-mehr-sektion";
   sekMehr.innerHTML = `<details class="uw-mehr">
-    <summary>Versionsarchiv &amp; Nachweise</summary>
+    <summary>Erweiterte Funktionen <span class="uw-leise">Versionsarchiv · Fassung je Modul</span></summary>
     <div class="uw-mehr-inhalt">
       <div class="sek-kopf"><h3 class="uw-h3">Versionsarchiv</h3>
         <span class="uw-leise">${istAdmin ? "Auswahl = läuft am Terminal, sofort wirksam" : "hervorgehoben = läuft am Terminal"}</span></div>
@@ -290,9 +297,6 @@ function renderUnterweisungen(wrap){
         <thead><tr><th>Thema</th><th>Version 1.0</th><th>Version 2.0</th><th>Am Terminal</th></tr></thead>
         <tbody>${archivZeilen || '<tr><td colspan="4" class="uw-leise">Noch keine Module freigeschaltet.</td></tr>'}</tbody></table></div>
       ${weitere.length ? `<div class="uw-leise" style="margin:10px 0 4px">Weitere Unterlagen</div>${uwDokTabelle(weitere)}` : ""}
-      <div class="sek-kopf" style="margin-top:20px"><h3 class="uw-h3">Nachweise</h3><span class="zaehler">${rows.length}</span>
-        ${rows.length ? '<button class="btn sek" id="uwCsv">Alle als Excel-Tabelle</button>' : ""}</div>
-      ${nachweisKurz}
     </div></details>`;
   wrap.appendChild(sekMehr);
   const btn = sekMehr.querySelector("#uwCsv");

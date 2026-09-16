@@ -254,10 +254,12 @@ document.addEventListener('click', e => {
     { id:'leistungen',     label:'Leistungen', ico:'raster' },
     { href:'kontakt.html', label:'Kontakt',    ico:'brief'  }
   ];
+  /* Die App fuer Schichtfuehrer: vier Ziele, mehr nicht. Start = vier Kacheln, Uebersicht = Cockpit,
+     Melden = Vorfall/Mangel mit Foto, Mehr = alles Weitere (Erweiterte Funktionen nur fuer Admins). */
   const ZIELE_PORTAL_AN = [
+    { id:'start',      label:'Start',     ico:'haus'    },
     { id:'ueberblick', label:'Übersicht', ico:'tafel'   },
-    { id:'bereiche',   label:'Bereiche',  ico:'raster'  },
-    { id:'vorfaelle',  label:'Vorfälle',  ico:'warnung' }
+    { id:'melden',     label:'Melden',    ico:'warnung' }
   ];
   const ZIELE_PORTAL_AUS = [
     { id:'anmelden',      label:'Anmelden', ico:'schloss' },
@@ -289,7 +291,9 @@ document.addEventListener('click', e => {
        oeffnet damit denselben Drawer – keine zweite Menue-Logik daneben. */
     const mehr = document.createElement('button');
     mehr.type = 'button';
-    mehr.className = 'tab-i nav-burger';
+    /* Im Portal ist „Mehr" ein eigenes Blatt (der Website-Drawer liegt dort im ausgeblendeten Login). */
+    if(imPortal){ mehr.className = 'tab-i'; mehr.dataset.blatt = 'mehr'; }
+    else { mehr.className = 'tab-i nav-burger'; }
     mehr.setAttribute('aria-label', 'Weitere Punkte');
     const mt = document.createElement('span');
     mt.textContent = 'Mehr';
@@ -312,7 +316,10 @@ document.addEventListener('click', e => {
            Unterbereich, nicht der Adresse. Cockpit heisst ck-…, Meldungen vf-… */
         const sub = document.querySelector('#subTabs .sub-tab.aktiv');
         const kat = sub ? (sub.dataset.sub || '') : '';
-        treffer = kat.indexOf('vf-') === 0 ? reihe.querySelector('[data-ziel="vorfaelle"]')
+        const b = document.body.classList;
+        treffer = b.contains('auf-start') ? reihe.querySelector('[data-ziel="start"]')
+                : b.contains('auf-mehr')  ? reihe.querySelector('[data-blatt="mehr"]')
+                : kat.indexOf('vf-') === 0 ? (reihe.querySelector('[data-ziel="vorfaelle"]') || reihe.querySelector('[data-ziel="melden"]'))
                 : kat.indexOf('ck-') === 0 ? reihe.querySelector('[data-ziel="ueberblick"]')
                 : null;
       }
@@ -344,9 +351,13 @@ document.addEventListener('click', e => {
     h.textContent = titel;
     blatt.appendChild(h);
     eintraege.forEach(e => {
+      if(e.kopf){ const k = document.createElement('h2'); k.textContent = e.kopf; k.className = 'tb-kopf2'; blatt.appendChild(k); return; }
       const a = document.createElement('a');
-      a.href = e.href;
+      a.href = e.href || '#';
       if(e.domZiel) a.dataset.domZiel = e.domZiel;
+      if(e.portal) a.dataset.portal = e.portal;          // '#domaene/reiter' im Portal
+      if(e.aktion) a.dataset.aktion = e.aktion;          // Knopf-Id im Portal (Passwort, Abmelden)
+      if(e.neu) { a.target = '_blank'; a.rel = 'noopener'; }
       a.appendChild(icoEl(e.ico));
       a.appendChild(document.createTextNode(e.text));
       blatt.appendChild(a);
@@ -403,6 +414,8 @@ document.addEventListener('click', e => {
     /* Der aktive Reiter folgt dem Unterbereich – der wechselt auch ohne Zutun der Leiste. */
     const subs = document.getElementById('subTabs');
     if(subs) new MutationObserver(() => aktivSetzen()).observe(subs, { childList:true, subtree:true });
+    /* Startseite und Mehr setzen nur eine Klasse am body – darauf hoert der aktive Reiter ebenfalls. */
+    new MutationObserver(() => aktivSetzen()).observe(document.body, { attributes:true, attributeFilter:['class'] });
   }
 
   /* ── Klicks ── */
@@ -419,6 +432,21 @@ document.addEventListener('click', e => {
       if(echt) echt.click();
       blattZu();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const pz = e.target.closest('[data-portal]');
+    if(pz){
+      e.preventDefault();
+      const teile = pz.dataset.portal.split('/');
+      blattZu();
+      if(window.portalGehe) window.portalGehe(teile[0], teile[1] || null);
+      if(pz.dataset.detailsAuf){ setTimeout(() => { const d = document.querySelector('details.uw-mehr'); if(d) d.open = true; }, 80); }
+      return;
+    }
+    const ak = e.target.closest('[data-aktion]');
+    if(ak){
+      e.preventDefault(); blattZu();
+      const ziel = document.getElementById(ak.dataset.aktion); if(ziel) ziel.click();
       return;
     }
     if(e.target.closest('.tb-blatt a')){ blattZu(); return; }
@@ -450,7 +478,52 @@ document.addEventListener('click', e => {
         text: (t.childNodes[0] && t.childNodes[0].textContent || t.textContent || '').trim()
       })), k);
 
+    } else if(k.dataset.blatt === 'start'){
+      if(window.portalGehe) window.portalGehe('start');
+      aktivSetzen();
+
+    } else if(k.dataset.blatt === 'melden'){
+      const kx = window.portalKontext ? window.portalKontext() : {};
+      if(kx.meldeToken){ location.href = 'melden.html?t=' + encodeURIComponent(kx.meldeToken); }
+      else if(window.portalGehe){ window.portalGehe('arbeitssicherheit', 'vf-arbeitssicherheit'); }
+
+    } else if(k.dataset.blatt === 'mehr'){
+      const kx = window.portalKontext ? window.portalKontext() : {};
+      const ein = [
+        { kopf:'Unterlagen' },
+        { portal:'arbeitssicherheit/anlagen',      ico:'raster',  text:'Anlagen & Maschinen' },
+        { portal:'arbeitssicherheit/hallenplan',   ico:'tafel',   text:'Hallenplan' },
+        { portal:'arbeitssicherheit/begehungen',   ico:'buch',    text:'Begehungsprotokolle' },
+        { portal:'arbeitssicherheit/gefahrstoffe', ico:'schild',  text:'Gefahrstoffe' },
+        { portal:'arbeitssicherheit/allg-gbu',     ico:'schild',  text:'Allgemeine Gefährdungsbeurteilungen' },
+        { kopf:'Arbeitsschutz' },
+        { portal:'arbeitssicherheit/unterweisungen', ico:'buch',   text:'Unterweisungen · Wer ist fällig' },
+        { portal:'arbeitssicherheit/vf-arbeitssicherheit', ico:'warnung', text:'Gemeldete Vorfälle & Mängel' },
+        { kopf:'Kontakt' },
+        { portal:'mehr/anfragen',                  ico:'brief',   text:'Frage an OAK engineering' },
+        { portal:'mehr/upload',                    ico:'buch',    text:'Dokument hochladen' },
+        { href:'tel:+4915679787193',               ico:'brief',   text:'OAK engineering anrufen' },
+        { kopf:'Konto' },
+        { aktion:'pwBtn',                          ico:'schloss', text:'Passwort ändern' },
+        { aktion:'logoutBtn',                      ico:'schloss', text:'Abmelden' }
+      ];
+      if(kx.admin || kx.fachkraft){
+        ein.push({ kopf:'Erweiterte Funktionen' });
+        ein.push({ portal:'arbeitssicherheit/unterweisungen', ico:'raster', text:'Versionsarchiv & Fassung je Modul' });
+        ein.push({ portal:'mehr/uw-katalog', ico:'raster', text:'Modulkatalog' });
+        ein.push({ portal:'mehr/personen',   ico:'raster', text:'Mitarbeiter verwalten' });
+        ein.push({ portal:'mehr/kapitel',    ico:'raster', text:'Unterweisungs-Inhalte' });
+        ein.push({ portal:'umwelt/ck-umwelt',   ico:'blattIco', text:'Umwelt' });
+        ein.push({ portal:'energie/ck-energie', ico:'chip',     text:'Energie' });
+      }
+      blattAuf('Mehr', ein, k);
+      if(kx.admin || kx.fachkraft){
+        const alle = blatt ? blatt.querySelectorAll('[data-portal="arbeitssicherheit/unterweisungen"]') : [];
+        if(alle.length > 1) alle[alle.length - 1].dataset.detailsAuf = '1';   // „Versionsarchiv" oeffnet den Block
+      }
+
     } else if(k.dataset.blatt === 'ueberblick' || k.dataset.blatt === 'vorfaelle'){
+      if(k.dataset.blatt === 'ueberblick' && window.portalGehe){ window.portalGehe('arbeitssicherheit', 'ck-arbeitssicherheit'); aktivSetzen(); return; }
       const praefix = k.dataset.blatt === 'vorfaelle' ? 'vf-' : 'ck-';
       const ziel = document.querySelector('#subTabs .sub-tab[data-sub^="' + praefix + '"]');
       if(ziel) ziel.click();
