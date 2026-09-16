@@ -251,53 +251,59 @@ function renderUnterweisungen(wrap){
   sekPers.querySelectorAll("[data-pedit]").forEach(b => b.addEventListener("click", () => uwPersonForm(UW_P.find(p => p.id === b.dataset.pedit))));
   sekPers.querySelectorAll("[data-pneu]").forEach(b => b.addEventListener("click", () => uwPersonForm(null, b.dataset.pneu, b.dataset.pfunk)));
 
-  /* 3. Alles andere eingeklappt: Nachweise, Module ansehen, Fassung je Modul (Admin) */
+  /* 3. Versionsarchiv (eingeklappt): je Thema Version 1.0 und 2.0 zum Öffnen + Auswahl, was am Terminal läuft.
+        Eine Zeile je Thema, kein Scrollen. Darunter die Nachweise, kurz gehalten (Excel hat alles). */
   const docs = (typeof katRows === "function") ? katRows("unterweisungen") : [];
-  const istV2 = r => {
-    const base = String(r.storage_path || "").split("/").pop();
-    return (typeof UW_MODULE !== "undefined" && UW_MODULE.some(m => base === m.thema + ".html"))
-        || /Online-Unterweisung\s*$/.test(r.titel || "");
-  };
-  const v1 = docs.filter(r => !istV2(r)), v2 = docs.filter(istV2);
-  const buchungen = (typeof UW_BUCHUNG !== "undefined" ? UW_BUCHUNG : []).filter(b => b.kunde_slug === AKTIV && b.aktiv);
+  const base = r => String(r.storage_path || "").split("/").pop();
+  const buchungen = (typeof UW_BUCHUNG !== "undefined" ? UW_BUCHUNG : []).filter(x => x.kunde_slug === AKTIV && x.aktiv);
   const modulTitel = th => ((typeof UW_MODULE !== "undefined" && UW_MODULE.find(m => m.thema === th)) || {}).titel || th;
-  const fassungZeilen = istAdmin ? buchungen.map(b => `<tr><td>${esc(modulTitel(b.thema))}</td><td>
-      <select class="uw-fassung" data-thema="${esc(b.thema)}"><option value="1"${b.fassung !== 2 ? " selected" : ""}>Version 1.0 · bewährtes Modul</option><option value="2"${b.fassung === 2 ? " selected" : ""}>Version 2.0 · neues Modul</option></select>
-      </td></tr>`).join("") : "";
-  const nachweisTab = rows.length ? `<div class="tabelle-wrap"><table class="uw-tab">
-      <thead><tr><th>Datum</th><th>Name</th><th>Gruppe</th><th>Unterweisungen</th><th>Ergebnis</th></tr></thead>
-      <tbody>${rows.slice(0, 200).map(n => `<tr>
+  const reihe = th => ((typeof UW_MODULE !== "undefined" && UW_MODULE.find(m => m.thema === th)) || {}).reihenfolge || 99;
+  const benutzt = new Set();
+  const oeffnen = d => { if(!d) return '<span class="uw-leise">—</span>'; benutzt.add(d);
+    return `<a class="btn-klein" href="${viewerUrl(d.doc_typ, d.storage_path, d.titel)}" target="_blank" rel="noopener">Öffnen</a>`; };
+  const archivZeilen = buchungen.slice().sort((x, y) => reihe(x.thema) - reihe(y.thema)).map(bu => {
+    const d1 = bu.datei_v1 ? docs.find(r => base(r) === bu.datei_v1) : null;
+    const d2 = docs.find(r => base(r) === bu.thema + ".html");
+    const f = bu.fassung === 2 ? 2 : 1;
+    const wahl = istAdmin
+      ? `<div class="uw-pills" data-thema="${esc(bu.thema)}">
+           <button type="button" class="uw-pill${f === 1 ? " aktiv" : ""}" data-f="1"${d1 ? "" : " disabled"}>1.0</button>
+           <button type="button" class="uw-pill${f === 2 ? " aktiv" : ""}" data-f="2"${d2 ? "" : " disabled"}>2.0</button></div>`
+      : `<span class="uw-badge uw-gut">Version ${f}.0</span>`;
+    return `<tr><td><b>${esc(modulTitel(bu.thema))}</b></td><td>${oeffnen(d1)}</td><td>${oeffnen(d2)}</td><td>${wahl}</td></tr>`;
+  }).join("");
+  const weitere = docs.filter(d => !benutzt.has(d));
+  const nachweisKurz = rows.length ? `<div class="tabelle-wrap"><table class="uw-tab uw-kompakt">
+      <thead><tr><th>Datum</th><th>Name</th><th>Gruppe</th><th>Ergebnis</th></tr></thead>
+      <tbody>${rows.slice(0, 8).map(n => `<tr>
         <td>${uwDatum(n.created_at)}</td><td><b>${esc(n.mitarbeiter_name || "—")}</b></td><td>${esc(n.funktion || "—")}</td>
-        <td class="uw-mod">${esc(uwModule(n).join(", ") || "—")}</td>
         <td>${n.bestanden ? '<span class="uw-badge uw-gut">bestanden</span>' : '<span class="uw-badge uw-kritisch">nicht bestanden</span>'}</td>
-      </tr>`).join("")}</tbody></table></div>${rows.length > 200 ? '<div class="ck-fuss">Die Tabelle zeigt die letzten 200 Nachweise; der Download enthält alle.</div>' : ""}`
-    : `<div class="ck-fuss">Noch keine Nachweise.</div>`;
+      </tr>`).join("")}</tbody></table></div>${rows.length > 8 ? `<div class="uw-leise" style="margin-top:6px">Die letzten 8 von ${rows.length}. Alle stehen in der Excel-Tabelle.</div>` : ""}`
+    : `<div class="uw-leise">Noch keine Nachweise.</div>`;
   const sekMehr = document.createElement("section"); sekMehr.className = "sektion uw-mehr-sektion";
   sekMehr.innerHTML = `<details class="uw-mehr">
-    <summary>Einstellungen &amp; mehr <span class="uw-leise">Nachweise · Module ansehen${istAdmin ? " · Fassung je Modul" : ""}</span></summary>
+    <summary>Versionsarchiv &amp; Nachweise</summary>
     <div class="uw-mehr-inhalt">
-      <div class="sek-kopf"><h3 class="uw-h3">Nachweise</h3><span class="zaehler">${rows.length}</span>
-        ${rows.length ? '<button class="btn sek" id="uwCsv">Als Excel-Tabelle herunterladen</button>' : ""}</div>
-      <p class="uw-erkl">Jede am Terminal abgeschlossene Unterweisung. Gespeichert werden Name, Gruppe, Datum, Module und
-        bestanden ja/nein, <b>kein Punktestand</b> (§ 12 ArbSchG; verantwortlich ist der Arbeitgeber, OAK engineering verarbeitet im Auftrag).</p>
-      ${nachweisTab}
-      <div class="sek-kopf"><h3 class="uw-h3">Module ansehen</h3><span class="zaehler">${docs.length}</span></div>
-      ${v2.length ? `<div class="uw-leise" style="margin-bottom:4px">Version 1.0 · bewährte Module</div>` : ""}
-      ${uwDokTabelle(v1)}
-      ${v2.length ? `<div class="uw-leise" style="margin:12px 0 4px">Version 2.0 · neue Module</div>${uwDokTabelle(v2)}` : ""}
-      ${fassungZeilen ? `<div class="sek-kopf"><h3 class="uw-h3">Was am Terminal läuft</h3><span class="uw-leise">nur OAK-Admin</span></div>
-        <div class="tabelle-wrap"><table class="uw-tab"><thead><tr><th>Modul</th><th style="width:300px">Fassung</th></tr></thead><tbody>${fassungZeilen}</tbody></table></div>
-        <div class="ck-fuss">Die Fassung wirkt sofort am Terminal. Version 2.0 nur nach fachlicher Abnahme freischalten.</div>` : ""}
+      <div class="sek-kopf"><h3 class="uw-h3">Versionsarchiv</h3>
+        <span class="uw-leise">${istAdmin ? "Auswahl = läuft am Terminal, sofort wirksam" : "hervorgehoben = läuft am Terminal"}</span></div>
+      <div class="tabelle-wrap"><table class="uw-tab uw-archiv">
+        <thead><tr><th>Thema</th><th>Version 1.0</th><th>Version 2.0</th><th>Am Terminal</th></tr></thead>
+        <tbody>${archivZeilen || '<tr><td colspan="4" class="uw-leise">Noch keine Module freigeschaltet.</td></tr>'}</tbody></table></div>
+      ${weitere.length ? `<div class="uw-leise" style="margin:10px 0 4px">Weitere Unterlagen</div>${uwDokTabelle(weitere)}` : ""}
+      <div class="sek-kopf" style="margin-top:20px"><h3 class="uw-h3">Nachweise</h3><span class="zaehler">${rows.length}</span>
+        ${rows.length ? '<button class="btn sek" id="uwCsv">Alle als Excel-Tabelle</button>' : ""}</div>
+      ${nachweisKurz}
     </div></details>`;
   wrap.appendChild(sekMehr);
   const btn = sekMehr.querySelector("#uwCsv");
   if(btn) btn.addEventListener("click", uwExport);
-  sekMehr.querySelectorAll("select.uw-fassung").forEach(s => s.addEventListener("change", async () => {
-    const th = s.dataset.thema, f = parseInt(s.value, 10);
+  sekMehr.querySelectorAll(".uw-pills .uw-pill").forEach(p => p.addEventListener("click", async () => {
+    const th = p.closest(".uw-pills").dataset.thema, f = parseInt(p.dataset.f, 10);
+    const bu = buchungen.find(x => x.thema === th); if(!bu || (bu.fassung === 2 ? 2 : 1) === f) return;
     try{
       await apiSend("PATCH", "/rest/v1/uw_buchung?kunde_slug=eq." + encodeURIComponent(AKTIV) + "&thema=eq." + encodeURIComponent(th), { fassung: f }, "return=minimal");
-      const bu = buchungen.find(x => x.thema === th); if(bu) bu.fassung = f;
-      UW_MELDUNG = modulTitel(th) + " läuft am Terminal jetzt in Version " + (f === 2 ? "2.0" : "1.0") + ".";
+      bu.fassung = f;
+      UW_MELDUNG = modulTitel(th) + " läuft am Terminal jetzt in Version " + f + ".0.";
       renderSektionen();
       const d = document.querySelector(".uw-mehr"); if(d) d.open = true;
     }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
