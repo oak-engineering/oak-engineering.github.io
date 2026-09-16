@@ -685,3 +685,13 @@ a.mg-link:hover{color:var(--gruen);text-decoration:underline}
 .mg-edit select{display:block;width:100%;font:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--rand);border-radius:9px;margin-top:4px;background:#fff}
 .mg-edit .mg-edit-aus{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
 .mg-edit .mg-edit-aus input{width:18px;height:18px;margin:0}
+
+.uw-kopf-knoepfe{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.uw-kopf-knoepfe .btn.sek{margin-left:0}
+.uw-knoepfe{white-space:nowrap;text-align:right}
+.uw-knoepfe .btn-klein + .btn-klein{margin-left:6px}
+.uwt-treffer{font-size:13px;line-height:1.45;margin:-4px 0 12px;display:flex;flex-direction:column;gap:6px}
+.uwt-stelle{background:#f5f7fa;border:1px solid #e3e8ef;border-radius:8px;padding:6px 8px}
+.uwt-stelle b{background:#fff3c4}
+.pw-msg.ok{color:#1e7b34}
+.uw-suche{font:inherit;font-size:14px;min-height:44px;padding:8px 12px;border:1px solid #d0d5dd;border-radius:8px;min-width:220px}

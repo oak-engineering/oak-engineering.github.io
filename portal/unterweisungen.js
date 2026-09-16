@@ -19,7 +19,7 @@ const UW_FAELLIG_TAGE = 365, UW_WARNUNG_TAGE = 335;
 /* Spalten einzeln statt select=*: sonst holt der Browser die Unterschrift (Bild als Base64)
    und den User-Agent mit, obwohl beides hier nie gezeigt wird. Was nicht gebraucht wird,
    soll auch nicht über die Leitung gehen. */
-const UW_SPALTEN = "kunde_slug,mitarbeiter_name,funktion,bereich,module,unterweisung," +
+const UW_SPALTEN = "id,kunde_slug,mitarbeiter_name,funktion,bereich,module,unterweisung," +
                    "bestanden,bestaetigung,config_version,created_at";
 
 /* Pflichtteil fuer die Startseite (Nachweise, Beschaeftigte, Geraetecode) – der Rest kommt im Hintergrund. */
@@ -72,9 +72,16 @@ function uwStatus(n){
   if(t >= UW_WARNUNG_TAGE) return { klasse: "warnung", text: "fällig in " + (UW_FAELLIG_TAGE - t) + " Tagen" };
   return { klasse: "gut", text: "gültig" };
 }
+/* Modul-Kuerzel aus dem Terminal (grund, spritzguss …) -> lesbarer Titel fuer Nachweis und Excel */
+function uwModulTitel(k){
+  const bu = (typeof UW_BUCHUNG !== "undefined" ? UW_BUCHUNG : []).find(x => x.kiosk_modul === k || x.thema === k);
+  const m = (typeof UW_MODULE !== "undefined" ? UW_MODULE : []).find(x => x.thema === (bu ? bu.thema : k));
+  return (m && m.titel) || ({ grund: "Allgemeine Grundunterweisung", spritzguss: "Sicher an der Spritzgießmaschine", leitern: "Leitern & Tritte",
+    flurfoerder: "Flurförderzeuge", kran: "Hallenkran und Anschlagen", bildschirm: "Gesund am Bildschirm", extern: "Sicher auf dem WIBO-Gelände" })[k] || k;
+}
 function uwModule(n){
   const m = Array.isArray(n.module) ? n.module : (n.unterweisung ? String(n.unterweisung).split(/,\s*/) : []);
-  return m.filter(Boolean);
+  return m.filter(Boolean).map(uwModulTitel);
 }
 function uwCsv(rows){
   const kopf = ["Datum", "Name", "Rolle", "Bereich", "Module", "bestanden", "bestätigt", "Fassung"];
@@ -219,33 +226,41 @@ function renderUnterweisungen(wrap){
       Der Nachweis landet automatisch hier im Portal.</p>`;
   wrap.appendChild(sekStart);
 
-  /* 2. Wer ist fällig */
+  /* 2. Wer ist fällig – EINE Liste (Nikolai 16.09.: nicht doppelt unter „Nachweise"): je Person Stand und
+        der letzte Nachweis als PDF mit Unterschrift. Alle Nachweise stehen im Excel-Export. */
   const pers = uwPersonen();
   const zusatz = uwJeMitarbeiter(rows).filter(n => !pers.some(p => uwNorm(p.name) === uwNorm(n.mitarbeiter_name)));
+  const pdfKnopf = n => (n && n.id) ? `<button class="btn-klein" data-uwpdf="${esc(n.id)}">Nachweis (PDF)</button>` : "";
   const zeilen = pers.map(p => {
     const n = uwLetzterNachweis(p.name);
     const st = n ? uwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" };
-    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr>
+    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(uwGruppenName(p) || "")}" data-stand="${n ? st.klasse : "kritisch"}">
       <td><b>${esc(p.name)}</b></td><td>${esc(uwGruppenName(p) || "—")}</td>
       <td>${n ? uwDatum(n.created_at) : "—"}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
-      <td><button class="btn-klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` };
+      <td class="uw-knoepfe">${pdfKnopf(n)}<button class="btn-klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` };
   }).concat(zusatz.map(n => {
     const st = uwStatus(n);
-    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr>
-      <td><b>${esc(n.mitarbeiter_name)}</b> <span class="uw-leise">am Terminal eingetragen</span></td>
+    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}">
+      <td><b>${esc(n.mitarbeiter_name)}</b></td>
       <td>${esc(n.funktion || "—")}</td><td>${uwDatum(n.created_at)}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
-      <td><button class="btn-klein" data-pneu="${esc(n.mitarbeiter_name)}" data-pfunk="${esc(n.funktion || "")}">als Mitarbeiter übernehmen</button></td></tr>` };
+      <td class="uw-knoepfe">${pdfKnopf(n)}</td></tr>` };
   })).sort((a, b) => a.rang - b.rang);
   const faellig = zeilen.filter(z => z.rang <= 1).length;
   const sekPers = document.createElement("section"); sekPers.className = "sektion";
   sekPers.innerHTML = `
     <div class="sek-kopf"><h2>Wer ist fällig</h2>
       <span class="zaehler">${zeilen.length ? (faellig ? faellig + " fällig" : "alle aktuell") : ""}</span>
-      <button class="btn sek" id="uwPersNeu">Mitarbeiter anlegen</button></div>
+      <span class="uw-kopf-knoepfe">${rows.length ? '<button class="btn sek" id="uwCsvAlle">Excel-Export</button>' : ""}
+        <button class="btn sek" id="uwPersNeu">Mitarbeiter anlegen</button></span></div>
     <div id="uwPersForm"></div>
-    ${zeilen.length ? `<div class="tabelle-wrap"><table class="uw-tab">
+    ${zeilen.length ? `<div class="mg-filter uw-filter">
+        <input type="search" class="uw-suche" id="uwfName" placeholder="Name suchen" autocomplete="off">
+        <select class="uw-fassung" id="uwfGruppe"><option value="">Alle Gruppen</option>${[...new Set(pers.map(p => uwGruppenName(p)).concat(zusatz.map(n => n.funktion)).filter(Boolean).flatMap(g => g.split(", ")))].sort().map(g => `<option>${esc(g)}</option>`).join("")}</select>
+        <select class="uw-fassung" id="uwfStand"><option value="">Alle</option><option value="faellig">fällig oder überfällig</option><option value="gut">gültig</option></select>
+        <span class="uw-leise" id="uwfZahl"></span></div>` : ""}
+    ${zeilen.length ? `<div class="tabelle-wrap"><table class="uw-tab" id="uwListe">
       <thead><tr><th>Name</th><th>Gruppe</th><th>zuletzt unterwiesen</th><th>Stand</th><th></th></tr></thead>
       <tbody>${zeilen.map(z => z.html).join("")}</tbody></table></div>`
     : `<div class="ck-fuss">Noch niemand eingetragen. <b>„Mitarbeiter anlegen"</b> – oder die Beschäftigten tragen sich am
@@ -253,18 +268,32 @@ function renderUnterweisungen(wrap){
   wrap.appendChild(sekPers);
   sekPers.querySelector("#uwPersNeu").addEventListener("click", () => uwPersonForm(null));
   sekPers.querySelectorAll("[data-pedit]").forEach(b => b.addEventListener("click", () => uwPersonForm(UW_P.find(p => p.id === b.dataset.pedit))));
-  sekPers.querySelectorAll("[data-pneu]").forEach(b => b.addEventListener("click", () => uwPersonForm(null, b.dataset.pneu, b.dataset.pfunk)));
+  sekPers.querySelectorAll("[data-uwpdf]").forEach(b => b.addEventListener("click", () => uwNachweisPdf(b.dataset.uwpdf)));
+  const btnAlle = sekPers.querySelector("#uwCsvAlle"); if(btnAlle) btnAlle.addEventListener("click", uwExport);
+  /* Filter: Name, Gruppe, Stand – direkt in der Liste, ohne Neuladen */
+  const filtern = () => {
+    const q = (sekPers.querySelector("#uwfName") || {}).value || "", g = (sekPers.querySelector("#uwfGruppe") || {}).value || "", s = (sekPers.querySelector("#uwfStand") || {}).value || "";
+    let n = 0;
+    sekPers.querySelectorAll("#uwListe tbody tr").forEach(tr => {
+      const ok = (!q || tr.dataset.name.includes(q.toLowerCase().trim())) && (!g || (", " + tr.dataset.gruppe + ",").includes(", " + g + ","))
+        && (!s || (s === "gut" ? tr.dataset.stand === "gut" : tr.dataset.stand !== "gut"));
+      tr.hidden = !ok; if(ok) n++;
+    });
+    const z = sekPers.querySelector("#uwfZahl"); if(z) z.textContent = n + " von " + zeilen.length;
+  };
+  ["#uwfName", "#uwfGruppe", "#uwfStand"].forEach(id => { const el = sekPers.querySelector(id); if(el) el.addEventListener(id === "#uwfName" ? "input" : "change", filtern); });
+  filtern();
 
-  /* 3. Versionsarchiv (eingeklappt): je Thema Version 1.0 und 2.0 zum Öffnen + Auswahl, was am Terminal läuft.
-        Eine Zeile je Thema, kein Scrollen. Darunter die Nachweise, kurz gehalten (Excel hat alles). */
+  /* 3. Versionsarchiv (eingeklappt, nur Admin/Fachkraft): je Thema Version 1.0 und 2.0 + Auswahl fürs Terminal */
   const docs = (typeof katRows === "function") ? katRows("unterweisungen") : [];
   const base = r => String(r.storage_path || "").split("/").pop();
   const buchungen = (typeof UW_BUCHUNG !== "undefined" ? UW_BUCHUNG : []).filter(x => x.kunde_slug === AKTIV && x.aktiv);
   const modulTitel = th => ((typeof UW_MODULE !== "undefined" && UW_MODULE.find(m => m.thema === th)) || {}).titel || th;
   const reihe = th => ((typeof UW_MODULE !== "undefined" && UW_MODULE.find(m => m.thema === th)) || {}).reihenfolge || 99;
   const benutzt = new Set();
-  const oeffnen = d => { if(!d) return '<span class="uw-leise">—</span>'; benutzt.add(d);
-    return `<a class="btn-klein" href="${viewerUrl(d.doc_typ, d.storage_path, d.titel)}" target="_blank" rel="noopener">Öffnen</a>`; };
+  const oeffnen = (d, titel) => { if(!d) return '<span class="uw-leise">—</span>'; benutzt.add(d);
+    return `<a class="btn-klein" href="${viewerUrl(d.doc_typ, d.storage_path, d.titel)}" target="_blank" rel="noopener">Öffnen</a>`
+      + (istAdmin ? ` <button type="button" class="btn-klein" data-uwtext="${esc(d.storage_path)}" data-titel="${esc(titel)}">Text ändern</button>` : ""); };
   const archivZeilen = buchungen.slice().sort((x, y) => reihe(x.thema) - reihe(y.thema)).map(bu => {
     const d1 = bu.datei_v1 ? docs.find(r => base(r) === bu.datei_v1) : null;
     const d2 = docs.find(r => base(r) === bu.thema + ".html");
@@ -274,22 +303,9 @@ function renderUnterweisungen(wrap){
            <button type="button" class="uw-pill${f === 1 ? " aktiv" : ""}" data-f="1"${d1 ? "" : " disabled"}>1.0</button>
            <button type="button" class="uw-pill${f === 2 ? " aktiv" : ""}" data-f="2"${d2 ? "" : " disabled"}>2.0</button></div>`
       : `<span class="uw-badge uw-gut">Version ${f}.0</span>`;
-    return `<tr><td><b>${esc(modulTitel(bu.thema))}</b></td><td>${oeffnen(d1)}</td><td>${oeffnen(d2)}</td><td>${wahl}</td></tr>`;
+    return `<tr><td><b>${esc(modulTitel(bu.thema))}</b></td><td>${oeffnen(d1, modulTitel(bu.thema) + " · Version 1.0")}</td><td>${oeffnen(d2, modulTitel(bu.thema) + " · Version 2.0")}</td><td>${wahl}</td></tr>`;
   }).join("");
   const weitere = docs.filter(d => !benutzt.has(d));
-  const nachweisKurz = rows.length ? `<div class="tabelle-wrap"><table class="uw-tab uw-kompakt">
-      <thead><tr><th>Datum</th><th>Name</th><th>Gruppe</th><th>Ergebnis</th></tr></thead>
-      <tbody>${rows.slice(0, 8).map(n => `<tr>
-        <td>${uwDatum(n.created_at)}</td><td><b>${esc(n.mitarbeiter_name || "—")}</b></td><td>${esc(n.funktion || "—")}</td>
-        <td>${n.bestanden ? '<span class="uw-badge uw-gut">bestanden</span>' : '<span class="uw-badge uw-kritisch">nicht bestanden</span>'}</td>
-      </tr>`).join("")}</tbody></table></div>${rows.length > 8 ? `<div class="uw-leise" style="margin-top:6px">Die letzten 8 von ${rows.length}. Alle stehen in der Excel-Tabelle.</div>` : ""}`
-    : `<div class="uw-leise">Noch keine Nachweise.</div>`;
-  /* Nachweise sieht jeder (kurz, Excel hat alles) */
-  const sekNach = document.createElement("section"); sekNach.className = "sektion";
-  sekNach.innerHTML = `<div class="sek-kopf"><h3 class="uw-h3" style="margin:0">Nachweise</h3><span class="zaehler">${rows.length}</span>
-      ${rows.length ? '<button class="btn sek" id="uwCsvAlle">Alle als Excel-Tabelle</button>' : ""}</div>${nachweisKurz}`;
-  wrap.appendChild(sekNach);
-  const btnAlle = sekNach.querySelector("#uwCsvAlle"); if(btnAlle) btnAlle.addEventListener("click", uwExport);
   if(!(istAdmin || window.__oakFachkraft)) return;   // Erweiterte Funktionen nur fuer Admin/Fachkraft
   const sekMehr = document.createElement("section"); sekMehr.className = "sektion uw-mehr-sektion";
   sekMehr.innerHTML = `<details class="uw-mehr">
@@ -303,8 +319,7 @@ function renderUnterweisungen(wrap){
       ${weitere.length ? `<div class="uw-leise" style="margin:10px 0 4px">Weitere Unterlagen</div>${uwDokTabelle(weitere)}` : ""}
     </div></details>`;
   wrap.appendChild(sekMehr);
-  const btn = sekMehr.querySelector("#uwCsv");
-  if(btn) btn.addEventListener("click", uwExport);
+  sekMehr.querySelectorAll("[data-uwtext]").forEach(b => b.addEventListener("click", () => uwTextDialog(b.dataset.uwtext, b.dataset.titel)));
   sekMehr.querySelectorAll(".uw-pills .uw-pill").forEach(p => p.addEventListener("click", async () => {
     const th = p.closest(".uw-pills").dataset.thema, f = parseInt(p.dataset.f, 10);
     const bu = buchungen.find(x => x.thema === th); if(!bu || (bu.fassung === 2 ? 2 : 1) === f) return;
@@ -316,6 +331,141 @@ function renderUnterweisungen(wrap){
       const d = document.querySelector(".uw-mehr"); if(d) d.open = true;
     }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
   }));
+}
+
+/* ---- Nachweis als PDF (Nikolai 16.09.2026) -------------------------------------------------
+   Druckansicht im Layout des Betriebs mit Unterschrift aus dem Terminal; „Als PDF speichern" im Druckdialog.
+   Die Unterschrift wird erst hier geladen (nicht mit der Liste – Datensparsamkeit, Ladezeit). */
+async function uwNachweisPdf(id){
+  const n = uwSichtbar().find(x => x.id === id); if(!n) return;
+  const w = window.open("", "_blank");
+  if(!w){ alert("Bitte Pop-up-Fenster für das Kundenportal erlauben."); return; }
+  w.document.write('<p style="font-family:sans-serif;padding:20px">Nachweis wird geladen …</p>');
+  let voll = {};
+  try{ const r = await apiGet("/rest/v1/unterweisungsnachweise?select=unterschrift,nachfrage,praxis_von,praxis_am&id=eq." + encodeURIComponent(id), false); voll = (r && r[0]) || {}; }catch(e){}
+  const m = (window.OAK_MARKE && OAK_MARKE.aktuell) || {};
+  const farbe = /^#[0-9a-fA-F]{3,8}$/.test(m.farbe || "") ? m.farbe : "#2D6A4F";
+  const logo = m.logo ? new URL(m.logo, location.href).href : new URL("../assets/oak-logo.png", location.href).href;
+  const kunde = ((typeof ALLE !== "undefined" ? ALLE : []).find(x => x.kunde_slug === n.kunde_slug) || {}).kunde || n.kunde_slug || "";
+  const sig = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(voll.unterschrift || "") ? voll.unterschrift : "";
+  const d = new Date(n.created_at);
+  const wann = d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) + ", " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr";
+  const module = uwModule(n);
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Unterweisungsnachweis ${esc(n.mitarbeiter_name || "")} ${esc(uwDatum(n.created_at))}</title>
+<style>
+@page{size:A4;margin:18mm 16mm}
+body{font-family:"Segoe UI",Arial,sans-serif;color:#1d2939;margin:0;font-size:12.5pt}
+.kopf{display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid ${farbe};padding-bottom:10px;margin-bottom:18px}
+.kopf img{height:56px;max-width:220px;object-fit:contain}
+h1{font-size:20pt;margin:0;color:${farbe}}
+.unter{font-size:10pt;color:#667085;margin-top:2px}
+table{width:100%;border-collapse:collapse;margin:0 0 16px}
+td{border:1px solid #d0d5dd;padding:8px 10px;vertical-align:top}
+td.k{width:34%;background:#f5f7fa;font-weight:600}
+ul{margin:0;padding-left:18px}
+.ok{color:#1e7b34;font-weight:700}.nein{color:#b42318;font-weight:700}
+.sig{margin-top:26px;width:60%}
+.sig img{max-width:100%;height:110px;object-fit:contain;display:block}
+.sig .linie{border-top:1px solid #1d2939;padding-top:4px;font-size:10pt;color:#344054}
+.fuss{margin-top:28px;font-size:9pt;color:#667085;line-height:1.5}
+</style></head><body onload="setTimeout(function(){window.print()},400)">
+<div class="kopf"><div><h1>Nachweis über die Unterweisung</h1><div class="unter">${esc(kunde)}</div></div><img src="${esc(logo)}" alt=""></div>
+<table>
+<tr><td class="k">Name</td><td>${esc(n.mitarbeiter_name || "—")}</td></tr>
+<tr><td class="k">Rolle / Tätigkeit</td><td>${esc(n.funktion || "—")}</td></tr>
+${n.bereich ? `<tr><td class="k">Bereich</td><td>${esc(n.bereich)}</td></tr>` : ""}
+<tr><td class="k">Datum und Uhrzeit</td><td>${esc(wann)}</td></tr>
+<tr><td class="k">Unterweisungsinhalte</td><td>${module.length ? "<ul>" + module.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "—"}</td></tr>
+<tr><td class="k">Verständnisfragen</td><td>${n.bestanden ? '<span class="ok">bestanden</span>' : '<span class="nein">nicht bestanden</span>'}</td></tr>
+<tr><td class="k">Bestätigung</td><td>${n.bestaetigung ? "Die unterwiesene Person hat bestätigt, die Inhalte verstanden zu haben und sie zu beachten." : "nicht bestätigt"}</td></tr>
+${voll.nachfrage ? `<tr><td class="k">Rückfrage</td><td>${esc(voll.nachfrage)}</td></tr>` : ""}
+${voll.praxis_von ? `<tr><td class="k">Praktische Unterweisung</td><td>${esc(voll.praxis_von)}${voll.praxis_am ? " am " + esc(uwDatum(voll.praxis_am)) : ""}</td></tr>` : ""}
+</table>
+<div class="sig">${sig ? `<img src="${sig}" alt="Unterschrift">` : '<div style="height:110px"></div>'}<div class="linie">Unterschrift der unterwiesenen Person${sig ? " (elektronisch am Terminal geleistet)" : ""}</div></div>
+<div class="fuss">Rechtsgrundlage: § 12 Arbeitsschutzgesetz, § 4 DGUV Vorschrift 1 (Unterweisung vor Aufnahme der Tätigkeit und mindestens einmal jährlich).<br>
+Erfasst am Unterweisungs-Terminal, gespeichert im Kundenportal von OAK engineering${n.config_version ? " · Fassung " + esc(n.config_version) : ""} · Druck am ${esc(new Date().toLocaleDateString("de-DE"))}.</div>
+</body></html>`;
+  w.document.open(); w.document.write(html); w.document.close();
+}
+
+/* ---- Text in einem Modul ändern (nur Admin, Nikolai 16.09.2026) ------------------------------
+   Suchen und Ersetzen im Modul (Datei im Kundenportal). Vor dem Speichern wird die bisherige Fassung unter
+   <betrieb>/unterweisungen/_versionen/ gesichert. Das Terminal zeigt die Änderung beim nächsten Modulstart.
+   Hinweis: Die lokale Vorlage im Kundenordner ändert sich dadurch nicht. */
+function uwTextVarianten(s){
+  const ent = { "ä":"&auml;", "ö":"&ouml;", "ü":"&uuml;", "Ä":"&Auml;", "Ö":"&Ouml;", "Ü":"&Uuml;", "ß":"&szlig;" };
+  const html = s.replace(/[äöüÄÖÜß]/g, c => ent[c]);
+  const uni = s.replace(/[^\x00-\x7f]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
+  return [[s, x => x], [html, x => x.replace(/[äöüÄÖÜß]/g, c => ent[c])], [uni, x => x.replace(/[^\x00-\x7f]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"))]];
+}
+async function uwTextDialog(pfad, titel){
+  if(!(typeof ADMIN !== "undefined" && ADMIN)) return;
+  let dlg = document.getElementById("uwTextDlg");
+  if(!dlg){ dlg = document.createElement("dialog"); dlg.id = "uwTextDlg"; dlg.className = "pw-dlg mg-dlg mg-edit"; document.body.appendChild(dlg); }
+  dlg.innerHTML = `<form method="dialog">
+      <h3>Text ändern</h3>
+      <p class="pw-hint"><b>${esc(titel || "")}</b></p>
+      <label>Suchen<input type="text" id="uwtSuche" placeholder="Wort oder Satz genau wie in der Folie" autocomplete="off"></label>
+      <div class="uwt-treffer" id="uwtTreffer"><span class="uw-leise">Modul wird geladen …</span></div>
+      <label>Ersetzen durch<textarea id="uwtNeu" rows="3"></textarea></label>
+      <p class="pw-hint">Jede Stelle mit genau diesem Text wird ersetzt. Die bisherige Fassung wird vorher gesichert.</p>
+      <p class="pw-msg" id="uwtMsg"></p>
+      <div class="pw-akt"><button type="button" class="btn sek" id="uwtZu">Schließen</button><button type="submit" class="btn">Ersetzen und speichern</button></div>
+    </form>`;
+  dlg.showModal();
+  const $t = s => dlg.querySelector(s), msg = $t("#uwtMsg"), treffer = $t("#uwtTreffer");
+  $t("#uwtZu").addEventListener("click", () => dlg.close());
+  let html = "";
+  try{ html = await apiGet(storagePfad(pfad), true); treffer.innerHTML = '<span class="uw-leise">Suchbegriff eingeben.</span>'; }
+  catch(e){ treffer.textContent = "Modul konnte nicht geladen werden: " + (e.message || e); return; }
+  let wahl = null;
+  const suchen = () => {
+    const q = $t("#uwtSuche").value; wahl = null; treffer.textContent = "";
+    if(q.length < 3){ treffer.innerHTML = '<span class="uw-leise">Mindestens 3 Zeichen.</span>'; return; }
+    for(const [v, kod] of uwTextVarianten(q)){
+      const anzahl = html.split(v).length - 1;
+      if(anzahl){ wahl = { v, kod, anzahl };
+        const kopf = document.createElement("div"); kopf.className = "uw-leise"; kopf.textContent = anzahl + (anzahl === 1 ? " Stelle gefunden" : " Stellen gefunden") + " (DE und ggf. weitere Stellen im Modul):";
+        treffer.appendChild(kopf);
+        let pos = -1;
+        for(let i = 0; i < Math.min(anzahl, 4); i++){
+          pos = html.indexOf(v, pos + 1);
+          const z = document.createElement("div"); z.className = "uwt-stelle";
+          const vor = html.slice(Math.max(0, pos - 70), pos).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+          const nach = html.slice(pos + v.length, pos + v.length + 70).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+          const b = document.createElement("b"); b.textContent = q;
+          z.append("… " + vor, b, nach + " …"); treffer.appendChild(z);
+        }
+        return;
+      }
+    }
+    treffer.innerHTML = '<span class="uw-leise">Nicht gefunden – bitte den Text genau so eingeben, wie er in der Folie steht (kürzeren Ausschnitt versuchen).</span>';
+  };
+  $t("#uwtSuche").addEventListener("input", suchen);
+  dlg.querySelector("form").addEventListener("submit", async ev => {
+    ev.preventDefault(); msg.className = "pw-msg";
+    const neuText = $t("#uwtNeu").value;
+    if(!wahl){ msg.textContent = "Erst einen Text suchen, der im Modul vorkommt."; msg.classList.add("fehler"); return; }
+    if(!neuText.trim()){ msg.textContent = "Bitte den neuen Text eintragen."; msg.classList.add("fehler"); return; }
+    if(!confirm(wahl.anzahl + " Stelle(n) ersetzen und speichern?")) return;
+    msg.textContent = "Wird gespeichert …";
+    try{
+      const t = await token(), jetzt = Date.now();
+      const teile = pfad.split("/"); const datei = teile.pop();
+      const sicherung = teile.join("/") + "/_versionen/" + datei.replace(/\.html$/i, "") + "-" + jetzt + ".html";
+      const hoch = async (ziel, inhalt) => {
+        const r = await fetch(CFG.url + "/storage/v1/object/" + CFG.bucket + "/" + ziel.split("/").map(encodeURIComponent).join("/"), { method: "POST",
+          headers: { apikey: CFG.anon, Authorization: "Bearer " + t, "Content-Type": "text/html;charset=utf-8", "x-upsert": "true" }, body: inhalt });
+        if(!r.ok) throw new Error("Speichern fehlgeschlagen (" + r.status + ")");
+      };
+      await hoch(sicherung, html);
+      const neuHtml = html.split(wahl.v).join(wahl.kod(neuText));
+      await hoch(pfad, neuHtml);
+      html = neuHtml;
+      msg.textContent = wahl.anzahl + " Stelle(n) geändert und gespeichert. Am Terminal ab dem nächsten Modulstart sichtbar."; msg.classList.add("ok");
+      $t("#uwtSuche").value = ""; $t("#uwtNeu").value = ""; wahl = null; treffer.textContent = "";
+    }catch(e){ msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.classList.add("fehler"); }
+  });
 }
 
 /* Formular „Mitarbeiter anlegen / ändern": Name + Gruppe, sonst nichts. Speichern schreibt
