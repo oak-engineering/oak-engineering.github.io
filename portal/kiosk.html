@@ -594,7 +594,7 @@ $('#startBtn').onclick=async()=>{
     // Terminal mit lokalem Server: nur kurz prüfen, dass der Dienst läuft – sonst nichts nötig
     try{ const st=await (await fetch('/api/status',{cache:'no-store'})).json(); if(!st.ok) throw 0;
     }catch(e){ $('#startErr').textContent='Der lokale Speicher-Dienst läuft nicht – bitte das Terminal über Start_Terminal.bat neu starten (Sicherheitsfachkraft informieren).'; return; }
-  } else if(CONTENT.meta.terminal && typeof window.showDirectoryPicker==='function'){
+  } else if(CONTENT.meta.terminal && !portalModus() && typeof window.showDirectoryPicker==='function'){   // Portal-Modus: Nachweise gehen in die Datenbank, kein Ordner
     if(!mainDir){ $('#startErr').textContent='Kein Nachweis-Ordner eingerichtet – bitte die Sicherheitsfachkraft informieren (Einstellungen → Haupt-Ordner wählen).'; return; }
     if(!(await ensurePerm(mainDir))){ $('#startErr').textContent='Der Nachweis-Ordner ist nicht freigegeben – bitte die Freigabe im Browser bestätigen oder die Sicherheitsfachkraft informieren.'; updateFolderBar(); return; }
     if(backupDir) await ensurePerm(backupDir);   // Backup gleich mit freigeben; blockiert den Start aber nicht
@@ -1349,6 +1349,7 @@ async function _doFinish(){
 function goStart(){ show(CONTENT.meta.terminal ? '#screen-start' : '#screen-gate'); if(CONTENT.meta.terminal) updateFolderBar(); }
 async function updateFolderBar(){
   const bar=$('#folderBar'); if(!bar) return;
+  if(portalModus()){ bar.style.display='none'; return; }   // Portal-Modus: kein Ordner
   if(CONTENT.meta.terminal && SRV){   // lokaler Server übernimmt die Speicherung
     bar.style.display='';
     try{ const st=await (await fetch('/api/status',{cache:'no-store'})).json(); if(!st.ok) throw 0;
@@ -1468,7 +1469,8 @@ function renderAdmin(){
   const mi=$('#mainInfo'); if(mi) mi.textContent = mainDir?('✔ '+mainDir.name):'noch nicht gewählt';
   const bi=$('#backupInfo'); if(bi) bi.textContent = backupDir?('✔ '+backupDir.name):'noch nicht gewählt';
   const ur=$('#usbRow'); if(ur){
-    if(SRV){ ur.innerHTML='<p class="small muted" style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px">📁 Die Nachweis-Speicherung übernimmt der <b>lokale Dienst</b> (serve.ps1) – keine Ordner-Freigabe nötig. Optionaler USB-Backup: Datei <code>terminal-config.json</code> neben serve.ps1 anlegen (Vorlage: terminal-config.beispiel.json).</p>'; }
+    if(portalModus()){ ur.innerHTML='<p class="small muted" style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px">☁ Nachweise gehen direkt in die Datenbank des Kundenportals – kein Ordner, kein PDF, keine E-Mail nötig.</p>'; }
+    else if(SRV){ ur.innerHTML='<p class="small muted" style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px">📁 Die Nachweis-Speicherung übernimmt der <b>lokale Dienst</b> (serve.ps1) – keine Ordner-Freigabe nötig. Optionaler USB-Backup: Datei <code>terminal-config.json</code> neben serve.ps1 anlegen (Vorlage: terminal-config.beispiel.json).</p>'; }
     else ur.style.display = (typeof window.showDirectoryPicker==='function')?'':'none';
   }
 }

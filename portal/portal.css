@@ -417,3 +417,23 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .uw-form-knoepfe{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
 .sek-kopf .btn.sek{margin-left:auto}
 .uw-fassung{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--rand,#D6E4DA);border-radius:8px;min-height:44px;background:#fff}
+
+/* ---- Unterweisungen: ein Knopf, eine Liste, Rest eingeklappt (16.09.2026) ---- */
+.uw-hero{text-align:center;padding:28px 20px 22px}
+.uw-start{display:inline-flex;align-items:center;justify-content:center;min-height:68px;min-width:min(100%,460px);padding:16px 34px;
+  background:var(--gruen,#2D6A4F);color:#fff;font-size:20px;font-weight:700;border-radius:16px;text-decoration:none;
+  box-shadow:0 6px 18px rgba(45,106,79,.25);transition:background .15s,transform .1s}
+.uw-start:hover{background:var(--dunkel,#1B4332)}
+.uw-start:active{transform:translateY(1px)}
+.uw-start-aus{background:#fdf6e3;color:#8a6d0b;box-shadow:none;font-size:15px;font-weight:600}
+.uw-hero-text{margin:16px auto 0;max-width:620px}
+.uw-hero-text a{color:var(--gruen,#2D6A4F);font-weight:600}
+.uw-mehr-sektion{padding:0;background:transparent;border:none;box-shadow:none}
+.uw-mehr>summary{list-style:none;cursor:pointer;min-height:48px;display:flex;align-items:center;gap:12px;padding:12px 18px;
+  background:#fff;border:1px solid var(--rand,#D6E4DA);border-radius:10px;font-weight:600;color:var(--dunkel,#1B4332)}
+.uw-mehr>summary::-webkit-details-marker{display:none}
+.uw-mehr>summary::before{content:"▸";color:var(--gruen,#2D6A4F);font-size:14px}
+.uw-mehr[open]>summary::before{content:"▾"}
+.uw-mehr[open]>summary{border-radius:10px 10px 0 0}
+.uw-mehr-inhalt{background:#fff;border:1px solid var(--rand,#D6E4DA);border-top:none;border-radius:0 0 10px 10px;padding:6px 18px 18px}
+.uw-mehr-inhalt .sek-kopf{margin-top:18px}

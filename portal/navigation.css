@@ -1,0 +1,64 @@
+/* OAK Kundenportal — Navigation fürs Handy (Bottom-Bar) und klickbares Cockpit (seit 16.09.2026).
+   Eigene Datei neben portal.css: die Navigation lässt sich so unabhängig weiterentwickeln, und
+   parallel laufende Arbeiten an portal.css/app.js kommen sich nicht in die Quere. */
+
+/* ---- Bottom-Bar: nur unter 720 px (Handy, Tablet hochkant). Darüber gelten die Reiterzeilen. ---- */
+.bb{display:none;}
+.bb-sheet{display:none;}
+@media(max-width:720px){
+  #appView .kat-tabs,#appView .sub-tabs{display:none !important;}
+  /* Platz für die Leiste, damit die letzte Tabellenzeile nicht darunter verschwindet. */
+  #appView main.wrap{padding-bottom:calc(84px + env(safe-area-inset-bottom));}
+  .bb{display:grid;grid-template-columns:repeat(5,1fr);position:fixed;left:0;right:0;bottom:0;z-index:60;
+    background:#fff;border-top:1px solid var(--rand);
+    padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 18px rgba(27,67,50,.08);}
+  .bb button{font-family:inherit;background:none;border:0;border-radius:10px;min-height:54px;
+    padding:5px 2px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    color:var(--grau);font-size:10.5px;font-weight:600;letter-spacing:.1px;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;}
+  .bb button svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.8;
+    stroke-linecap:round;stroke-linejoin:round;}
+  .bb button span{white-space:nowrap;}
+  .bb button.aktiv{color:var(--gruen);}
+  .bb button.aktiv span{color:var(--dunkel);}
+  .bb button:active{background:var(--oak-ghost);}
+  /* Titelzeile kompakter, die Leiste übernimmt die Orientierung. */
+  #appView .titelzeile h1{font-size:24px;}
+  #appView .titelzeile .unter{display:none;}
+}
+
+/* ---- „Mehr"-Blatt: alle Bereiche und Reiter, von unten eingeschoben ---- */
+.bb-sheet.offen{display:block;position:fixed;inset:0;z-index:70;background:rgba(17,26,20,.45);}
+.bb-box{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;
+  padding:12px 18px calc(18px + env(safe-area-inset-bottom));max-height:80vh;overflow:auto;
+  box-shadow:0 -8px 30px rgba(17,26,20,.18);}
+.bb-griff{width:42px;height:4px;border-radius:2px;background:#d6e4da;margin:0 auto 6px;}
+.bb-dom{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--gruen);font-weight:600;
+  margin:16px 0 2px;}
+.bb-box button{display:flex;width:100%;justify-content:space-between;align-items:center;font-family:inherit;
+  font-size:15.5px;background:none;border:0;border-bottom:1px solid #eef3f1;padding:12px 2px;
+  color:var(--text);cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent;}
+.bb-box button:last-child{border-bottom:0;}
+.bb-box button.aktiv{color:var(--gruen);font-weight:600;}
+.bb-box .bb-n{font-size:12.5px;color:var(--grau);font-weight:500;}
+body.bb-offen{overflow:hidden;}
+
+/* ---- Cockpit: Kacheln und Ring-Legende sind Sprungmarken in die gefilterte Liste ---- */
+a.ck-kachel{display:block;text-decoration:none;color:inherit;position:relative;
+  transition:box-shadow .12s,transform .12s,border-color .12s;}
+a.ck-kachel:hover,a.ck-kachel:focus-visible{box-shadow:0 4px 16px rgba(27,67,50,.11);transform:translateY(-1px);
+  outline:none;}
+a.ck-kachel .ck-pfeil{position:absolute;right:12px;top:9px;font-size:22px;line-height:1;
+  color:var(--gruen);opacity:.55;transition:opacity .12s,transform .12s;}
+a.ck-kachel:hover .ck-pfeil{opacity:1;transform:translateX(2px);}
+a.ck-leg{text-decoration:none;color:inherit;border-bottom:1px dashed transparent;cursor:pointer;}
+a.ck-leg:hover{border-bottom-color:var(--gruen);color:var(--dunkel);}
+
+/* ---- Maschinenliste: schwere Mängel sichtbar machen ---- */
+.m-badge{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:10px;font-size:11px;font-weight:600;
+  background:#fdecea;color:#8a1f14;border:1px solid #f1b7b0;white-space:nowrap;}
+tr.m-zeile td{background:#fff8f7;border-top:0;padding:0 12px 12px;font-size:13px;color:#5a2a25;line-height:1.45;}
+tr.m-zeile ul{margin:0;padding-left:18px;}
+tr.m-zeile li{margin:2px 0;}
+tbody tr.m-zeile:hover{background:#fff8f7;}
