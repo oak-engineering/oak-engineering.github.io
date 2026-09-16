@@ -21,7 +21,7 @@ const DOMAENEN = [
       { kat: "allg-gbu",      label: "Allgemeine GBU" },
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
       { kat: "begehungen",    label: "Begehungen" },
-      { kat: "vom-betrieb",   label: "Vom Betrieb" },
+      { kat: "vom-betrieb",   label: "Interne Unterlagen" },
       { kat: "unterweisungen", label: "Unterweisungen" },
       { kat: "vf-arbeitssicherheit", label: "Vorfälle" },
   ]},
@@ -416,7 +416,7 @@ const UNTERLAGEN = [
       ["allg-gbu", "Allgemeine Gefährdungsbeurteilungen", "Tätigkeiten und Themen ohne feste Maschine"],
       ["gefahrstoffe", "Gefahrstoffe", "Verzeichnis und Betriebsanweisungen"],
       ["begehungen", "Begehungsprotokolle", "Was bei den Begehungen festgestellt wurde"],
-      ["vom-betrieb", "Vom Betrieb", "Eigene Dokumente hochladen und ansehen"] ]},
+      ["vom-betrieb", "Interne Unterlagen", "Eigene Dokumente hochladen und ansehen"] ]},
   { bereich: "Umwelt", kats: [
       ["umwelt-immissionsschutz", "Immissionsschutz", ""], ["umwelt-gewaesserschutz", "Gewässerschutz", ""],
       ["umwelt-awsv", "AwSV", ""], ["umwelt-unterweisungen", "Unterweisungen Umwelt", ""] ]},

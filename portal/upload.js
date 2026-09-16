@@ -32,7 +32,7 @@ function renderUpload(wrap){
         ${liste.map(m => `<option value="${esc(m.id)}">${esc(m.name || m.id)}</option>`).join("")}</select>` : ""}
       <div class="uw-form-knoepfe"><button class="btn sek" id="uplGo">Hochladen</button><span class="uw-leise" id="uplMeld"></span></div>
     </div>
-    ${eigene.length ? `<h3 class="uw-h3">Bisher vom Betrieb hochgeladen</h3>
+    ${eigene.length ? `<h3 class="uw-h3">Interne Unterlagen</h3>
       <table><thead><tr><th>Dokument</th><th style="width:130px">Art</th><th style="width:120px">Stand</th><th style="width:120px"></th></tr></thead>
       <tbody>${eigene.map(docZeile).join("")}</tbody></table>` : ""}`;
   wrap.appendChild(sec);
