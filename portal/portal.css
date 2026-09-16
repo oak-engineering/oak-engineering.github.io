@@ -799,3 +799,9 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .uw-schalter.an i::after{left:21px}
 .uw-teilen-schalter{display:flex;justify-content:center;margin:4px 0 10px}
 .uw-teilen-schalter .uw-schalter{min-height:48px}
+
+.uw-teilen-qr{transition:opacity .15s}
+.uw-teilen-qr.aus{opacity:.18;filter:grayscale(1)}
+.uw-teilen-schalter{margin:0 0 12px}
+.uw-teilen{position:relative}
+.uw-teilen.an::after{content:"";position:absolute;top:10px;right:10px;width:10px;height:10px;border-radius:50%;background:#2e7d32;box-shadow:0 0 0 2px #fff}
