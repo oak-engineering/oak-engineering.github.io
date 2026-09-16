@@ -212,8 +212,7 @@ function renderUnterweisungen(wrap){
     ${tok ? `<a class="uw-start" href="kiosk.html#t=${encodeURIComponent(tok)}" target="_blank" rel="noopener">Unterweisungs-Terminal starten</a>`
           : `<div class="uw-start uw-start-aus">Terminal noch nicht eingerichtet – Gerätecode bei OAK engineering anfordern.</div>`}
     <p class="uw-erkl uw-hero-text">Am Terminal: Name eingeben, Rolle wählen, Module durchgehen, unterschreiben.
-      Der Nachweis landet automatisch hier im Portal.
-      <a href="unterweisungs-terminal-kurzanleitung.pdf" target="_blank" rel="noopener">Kurzanleitung (PDF)</a></p>`;
+      Der Nachweis landet automatisch hier im Portal.</p>`;
   wrap.appendChild(sekStart);
 
   /* 2. Wer ist fällig */
