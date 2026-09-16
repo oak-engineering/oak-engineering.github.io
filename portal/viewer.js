@@ -201,11 +201,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       frame.srcdoc = mitLightbox(html, typ);
     } else if(typ==="html"){
+      if(/\/(vom-betrieb|anfragen)\//.test(p)) throw new Error("Vom Betrieb hochgeladene Dateien werden nicht als Seite angezeigt.");
       frame.srcdoc = await apiGet(storagePfad(p), true);
     } else if(typ==="pdf" || typ==="bild" || typ==="datei"){
-      const blob = await (await apiFetch(storagePfad(p))).blob();
+      const roh = await (await apiFetch(storagePfad(p))).blob();
+      /* Sicherheit: Typ erzwingen – PDF oder Bild wird angezeigt, alles andere nur heruntergeladen; kein Skript im Portal-Ursprung */
+      const mime = typ==="pdf" ? "application/pdf" : (typ==="bild" && /^image\/(png|jpe?g|webp|gif)$/.test(roh.type) ? roh.type : "application/octet-stream");
       frame.removeAttribute("srcdoc");
-      frame.src = URL.createObjectURL(blob.type ? blob : new Blob([blob], {type:"application/pdf"}));
+      if(/\/(vom-betrieb|anfragen)\//.test(p)) frame.setAttribute("sandbox", "");
+      frame.src = URL.createObjectURL(new Blob([roh], {type: mime}));
     }
     frame.classList.remove("hidden");
     document.getElementById("ladehinweis").classList.add("hidden");

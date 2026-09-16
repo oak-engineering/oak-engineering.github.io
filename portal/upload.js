@@ -9,7 +9,6 @@ function uplTyp(name){
   const e = (name.split(".").pop() || "").toLowerCase();
   if(e === "pdf") return "pdf";
   if(["jpg", "jpeg", "png", "webp", "gif"].indexOf(e) >= 0) return "bild";
-  if(["html", "htm"].indexOf(e) >= 0) return "html";
   return "datei";
 }
 
@@ -25,7 +24,7 @@ function renderUpload(wrap){
       sehen sollen. Erscheint sofort unter <b>Unterlagen → Vom Betrieb</b>.</p>
     <div class="uw-form">
       <label class="uw-lab" for="uplDatei">Datei (PDF, Foto, Word, Excel)</label>
-      <input type="file" id="uplDatei" accept=".pdf,image/*,.doc,.docx,.xls,.xlsx,.html" style="font-size:15px">
+      <input type="file" id="uplDatei" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" style="font-size:15px">
       <label class="uw-lab" for="uplTitel">Titel</label>
       <input type="text" id="uplTitel" placeholder="z. B. Prüfprotokoll Hallenkran 2026" autocomplete="off">
       ${liste.length ? `<label class="uw-lab" for="uplMaschine">Maschine (optional)</label>
@@ -49,6 +48,13 @@ async function uplHochladen(sec){
   const ms = sec.querySelector("#uplMaschine"); const mid = ms ? ms.value : "";
   if(!datei){ meld.textContent = "Bitte eine Datei wählen."; return; }
   if(datei.size > 25 * 1024 * 1024){ meld.textContent = "Die Datei ist größer als 25 MB."; return; }
+  /* Sicherheit: nichts, was der Browser als Seite ausfuehren koennte (HTML, SVG, XML) – nur Dokumente und Fotos. */
+  const endung = (datei.name.split(".").pop() || "").toLowerCase();
+  const ERLAUBT = { pdf:"application/pdf", jpg:"image/jpeg", jpeg:"image/jpeg", png:"image/png", webp:"image/webp",
+    doc:"application/msword", docx:"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls:"application/vnd.ms-excel", xlsx:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" };
+  if(!ERLAUBT[endung]){ meld.textContent = "Erlaubt sind PDF, Fotos (JPG/PNG), Word und Excel."; return; }
+  if(datei.type && datei.type !== ERLAUBT[endung] && !(endung === "jpg" && datei.type === "image/jpg")){ meld.textContent = "Dateityp passt nicht zur Endung."; return; }
   if(titel.length < 3){ meld.textContent = "Bitte einen Titel eintragen."; return; }
   meld.textContent = "Lädt hoch …";
   try{

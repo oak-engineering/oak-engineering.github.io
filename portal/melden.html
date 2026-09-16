@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Vorfall melden – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202609161024">
+<link rel="stylesheet" href="portal.css?v=202609161035">
 <style>
 /* Meldeformular: bewusst eigene, sehr grosse Bedienelemente - es wird am Handy in der Halle
    ausgefuellt, oft mit Handschuhen und unter Zeitdruck. */
@@ -290,6 +290,11 @@ $("#form").addEventListener("submit", async ev => {
       try{ txt = (JSON.parse(txt).message || txt); }catch(e){}
       throw new Error(txt || ("Fehler " + r.status));
     }
+    /* Mail an OAK engineering (Komfort; die Meldung ist bereits gespeichert) */
+    try{ const vid = await r.json();
+      fetch(CFG.url + "/functions/v1/vorfall-mail", { method: "POST", headers: { "apikey": CFG.anon, "Content-Type": "application/json" },
+        body: JSON.stringify({ token: TOKEN, vorfall_id: vid }) }).catch(() => {});
+    }catch(e){}
     $("#form").hidden = true; $("#fertig").hidden = false; window.scrollTo({top:0});
   }catch(e){
     const meldung = String(e && e.message || e);

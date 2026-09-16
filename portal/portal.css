@@ -522,3 +522,19 @@ body.app-modus .titelzeile .unter{display:none}
 .anfr-antwort{margin-top:10px;padding:10px 14px;background:var(--akzent,#D8F3DC);border-radius:10px}
 .anfr-antwort p{margin:4px 0 0;white-space:pre-wrap}
 .anfr-antworten{margin-top:10px}
+
+/* Kacheln etwas kleiner (Nikolai 16.09.) */
+.start-kachel{min-height:122px;padding:16px 18px;gap:4px}
+.start-kachel svg{width:34px;height:34px}
+.start-kachel .sk-titel{font-size:19px}
+.start-kachel .sk-sub{font-size:13px}
+@media(min-width:900px){.start-raster{grid-template-columns:repeat(3,1fr)}}
+
+.ck-aktionen{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 16px}
+.ck-aktionen .uw-start{min-height:56px;font-size:17px;padding:12px 24px;min-width:0}
+/* Kopf: bei Kundenmarke nur das Kundenlogo als Marke, OAK klein als Absender; Passwort steht unter Mehr → Konto */
+body.marke-kunde .kopf .marke .wort,body.marke-kunde .kopf .marke .sub{display:none}
+body.marke-kunde .kopf #kundeLogo{border-right:none;padding-right:0}
+body.app-modus #pwBtn{display:none}
+@media(max-width:900px){#pwBtn{display:none}}
+body.auf-start .fuss .fuss-text,body.app-modus .fuss .fuss-text{display:none}

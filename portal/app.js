@@ -183,7 +183,8 @@ const START_SVG = {
   terminal: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M8 10l2 2 4-4"/></svg>',
   warnung:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 9v5M12 17v.5"/></svg>',
   begehung: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8.5 11l2 2 4.5-4.5M8.5 16.5h7"/></svg>',
-  dokument: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>'
+  dokument: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>',
+  brief:    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>'
 };
 function renderStart(wrap){
   const tok = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
@@ -202,9 +203,10 @@ function renderStart(wrap){
                   : "#arbeitssicherheit/begehungen",
                "Maschine prüfen", "Checkliste zur Maschinensicherheit", START_SVG.begehung, true)}
       ${kachel("#arbeitssicherheit/anlagen", "Unterlagen einsehen", "Betriebsanweisungen, Gefährdungsbeurteilungen, Mängellisten", START_SVG.dokument, false)}
+      ${kachel("#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto – Antwort ins Portal und per Mail", START_SVG.brief, false)}
     </div>
     ${startZahlen()}
-    <p class="start-mehr"><a href="#mehr/anfragen">Frage an OAK engineering</a> · <a href="#arbeitssicherheit/ck-arbeitssicherheit">Ausführlicher Überblick</a></p>`;
+    <p class="start-mehr"><a href="#arbeitssicherheit/ck-arbeitssicherheit">Ausführlicher Überblick</a></p>`;
   wrap.appendChild(sec);
   document.body.classList.add("auf-start");
 }

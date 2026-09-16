@@ -12,7 +12,8 @@ const V_ART = {
   unsicher: { label: "Unsicherer Zustand", farbe: "#2d6a4f", bg: "#eaf5ef" },
   umwelt:   { label: "Umweltvorfall",     farbe: "#1f6f8b", bg: "#e8f4f8" },
 };
-const V_STATUS = { offen: "offen", bearbeitung: "in Bearbeitung", erledigt: "erledigt" };
+const V_STATUS = { neu: "eingegangen – wird geprüft", offen: "offen", bearbeitung: "in Bearbeitung", erledigt: "erledigt" };
+let V_MELDER = {};   // nur Admin: vorfall_id -> Melder (Nebentabelle, fuer den Betrieb bleiben Meldungen anonym)
 const V_DOMAENE = { arbeitssicherheit: "Arbeitssicherheit", umwelt: "Umwelt", beides: "Arbeitssicherheit + Umwelt" };
 
 function vDatum(s){
@@ -40,6 +41,10 @@ async function ladeVorfaelle(){
   try{
     VORFAELLE = await apiGet("/rest/v1/portal_vorfaelle?select=*&order=ereignis_am.desc,angelegt_am.desc", false) || [];
   }catch(e){ VORFAELLE = []; }
+  V_MELDER = {};
+  if(typeof ADMIN !== "undefined" && ADMIN){
+    try{ (await apiGet("/rest/v1/portal_vorfall_melder?select=vorfall_id,melder", false) || []).forEach(m => { V_MELDER[m.vorfall_id] = m.melder; }); }catch(e){}
+  }
 }
 
 function vKarte(v){
@@ -50,7 +55,7 @@ function vKarte(v){
     ["Wo", [v.ort, v.anlage].filter(Boolean).map(esc).join(" · ") || "—"],
     umwelt ? ["Stoff / Menge", [v.stoff, v.menge].filter(Boolean).map(esc).join(" · ") || "—"] : null,
     umwelt ? ["Gelangt nach", esc(v.wohin || "—")] : null,
-    ["Gemeldet von", v.melder ? esc(v.melder) : "<i>anonym</i>"],
+    (typeof ADMIN !== "undefined" && ADMIN) ? ["Gemeldet von", V_MELDER[v.id] ? esc(V_MELDER[v.id]) : "<i>anonym</i>"] : null,
   ].filter(Boolean);
 
   const merkmale = [

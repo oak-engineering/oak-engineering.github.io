@@ -100,7 +100,10 @@ function renderCockpit(wrap, bereich){
     const vOffenN = vf.filter(v => v.status !== "erledigt").length;
     const unfaelle = vf.filter(v => v.art === "unfall").length;
     const beinahe = vf.filter(v => v.art === "beinahe").length;
+    const tokT = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
     inhalt = `
+      <div class="ck-aktionen">${tokT ? `<a class="uw-start" href="kiosk.html#t=${encodeURIComponent(tokT)}" target="_blank" rel="noopener">Unterweisungs-Terminal starten</a>` : ""}
+        <a class="btn sek" href="#arbeitssicherheit/unterweisungen">Wer ist fällig</a></div>
       <div class="ck-oben">
         <div class="ck-reihe">
           ${ckTile(z.gefahr, "Anlagen im Gefahrbereich", z.gefahr ? "vorrangig abstellen – Liste öffnen" : "keine", z.gefahr ? "kritisch" : "gut", "arbeitssicherheit/anlagen?status=gefahr")}
