@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Unterweisungs-Terminal (Version 1.0) – OAK engineering</title>
+<link rel="manifest" href="kiosk.webmanifest">
+<meta name="theme-color" content="#003078">
 <!-- ONLINE-FASSUNG (portal/kiosk.html), erzeugt aus kunden/Wibo …/unterweisungen/terminal/index.html (Master).
      Unterschiede zum Master: Module werden nicht aus dem lokalen Ordner, sondern ueber den Geraete-Code
      geschuetzt aus dem Kundenportal geladen (Edge Function unterweisung-datei); Versions-Schalter 1.0/2.0;
@@ -1739,5 +1741,6 @@ _ensureCertLogo();
 })();
 </script>
 <div id="printDoc"></div>
+<script>if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }</script>
 </body>
 </html>

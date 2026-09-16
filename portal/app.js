@@ -18,17 +18,8 @@ const DOMAENEN = [
       { kat: "allg-gbu",      label: "Allgemeine GBU" },
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
       { kat: "begehungen",    label: "Begehungen" },
+      { kat: "unterweisungen", label: "Unterweisungen" },
       { kat: "vf-arbeitssicherheit", label: "Vorfälle" },
-  ]},
-  /* Unterweisungen sind eine eigene Domäne, kein Unterpunkt der Arbeitssicherheit:
-     Katalog, Mitarbeiter, Nachweise und Inhalte gehören zusammen - das ist das
-     Unterweisungswerkzeug. Erster Sub ist der Überblick, er wird zur Startansicht. */
-  { key: "unterweisungen", label: "Unterweisungen", subs: [
-      { kat: "uw-ueberblick", label: "Überblick" },
-      { kat: "uw-katalog",    label: "Modulkatalog" },
-      { kat: "personen",      label: "Mitarbeiter" },
-      { kat: "unterweisungen", label: "Nachweise" },
-      { kat: "kapitel",       label: "Inhalte" },
   ]},
   { key: "umwelt", label: "Umwelt", subs: [
       { kat: "ck-umwelt", label: "Überblick" },
@@ -261,6 +252,24 @@ function docZeile(r){
 }
 
 let AKTIVE_DOM = null, AKTIVE_SUB = null;
+let PORTAL_BEREIT = false;
+/* Reiter in der Adresse (#domaene/reiter): Browser-„Zurück" bleibt im Portal statt auf die Website
+   zu springen, und ein Reiter ist verlinkbar (z. B. #arbeitssicherheit/unterweisungen). */
+function hashSetzen(ersetzen){
+  const h = "#" + (AKTIVE_DOM || "") + (AKTIVE_SUB ? "/" + AKTIVE_SUB : "");
+  if(location.hash === h) return;
+  try{ if(ersetzen) history.replaceState(null, "", h); else history.pushState(null, "", h); }catch(e){}
+}
+function hashLesen(){
+  const t = location.hash.replace(/^#/, "").split("/");
+  if(!t[0]) return false;
+  AKTIVE_DOM = decodeURIComponent(t[0]); AKTIVE_SUB = t[1] ? decodeURIComponent(t[1]) : null;
+  return true;
+}
+window.addEventListener("popstate", () => {
+  if(!PORTAL_BEREIT) return;
+  hashLesen(); renderTabs(); renderSubTabs(); renderSektionen(); hashSetzen(true);
+});
 function katRows(kat){
   if(kat.indexOf("ck-") === 0) return [];                        // Cockpit hat keinen Zähler
   if(kat.indexOf("uw-") === 0) return [];                        // Überblick/Katalog rechnen selbst
@@ -297,7 +306,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "uw-katalog"){ renderUwKatalog(wrap); return; }
   if(kat === "personen"){ renderPersonen(wrap); return; }
   if(kat === "kapitel"){ renderKapitel(wrap); return; }
-  if(kat === "unterweisungen") renderUnterweisungen(wrap);
+  if(kat === "unterweisungen"){ renderUnterweisungen(wrap); return; }   // unterweisungen.js: eine Seite, drei Abschnitte
   const rows = katRows(kat);
   if(!rows.length){
     const leer = document.createElement("section"); leer.className = "sektion";
@@ -357,7 +366,7 @@ function renderTabs(){
       + ` role="tab" aria-selected="${d.key===AKTIVE_DOM}">${d.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
   }).join("");
   nav.querySelectorAll(".kat-tab").forEach(b => b.addEventListener("click", () => {
-    AKTIVE_DOM = b.dataset.dom; AKTIVE_SUB = null; renderTabs(); renderSubTabs(); renderSektionen();
+    AKTIVE_DOM = b.dataset.dom; AKTIVE_SUB = null; renderTabs(); renderSubTabs(); renderSektionen(); hashSetzen(false);
   }));
   reiterUeberlauf(nav);
 }
@@ -380,7 +389,7 @@ function renderSubTabs(){
       + ` role="tab" aria-selected="${s.kat===AKTIVE_SUB}">${s.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
   }).join("");
   nav.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => {
-    AKTIVE_SUB = b.dataset.sub; renderSubTabs(); renderSektionen();
+    AKTIVE_SUB = b.dataset.sub; renderSubTabs(); renderSektionen(); hashSetzen(false);
   }));
   reiterUeberlauf(nav);
 }
@@ -460,11 +469,13 @@ async function ladePortal(){
                   : (MITGLIED && MITGLIED.kunde_slug) || null;
     await ladeUwStart();
     AKTIVE_DOM = null; AKTIVE_SUB = null;
+    hashLesen();                       // Reiter aus der Adresse (Link oder Neuladen)
     setKundeName();
     renderAdminBar();
     renderTabs();
     renderSubTabs();
     renderSektionen();
+    hashSetzen(true); PORTAL_BEREIT = true;
     updateWaechterStarten();
   }catch(e){
     if(e.message==="AUTH"){ zurLogin(); return; }

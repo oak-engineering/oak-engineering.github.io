@@ -1,0 +1,25 @@
+{
+  "name": "Unterweisungs-Terminal",
+  "short_name": "Unterweisung",
+  "description": "Unterweisungs-Terminal (Version 1.0) – OAK engineering",
+  "start_url": "/portal/kiosk.html",
+  "scope": "/portal/",
+  "display": "fullscreen",
+  "background_color": "#F6FAF7",
+  "theme_color": "#003078",
+  "lang": "de",
+  "icons": [
+    {
+      "src": "icons/portal-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/portal-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "orientation": "landscape"
+}

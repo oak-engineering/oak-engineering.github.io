@@ -9,6 +9,8 @@
 
 let NACHWEISE = [];
 let BAUSTEINE = [];
+let UW_P = [], UW_R = [];        // Beschäftigte und Gruppen des Betriebs (Abschnitt „Wer ist fällig")
+let UW_MELDUNG = "";            // Bestätigung nach einer Aktion, einmal angezeigt
 /* Jährliche Wiederholung: DGUV Vorschrift 1 § 4 – „mindestens einmal jährlich". Wir warnen
    ab 11 Monaten, damit die Wiederholung planbar ist und nicht erst am Stichtag auffällt. */
 const UW_FAELLIG_TAGE = 365, UW_WARNUNG_TAGE = 335;
@@ -28,6 +30,8 @@ async function ladeNachweise(){
     BAUSTEINE = await apiGet("/rest/v1/portal_uw_baustein?select=*&order=sortierung.asc,gueltig_ab.desc",
                              false) || [];
   }catch(e){ BAUSTEINE = []; }
+  try{ UW_P = await apiGet("/rest/v1/uw_person?select=id,name,status,kunde_slug,uw_person_rolle(rolle_id)&order=name.asc", false) || []; }catch(e){ UW_P = []; }
+  try{ UW_R = await apiGet("/rest/v1/uw_rolle?select=id,name,typ,status,kunde_slug&order=name.asc", false) || []; }catch(e){ UW_R = []; }
   await ladeFolien();
 }
 
@@ -163,72 +167,170 @@ function renderBausteine(sec){
   </div>`;
 }
 
+/* ======================= Seite „Unterweisungen" (Arbeitssicherheit) =======================
+   Eine Seite, drei Abschnitte, je Abschnitt eine klare Handlung – für Leute, die das Portal
+   zum ersten Mal sehen:
+   1. Unterweisungen: die Module zum Öffnen (Version 1.0 = bewährte Module, 2.0 = neue).
+   2. Wer ist fällig: die Beschäftigten mit Stand – hier legt der Schichtführer Mitarbeiter an.
+   3. Nachweise: was am Terminal abgeschlossen wurde, als Tabelle zum Herunterladen.
+   Der Stand je Person wird über den Namen ermittelt (so, wie er am Terminal eingetippt wurde). */
+function uwPersonen(){ return (AKTIV ? UW_P.filter(p => p.kunde_slug === AKTIV) : UW_P).filter(p => p.status !== "archiviert"); }
+function uwGruppen(){ return (AKTIV ? UW_R.filter(r => r.kunde_slug === AKTIV) : UW_R).filter(r => r.status !== "archiviert" && r.typ !== "besucher"); }
+function uwNorm(s){ return String(s || "").toLowerCase().replace(/\s+/g, " ").trim().split(" ").sort().join(" "); }
+function uwLetzterNachweis(name){
+  const k = uwNorm(name); let best = null;
+  uwSichtbar().forEach(n => { if(uwNorm(n.mitarbeiter_name) === k && (!best || new Date(n.created_at) > new Date(best.created_at))) best = n; });
+  return best;
+}
+function uwGruppenName(p){
+  return (p.uw_person_rolle || []).map(x => (UW_R.find(r => r.id === x.rolle_id) || {}).name).filter(Boolean).join(", ");
+}
+const UW_RANG = { kritisch: 0, warnung: 1, grau: 2, gut: 3 };
+
+function uwDokTabelle(rows){
+  if(!rows.length) return `<div class="ck-fuss">Noch keine Unterweisungen hinterlegt.</div>`;
+  return `<table><thead><tr><th>Unterweisung</th><th style="width:130px">Art</th><th style="width:120px">Stand</th><th style="width:120px"></th></tr></thead>
+    <tbody>${rows.map(docZeile).join("")}</tbody></table>`;
+}
+
 function renderUnterweisungen(wrap){
   const rows = uwSichtbar();
-  const sec = document.createElement("section");
-  sec.className = "sektion";
+  const meld = UW_MELDUNG ? `<div class="uw-meld">${esc(UW_MELDUNG)}</div>` : "";
+  UW_MELDUNG = "";
 
-  const jePerson = uwJeMitarbeiter(rows);
-  const faellig = jePerson.filter(n => uwStatus(n).klasse !== "gut");
+  /* 1. Unterweisungen (Module) */
+  const docs = (typeof katRows === "function") ? katRows("unterweisungen") : [];
+  const istV2 = r => {
+    const base = String(r.storage_path || "").split("/").pop();
+    return (typeof UW_MODULE !== "undefined" && UW_MODULE.some(m => base === m.thema + ".html"))
+        || /Online-Unterweisung\s*$/.test(r.titel || "");
+  };
+  const v1 = docs.filter(r => !istV2(r)), v2 = docs.filter(istV2);
+  const sekModule = document.createElement("section"); sekModule.className = "sektion";
+  sekModule.innerHTML = `${meld}
+    <div class="sek-kopf"><h2>Unterweisungen</h2><span class="zaehler">${docs.length} ${docs.length === 1 ? "Modul" : "Module"}</span></div>
+    <p class="uw-erkl">Zum Ansehen hier öffnen. Beschäftigte werden am <b>Unterweisungs-Terminal</b> unterwiesen
+      (Name eingeben, Gruppe wählen, Unterweisung durchgehen, unterschreiben) – der Nachweis erscheint danach unten.</p>
+    ${v2.length ? `<h3 class="uw-h3">Version 1.0 · bewährte Module</h3>` : ""}
+    ${uwDokTabelle(v1)}
+    ${v2.length ? `<h3 class="uw-h3">Version 2.0 · neue Module</h3>${uwDokTabelle(v2)}` : ""}`;
+  wrap.appendChild(sekModule);
 
-  const kacheln = `<div class="ck-reihe">
-    ${ckTile(jePerson.length, "unterwiesene Personen", rows.length + " Nachweise insgesamt")}
-    ${ckTile(faellig.length, "fällig oder überfällig", "jährliche Wiederholung (DGUV V1 § 4)",
-             faellig.length ? "warnung" : "gut")}
-    ${ckTile(rows.filter(n => !n.bestanden).length, "nicht bestanden", "Wiederholung nötig",
-             rows.filter(n => !n.bestanden).length ? "kritisch" : "gut")}
-  </div>`;
+  /* 2. Wer ist fällig */
+  const pers = uwPersonen();
+  const zusatz = uwJeMitarbeiter(rows).filter(n => !pers.some(p => uwNorm(p.name) === uwNorm(n.mitarbeiter_name)));
+  const zeilen = pers.map(p => {
+    const n = uwLetzterNachweis(p.name);
+    const st = n ? uwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" };
+    return { rang: (UW_RANG[st.klasse] ?? 2), html: `<tr>
+      <td><b>${esc(p.name)}</b></td><td>${esc(uwGruppenName(p) || "—")}</td>
+      <td>${n ? uwDatum(n.created_at) : "—"}</td>
+      <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
+      <td><button class="btn-klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` };
+  }).concat(zusatz.map(n => {
+    const st = uwStatus(n);
+    return { rang: (UW_RANG[st.klasse] ?? 2), html: `<tr>
+      <td><b>${esc(n.mitarbeiter_name)}</b> <span class="uw-leise">am Terminal eingetragen</span></td>
+      <td>${esc(n.funktion || "—")}</td><td>${uwDatum(n.created_at)}</td>
+      <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
+      <td><button class="btn-klein" data-pneu="${esc(n.mitarbeiter_name)}" data-pfunk="${esc(n.funktion || "")}">als Mitarbeiter übernehmen</button></td></tr>` };
+  })).sort((a, b) => a.rang - b.rang);
+  const faellig = zeilen.filter(z => z.rang <= 1).length;
+  const sekPers = document.createElement("section"); sekPers.className = "sektion";
+  sekPers.innerHTML = `
+    <div class="sek-kopf"><h2>Wer ist fällig</h2>
+      <span class="zaehler">${zeilen.length ? (faellig ? faellig + " fällig" : "alle aktuell") : ""}</span>
+      <button class="btn sek" id="uwPersNeu">Mitarbeiter anlegen</button></div>
+    <p class="uw-erkl">Alle Beschäftigten mit ihrem Stand. Jährlich wiederholen (DGUV Vorschrift 1 § 4).
+      Neue Kolleginnen und Kollegen hier anlegen, damit sie in der Liste stehen, bevor sie ans Terminal gehen.</p>
+    <div id="uwPersForm"></div>
+    ${zeilen.length ? `<div class="tabelle-wrap"><table class="uw-tab">
+      <thead><tr><th>Name</th><th>Gruppe</th><th>zuletzt unterwiesen</th><th>Stand</th><th></th></tr></thead>
+      <tbody>${zeilen.map(z => z.html).join("")}</tbody></table></div>`
+    : `<div class="ck-fuss">Noch niemand eingetragen. Mit <b>„Mitarbeiter anlegen"</b> beginnen – oder die Beschäftigten
+        tragen sich am Terminal selbst ein und erscheinen dann hier.</div>`}`;
+  wrap.appendChild(sekPers);
+  sekPers.querySelector("#uwPersNeu").addEventListener("click", () => uwPersonForm(null));
+  sekPers.querySelectorAll("[data-pedit]").forEach(b => b.addEventListener("click", () => uwPersonForm(UW_P.find(p => p.id === b.dataset.pedit))));
+  sekPers.querySelectorAll("[data-pneu]").forEach(b => b.addEventListener("click", () => uwPersonForm(null, b.dataset.pneu, b.dataset.pfunk)));
 
-  const liste = jePerson.length ? `<table class="uw-tab">
-      <thead><tr><th>Person</th><th>Rolle</th><th>zuletzt</th><th>Module</th><th>Stand</th></tr></thead>
-      <tbody>${jePerson.map(n => {
-        const st = uwStatus(n);
-        return `<tr>
-          <td><b>${esc(n.mitarbeiter_name || "—")}</b>${n.bestanden ? "" : ' <span class="uw-warn">nicht bestanden</span>'}</td>
-          <td>${esc(n.funktion || "—")}</td>
-          <td>${uwDatum(n.created_at)}</td>
-          <td class="uw-mod">${esc(uwModule(n).join(", ") || "—")}</td>
-          <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
-        </tr>`; }).join("")}</tbody></table>`
-    : `<div class="ck-fuss">Noch keine Nachweise. Sobald am Terminal eine Unterweisung
-        abgeschlossen wird, erscheint sie hier – auch wenn das Gerät zwischendurch offline war.</div>`;
-
-  sec.innerHTML = `${renderFolien()}${renderBausteine(sec)}
-    <div class="sek-kopf"><h2>Unterweisungen</h2>
-      ${rows.length ? '<button class="btn-klein" id="uwCsv">Als CSV exportieren</button>' : ""}</div>
-    ${kacheln}${liste}
-    <div class="ck-fuss">Nachweis nach <b>§ 12 ArbSchG</b>; Wiederholung mindestens jährlich
-      (<b>DGUV Vorschrift 1 § 4</b>). Gespeichert werden Name, Rolle, Datum, Module und bestanden
-      ja/nein – <b>kein Punktestand</b>. Verantwortlich ist der Arbeitgeber; OAK engineering
+  /* 3. Nachweise */
+  const sekNach = document.createElement("section"); sekNach.className = "sektion";
+  sekNach.innerHTML = `
+    <div class="sek-kopf"><h2>Nachweise</h2><span class="zaehler">${rows.length} ${rows.length === 1 ? "Nachweis" : "Nachweise"}</span>
+      ${rows.length ? '<button class="btn sek" id="uwCsv">Als Tabelle herunterladen</button>' : ""}</div>
+    <p class="uw-erkl">Jede am Terminal abgeschlossene Unterweisung landet hier – auch wenn das Gerät zwischendurch
+      ohne Netz war. Gespeichert werden Name, Gruppe, Datum, Module und bestanden ja/nein, <b>kein Punktestand</b>.</p>
+    ${rows.length ? `<div class="tabelle-wrap"><table class="uw-tab">
+      <thead><tr><th>Datum</th><th>Name</th><th>Gruppe</th><th>Unterweisungen</th><th>Ergebnis</th></tr></thead>
+      <tbody>${rows.slice(0, 200).map(n => `<tr>
+        <td>${uwDatum(n.created_at)}</td><td><b>${esc(n.mitarbeiter_name || "—")}</b></td><td>${esc(n.funktion || "—")}</td>
+        <td class="uw-mod">${esc(uwModule(n).join(", ") || "—")}</td>
+        <td>${n.bestanden ? '<span class="uw-badge uw-gut">bestanden</span>' : '<span class="uw-badge uw-kritisch">nicht bestanden</span>'}</td>
+      </tr>`).join("")}</tbody></table></div>${rows.length > 200 ? '<div class="ck-fuss">Die Tabelle zeigt die letzten 200 Nachweise; der Download enthält alle.</div>' : ""}`
+    : `<div class="ck-fuss">Noch keine Nachweise.</div>`}
+    <div class="ck-fuss">Nachweis nach <b>§ 12 ArbSchG</b>. Verantwortlich ist der Arbeitgeber; OAK engineering
       verarbeitet die Daten im Auftrag.</div>`;
-  wrap.appendChild(sec);
-  const btn = sec.querySelector("#uwCsv");
+  wrap.appendChild(sekNach);
+  const btn = sekNach.querySelector("#uwCsv");
   if(btn) btn.addEventListener("click", uwExport);
-  const such = sec.querySelector("#uwSuchen");
-  if(such) such.addEventListener("click", () => uwAbgleichen(such));
-  sec.querySelectorAll("[data-frei]").forEach(b =>
-    b.addEventListener("click", () => uwBausteinSetzen(b.dataset.frei, "freigegeben")));
-  sec.querySelectorAll("[data-verw]").forEach(b =>
-    b.addEventListener("click", () => uwBausteinSetzen(b.dataset.verw, "verworfen")));
+}
 
-  sec.querySelectorAll("[data-fgeb]").forEach(b =>
-    b.addEventListener("click", () => folienStatus(b.dataset.fgeb, "freigegeben")));
-  sec.querySelectorAll("[data-fzur]").forEach(b =>
-    b.addEventListener("click", () => folienStatus(b.dataset.fzur, "zurueckgezogen")));
-  sec.querySelectorAll("[data-ffrage]").forEach(b =>
-    b.addEventListener("click", () => {
-      const f = FOLIEN.find(x => x.id === b.dataset.ffrage);
-      if(f) frageAnlegen(f);
-    }));
-  const fgo = sec.querySelector("#folGo");
-  if(fgo) fgo.addEventListener("click", () => {
-    const d = sec.querySelector("#folDatei").files[0];
-    if(!d){ alert("Bitte eine Datei wählen."); return; }
-    const r = sec.querySelector("#folRolle").value;
-    fgo.disabled = true; fgo.textContent = "lädt …";
-    folienHochladen(d, sec.querySelector("#folTitel").value.trim(), r ? [r] : [])
-      .finally(() => { fgo.disabled = false; fgo.textContent = "Hochladen"; });
-  });
+/* Formular „Mitarbeiter anlegen / ändern": Name + Gruppe, sonst nichts. Speichern schreibt
+   uw_person (+ uw_person_rolle); jedes angemeldete Konto des Betriebs darf das – die
+   Datenbank grenzt auf den eigenen Betrieb ein (RLS). */
+function uwPersonForm(p, vorName, vorGruppe){
+  const box = document.getElementById("uwPersForm"); if(!box) return;
+  const gruppen = uwGruppen();
+  const gewaehlt = new Set(p ? (p.uw_person_rolle || []).map(x => x.rolle_id) : []);
+  if(!p && vorGruppe){ const g = gruppen.find(x => x.name === vorGruppe); if(g) gewaehlt.add(g.id); }
+  box.innerHTML = `<div class="uw-form">
+    <h3 class="uw-h3" style="margin-top:0">${p ? "Mitarbeiter ändern" : "Mitarbeiter anlegen"}</h3>
+    <label class="uw-lab" for="uwPName">Vor- und Nachname</label>
+    <input type="text" id="uwPName" value="${esc(p ? p.name : (vorName || ""))}" placeholder="z. B. Max Müller" autocomplete="off">
+    <div class="uw-lab">Gruppe (mehrere möglich)</div>
+    <div class="uw-chips">${gruppen.map(g => `<label class="uw-chip"><input type="checkbox" value="${esc(g.id)}"${gewaehlt.has(g.id) ? " checked" : ""}> ${esc(g.name)}</label>`).join("") || '<span class="uw-leise">Noch keine Gruppen angelegt.</span>'}</div>
+    ${p ? `<label class="uw-chip uw-chip-aus"><input type="checkbox" id="uwPAus"> ausgeschieden (nicht mehr anzeigen)</label>` : ""}
+    <div class="uw-form-knoepfe">
+      <button class="btn sek" id="uwPSpeichern">${p ? "Speichern" : "Anlegen"}</button>
+      <button class="btn-klein" id="uwPAbbruch">Abbrechen</button>
+      <span class="uw-leise" id="uwPMeld"></span>
+    </div></div>`;
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  document.getElementById("uwPName").focus();
+  document.getElementById("uwPAbbruch").addEventListener("click", () => { box.innerHTML = ""; });
+  document.getElementById("uwPSpeichern").addEventListener("click", () => uwPersonSpeichern(p));
+}
+
+async function uwPersonSpeichern(p){
+  const meld = document.getElementById("uwPMeld");
+  const name = document.getElementById("uwPName").value.trim().replace(/\s+/g, " ");
+  if(name.length < 3){ meld.textContent = "Bitte den vollständigen Namen eintragen."; return; }
+  const rollen = [...document.querySelectorAll("#uwPersForm .uw-chips input:checked")].map(x => x.value);
+  const aus = document.getElementById("uwPAus");
+  const status = (aus && aus.checked) ? "archiviert" : "aktiv";
+  if(!p && !rollen.length && uwGruppen().length){ meld.textContent = "Bitte mindestens eine Gruppe wählen."; return; }
+  meld.textContent = "Speichere …";
+  try{
+    let id = p ? p.id : null;
+    if(p){
+      await apiSend("PATCH", "/rest/v1/uw_person?id=eq." + encodeURIComponent(p.id),
+        { name, status, geaendert_am: new Date().toISOString() }, "return=minimal");
+    }else{
+      const neu = await apiSend("POST", "/rest/v1/uw_person",
+        { kunde_slug: AKTIV, name, status: "aktiv", sprache: "de" }, "return=representation");
+      id = Array.isArray(neu) ? neu[0].id : neu.id;
+    }
+    await apiSend("DELETE", "/rest/v1/uw_person_rolle?person_id=eq." + encodeURIComponent(id), null, "return=minimal");
+    if(rollen.length) await apiSend("POST", "/rest/v1/uw_person_rolle",
+      rollen.map(r => ({ person_id: id, rolle_id: r })), "return=minimal");
+    UW_MELDUNG = p ? (status === "archiviert" ? name + " wird nicht mehr angezeigt." : name + " ist gespeichert.")
+                   : name + " ist angelegt.";
+    await ladeNachweise();
+    renderSektionen();
+  }catch(e){
+    meld.textContent = "Konnte nicht gespeichert werden: " + (e && e.message ? e.message : e);
+  }
 }
 
 /* ---- Foliensätze: Unterweisungen als hochgeladene Präsentation ----------------------
