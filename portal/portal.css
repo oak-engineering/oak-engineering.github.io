@@ -677,3 +677,11 @@ html:not(.ist-app) #katTabs:not(.hidden),html:not(.ist-app) #subTabs:not(.hidden
 body > .neu-laden{position:fixed;top:12px;right:12px;z-index:200}
 
 .mg-bewertung{font:inherit;font-size:12.5px;min-height:34px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054;max-width:170px}
+
+a.mg-link{display:block;text-decoration:none;color:#1d2939}
+a.mg-link:hover{color:var(--gruen);text-decoration:underline}
+
+.mg-edit{max-width:560px;width:94vw}
+.mg-edit select{display:block;width:100%;font:inherit;font-size:15px;padding:9px 10px;border:1px solid var(--rand);border-radius:9px;margin-top:4px;background:#fff}
+.mg-edit .mg-edit-aus{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600}
+.mg-edit .mg-edit-aus input{width:18px;height:18px;margin:0}

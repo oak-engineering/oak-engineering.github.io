@@ -543,7 +543,7 @@ function show(id){ SCREENS.forEach(s=>$(s).classList.toggle('hidden', s!==id)); 
 
 /* ============================ Cockpit (Startzentrale) ============================ */
 // Zahnrad nur im Terminal-/Kiosk-Modus verstecken
-function updateGear(){ const g=$('#gearBtn'); if(g) g.style.display = CONTENT.meta.terminal ? 'none' : ''; }
+function updateGear(){ const g=$('#gearBtn'); if(g) g.style.display = (CONTENT.meta.terminal || portalModus()) ? 'none' : ''; }   // im Portal verwaltet das Portal (kein Zahnrad)
 // Kiosk-Autostart: die ERSTE Wahl eines Kiosk-Modus (Terminal/Extern) wird als Geräte-Modus
 // gemerkt und überlebt Browser-Neustarts. Sie wird NICHT durch Cockpit-Besuche oder spätere
 // Moduswechsel überschrieben – nur der Link „Kiosk-Autostart deaktivieren" im Cockpit löscht sie.
@@ -556,10 +556,16 @@ function goCockpit(){
   // Terminal-Deploy: es gibt nur Intern (Terminal-Modus) und Extern – die Online-Variante
   // (Zugangscode/E-Mail) ist ein separates Deployment und hier bewusst ohne Kachel (nur ?start=online).
   { const ko=$('#ckKioskOff'); if(ko) ko.style.display = kioskFlag()?'':'none'; }
+  /* Im Kundenportal (Nikolai 16.09.2026): Cockpit nur mit Interne/Externe Unterweisung – kein Kundenportal-Knopf,
+     kein Admin-Hinweis mit Passwort. Das Portal ist ja schon offen. */
+  if(portalModus()){
+    const pb=$('#ckPortal'); if(pb) pb.style.display='none';
+    document.querySelectorAll('#screen-cockpit p.small.muted').forEach(x=>{ if(/Admin-Bereich/.test(x.textContent)) x.style.display='none'; });
+  }
   show('#screen-cockpit'); }
 { const kl=$('#ckKioskOffLink'); if(kl) kl.onclick=e=>{ e.preventDefault(); try{ localStorage.removeItem(KIOSK_AUTOKEY); }catch(e2){} goCockpit(); }; }
 // Einen Modus betreten (Flags zur Laufzeit setzen, restliche Logik unverändert)
-function enterMode(term,ext){ try{ if(term && !kioskFlag()) localStorage.setItem(KIOSK_AUTOKEY, ext?'extern':'terminal'); }catch(e){}
+function enterMode(term,ext){ try{ if(term && !kioskFlag() && !portalModus()) localStorage.setItem(KIOSK_AUTOKEY, ext?'extern':'terminal'); }catch(e){}   // im Portal kein Autostart: immer erst das Cockpit
   CONTENT.meta.terminal=!!term; CONTENT.meta.extern=!!ext; applyTheme(); applyMeta(); applyAudience(); updateGear(); goStart(); }
 document.querySelectorAll('.ck-tile[data-mode]').forEach(b=>{ b.onclick=()=>{ const md=b.dataset.mode; enterMode(md!=='online', md==='extern'); }; });
 /* Kundenportal in einem eigenen Fenster - die Unterweisung bleibt geoeffnet und laeuft
@@ -1728,7 +1734,7 @@ _ensureCertLogo();
 (async function(){
   await restoreDirs();   // Ordner-Handles VOR dem Routing wiederherstellen (sonst flackert „Kein Nachweis-Ordner")
   const sp=(new URLSearchParams(location.search).get('start')||'').toLowerCase();
-  let auto=''; try{ auto=localStorage.getItem(KIOSK_AUTOKEY)||''; }catch(e){}
+  let auto=''; try{ auto=localStorage.getItem(KIOSK_AUTOKEY)||''; if(portalModus()){ localStorage.removeItem(KIOSK_AUTOKEY); auto=''; } }catch(e){}
   if(sp==='terminal') enterMode(true,false);
   else if(sp==='extern') enterMode(true,true);
   else if(sp==='online') enterMode(false,false);

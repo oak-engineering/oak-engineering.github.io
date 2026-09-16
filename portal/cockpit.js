@@ -103,7 +103,7 @@ function renderCockpit(wrap, bereich){
     const ART = { unfall: "Unfall", beinahe: "Beinahe-Unfall", mangel: "Mangel", umwelt: "Umweltvorfall", sonstiges: "Sonstiges" };
     const mgGeladen = (typeof MG_GELADEN !== "undefined" && MG_GELADEN);
     const mg = mgGeladen ? mgSichtbar().filter(m => m.status !== "erledigt") : [];
-    const mgZaun = mg.filter(m => m.thema === "schutzzaun").length, mgGefahr = mg.filter(m => (m.bewertung_manuell || m.band) === "gefahr").length;
+    const mgZaun = mg.filter(m => mgFeld(m, "thema") === "schutzzaun").length, mgGefahr = mg.filter(m => (m.bewertung_manuell || m.band) === "gefahr").length;
     const begehungen = sichtbar().filter(r => r.kategorie === "begehungen");
     const letzteBeg = begehungen.map(r => r.stand).concat(sichtbar().filter(r => r.kategorie === "anlagen").map(r => r.stand)).filter(Boolean).sort().slice(-1)[0] || "";
     const uwF = (typeof uwFaelligZahl === "function") ? uwFaelligZahl() : 0;

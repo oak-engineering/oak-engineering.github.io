@@ -97,6 +97,17 @@
   .reifegrad li .st{font-weight:600;} .reifegrad li .st.t{color:var(--gelb);} .reifegrad li .st.o{color:var(--rot);}
   .reifegrad .todo{color:var(--grau);}
   .dash b{font-weight:700;color:var(--dunkel);}
+  .kurz table{width:100%;border-collapse:collapse;font-size:13px;margin:2px 0 12px;}
+  .kurz th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--grau);border-bottom:2px solid var(--linie);padding:6px 8px;}
+  .kurz td{border-bottom:1px solid var(--linie);padding:7px 8px;vertical-align:top;line-height:1.4;}
+  .kurz td.nr{width:42px;color:var(--grau);font-weight:600;}
+  .kurz td.bw{width:150px;white-space:nowrap;}
+  .kurz .pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .kurz .pill.s{background:var(--rot-bg);color:var(--rot);}
+  .kurz .pill.g{background:var(--gelb-bg);color:var(--gelb);}
+  .kurz .pill.h{background:#eef1f5;color:var(--grau);}
+  .kurz .rq{display:block;font-size:11px;color:var(--grau);margin-top:2px;}
+  .kurz .leer{font-size:13px;color:var(--grau);padding:6px 0 12px;}
   .dash .di{display:inline-block;margin-right:13px;padding-right:13px;border-right:1px solid #cdd8d2;}
   .dash .di:last-child{border-right:none;margin-right:0;padding-right:0;}
   .dash small{color:var(--grau);}
@@ -310,6 +321,10 @@
       <tr><td class="k">Begehung am</td><td><input data-k="begehung" value="" placeholder="TT.MM.JJJJ"></td>
           <td class="k">Nächste Prüfung</td><td><input type="date" data-k="naechste"></td></tr>
     </table>
+
+    <!-- Kurzuebersicht (Nikolai 16.09.2026): Maengel mit Bewertung auf einen Blick, Details mit Nohl weiter unten -->
+    <div class="sektion-titel">Kurzübersicht: Mängel und Bewertung</div>
+    <div id="kurz" class="kurz"></div>
 
     <!-- Auswertung (Seite 1) -->
     <div class="sektion-titel">Auswertung &amp; Maßnahmenstand</div>
@@ -846,7 +861,22 @@ function updateOverdue(){
   });
 }
 
+/* Kurzuebersicht: jeder Mangel der Maengelliste mit Bewertung (schwerwiegend / geringfuegig), ohne Nohl-Details. */
+function renderKurz(){
+  const el = document.getElementById("kurz"); if(!el) return;
+  const liste = (DOC.maengel || []).filter(m => m && m.label);
+  const e = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+  if(!liste.length){ el.innerHTML = '<div class="leer">Keine Mängel festgestellt.</div>'; return; }
+  const bw = m => m.schwere === "s" || m.schwere === "akut" ? '<span class="pill s">schwerwiegend</span>'
+                : m.schwere === "g" ? '<span class="pill g">geringfügig</span>' : '<span class="pill h">Hinweis</span>';
+  const rang = m => m.schwere === "s" || m.schwere === "akut" ? 0 : (m.schwere === "g" ? 1 : 2);
+  el.innerHTML = '<table><thead><tr><th>Nr.</th><th>Mangel</th><th>Bewertung</th></tr></thead><tbody>'
+    + liste.map((m, i) => ({ m, i })).sort((a, b) => rang(a.m) - rang(b.m) || a.i - b.i)
+      .map(({ m, i }) => `<tr><td class="nr">${e(m.nr || (i + 1))}</td><td>${e(m.label)}${m.pp ? `<span class="rq">${e(m.pp)}</span>` : ""}</td><td class="bw">${bw(m)}</td></tr>`).join("")
+    + '</tbody></table>';
+}
 function updateDash(){
+  renderKurz();
   let hV={akut:0,r:0,g:0,gn:0}, hN={akut:0,r:0,g:0,gn:0}, mTotal=0, mDone=0, mWirk=0, maxRest=0;
   state.h.forEach(s=>{
     /* Restrisiko zaehlt nur, was durch Wirksamkeitspruefung belegt ist (wirksamOk) - sonst gilt

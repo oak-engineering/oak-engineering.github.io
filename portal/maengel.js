@@ -16,43 +16,59 @@ async function ladeMaengel(){
   try{ MAENGEL = await apiGet("/rest/v1/portal_maengel?select=*&order=prioritaet.asc,maschine.asc", false) || []; MG_GELADEN = true; }
   catch(e){ MAENGEL = []; }
 }
-function mgSichtbar(){ return AKTIV ? MAENGEL.filter(m => m.kunde_slug === AKTIV) : MAENGEL; }
+const MG_RANG = { schutzzaun: 1, leiter_aufstieg: 2, leckage_ordnung: 3, pruefung: 4, elektrik: 5, sonstiges: 6, pruefung_meldung: 3 };
+/* Von Hand bearbeitete Werte (nur Admin, Spalte manuell) gehen vor; maengel_publish.py ueberschreibt sie nie. */
+function mgFeld(m, k){ return (m.manuell && m.manuell[k] != null && m.manuell[k] !== "") ? m.manuell[k] : m[k]; }
+function mgSichtbar(){ return (AKTIV ? MAENGEL.filter(m => m.kunde_slug === AKTIV) : MAENGEL).filter(m => !m.ausgeblendet); }
 function mgOffen(){ return mgSichtbar().filter(m => m.status !== "erledigt").length; }
 function mgDatum(s){ if(!s) return ""; const d = new Date(s); return d.toLocaleDateString("de-DE") + ", " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }) + " Uhr"; }
 /* Name im Betrieb; bei allgemeinen Themen (ALLG-xx) steht dort der Thementitel */
 function mgMaschine(m){ return (m.maschine || "").trim() || "ohne Maschine"; }
+/* Klick auf den Mangel: Maengelliste der Maschine (mit Befundfotos) im Dokument-Viewer (Nikolai 16.09.) */
+function mgListeLink(m){
+  const r = (typeof ALLE !== "undefined" ? ALLE : []).find(x => x.kunde_slug === m.kunde_slug && x.maschinen_id === m.maschinen_id && (x.typen || []).includes("maengelliste"));
+  if(!r || typeof viewerUrl !== "function") return "";
+  return viewerUrl("maengelliste", r.storage_path, (r.maschine || "") + " · Mängelliste", "&m=" + encodeURIComponent(r.maschine || "") + "&mid=" + encodeURIComponent(r.maschinen_id || ""));
+}
 function mgIstAllgemein(m){ return /^ALLG/i.test(m.maschinen_id || "") || /tätigkeit/i.test(m.maschinentyp || ""); }
 
 async function renderMaengel(wrap){
   if(!MG_GELADEN) await ladeMaengel();
-  const alle = mgSichtbar();
+  const istAdmin = (typeof ADMIN !== "undefined" && ADMIN);
+  const betrieb = AKTIV ? MAENGEL.filter(m => m.kunde_slug === AKTIV) : MAENGEL;
+  const alle = betrieb.filter(m => !m.ausgeblendet);
+  const aus = betrieb.filter(m => m.ausgeblendet);
   const offenAlle = alle.filter(m => m.status !== "erledigt");
-  let rows = alle.filter(m => MG_FILTER.status === "erledigt" ? m.status === "erledigt" : m.status !== "erledigt");
+  if(MG_FILTER.status === "ausgeblendet" && !istAdmin) MG_FILTER.status = "offen";
+  let rows = MG_FILTER.status === "ausgeblendet" ? aus
+           : alle.filter(m => MG_FILTER.status === "erledigt" ? m.status === "erledigt" : m.status !== "erledigt");
   if(MG_FILTER.maschine) rows = rows.filter(m => mgMaschine(m) === MG_FILTER.maschine);
   const maschinen = [...new Set(alle.filter(m => !mgIstAllgemein(m)).map(mgMaschine))].sort((a, b) => a.localeCompare(b, "de", { numeric: true }));
   const allgemein = [...new Set(alle.filter(mgIstAllgemein).map(mgMaschine))].sort();
   const meld = MG_MELDUNG ? `<div class="uw-meld">${esc(MG_MELDUNG)}</div>` : ""; MG_MELDUNG = "";
 
-  /* Gruppen nach Thema in der festgelegten Reihenfolge; erste Gruppe offen, bei Maschinenfilter alle */
+  /* Gruppen nach (ggf. von Hand gesetztem) Thema in der festgelegten Reihenfolge */
   const gruppen = [];
-  rows.forEach(m => { let g = gruppen.find(x => x.thema === m.thema); if(!g){ g = { thema: m.thema, rang: m.thema_rang || 9, liste: [] }; gruppen.push(g); } g.liste.push(m); });
+  rows.forEach(m => { const th = mgFeld(m, "thema"); let g = gruppen.find(x => x.thema === th);
+    if(!g){ g = { thema: th, rang: MG_RANG[th] || m.thema_rang || 9, liste: [] }; gruppen.push(g); } g.liste.push(m); });
   gruppen.sort((a, b) => a.rang - b.rang);
   const typ = m => mgIstAllgemein(m) ? "allgemein" : String(m.maschinentyp || "").replace(/\s*\(mit [^)]*\)/i, "");
-  const darfBewerten = (typeof ADMIN !== "undefined" && ADMIN) || window.__oakFachkraft;
+  const bwText = { gefahr: "rot · dringend", besorgnis: "gelb · zeitnah", akzeptanz: "grün · bei Gelegenheit" };
   const zeile = m => {
     const erledigt = m.status === "erledigt";
     const bw = m.bewertung_manuell || m.band || "ohne";
-    const bwText = { gefahr: "rot · dringend", besorgnis: "gelb · zeitnah", akzeptanz: "grün · bei Gelegenheit" };
+    const label = mgFeld(m, "label"), massnahme = mgFeld(m, "massnahme"), link = mgListeLink(m);
+    const vonHand = !!(m.manuell || m.bewertung_manuell);
     return `<div class="mg-zeile mg-${bw}${erledigt ? " mg-erledigt" : ""}">
-      <span class="mg-ampel" title="${esc(bwText[bw] || "nicht bewertet")}${m.bewertung_manuell ? " (von Hand gesetzt)" : ""}"></span>
+      <span class="mg-ampel" title="${esc(bwText[bw] || "nicht bewertet")}"></span>
       <div class="mg-wer"><b>${esc(mgMaschine(m))}</b><span>${esc(typ(m))}</span></div>
-      <div class="mg-text"><div class="mg-label">${esc(m.label)}</div>
-        ${m.massnahme ? `<div class="mg-massnahme">Maßnahme: ${esc(m.massnahme)}</div>` : ""}
+      <div class="mg-text">${link ? `<a class="mg-label mg-link" href="${link}" target="_blank" rel="noopener" title="Mängelliste der Maschine mit Fotos öffnen">${esc(label)}</a>` : `<div class="mg-label">${esc(label)}</div>`}
+        ${massnahme ? `<div class="mg-massnahme">Maßnahme: ${esc(massnahme)}</div>` : ""}
+        ${istAdmin && vonHand ? `<div class="mg-massnahme"><i>von OAK engineering angepasst</i></div>` : ""}
         ${erledigt ? `<div class="mg-nachweis">✓ erledigt ${esc(mgDatum(m.erledigt_am))}${m.erledigt_von ? " · " + esc(m.erledigt_von) : ""}${m.notiz ? " – " + esc(m.notiz) : ""}</div>` : ""}</div>
-      <div class="mg-aktion">${darfBewerten ? `<select class="mg-bewertung" data-mgbw="${esc(m.id)}" title="Bewertung ändern" aria-label="Bewertung ändern">
-          ${["gefahr", "besorgnis", "akzeptanz"].map(w => `<option value="${w}"${w === bw ? " selected" : ""}>${bwText[w]}</option>`).join("")}</select>` : ""}${m.foto_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.foto_pfad)}">Befundfoto</button>` : ""}${erledigt
-        ? `${m.nachweis_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.nachweis_pfad)}">Foto</button>` : ""}${ADMIN ? `<button type="button" class="btn-klein" data-mgauf="${esc(m.id)}">öffnen</button>` : ""}`
-        : `<button type="button" class="btn-klein mg-erl" data-mgerl="${esc(m.id)}">Erledigt</button>`}</div>
+      <div class="mg-aktion">${istAdmin ? `<button type="button" class="btn-klein" data-mgedit="${esc(m.id)}">Bearbeiten</button>` : ""}${m.foto_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.foto_pfad)}">Befundfoto</button>` : ""}${m.ausgeblendet ? "" : (erledigt
+        ? `${m.nachweis_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.nachweis_pfad)}">Foto</button>` : ""}${istAdmin ? `<button type="button" class="btn-klein" data-mgauf="${esc(m.id)}">öffnen</button>` : ""}`
+        : `<button type="button" class="btn-klein mg-erl" data-mgerl="${esc(m.id)}">Erledigt</button>`)}</div>
     </div>`;
   };
   const sec = document.createElement("section"); sec.className = "sektion mg-seite";
@@ -61,6 +77,7 @@ async function renderMaengel(wrap){
       <div class="uw-pills">
         <button type="button" class="uw-pill${MG_FILTER.status === "offen" ? " aktiv" : ""}" data-mgf="offen">Offen · ${offenAlle.length}</button>
         <button type="button" class="uw-pill${MG_FILTER.status === "erledigt" ? " aktiv" : ""}" data-mgf="erledigt">Erledigt · ${alle.length - offenAlle.length}</button>
+        ${istAdmin ? `<button type="button" class="uw-pill${MG_FILTER.status === "ausgeblendet" ? " aktiv" : ""}" data-mgf="ausgeblendet">Ausgeblendet · ${aus.length}</button>` : ""}
       </div>
       <select class="uw-fassung" id="mgMaschine" aria-label="Maschine">
         <option value="">Alle Maschinen</option>
@@ -68,7 +85,7 @@ async function renderMaengel(wrap){
         ${allgemein.length ? `<optgroup label="Allgemein">${allgemein.map(n => `<option${MG_FILTER.maschine === n ? " selected" : ""}>${esc(n)}</option>`).join("")}</optgroup>` : ""}
       </select>
     </div>
-    ${gruppen.length ? gruppen.map((g, i) => `<details class="mg-gruppe"${(i === 0 || MG_FILTER.maschine || MG_FILTER.status === "erledigt") ? " open" : ""}>
+    ${gruppen.length ? gruppen.map((g, i) => `<details class="mg-gruppe"${(i === 0 || MG_FILTER.maschine || MG_FILTER.status !== "offen") ? " open" : ""}>
         <summary><span>${esc(MG_THEMA[g.thema] || g.thema)}</span><b>${g.liste.length}</b></summary>
         <div class="mg-liste">${g.liste.map(zeile).join("")}</div></details>`).join("")
       : `<div class="ck-fuss">${alle.length ? "Nichts in dieser Auswahl." : "Noch keine Mängel übertragen."}</div>`}`;
@@ -76,12 +93,61 @@ async function renderMaengel(wrap){
   sec.querySelectorAll("[data-mgf]").forEach(b => b.addEventListener("click", () => { MG_FILTER.status = b.dataset.mgf; renderSektionen(); }));
   sec.querySelector("#mgMaschine").addEventListener("change", e => { MG_FILTER.maschine = e.target.value; renderSektionen(); });
   sec.querySelectorAll("[data-mgerl]").forEach(b => b.addEventListener("click", () => mgDialog(b.dataset.mgerl)));
-  sec.querySelectorAll("[data-mgbw]").forEach(s => s.addEventListener("change", () => mgBewerten(s.dataset.mgbw, s.value)));
+  sec.querySelectorAll("[data-mgedit]").forEach(b => b.addEventListener("click", () => mgBearbeiten(b.dataset.mgedit)));
   sec.querySelectorAll("[data-mgauf]").forEach(b => b.addEventListener("click", () => mgWiederAuf(b.dataset.mgauf)));
   sec.querySelectorAll("[data-mgfoto]").forEach(b => b.addEventListener("click", async () => {
     const u = (typeof anfrSigned === "function") ? await anfrSigned(b.dataset.mgfoto) : null;
     if(u) window.open(u, "_blank", "noopener"); else alert("Foto konnte nicht geöffnet werden.");
   }));
+}
+
+/* Bearbeiten (nur Admin): Text, Massnahme, Thema, Ampel, ausblenden. Die Datenbank laesst das nur OAK zu
+   (Trigger portal_maengel_admin_felder). Originalwerte bleiben erhalten, geaendert wird die Spalte manuell. */
+function mgBearbeiten(id){
+  const m = MAENGEL.find(x => x.id === id); if(!m || !(typeof ADMIN !== "undefined" && ADMIN)) return;
+  let dlg = document.getElementById("mgEditDlg");
+  if(!dlg){ dlg = document.createElement("dialog"); dlg.id = "mgEditDlg"; dlg.className = "pw-dlg mg-dlg mg-edit"; document.body.appendChild(dlg); }
+  const bw = m.bewertung_manuell || m.band || "besorgnis", th = mgFeld(m, "thema");
+  dlg.innerHTML = `<form method="dialog">
+      <h3>Mangel bearbeiten</h3>
+      <p class="pw-hint"><b>${esc(mgMaschine(m))}</b>${m.mangel_nr ? " · " + esc(m.mangel_nr) : ""}</p>
+      <label>Mangel<textarea id="mgeLabel" rows="3">${esc(mgFeld(m, "label") || "")}</textarea></label>
+      <label>Maßnahme<textarea id="mgeMassnahme" rows="3">${esc(mgFeld(m, "massnahme") || "")}</textarea></label>
+      <label>Bewertung<select id="mgeBw">${[["gefahr", "rot · dringend"], ["besorgnis", "gelb · zeitnah"], ["akzeptanz", "grün · bei Gelegenheit"]]
+        .map(([w, l]) => `<option value="${w}"${w === bw ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+      <label>Thema<select id="mgeThema">${Object.keys(MG_THEMA).map(k => `<option value="${k}"${k === th ? " selected" : ""}>${esc(MG_THEMA[k])}</option>`).join("")}</select></label>
+      <label class="mg-edit-aus"><input type="checkbox" id="mgeAus"${m.ausgeblendet ? " checked" : ""}> Mangel ausblenden (trifft nicht zu)</label>
+      <p class="pw-hint">Original: ${esc(m.label)}</p>
+      <p class="pw-msg" id="mgeMsg"></p>
+      <div class="pw-akt">${m.manuell || m.bewertung_manuell ? `<button type="button" class="btn sek" id="mgeZurueck">Original wiederherstellen</button>` : ""}
+        <button type="button" class="btn sek" id="mgeAbbruch">Abbrechen</button><button type="submit" class="btn">Speichern</button></div>
+    </form>`;
+  dlg.querySelector("#mgeAbbruch").addEventListener("click", () => dlg.close());
+  const speichern = async (felder, aktion) => {
+    const s = getSession(); const name = window.__oakName || (s && s.user && s.user.email) || "";
+    const msg = dlg.querySelector("#mgeMsg"); msg.className = "pw-msg"; msg.textContent = "Wird gespeichert …";
+    try{
+      await apiSend("PATCH", "/rest/v1/portal_maengel?id=eq." + encodeURIComponent(m.id), Object.assign({ updated_at: new Date().toISOString() }, felder), "return=minimal");
+      await apiSend("POST", "/rest/v1/portal_maengel_log", { mangel_id: m.id, kunde_slug: m.kunde_slug, aktion, von_name: name,
+        von_user_id: s && s.user ? s.user.id : null, notiz: JSON.stringify(felder).slice(0, 2000) }, "return=minimal");
+      Object.assign(m, felder); MG_MELDUNG = "Gespeichert: " + mgMaschine(m); dlg.close(); renderSektionen();
+    }catch(e){ msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.classList.add("fehler"); }
+  };
+  const zb = dlg.querySelector("#mgeZurueck");
+  if(zb) zb.addEventListener("click", () => speichern({ manuell: null, bewertung_manuell: null }, "Original wiederhergestellt"));
+  dlg.querySelector("form").addEventListener("submit", ev => {
+    ev.preventDefault();
+    const label = dlg.querySelector("#mgeLabel").value.trim(), massnahme = dlg.querySelector("#mgeMassnahme").value.trim();
+    const thema = dlg.querySelector("#mgeThema").value, bwNeu = dlg.querySelector("#mgeBw").value;
+    if(label.length < 3){ const msg = dlg.querySelector("#mgeMsg"); msg.textContent = "Bitte den Mangel beschreiben."; msg.className = "pw-msg fehler"; return; }
+    const manuell = {};
+    if(label !== m.label) manuell.label = label;
+    if(massnahme !== (m.massnahme || "")) manuell.massnahme = massnahme;
+    if(thema !== m.thema) manuell.thema = thema;
+    speichern({ manuell: Object.keys(manuell).length ? manuell : null, bewertung_manuell: bwNeu === m.band ? null : bwNeu,
+                ausgeblendet: dlg.querySelector("#mgeAus").checked }, "bearbeitet");
+  });
+  dlg.showModal();
 }
 
 /* Foto verkleinern (lange Kante 1600 px, JPEG) – am Handy sind Originale 4–8 MB */
@@ -144,18 +210,6 @@ function mgDialog(id){
     }catch(e){ knopf.disabled = false; msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.classList.add("fehler"); }
   });
   dlg.showModal();
-}
-
-/* Bewertung von Hand (Admin/Fachkraft): steht in bewertung_manuell, maengel_publish.py ueberschreibt sie nie; Log mit Name und Zeit */
-async function mgBewerten(id, wert){
-  const m = MAENGEL.find(x => x.id === id); if(!m) return;
-  const s = getSession(); const name = window.__oakName || (s && s.user && s.user.email) || "";
-  try{
-    await apiSend("PATCH", "/rest/v1/portal_maengel?id=eq." + encodeURIComponent(id), { bewertung_manuell: wert, updated_at: new Date().toISOString() }, "return=minimal");
-    await apiSend("POST", "/rest/v1/portal_maengel_log", { mangel_id: id, kunde_slug: m.kunde_slug, aktion: "Bewertung: " + wert,
-      von_name: name, von_user_id: s && s.user ? s.user.id : null }, "return=minimal");
-    m.bewertung_manuell = wert; MG_MELDUNG = "Bewertung geändert: " + mgMaschine(m) + " – " + m.label.slice(0, 60); renderSektionen();
-  }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
 }
 
 async function mgWiederAuf(id){
