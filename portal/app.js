@@ -1,6 +1,8 @@
 /* OAK Kundenportal — Login + generischer Dokument-Hub (Kategorien). Nutzt auth.js (vorher geladen). */
 "use strict";
 const $ = s => document.querySelector(s);
+/* App (installiert, display-mode standalone) oder Browser – gesetzt im <head> von index.html */
+const IST_APP = document.documentElement.classList.contains("ist-app");
 function zurLogin(){ document.documentElement.classList.remove("hat-sitzung"); $("#appView").classList.add("hidden"); $("#loginView").classList.remove("hidden"); }
 function zurApp(){ $("#loginView").classList.add("hidden"); $("#appView").classList.remove("hidden"); }
 
@@ -357,7 +359,28 @@ const UNTERLAGEN = [
       ["energie-massnahmen", "Effizienzmaßnahmen", ""] ]}
 ];
 const UL_LABEL = Object.fromEntries(UNTERLAGEN.flatMap(b => b.kats.map(k => [k[0], k[1]])).concat([["sonstige", "Weitere Unterlagen"]]));
+/* Browser-Ansicht (gewohnt): Reiter je Bereich. Adressen der App werden auf Reiter umgeschrieben. */
+function navKlassisch(dom, sub){
+  const domVon = kat => (DOMAENEN.find(d => d.subs.some(s => s.kat === kat)) || {}).key;
+  if(DOMAENEN.some(d => d.key === dom) || dom === "weitere") return [dom, sub || null];
+  if(!dom || dom === "start") return [START_BEREICH || "arbeitssicherheit", null];
+  if(dom === "maengel") return ["arbeitssicherheit", "maengel"];
+  if(dom === "unterlagen"){
+    if(!sub) return ["arbeitssicherheit", "anlagen"];
+    if(sub === "sonstige") return ["weitere", "sonstige"];
+    const d = domVon(sub); return d ? [d, sub] : ["arbeitssicherheit", null];
+  }
+  if(dom === "mehr"){
+    if(sub === "unterweisungen") return ["arbeitssicherheit", "unterweisungen"];
+    if(sub === "vorfaelle") return ["arbeitssicherheit", "vf-arbeitssicherheit"];
+    if(sub === "vf-umwelt") return ["umwelt", "vf-umwelt"];
+    if(sub === "upload") return ["arbeitssicherheit", "vom-betrieb"];
+    return sub ? ["mehr", sub] : ["arbeitssicherheit", null];
+  }
+  return ["arbeitssicherheit", null];
+}
 function navNormal(dom, sub){
+  if(!IST_APP) return navKlassisch(dom, sub);
   if(!dom) return ["start", null];
   if(dom === "mehr" && sub === "upload") return ["unterlagen", "vom-betrieb"];
   if(["start", "maengel", "unterlagen", "mehr"].includes(dom)) return (dom === "mehr" && !sub) ? ["start", null] : [dom, sub || null];
@@ -428,7 +451,14 @@ function domHatInhalt(d){ return d.subs.some(s => katRows(s.kat).length); }
 /* Eine feine Kategorie als Sektion rendern. zeigeHeading=false: ohne Zwischenüberschrift
    (der Sub-Reiter benennt sie schon). Anlagen zeigen ihren Kopf immer (Suche/Zähler). */
 function renderSektion(wrap, kat, label, zeigeHeading){
-  if(kat.indexOf("ck-") === 0){ renderCockpit(wrap, kat.slice(3)); return; }        // cockpit.js
+  if(kat.indexOf("ck-") === 0){
+    /* Browser-Ansicht: im Ueberblick oben dieselben Knoepfe wie in der App (Unterweisung starten, Vorfall melden …) */
+    if(!IST_APP){ const k = document.createElement("section"); k.className = "sektion start-seite";
+      k.innerHTML = `<div class="start-raster">${(START_AKTIONEN[kat.slice(3)] || START_AKTIONEN.arbeitssicherheit).map(x =>
+        `<a class="start-kachel" href="${x[0]}"><span class="sk-kopf"><span class="sk-titel">${esc(x[1])}</span>${START_SVG[x[3]] || ""}</span><span class="sk-sub">${esc(x[2])}</span></a>`).join("")}</div>`;
+      wrap.appendChild(k); }
+    renderCockpit(wrap, kat.slice(3)); return;
+  }
   if(kat === "vf-arbeitssicherheit"){ renderVorfaelle(wrap, "arbeitssicherheit"); return; }
   if(kat === "vf-umwelt"){ renderVorfaelle(wrap, "umwelt"); return; }               // vorfaelle.js
   if(kat === "energie-massnahmen"){ renderEnergie(wrap); return; }                  // energie.js
@@ -441,7 +471,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "unterweisungen"){ renderUnterweisungen(wrap); return; }   // unterweisungen.js: eine Seite, drei Abschnitte
   if(kat === "anfragen"){ renderAnfragen(wrap); return; }             // anfragen.js: Frage an OAK (Formular)
   if(kat === "maengel"){ renderMaengel(wrap); return; }               // maengel.js: To-Do-Liste
-  if(kat === "upload"){ renderUpload(wrap); return; }                 // upload.js: Dokument hochladen
+  if(kat === "upload" || kat === "vom-betrieb"){ renderUpload(wrap); return; }   // upload.js: hochladen + Liste
   const rows = katRows(kat);
   if(!rows.length){
     const leer = document.createElement("section"); leer.className = "sektion";
@@ -487,14 +517,47 @@ function reiterUeberlaufPruefen(){
 }
 window.addEventListener("resize", reiterUeberlaufPruefen);
 
-/* Reiterleisten gibt es nicht mehr (eine Navigation fuer alle) – die Funktionen bleiben als leere Huelle,
-   weil andere Dateien sie nach dem Speichern noch aufrufen. */
-function renderTabs(){ const nav = $("#katTabs"); if(nav){ nav.classList.add("hidden"); nav.innerHTML = ""; } }
-function renderSubTabs(){ const nav = $("#subTabs"); if(nav){ nav.classList.add("hidden"); nav.innerHTML = ""; } }
+/* Reiter: nur in der Browser-Ansicht. In der App (und auf den Unterseiten „mehr/…") ausgeblendet. */
+function renderTabs(){
+  const nav = $("#katTabs"); if(!nav) return;
+  if(IST_APP || AKTIVE_DOM === "mehr"){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
+  const doms = verfuegbareDomaenen();
+  if(!doms.length){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
+  if(!AKTIVE_DOM || !doms.some(d => d.key === AKTIVE_DOM)) AKTIVE_DOM = (doms.find(domHatInhalt) || doms[0]).key;
+  nav.classList.remove("hidden");
+  nav.innerHTML = doms.map(d => {
+    const n = domCount(d);
+    return `<button type="button" class="kat-tab${d.key===AKTIVE_DOM?" aktiv":""}" data-dom="${esc(d.key)}"`
+      + ` role="tab" aria-selected="${d.key===AKTIVE_DOM}">${d.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
+  }).join("");
+  nav.querySelectorAll(".kat-tab").forEach(b => b.addEventListener("click", () => {
+    AKTIVE_DOM = b.dataset.dom; AKTIVE_SUB = null; renderSektionen(); hashSetzen(false);
+  }));
+  reiterUeberlauf(nav);
+}
+function renderSubTabs(){
+  const nav = $("#subTabs"); if(!nav) return;
+  if(IST_APP || AKTIVE_DOM === "mehr"){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
+  const dom = verfuegbareDomaenen().find(d => d.key === AKTIVE_DOM);
+  const subs = verfuegbareSubs(dom);
+  if(subs.length <= 1){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = subs[0] ? subs[0].kat : null; return; }
+  if(!AKTIVE_SUB || !subs.some(s => s.kat === AKTIVE_SUB))
+    AKTIVE_SUB = (subs.find(s => s.kat.indexOf("ck-") === 0) || subs.find(s => katRows(s.kat).length) || subs[0]).kat;
+  nav.classList.remove("hidden");
+  nav.innerHTML = subs.map(s => {
+    const n = katRows(s.kat).length;
+    return `<button type="button" class="sub-tab${s.kat===AKTIVE_SUB?" aktiv":""}" data-sub="${esc(s.kat)}"`
+      + ` role="tab" aria-selected="${s.kat===AKTIVE_SUB}">${s.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
+  }).join("");
+  nav.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => {
+    AKTIVE_SUB = b.dataset.sub; renderSektionen(); hashSetzen(false);
+  }));
+  reiterUeberlauf(nav);
+}
 
 /* Kopf jeder Unterseite: „‹ Zurueck" + Titel. Unterlagen-Listen gehen zurueck auf Unterlagen, alles andere auf Start. */
 function seitenKopf(wrap){
-  let titel = "", ziel = ["start", null], zLabel = "Start";
+  let titel = "", ziel = ["start", null], zLabel = IST_APP ? "Start" : "Überblick";
   if(AKTIVE_DOM === "unterlagen" && AKTIVE_SUB){ titel = UL_LABEL[AKTIVE_SUB] || AKTIVE_SUB; ziel = ["unterlagen", null]; zLabel = "Unterlagen"; }
   else if(AKTIVE_DOM === "unterlagen"){ titel = "Unterlagen"; }
   else if(AKTIVE_DOM === "maengel"){ titel = "Mängel"; }
@@ -581,6 +644,7 @@ window.portalMenue = function(){ document.body.classList.toggle("menue-auf"); };
 function renderSektionen(){
   const wrap = $("#sektionen"); wrap.innerHTML = "";
   document.body.classList.remove("auf-start"); document.body.classList.remove("auf-mehr");
+  if(!IST_APP){ renderKlassisch(wrap); return; }
   if(!AKTIVE_DOM || AKTIVE_DOM === "start" || (AKTIVE_DOM === "mehr" && !AKTIVE_SUB)){ AKTIVE_DOM = "start"; AKTIVE_SUB = null; }
   document.body.dataset.seite = AKTIVE_DOM; document.body.dataset.unterseite = AKTIVE_SUB || "";
   renderSeitenleiste();
@@ -596,6 +660,27 @@ function renderSektionen(){
   if(!AKTIVE_SUB){ renderUnterlagen(wrap); return; }
   if(AKTIVE_SUB === "vom-betrieb"){ renderUpload(wrap); return; }
   renderSektion(wrap, AKTIVE_SUB, UL_LABEL[AKTIVE_SUB] || KAT_LABEL[AKTIVE_SUB] || "", false);
+  anlagenVerdrahten();
+}
+/* Browser-Ansicht: Reiter oben, darunter der gewaehlte Unterbereich (wie vor dem 16.09.2026). */
+function renderKlassisch(wrap){
+  const n = navNormal(AKTIVE_DOM, AKTIVE_SUB); AKTIVE_DOM = n[0]; AKTIVE_SUB = n[1];
+  document.body.dataset.seite = AKTIVE_DOM; document.body.dataset.unterseite = AKTIVE_SUB || "";
+  renderTabs(); renderSubTabs();
+  if(AKTIVE_DOM === "mehr"){
+    seitenKopf(wrap);
+    if(["terminal", "melden", "pruefen"].includes(AKTIVE_SUB)){ renderEinbettung(wrap, AKTIVE_SUB); return; }
+    renderSektion(wrap, AKTIVE_SUB, MEHR_LABEL[AKTIVE_SUB] || "", false); return;
+  }
+  const doms = verfuegbareDomaenen();
+  const dom = doms.find(d => d.key === AKTIVE_DOM) || doms[0];
+  const subs = verfuegbareSubs(dom);
+  if(!subs.length){ wrap.innerHTML = `<div class="leer">In diesem Bereich sind keine Unterlagen hinterlegt.</div>`; return; }
+  const sub = subs.find(s => s.kat === AKTIVE_SUB) || subs[0];
+  renderSektion(wrap, sub.kat, KAT_LABEL[sub.kat], subs.length <= 1);
+  anlagenVerdrahten();
+}
+function anlagenVerdrahten(){
   const s=$("#suche"); if(s){ s.addEventListener("input", renderAnlagen);
     ["#typFilter","#datumFilter","#statusFilter"].forEach(id=>{ const el=$(id); if(el) el.addEventListener("change", renderAnlagen); });
     const tab=$("#anlagen-tabelle"); if(tab){
@@ -645,7 +730,7 @@ async function ladePortal(){
        welche Knoepfe erscheinen. */
     window.__oakFachkraft = !!(me && me[0] && me[0].rolle === "fachkraft");
     window.__oakName = ADMIN_NAME;
-    document.body.classList.add("app-modus");   // eine App fuer alle Rollen: Leiste unten, keine Reiter
+    document.body.classList.toggle("app-modus", IST_APP);   // App: Seitenleiste/Leiste unten; Browser: Reiter
     MITGLIED = (me && me[0]) || null;
 
     /* Welle 2 – alles parallel, ohne Ballast (qr_svg ist 1 MB und wird hier nie gebraucht) */

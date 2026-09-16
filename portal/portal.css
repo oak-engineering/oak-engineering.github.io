@@ -470,7 +470,7 @@ a.ck-kachel.ck-link .ck-hinweis::after{content:" ›";color:var(--gruen);font-we
 #appView{--linie:#e3e8ef;--leise:#667085;--kopf-h:75px}
 .wrap{max-width:none;padding-left:clamp(16px,2.4vw,36px);padding-right:clamp(16px,2.4vw,36px)}
 body{background:var(--oak-ghost,#f3f7f5)}
-#katTabs,#subTabs{display:none!important}
+.ist-app #katTabs,.ist-app #subTabs{display:none!important}
 #appView h1,#appView h2,#appView h3{font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:600;letter-spacing:-.01em}
 /* Angemeldet: sofort die App-Huelle statt kurz der Anmeldeseite */
 .hat-sitzung #loginView{display:none!important}
@@ -658,3 +658,10 @@ main.wrap{padding-top:24px;padding-bottom:48px;min-width:0;margin-left:0;margin-
   #appView .ck-hinweis{font-size:11.5px}
   .start-blick-kopf .uw-pill{min-width:0;padding:6px 10px;font-size:13px}
 }
+
+/* Browser-Ansicht (nicht installiert): keine Seitenleiste, keine Leiste unten – Reiter wie gewohnt */
+html:not(.ist-app) .seitenleiste{display:none!important}
+html:not(.ist-app) .app-rahmen{display:block}
+html:not(.ist-app) .tabbar-fest,html:not(.ist-app) .tb-blatt{display:none!important}
+html:not(.ist-app) body{padding-bottom:0!important}
+html:not(.ist-app) #katTabs:not(.hidden),html:not(.ist-app) #subTabs:not(.hidden){display:flex}

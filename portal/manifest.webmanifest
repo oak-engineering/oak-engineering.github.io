@@ -2,7 +2,7 @@
   "name": "OAK Kundenportal",
   "short_name": "Kundenportal",
   "description": "Kundenportal von OAK engineering: Dokumente, Vorfälle, Unterweisungen",
-  "start_url": "/portal/",
+  "start_url": "/portal/index.html#start",
   "scope": "/portal/",
   "display": "standalone",
   "background_color": "#ffffff",
