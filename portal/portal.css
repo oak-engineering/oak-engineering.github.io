@@ -513,3 +513,12 @@ body.app-modus .titelzeile .unter{display:none}
 .tb-blatt{max-height:min(78vh,720px);overflow:auto}
 .tb-blatt h2.tb-kopf2{margin-top:.9rem}
 .tb-blatt a[data-portal],.tb-blatt a[data-aktion]{min-height:44px}
+
+/* ---- Frage an OAK (16.09.2026) ---- */
+.anfr-karte{background:#fff;border:1px solid var(--rand,#D6E4DA);border-left:4px solid var(--orange,#e08e0b);border-radius:12px;padding:14px 16px;margin:10px 0}
+.anfr-karte.anfr-beantwortet{border-left-color:var(--hellgruen,#52B788)}
+.anfr-kopf{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;font-size:16px}
+.anfr-text{margin:8px 0 4px;white-space:pre-wrap;line-height:1.5}
+.anfr-antwort{margin-top:10px;padding:10px 14px;background:var(--akzent,#D8F3DC);border-radius:10px}
+.anfr-antwort p{margin:4px 0 0;white-space:pre-wrap}
+.anfr-antworten{margin-top:10px}

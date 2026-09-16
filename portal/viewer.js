@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       frame.srcdoc = mitLightbox(html, typ);
     } else if(typ==="html"){
       frame.srcdoc = await apiGet(storagePfad(p), true);
-    } else if(typ==="pdf"){
+    } else if(typ==="pdf" || typ==="bild" || typ==="datei"){
       const blob = await (await apiFetch(storagePfad(p))).blob();
       frame.removeAttribute("srcdoc");
       frame.src = URL.createObjectURL(blob.type ? blob : new Blob([blob], {type:"application/pdf"}));

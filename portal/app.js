@@ -18,6 +18,7 @@ const DOMAENEN = [
       { kat: "allg-gbu",      label: "Allgemeine GBU" },
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
       { kat: "begehungen",    label: "Begehungen" },
+      { kat: "vom-betrieb",   label: "Vom Betrieb" },
       { kat: "unterweisungen", label: "Unterweisungen" },
       { kat: "vf-arbeitssicherheit", label: "Vorfälle" },
   ]},
@@ -325,7 +326,7 @@ function docZeile(r){
   const oeffnen = (r.doc_typ==="link" && r.url)
     ? `<a class="doc-open" href="${esc(r.url)}" target="_blank" rel="noopener">Öffnen</a>`
     : `<a class="doc-open" href="${viewerUrl(r.doc_typ, r.storage_path, r.titel)}" target="_blank" rel="noopener">Öffnen</a>`;
-  const fmt = {html:"Dokument", pdf:"PDF", link:"Online", bda:"GBU", ba:"BA", maengelliste:"Mängelliste", protokoll:"Protokoll"}[r.doc_typ] || "Dokument";
+  const fmt = {html:"Dokument", pdf:"PDF", link:"Online", bda:"GBU", ba:"BA", maengelliste:"Mängelliste", protokoll:"Protokoll", bild:"Foto", datei:"Datei"}[r.doc_typ] || "Dokument";
   return `<tr><td>${esc(r.titel||"Dokument")}</td><td class="tspalte">${fmt}</td>`
     + `<td class="tspalte">${r.stand?esc(r.stand):"—"}</td><td class="doc-td">${oeffnen}</td></tr>`;
 }
@@ -403,6 +404,8 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "personen"){ renderPersonen(wrap); return; }
   if(kat === "kapitel"){ renderKapitel(wrap); return; }
   if(kat === "unterweisungen"){ renderUnterweisungen(wrap); return; }   // unterweisungen.js: eine Seite, drei Abschnitte
+  if(kat === "anfragen"){ renderAnfragen(wrap); return; }             // anfragen.js: Frage an OAK (Formular)
+  if(kat === "upload"){ renderUpload(wrap); return; }                 // upload.js: Dokument hochladen
   const rows = katRows(kat);
   if(!rows.length){
     const leer = document.createElement("section"); leer.className = "sektion";
