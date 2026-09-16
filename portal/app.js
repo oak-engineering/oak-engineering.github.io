@@ -174,6 +174,30 @@ function statusBadge(r, neuestesDatum){
 function setKundeName(){
   const r = AKTIV ? ALLE.find(x => x.kunde_slug===AKTIV) : ALLE[0];
   $("#kundeName").textContent = (r && r.kunde) || "";
+  markeAnwenden();
+}
+
+/* ---- Marke je Kunde (portal_kunde.marke): Farben und Logo des Betriebs statt OAK-Gruen ----
+   Das Portal soll fuer die Beschaeftigten wie IHR Werkzeug aussehen (wie das Unterweisungs-Terminal).
+   Die Farben werden als Inline-Variablen auf :root gesetzt, portal.css arbeitet ueberall mit var(...). */
+let MARKEN = [];
+async function markeLaden(){
+  try{ MARKEN = await apiGet("/rest/v1/portal_kunde?select=slug,name,marke", false) || []; }catch(e){ MARKEN = []; }
+}
+function markeAnwenden(){
+  const k = MARKEN.find(x => x.slug === AKTIV);
+  const m = (k && k.marke) || {};
+  const st = document.documentElement.style;
+  const setz = (name, wert) => { if(wert) st.setProperty(name, wert); else st.removeProperty(name); };
+  setz("--gruen", m.farbe);        setz("--oak", m.farbe);
+  setz("--dunkel", m.farbe_tief);  setz("--oak-deep", m.farbe_tief);
+  setz("--hellgruen", m.farbe_hell); setz("--oak-light", m.farbe_hell); setz("--oak-mid", m.farbe_hell);
+  setz("--akzent", m.akzent);      setz("--oak-pale", m.akzent);
+  setz("--oak-ghost", m.hintergrund);
+  const img = $("#kundeLogo");
+  if(img){ if(m.logo){ img.src = m.logo; img.alt = (k && k.name) || ""; img.hidden = false; } else { img.hidden = true; img.removeAttribute("src"); } }
+  document.body.classList.toggle("marke-kunde", !!m.farbe);
+  const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute("content", m.farbe || "#2D6A4F");
 }
 function renderAdminBar(){
   const bar = $("#adminBar");
@@ -468,6 +492,7 @@ async function ladePortal(){
     AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null)
                   : (MITGLIED && MITGLIED.kunde_slug) || null;
     await ladeUwStart();
+    await markeLaden();
     AKTIVE_DOM = null; AKTIVE_SUB = null;
     hashLesen();                       // Reiter aus der Adresse (Link oder Neuladen)
     setKundeName();
