@@ -24,6 +24,7 @@ const DOMAENEN = [
       { kat: "vom-betrieb",   label: "Interne Unterlagen" },
       { kat: "unterweisungen", label: "Unterweisungen" },
       { kat: "vf-arbeitssicherheit", label: "Vorfälle" },
+      { kat: "logbuch",       label: "Logbuch" },
   ]},
   { key: "umwelt", label: "Umwelt", subs: [
       { kat: "ck-umwelt", label: "Überblick" },
@@ -245,7 +246,7 @@ function renderStart(wrap){
    (nicht gespeicherte Fortschritte gehen verloren). */
 const TERM_SPERRE = "oak_terminal_gesperrt";
 function terminalVollbild(){
-  const tok = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
+  const tok = (typeof uwGeraeteToken === "function" ? uwGeraeteToken() : "");
   if(!tok){ alert("Für diesen Betrieb ist noch kein Terminal eingerichtet – bitte bei OAK engineering melden."); return; }
   let o = document.getElementById("terminalSperre");
   if(!o){
@@ -306,7 +307,7 @@ function renderEinbettung(wrap, was){
     terminalVollbild();
     const n = navNormal("mehr", "unterweisungen"); AKTIVE_DOM = n[0]; AKTIVE_SUB = n[1]; hashSetzen(true); renderSektionen(); return;
   }
-  const tok = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
+  const tok = (typeof uwGeraeteToken === "function" ? uwGeraeteToken() : "");
   const mt  = (MELDE_TOK.find(x => x.kunde_slug === AKTIV) || {}).token || "";
   const kunde = (ALLE.find(x => x.kunde_slug === AKTIV) || {}).kunde || "";
   const art = HASH_Q && HASH_Q.get("art"); HASH_Q = null;
@@ -421,7 +422,7 @@ let PORTAL_BEREIT = false;
 const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vorfälle", "vf-umwelt": "Umweltvorfälle",
                      anfragen: "Frage an OAK engineering", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
                      kapitel: "Unterweisungs-Inhalte", "uw-ueberblick": "Unterweisungen – Überblick",
-                     terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen" };
+                     terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch" };
 const UNTERLAGEN = [
   { bereich: "Arbeitssicherheit", kats: [
       ["anlagen", "Maschinen & Anlagen", "Gefährdungsbeurteilung, Betriebsanweisung und Mängelliste je Maschine"],
@@ -454,6 +455,7 @@ function navKlassisch(dom, sub){
     if(sub === "vorfaelle") return ["arbeitssicherheit", "vf-arbeitssicherheit"];
     if(sub === "vf-umwelt") return ["umwelt", "vf-umwelt"];
     if(sub === "upload") return ["arbeitssicherheit", "vom-betrieb"];
+    if(sub === "logbuch") return ["arbeitssicherheit", "logbuch"];
     return sub ? ["mehr", sub] : ["arbeitssicherheit", null];
   }
   return ["arbeitssicherheit", null];
@@ -470,6 +472,7 @@ function navNormal(dom, sub){
   if(sub === "unterweisungen") return ["mehr", "unterweisungen"];
   if(sub === "vf-arbeitssicherheit") return ["mehr", "vorfaelle"];
   if(sub === "vf-umwelt") return ["mehr", "vf-umwelt"];
+  if(sub === "logbuch") return ["mehr", "logbuch"];
   return ["unterlagen", sub];
 }
 function hashSetzen(ersetzen){
@@ -508,6 +511,7 @@ function katRows(kat){
   if(kat.indexOf("ck-") === 0) return [];                        // Cockpit hat keinen Zähler
   if(kat.indexOf("uw-") === 0) return [];                        // Überblick/Katalog rechnen selbst
   if(kat === "maengel") return [];                               // eigene Tabelle
+  if(kat === "logbuch") return [];
   if(kat === "vf-arbeitssicherheit") return vBereich("arbeitssicherheit");
   if(kat === "vf-umwelt") return vBereich("umwelt");
   if(kat === "energie-massnahmen") return eSichtbar();           // Register statt Dokumentliste
@@ -552,6 +556,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "unterweisungen"){ renderUnterweisungen(wrap); return; }   // unterweisungen.js: eine Seite, drei Abschnitte
   if(kat === "anfragen"){ renderAnfragen(wrap); return; }             // anfragen.js: Frage an OAK (Formular)
   if(kat === "maengel"){ renderMaengel(wrap); return; }               // maengel.js: To-Do-Liste
+  if(kat === "logbuch"){ renderLogbuch(wrap); return; }               // logbuch.js: wer hat was geaendert
   if(kat === "upload" || kat === "vom-betrieb"){ renderUpload(wrap); return; }   // upload.js: hochladen + Liste
   const rows = katRows(kat);
   if(!rows.length){
@@ -685,6 +690,7 @@ const NAV_SVG = {
   anfragen: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m21 7-9 6-9-6"/>',
   werkzeug: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   schloss: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  logbuch: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7.5h6M9 11h6"/>',
   klapp: '<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>',
   tuer: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>'
 };
@@ -713,6 +719,7 @@ function renderSeitenleiste(){
       ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen", uw)}
       ${START_BEREICH === "umwelt" ? e("mehr", "vf-umwelt", "vorfaelle", "Umweltvorfälle") : e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
       ${e("mehr", "anfragen", "anfragen", "Frage an OAK")}
+      ${e("mehr", "logbuch", "logbuch", "Logbuch")}
       ${erweitert}
     </div>
     <div class="sl-fuss">

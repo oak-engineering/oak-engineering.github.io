@@ -39,8 +39,11 @@ async function renderMaengel(wrap){
   const alle = betrieb.filter(m => !m.ausgeblendet);
   const aus = betrieb.filter(m => m.ausgeblendet);
   const offenAlle = alle.filter(m => m.status !== "erledigt");
-  if(MG_FILTER.status === "ausgeblendet" && !istAdmin) MG_FILTER.status = "offen";
+  if((MG_FILTER.status === "ausgeblendet" || MG_FILTER.status === "uebernehmen") && !istAdmin) MG_FILTER.status = "offen";
+  /* Arbeitsliste fuer OAK: erledigt gemeldet, aber GBU/BA/Maengelliste noch nicht nachgezogen */
+  const zuUebernehmen = alle.filter(m => m.status === "erledigt" && !m.uebernommen_am);
   let rows = MG_FILTER.status === "ausgeblendet" ? aus
+           : MG_FILTER.status === "uebernehmen" ? zuUebernehmen
            : alle.filter(m => MG_FILTER.status === "erledigt" ? m.status === "erledigt" : m.status !== "erledigt");
   if(MG_FILTER.maschine) rows = rows.filter(m => mgMaschine(m) === MG_FILTER.maschine);
   /* Kurzuebersicht nach Ampel (wie bei den Maschinen), klickbar als Filter */
@@ -74,9 +77,11 @@ async function renderMaengel(wrap){
         ${massnahme ? `<div class="mg-massnahme">Maßnahme: ${esc(massnahme)}</div>` : ""}
         ${m.gemeldet_von || m.gemeldet_am ? `<div class="mg-massnahme">gemeldet${m.gemeldet_am ? " am " + esc(new Date(m.gemeldet_am + "T12:00:00").toLocaleDateString("de-DE")) : ""}${m.gemeldet_von ? " von " + esc(m.gemeldet_von) : ""}</div>` : ""}
         ${istAdmin && vonHand ? `<div class="mg-massnahme"><i>von OAK engineering angepasst</i></div>` : ""}
-        ${erledigt ? `<div class="mg-nachweis">✓ erledigt ${esc(mgDatum(m.erledigt_am))}${m.erledigt_von ? " · " + esc(m.erledigt_von) : ""}${m.notiz ? " – " + esc(m.notiz) : ""}</div>` : ""}</div>
+        ${erledigt ? `<div class="mg-nachweis">✓ erledigt ${esc(mgDatum(m.erledigt_am))}${m.erledigt_von ? " · " + esc(m.erledigt_von) : ""}${m.notiz ? " – " + esc(m.notiz) : ""}</div>` : ""}
+        ${erledigt && m.uebernommen_am ? `<div class="mg-massnahme">in die Unterlagen übernommen am ${esc(new Date(m.uebernommen_am).toLocaleDateString("de-DE"))}</div>`
+          : erledigt && istAdmin ? `<div class="mg-uebernahme">GBU/BA/Mängelliste noch nicht nachgezogen</div>` : ""}</div>
       <div class="mg-aktion">${istAdmin ? `<button type="button" class="btn-klein" data-mgedit="${esc(m.id)}">Bearbeiten</button>` : ""}${m.foto_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.foto_pfad)}">Befundfoto</button>` : ""}${m.ausgeblendet ? "" : (erledigt
-        ? `${m.nachweis_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.nachweis_pfad)}">Foto</button>` : ""}${istAdmin ? `<button type="button" class="btn-klein" data-mgauf="${esc(m.id)}">öffnen</button>` : ""}`
+        ? `${m.nachweis_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.nachweis_pfad)}">Foto</button>` : ""}${istAdmin && !m.uebernommen_am ? `<button type="button" class="btn-klein" data-mgueb="${esc(m.id)}">übernommen</button>` : ""}${istAdmin ? `<button type="button" class="btn-klein" data-mgauf="${esc(m.id)}">öffnen</button>` : ""}`
         : `<button type="button" class="btn-klein mg-erl" data-mgerl="${esc(m.id)}">Erledigt</button>`)}</div>
     </div>`;
   };
@@ -92,6 +97,7 @@ async function renderMaengel(wrap){
       <div class="uw-pills">
         <button type="button" class="uw-pill${MG_FILTER.status === "offen" ? " aktiv" : ""}" data-mgf="offen">Offen · ${offenAlle.length}</button>
         <button type="button" class="uw-pill${MG_FILTER.status === "erledigt" ? " aktiv" : ""}" data-mgf="erledigt">Erledigt · ${alle.length - offenAlle.length}</button>
+        ${istAdmin ? `<button type="button" class="uw-pill${MG_FILTER.status === "uebernehmen" ? " aktiv" : ""}" data-mgf="uebernehmen" title="Erledigt, aber GBU/BA/Mängelliste noch nicht nachgezogen">In Unterlagen übernehmen · ${zuUebernehmen.length}</button>` : ""}
         ${istAdmin ? `<button type="button" class="uw-pill${MG_FILTER.status === "ausgeblendet" ? " aktiv" : ""}" data-mgf="ausgeblendet">Ausgeblendet · ${aus.length}</button>` : ""}
       </div>
       <select class="uw-fassung" id="mgMaschine" aria-label="Maschine">
@@ -112,6 +118,7 @@ async function renderMaengel(wrap){
   sec.querySelectorAll("[data-mgerl]").forEach(b => b.addEventListener("click", () => mgDialog(b.dataset.mgerl)));
   sec.querySelectorAll("[data-mgedit]").forEach(b => b.addEventListener("click", () => mgBearbeiten(b.dataset.mgedit)));
   sec.querySelectorAll("[data-mgauf]").forEach(b => b.addEventListener("click", () => mgWiederAuf(b.dataset.mgauf)));
+  sec.querySelectorAll("[data-mgueb]").forEach(b => b.addEventListener("click", () => mgUebernommen(b.dataset.mgueb)));
   sec.querySelectorAll("[data-mgfoto]").forEach(b => b.addEventListener("click", async () => {
     const u = (typeof anfrSigned === "function") ? await anfrSigned(b.dataset.mgfoto) : null;
     if(u) window.open(u, "_blank", "noopener"); else alert("Foto konnte nicht geöffnet werden.");
@@ -314,6 +321,20 @@ function mgDialog(id){
     }catch(e){ knopf.disabled = false; msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.classList.add("fehler"); }
   });
   dlg.showModal();
+}
+
+/* OAK hat GBU, BA und Maengelliste der Maschine nachgezogen (nach Wirksamkeitskontrolle) – nur Admin */
+async function mgUebernommen(id){
+  const m = MAENGEL.find(x => x.id === id); if(!m) return;
+  if(!confirm("GBU, BA und Mängelliste für " + mgMaschine(m) + " sind nachgezogen und hochgeladen?")) return;
+  const s = getSession(); const jetzt = new Date().toISOString();
+  try{
+    await apiSend("PATCH", "/rest/v1/portal_maengel?id=eq." + encodeURIComponent(id), { uebernommen_am: jetzt, uebernommen_von: "OAK engineering", updated_at: jetzt }, "return=minimal");
+    await apiSend("POST", "/rest/v1/portal_maengel_log", { mangel_id: id, kunde_slug: m.kunde_slug, aktion: "in die Unterlagen übernommen",
+      von_name: "OAK engineering", von_user_id: s && s.user ? s.user.id : null }, "return=minimal");
+    Object.assign(m, { uebernommen_am: jetzt, uebernommen_von: "OAK engineering" });
+    MG_MELDUNG = "In die Unterlagen übernommen: " + mgMaschine(m); renderSektionen();
+  }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
 }
 
 async function mgWiederAuf(id){

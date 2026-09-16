@@ -745,3 +745,23 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .v-auswertung .v-daten{margin:4px 0}
 .v-anzeige{margin:6px 0;padding:8px 12px;border-radius:8px;background:#fdf6e3;color:#7a5b00;font-size:13.5px}
 .v-merk.v-ausw-offen{background:#fdf6e3;color:#8a6d0b;border-color:#f1dfa8}
+
+/* Logbuch */
+.lb-tab td{vertical-align:top}
+.lb-zeit{white-space:nowrap;color:#667085;font-variant-numeric:tabular-nums}
+.lb-wer{white-space:nowrap;font-weight:600}
+.lb-wer.lb-oak{color:var(--gruen,#2D6A4F)}
+.lb-objekt{color:#344054;margin-top:2px}
+.lb-details{color:#667085;font-size:13px;margin-top:2px}
+.lb-hinweis{margin-top:10px}
+/* Terminal teilen */
+.uw-start-reihe{display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap}
+.uw-teilen{display:inline-flex;align-items:center;gap:8px;min-height:68px;padding:0 22px;font-size:16px}
+.uw-teilen svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.uw-teilen-dlg{max-width:520px}
+.uw-teilen-qr{width:min(100%,280px);margin:8px auto 12px}
+.uw-teilen-qr svg{width:100%;height:auto;display:block}
+.uw-teilen-link{display:flex;gap:8px;margin-bottom:8px}
+.uw-teilen-link input{flex:1;min-width:0;font-size:13px}
+
+.mg-uebernahme{display:inline-block;margin-top:4px;font-size:12.5px;color:#8a6d0b;background:#fdf6e3;border-radius:8px;padding:1px 8px}

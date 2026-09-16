@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Vorfall melden – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202609161405">
+<link rel="stylesheet" href="portal.css?v=202609161414">
 <script src="marke.js?v=2026-09-16c"></script>
 <style>
 /* Meldeformular: bewusst eigene, sehr grosse Bedienelemente - es wird am Handy in der Halle
@@ -39,6 +39,8 @@ input[type=text],input[type=date],input[type=time],select,textarea{
 textarea{min-height:130px;resize:vertical;line-height:1.5;}
 .zeile{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .check{display:flex;align-items:flex-start;gap:10px;margin:12px 0;font-size:15px;line-height:1.4;}
+.zeitpunkt{font-size:15px;margin:2px 0 10px;}
+.zp-aendern{font:inherit;font-size:14px;background:none;border:0;padding:4px 6px;color:var(--gruen,#2D6A4F);text-decoration:underline;cursor:pointer;}
 .check input{width:22px;height:22px;margin-top:1px;flex:0 0 auto;}
 .btn-gross{width:100%;padding:16px;font-size:17px;font-weight:600;border:0;border-radius:11px;
   background:var(--gruen);color:#fff;cursor:pointer;font-family:inherit;margin-top:6px;}
@@ -101,16 +103,16 @@ textarea{min-height:130px;resize:vertical;line-height:1.5;}
 
     <div class="karte">
       <h2>Wann und wo?</h2>
-      <div class="zeile">
+      <!-- Datum und Uhrzeit traegt das Formular selbst ein (Nikolai 16.09.); „ändern" nur, wenn es frueher war -->
+      <div class="zeitpunkt">Zeitpunkt: <b id="zpText"></b> <button type="button" class="zp-aendern" id="zpAendern">ändern</button></div>
+      <div class="zeile" id="zpFelder" hidden>
         <div><label class="feld" for="datum">Datum</label>
           <input type="date" id="datum" required></div>
-        <div><label class="feld" for="zeit">Uhrzeit <span>(oder z. B. Nachtschicht)</span></label>
-          <input type="text" id="zeit" placeholder="z. B. 22:30 oder Nachtschicht"></div>
+        <div><label class="feld" for="zeit">Uhrzeit</label>
+          <input type="time" id="zeit"></div>
       </div>
-      <label class="feld" for="ort">Ort <span>(Halle, Bereich, Außengelände)</span></label>
+      <label class="feld" for="ort">Ort <span>(Halle, Bereich, Maschine)</span></label>
       <input type="text" id="ort" placeholder="z. B. Alte Halle, Gang hinter D200/2">
-      <label class="feld" for="anlage">Maschine / Anlage <span>(falls zutreffend)</span></label>
-      <input type="text" id="anlage" placeholder="z. B. D150/3">
     </div>
 
     <div class="karte">
@@ -120,8 +122,6 @@ textarea{min-height:130px;resize:vertical;line-height:1.5;}
         <b>Bitte keine Namen anderer Personen nennen</b> – für die Bewertung reicht, was passiert ist.</div>
       <textarea id="beschreibung" required placeholder="z. B. Beim Vorbeigehen über abgestellte Staplerzinken gestolpert und gestürzt."></textarea>
 
-      <div class="check" id="verletzteBox"><input type="checkbox" id="verletzte">
-        <label for="verletzte">Es wurde jemand verletzt</label></div>
       <div class="check" id="ehBox"><input type="checkbox" id="erste_hilfe">
         <label for="erste_hilfe">Erste Hilfe wurde geleistet (bitte zusätzlich ins Verbandbuch eintragen)</label></div>
     </div>
@@ -209,7 +209,17 @@ if(TOKEN) tokenMerken(TOKEN); else TOKEN = tokenGemerkt();
 const $ = s => document.querySelector(s);
 let ART = "";
 
-document.getElementById("datum").valueAsDate = new Date();
+/* Zeitpunkt automatisch (lokale Zeit, nicht UTC – sonst kurz nach Mitternacht der Vortag) */
+function zweistellig(n){ return String(n).padStart(2, "0"); }
+function zeitpunktSetzen(){
+  const d = new Date();
+  $("#datum").value = d.getFullYear() + "-" + zweistellig(d.getMonth() + 1) + "-" + zweistellig(d.getDate());
+  $("#zeit").value = zweistellig(d.getHours()) + ":" + zweistellig(d.getMinutes());
+  $("#zpText").textContent = "heute, " + $("#zeit").value + " Uhr";
+}
+let ZP_GEAENDERT = false;
+zeitpunktSetzen();
+$("#zpAendern").addEventListener("click", () => { ZP_GEAENDERT = true; $("#zpFelder").hidden = false; $("#zpAendern").closest(".zeitpunkt").hidden = true; });
 
 /* Kein Code da -> erst danach fragen, statt das Formular ins Leere laufen zu lassen.
    Frueher kam die Absage erst beim Absenden, nachdem alles ausgefuellt war. */
@@ -238,9 +248,7 @@ document.getElementById("arten").addEventListener("click", ev => {
   ART = b.dataset.art;
   document.querySelectorAll(".art").forEach(x => x.classList.toggle("aktiv", x === b));
   $("#umweltKarte").hidden = (ART !== "umwelt");
-  $("#verletzteBox").hidden = (ART === "umwelt");
   $("#ehBox").hidden = (ART === "umwelt");
-  if(ART === "unfall") $("#verletzte").checked = true;
 });
 
 $("#wohin").addEventListener("change", e => {
@@ -277,6 +285,7 @@ $("#form").addEventListener("submit", async ev => {
   if(!TOKEN){ codeStand(); window.scrollTo({top:0,behavior:"smooth"}); return; }
   if(!ART){ fehler.textContent = "Bitte oben auswählen, was passiert ist."; fehler.hidden = false; window.scrollTo({top:0,behavior:"smooth"}); return; }
   const btn = $("#senden"); btn.disabled = true; btn.textContent = "Wird gesendet …";
+  if(!ZP_GEAENDERT) zeitpunktSetzen();   // Formular lange offen: Zeitpunkt des Absendens
   try{
     const r = await fetch(CFG.url + "/rest/v1/rpc/vorfall_melden", {
       method: "POST",
@@ -285,9 +294,9 @@ $("#form").addEventListener("submit", async ev => {
         p_token: TOKEN, p_art: ART,
         p_domaene: ART === "umwelt" ? "umwelt" : "arbeitssicherheit",
         p_datum: $("#datum").value || null, p_zeit: $("#zeit").value,
-        p_ort: $("#ort").value, p_anlage: $("#anlage").value,
+        p_ort: $("#ort").value, p_anlage: null,
         p_beschreibung: $("#beschreibung").value, p_melder: $("#melder").value,
-        p_verletzte: $("#verletzte").checked, p_erste_hilfe: $("#erste_hilfe").checked,
+        p_verletzte: ART === "unfall", p_erste_hilfe: $("#erste_hilfe").checked,
         p_stoff: $("#stoff").value, p_menge: $("#menge").value, p_wohin: $("#wohin").value,
         p_foto: FOTO || null
       })

@@ -110,9 +110,12 @@ function renderVorfaelle(wrap, bereich){
     ? `<button class="btn sek" id="vNeu" type="button">+ Vorfall erfassen</button>` : "";
   /* Der Meldeaushang liegt als Dokument im Katalog – hier direkt verlinkt, damit man ihn
      dort findet, wo man ihn braucht (statt in einem eigenen Reiter). */
-  const aushang = sichtbar().find(r => r.kategorie === "vorfall-aushang");
-  const aushangLink = aushang
-    ? ` <a class="v-aushang" href="${viewerUrl(aushang.doc_typ, aushang.storage_path, aushang.titel)}"
+  /* Drucken ueber die fertige PDF – Strg+P auf der Anzeige zerschiesst das Layout (Nikolai 16.09.) */
+  const aushangPdf = sichtbar().find(r => r.kategorie === "vorfall-aushang" && r.doc_typ === "pdf");
+  const aushang = aushangPdf || sichtbar().find(r => r.kategorie === "vorfall-aushang");
+  const aushangLink = aushangPdf
+    ? ` <button type="button" class="btn sek v-aushang-druck" data-aushang="${esc(aushangPdf.storage_path)}">Aushang drucken</button>`
+    : aushang ? ` <a class="v-aushang" href="${viewerUrl(aushang.doc_typ, aushang.storage_path, aushang.titel)}"
          target="_blank" rel="noopener">Aushang mit QR-Code öffnen</a>` : "";
   sec.innerHTML = `<div class="sek-kopf"><h2>${umwelt ? "Umweltvorfälle" : "Unfälle &amp; Beinahe-Unfälle"}</h2>
       <span class="zaehler">${rows.length} ${rows.length === 1 ? "Meldung" : "Meldungen"}${offen ? " · " + offen + " offen" : ""}</span>
@@ -136,6 +139,7 @@ function renderVorfaelle(wrap, bereich){
       b.insertAdjacentHTML("afterend", foto ? vFoto(foto) : '<span class="uw-leise">kein Foto</span>'); b.remove();
     }catch(e){ b.disabled = false; b.textContent = "Foto anzeigen"; }
   }));
+  sec.querySelectorAll("[data-aushang]").forEach(b => b.addEventListener("click", () => vAushangDrucken(b)));
   sec.querySelectorAll("[data-vausw]").forEach(b => b.addEventListener("click", () => vAuswertungDialog(b.dataset.vausw)));
   if(!ADMIN) return;
   sec.querySelectorAll(".v-status").forEach(s => s.addEventListener("change", async ev => {
@@ -156,6 +160,24 @@ function renderVorfaelle(wrap, bereich){
   }));
   const neu = sec.querySelector("#vNeu");
   if(neu) neu.addEventListener("click", vDialogOeffnen);
+}
+
+/* PDF laden und direkt den Druckdialog oeffnen; klappt das nicht, oeffnet sich die PDF im neuen Tab */
+async function vAushangDrucken(knopf){
+  const text = knopf.textContent; knopf.disabled = true; knopf.textContent = "wird geladen …";
+  try{
+    const url = (typeof anfrSigned === "function") ? await anfrSigned(knopf.dataset.aushang) : null;
+    if(!url) throw new Error("kein Link");
+    const blob = await (await fetch(url)).blob();
+    const blobUrl = URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
+    let f = document.getElementById("vAushangFrame");
+    if(f) f.remove();
+    f = document.createElement("iframe"); f.id = "vAushangFrame"; f.title = "Aushang";
+    f.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0";
+    f.onload = () => { try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ window.open(blobUrl, "_blank", "noopener"); } };
+    f.src = blobUrl; document.body.appendChild(f);
+  }catch(e){ alert("Aushang konnte nicht geladen werden."); }
+  finally{ knopf.disabled = false; knopf.textContent = text; }
 }
 
 async function vSpeichern(id, felder){

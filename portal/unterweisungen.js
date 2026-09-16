@@ -220,14 +220,16 @@ function renderUnterweisungen(wrap){
   const istAdmin = (typeof ADMIN !== "undefined" && ADMIN);
 
   /* 1. Der eine Knopf, den der Anwender braucht */
-  const tok = (UW_TOK.find(x => x.kunde_slug === AKTIV) || UW_TOK[0] || {}).token || "";
+  const tok = uwGeraeteToken();
   const sekStart = document.createElement("section"); sekStart.className = "sektion uw-hero";
   sekStart.innerHTML = `${meld}
-    ${tok ? `<a class="uw-start" href="#mehr/terminal">Unterweisungs-Terminal starten</a>`
+    ${tok ? `<div class="uw-start-reihe"><a class="uw-start" href="#mehr/terminal">Unterweisungs-Terminal starten</a>
+        <button type="button" class="btn sek uw-teilen" id="uwTeilen" title="Terminal auf weiteren Geräten öffnen"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span>Teilen</span></button></div>`
           : `<div class="uw-start uw-start-aus">Terminal noch nicht eingerichtet – Gerätecode bei OAK engineering anfordern.</div>`}
     <p class="uw-erkl uw-hero-text">Am Terminal: Name eingeben, Rolle wählen, Module durchgehen, unterschreiben.
       Der Nachweis landet automatisch hier im Portal.</p>`;
   wrap.appendChild(sekStart);
+  { const tb = sekStart.querySelector("#uwTeilen"); if(tb) tb.addEventListener("click", () => uwTeilenDialog(false)); }
 
   /* 2. Wer ist fällig – EINE Liste (Nikolai 16.09.: nicht doppelt unter „Nachweise"): je Person Stand und
         der letzte Nachweis als PDF mit Unterschrift. Alle Nachweise stehen im Excel-Export. */
@@ -752,4 +754,45 @@ function renderFolien(){
       seitenweise. Verständnisfragen lassen sich je Folie ergänzen. Eine hochgeladene
       <b>.pptx</b> wird verwahrt, angezeigt wird aber die PDF-Fassung.</div>
   </div>`;
+}
+
+/* Geraetecode fuer DIESES Geraet (Surface): nie den geteilten Link – der ist sperrbar und wuerde das Terminal mitsperren */
+function uwGeraeteToken(){
+  const eig = UW_TOK.filter(x => x.kunde_slug === AKTIV);
+  return (eig.find(x => !/geteilt|handy/i.test(x.bezeichnung || "")) || eig[0] || {}).token || "";
+}
+
+/* ---- Terminal teilen (Nikolai 16.09.2026): mehrere Beschaeftigte parallel an Tablets ----
+   Eigener Link je Betrieb (portal_terminal_token „Geteilter Link (Tablets)"), nur hier im Portal sichtbar.
+   „Link sperren und neu erzeugen" macht alle damit geoeffneten Geraete sofort unbrauchbar. */
+async function uwTeilenDialog(neu){
+  if(!AKTIV){ alert("Bitte zuerst oben den Betrieb wählen."); return; }
+  let dlg = document.getElementById("uwTeilenDlg");
+  if(!dlg){ dlg = document.createElement("dialog"); dlg.id = "uwTeilenDlg"; dlg.className = "pw-dlg uw-teilen-dlg"; document.body.appendChild(dlg); }
+  dlg.innerHTML = `<form method="dialog"><h3>Terminal auf weiteren Geräten</h3><p class="pw-hint">Link wird vorbereitet …</p></form>`;
+  if(!dlg.open) dlg.showModal();
+  let tok = "";
+  try{ tok = await apiSend("POST", "/rest/v1/rpc/terminal_link_teilen", { p_kunde_slug: AKTIV, p_neu: !!neu }); }
+  catch(e){ dlg.querySelector(".pw-hint").textContent = "Link konnte nicht erzeugt werden: " + (e.message || e); return; }
+  const url = location.origin + "/portal/kiosk.html#t=" + encodeURIComponent(tok);
+  let qrSvg = "";
+  try{ const q = qrcode(0, "M"); q.addData(url); q.make(); qrSvg = q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }); }catch(e){ qrSvg = ""; }
+  dlg.innerHTML = `<form method="dialog">
+      <h3>Terminal auf weiteren Geräten</h3>
+      <p class="pw-hint">Mit dem Tablet scannen – das Cockpit öffnet sich. Mehrere Beschäftigte können gleichzeitig unterweisen, alle Nachweise landen hier.</p>
+      <div class="uw-teilen-qr">${qrSvg}</div>
+      <div class="uw-teilen-link"><input type="text" readonly id="uwTeilenUrl" value="${esc(url)}"><button type="button" class="btn sek" id="uwTeilenKopie">Link kopieren</button></div>
+      <p class="pw-hint">Nur an Geräte im Betrieb weitergeben. Geht ein Gerät verloren: Link sperren – alle damit geöffneten Geräte sind sofort gesperrt, der Surface läuft weiter.</p>
+      <p class="pw-msg" id="uwTeilenMsg">${neu ? "Neuer Link erzeugt – der alte ist gesperrt. Bitte die Tablets neu scannen." : ""}</p>
+      <div class="pw-akt"><button type="button" class="btn sek" id="uwTeilenSperren">Link sperren und neu erzeugen</button><button type="button" class="btn" id="uwTeilenZu">Schließen</button></div>
+    </form>`;
+  dlg.querySelector("#uwTeilenZu").addEventListener("click", () => dlg.close());
+  dlg.querySelector("#uwTeilenKopie").addEventListener("click", async () => {
+    const f = dlg.querySelector("#uwTeilenUrl"); f.select();
+    try{ await navigator.clipboard.writeText(url); }catch(e){ try{ document.execCommand("copy"); }catch(e2){} }
+    dlg.querySelector("#uwTeilenMsg").textContent = "Link kopiert.";
+  });
+  dlg.querySelector("#uwTeilenSperren").addEventListener("click", () => {
+    if(confirm("Link wirklich sperren? Alle Tablets, die mit diesem Link arbeiten, müssen danach den neuen QR-Code scannen.")) uwTeilenDialog(true);
+  });
 }
