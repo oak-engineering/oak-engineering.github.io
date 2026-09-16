@@ -544,8 +544,7 @@ main.wrap{padding-top:24px;padding-bottom:48px;min-width:0;margin-left:0;margin-
 
 /* Startseite: vier Aktionen, darunter „Auf einen Blick" */
 .start-seite{background:transparent;border:none;box-shadow:none;padding:0;margin-top:0}
-.start-raster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
-@media(max-width:1200px){.start-raster{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.start-raster{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
 @media(max-width:520px){.start-raster{grid-template-columns:1fr}}
 .start-kachel{display:flex;flex-direction:column;gap:6px;padding:18px 20px;background:#fff;color:var(--text);border:1px solid var(--linie);border-radius:14px;
   text-decoration:none;box-shadow:0 1px 2px rgba(16,24,40,.05);transition:border-color .15s,box-shadow .15s,transform .1s}
@@ -739,3 +738,10 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .uw-matrix th{font-size:12px;white-space:normal;min-width:90px;vertical-align:bottom}
 .uw-matrix td.uw-matrix-zelle{text-align:center;vertical-align:middle}
 .uw-matrix input[type=checkbox]{width:22px;height:22px;accent-color:var(--gruen);cursor:pointer}
+
+/* Vorfall-Auswertung (Ausfalltage, Ursache, Massnahmen) */
+.v-auswertung{margin:12px 0 4px;padding:10px 14px;border:1px solid var(--linie,#e3e8ef);border-radius:10px;background:#fafbfd}
+.v-ausw-kopf{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.v-auswertung .v-daten{margin:4px 0}
+.v-anzeige{margin:6px 0;padding:8px 12px;border-radius:8px;background:#fdf6e3;color:#7a5b00;font-size:13.5px}
+.v-merk.v-ausw-offen{background:#fdf6e3;color:#8a6d0b;border-color:#f1dfa8}

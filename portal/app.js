@@ -205,12 +205,14 @@ const START_SVG = {
 };
 START_SVG.dokument = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>';
 START_SVG.liste = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>';
-START_SVG.blitz = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>';
+START_SVG.mangel = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3.5 17.3a1.8 1.8 0 0 0 2.5 2.5l5.8-5.8a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.1-.4-.4-2.1z"/><path d="M19 15v4M17 17h4"/></svg>';
+START_SVG.blitz ='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>';
 /* Kacheln je Bereich – jede fuehrt INNERHALB des Portals weiter (Seitenleiste bleibt stehen) */
 const START_AKTIONEN = {
   arbeitssicherheit: [
     ["#mehr/terminal", "Unterweisung starten", "Terminal für die Beschäftigten", "terminal"],
-    ["#mehr/melden", "Vorfall melden", "Unfall, Beinahe-Unfall oder Mangel", "warnung"],
+    ["#mehr/melden", "Vorfall melden", "Unfall oder Beinahe-Unfall", "warnung"],
+    ["#maengel?neu=1", "Mangel erfassen", "An Maschine oder Halle, mit Foto", "mangel"],
     ["#mehr/pruefen", "Maschine prüfen", "Checkliste direkt an der Maschine", "begehung"],
     ["#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", "brief"] ],
   umwelt: [
@@ -509,6 +511,7 @@ function katRows(kat){
   if(kat === "vf-arbeitssicherheit") return vBereich("arbeitssicherheit");
   if(kat === "vf-umwelt") return vBereich("umwelt");
   if(kat === "energie-massnahmen") return eSichtbar();           // Register statt Dokumentliste
+  if(kat === "hallenplan") return sichtbar().filter(r => r.kategorie === kat && r.doc_typ !== "svg");   // Vektordatei nur fuers Begehungstool
   if(kat === "sonstige"){                                        // Auffangbecken: alles ohne Reiter
     const bekannt = new Set(DOMAENEN.flatMap(d => d.subs.map(s => s.kat)).concat(EINGEBETTET));
     return sichtbar().filter(r => r.kategorie && !bekannt.has(r.kategorie));
@@ -628,6 +631,8 @@ function renderSubTabs(){
       + ` role="tab" aria-selected="${s.kat===AKTIVE_SUB}">${s.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
   }).join("");
   nav.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => {
+    const direkt = direktDokument(b.dataset.sub);
+    if(direkt){ window.open(viewerUrl(direkt.doc_typ, direkt.storage_path, direkt.titel), "_blank", "noopener"); return; }
     AKTIVE_SUB = b.dataset.sub; renderSektionen(); hashSetzen(false);
   }));
   reiterUeberlauf(nav);
@@ -646,6 +651,11 @@ function seitenKopf(wrap){
   wrap.appendChild(k);
 }
 
+/* Hallenplan: ein Dokument – Klick oeffnet es direkt statt einer Liste mit einer Zeile (Nikolai 16.09.) */
+function direktDokument(kat){
+  if(kat !== "hallenplan") return null;
+  const r = katRows(kat); return r.length === 1 ? r[0] : null;
+}
 /* Unterlagen: eine Seite mit den Gruppen je Bereich – nur was es gibt, „Vom Betrieb" immer (Hochladen). */
 function renderUnterlagen(wrap){
   const anzahl = kat => kat === "energie-massnahmen" ? ((typeof eSichtbar === "function") ? eSichtbar().length : 0) : katRows(kat).length;
@@ -656,8 +666,8 @@ function renderUnterlagen(wrap){
   sec.innerHTML = UNTERLAGEN.filter(b => !IST_APP || b.bereich === gewaehlt).map(b => {
     const kats = b.kats.filter(k => k[0] !== "vom-betrieb" && anzahl(k[0])).concat([intern]);
     return `<h2 class="ul-bereich">${esc(b.bereich)}</h2>` + (kats.length
-      ? `<div class="ul-raster">${kats.map(k => { const n = anzahl(k[0]);
-          return `<a class="ul-karte" href="#unterlagen/${k[0]}"><span class="ul-titel">${esc(k[1])}</span>`
+      ? `<div class="ul-raster">${kats.map(k => { const n = anzahl(k[0]); const direkt = direktDokument(k[0]);
+          return `<a class="ul-karte" href="${direkt ? viewerUrl(direkt.doc_typ, direkt.storage_path, direkt.titel) + `" target="_blank" rel="noopener` : "#unterlagen/" + k[0]}"><span class="ul-titel">${esc(k[1])}</span>`
             + `${k[2] ? `<span class="ul-sub">${esc(k[2])}</span>` : ""}<span class="ul-n">${k[0] === "vom-betrieb" ? (n ? n + " · hochladen" : "hochladen") : n}</span></a>`; }).join("")}</div>`
       : `<div class="ul-leer">Noch keine Unterlagen – der Bereich wird mit OAK engineering aufgebaut.</div>`);
   }).join("") + (rest ? `<h2 class="ul-bereich">Weitere</h2><div class="ul-raster"><a class="ul-karte" href="#unterlagen/sonstige"><span class="ul-titel">Weitere Unterlagen</span><span class="ul-n">${rest}</span></a></div>` : "");
@@ -687,7 +697,6 @@ function uwFaelligZahl(){
 }
 function renderSeitenleiste(){
   const el = $("#seitenleiste"); if(!el) return;
-  const mg = (typeof MG_GELADEN !== "undefined" && MG_GELADEN) ? mgOffen() : 0;
   const uw = uwFaelligZahl();
   const aktiv = (dom, sub) => dom === "unterlagen" ? AKTIVE_DOM === "unterlagen"
     : dom === "mehr" ? (AKTIVE_DOM === "mehr" && (AKTIVE_SUB === sub || (sub === "vorfaelle" && AKTIVE_SUB === "vf-umwelt")))
@@ -699,7 +708,7 @@ function renderSeitenleiste(){
   el.innerHTML = `<div class="sl-liste">
       <button type="button" class="sl-eintrag sl-klapp" id="slKlapp" title="Seitenleiste ein- oder ausklappen"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.klapp}</svg><span>Einklappen</span></button>
       ${e("start", null, "start", "Start")}
-      ${e("maengel", null, "maengel", "Mängel", mg)}
+      ${e("maengel", null, "maengel", "Mängel")}
       ${e("unterlagen", null, "unterlagen", "Unterlagen")}
       ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen", uw)}
       ${START_BEREICH === "umwelt" ? e("mehr", "vf-umwelt", "vorfaelle", "Umweltvorfälle") : e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}

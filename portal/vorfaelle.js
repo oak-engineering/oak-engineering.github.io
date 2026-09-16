@@ -39,7 +39,7 @@ function vOffen(rows){ return rows.filter(v => v.status !== "erledigt").length; 
 
 async function ladeVorfaelle(){
   try{
-    VORFAELLE = await apiGet("/rest/v1/portal_vorfaelle?select=id,kunde_slug,kunde,art,domaene,ereignis_am,ereignis_zeit,ort,anlage,beschreibung,verletzte,erste_hilfe,stoff,menge,wohin,status,bearbeitung,quelle,angelegt_am,updated_at&order=ereignis_am.desc,angelegt_am.desc", false) || [];   // Foto (Base64, bis 2,5 MB) erst auf Klick
+    VORFAELLE = await apiGet("/rest/v1/portal_vorfaelle?select=id,kunde_slug,kunde,art,domaene,ereignis_am,ereignis_zeit,ort,anlage,beschreibung,verletzte,erste_hilfe,stoff,menge,wohin,status,bearbeitung,quelle,angelegt_am,updated_at,ausfalltage,ursache,sofortmassnahme,langzeitmassnahme,ausgewertet_von,ausgewertet_am&order=ereignis_am.desc,angelegt_am.desc", false) || [];   // Foto (Base64, bis 2,5 MB) erst auf Klick
   }catch(e){ VORFAELLE = []; }
   V_MELDER = {};
   if(typeof ADMIN !== "undefined" && ADMIN){
@@ -58,6 +58,7 @@ function vKarte(v){
     (typeof ADMIN !== "undefined" && ADMIN) ? ["Gemeldet von", V_MELDER[v.id] ? esc(V_MELDER[v.id]) : "<i>anonym</i>"] : null,
   ].filter(Boolean);
 
+  const ausgewertet = !!(v.ausgewertet_am || v.sofortmassnahme || v.langzeitmassnahme);
   const merkmale = [
     v.verletzte ? '<span class="v-merk">Person verletzt</span>' : "",
     v.erste_hilfe ? '<span class="v-merk">Erste Hilfe geleistet</span>' : "",
@@ -84,6 +85,7 @@ function vKarte(v){
       <span class="v-datum">${vDatum(v.ereignis_am)}</span>
       <span class="v-kurz">${esc(v.ort || kurz)}</span>
       <span class="v-spacer"></span>
+      ${ausgewertet ? "" : '<span class="v-merk v-ausw-offen">Auswertung offen</span>'}
       <span class="v-badge v-${esc(v.status)}">${esc(V_STATUS[v.status] || v.status)}</span>
     </summary>
     <div class="v-kopf v-kopf-innen"><span class="v-spacer"></span>${statusFeld}</div>
@@ -91,6 +93,7 @@ function vKarte(v){
     <div class="v-merkmale">${merkmale}</div>
     <table class="v-daten">${zeilen.map(([k, w]) => `<tr><th>${k}</th><td>${w}</td></tr>`).join("")}</table>
     ${v.foto === undefined ? `<button class="btn-klein v-foto-laden" data-id="${esc(v.id)}">Foto anzeigen</button>` : vFoto(v.foto)}
+    ${vAuswertungBlock(v)}
     ${notiz}
     <div class="v-fuss">Eingegangen ${vDatum(v.angelegt_am)}${v.quelle === "portal" ? " · im Portal erfasst" : " · über den Meldelink"}</div>
   </details>`;
@@ -133,6 +136,7 @@ function renderVorfaelle(wrap, bereich){
       b.insertAdjacentHTML("afterend", foto ? vFoto(foto) : '<span class="uw-leise">kein Foto</span>'); b.remove();
     }catch(e){ b.disabled = false; b.textContent = "Foto anzeigen"; }
   }));
+  sec.querySelectorAll("[data-vausw]").forEach(b => b.addEventListener("click", () => vAuswertungDialog(b.dataset.vausw)));
   if(!ADMIN) return;
   sec.querySelectorAll(".v-status").forEach(s => s.addEventListener("change", async ev => {
     const el = ev.target; el.disabled = true;
@@ -213,5 +217,64 @@ function vDialogOeffnen(){
   dlg.querySelector("#vDatum").valueAsDate = new Date();
   dlg.querySelector("#vText").value = "";
   dlg.querySelector("#vMsg").textContent = "";
+  dlg.showModal();
+}
+
+/* ---- Auswertung (Nikolai 16.09.2026): Ausfalltage, Ursache, Sofort- und Langzeitmassnahme ----
+   Darf auch der Betrieb (Schichtfuehrer) nachtragen. Die Datenbank laesst fuer den Betrieb nur diese
+   Felder zu (Trigger portal_vorfaelle_nur_auswertung); Meldung und Status bleiben bei OAK. */
+function vAuswertungBlock(v){
+  const hat = v.ausgewertet_am || v.sofortmassnahme || v.langzeitmassnahme || v.ursache || v.ausfalltage != null;
+  const zeilen = [
+    v.art === "unfall" ? ["Ausfalltage", v.ausfalltage != null ? String(v.ausfalltage) : "—"] : null,
+    ["Ursache", v.ursache], ["Sofortmaßnahme", v.sofortmassnahme], ["Langzeitmaßnahme", v.langzeitmassnahme]
+  ].filter(z => z && z[1] != null && z[1] !== "");
+  const anzeige = v.art === "unfall" && v.ausfalltage > 3
+    ? `<div class="v-anzeige">Mehr als 3 Ausfalltage: Unfallanzeige an die Berufsgenossenschaft innerhalb von 3 Tagen (§ 193 Abs. 1 SGB VII).</div>` : "";
+  return `<div class="v-auswertung">
+      <div class="v-ausw-kopf"><b>Auswertung</b><button type="button" class="btn-klein" data-vausw="${esc(v.id)}">${hat ? "Auswertung ändern" : "Auswerten"}</button></div>
+      ${hat ? `<table class="v-daten">${zeilen.map(([k, w]) => `<tr><th>${k}</th><td>${esc(w).replace(/\n/g, "<br>")}</td></tr>`).join("")}</table>
+        ${anzeige}${v.ausgewertet_von || v.ausgewertet_am ? `<div class="v-fuss">ausgewertet${v.ausgewertet_von ? " von " + esc(v.ausgewertet_von) : ""}${v.ausgewertet_am ? " am " + vDatum(v.ausgewertet_am) : ""}</div>` : ""}`
+      : `<div class="uw-leise">Noch nicht ausgewertet.</div>`}
+    </div>`;
+}
+
+function vAuswertungDialog(id){
+  const v = VORFAELLE.find(x => x.id === id); if(!v) return;
+  let dlg = document.getElementById("vAuswDlg");
+  if(!dlg){ dlg = document.createElement("dialog"); dlg.id = "vAuswDlg"; dlg.className = "pw-dlg mg-dlg"; document.body.appendChild(dlg); }
+  const a = V_ART[v.art] || V_ART.unsicher;
+  const name = /^Schichtf/i.test(window.__oakName || "") ? "" : (window.__oakName || "");
+  dlg.innerHTML = `<form method="dialog">
+      <h3>Vorfall auswerten</h3>
+      <p class="pw-hint"><b>${a.label}</b> · ${vDatum(v.ereignis_am)}${v.ort ? " · " + esc(v.ort) : ""}<br>${esc((v.beschreibung || "").slice(0, 160))}</p>
+      ${v.art === "unfall" ? `<label>Ausfalltage<input type="number" id="vaTage" min="0" max="3650" step="1" inputmode="numeric" placeholder="0 = keine" value="${v.ausfalltage != null ? String(v.ausfalltage) : ""}"></label>` : ""}
+      <label>Ursache<textarea id="vaUrsache" rows="2" placeholder="Was hat dazu geführt?">${esc(v.ursache || "")}</textarea></label>
+      <label>Sofortmaßnahme<textarea id="vaSofort" rows="2" placeholder="Was wurde direkt getan?">${esc(v.sofortmassnahme || "")}</textarea></label>
+      <label>Langzeitmaßnahme<textarea id="vaLang" rows="2" placeholder="Was verhindert, dass es wieder passiert?">${esc(v.langzeitmassnahme || "")}</textarea></label>
+      <label>Ausgewertet von<input type="text" id="vaWer" autocomplete="name" placeholder="Vor- und Nachname" value="${esc(v.ausgewertet_von || name)}"></label>
+      <p class="pw-msg" id="vaMsg"></p>
+      <div class="pw-akt"><button type="button" class="btn sek" id="vaAbbruch">Abbrechen</button><button type="submit" class="btn" id="vaOk">Speichern</button></div>
+    </form>`;
+  const msg = dlg.querySelector("#vaMsg");
+  dlg.querySelector("#vaAbbruch").addEventListener("click", () => dlg.close());
+  dlg.querySelector("form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const wert = sel => (dlg.querySelector(sel).value || "").trim() || null;
+    const tageFeld = dlg.querySelector("#vaTage");
+    const tage = tageFeld && tageFeld.value !== "" ? parseInt(tageFeld.value, 10) : null;
+    const felder = { ursache: wert("#vaUrsache"), sofortmassnahme: wert("#vaSofort"), langzeitmassnahme: wert("#vaLang"), ausgewertet_von: wert("#vaWer") };
+    if(tageFeld) felder.ausfalltage = tage;
+    msg.className = "pw-msg";
+    if(tage != null && (isNaN(tage) || tage < 0)){ msg.textContent = "Bitte die Ausfalltage als Zahl eintragen (0 = keine)."; msg.classList.add("fehler"); return; }
+    if(!felder.sofortmassnahme && !felder.langzeitmassnahme && !felder.ursache && tage == null){ msg.textContent = "Bitte mindestens ein Feld ausfüllen."; msg.classList.add("fehler"); return; }
+    if(!felder.ausgewertet_von || felder.ausgewertet_von.length < 3){ msg.textContent = "Bitte eintragen, wer ausgewertet hat."; msg.classList.add("fehler"); return; }
+    felder.ausgewertet_am = new Date().toISOString();
+    const knopf = dlg.querySelector("#vaOk"); knopf.disabled = true; msg.textContent = "Wird gespeichert …";
+    try{
+      await vSpeichern(v.id, felder);
+      Object.assign(v, felder); dlg.close(); renderSektionen();
+    }catch(e){ knopf.disabled = false; msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.classList.add("fehler"); }
+  });
   dlg.showModal();
 }
