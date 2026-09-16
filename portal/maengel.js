@@ -143,33 +143,46 @@ function mgErfassen(){
   if(!dlg){ dlg = document.createElement("dialog"); dlg.id = "mgNeuDlg"; dlg.className = "pw-dlg mg-dlg"; document.body.appendChild(dlg); }
   const heute = new Date().toISOString().slice(0, 10);
   const maschinen = mgMaschinenAuswahl();
-  dlg.innerHTML = `<form method="dialog">
+  /* Gefahrenpotential als Ampel zum Antippen (Nikolai 16.09.: statt „Wie dringend?"-Liste) */
+  dlg.innerHTML = `<form method="dialog" class="mgn-form">
       <h3>Mangel erfassen</h3>
-      <label>Wo?<select id="mgnWo"><option value="">– Maschine wählen –</option>
+      <label>Maschine<select id="mgnWo"><option value="">– bitte wählen –</option>
         ${maschinen.map(r => `<option value="${esc(r.maschinen_id)}">${esc(r.maschine)}</option>`).join("")}
         <option value="ALLG-HALLE">Halle / allgemein (keine Maschine)</option></select></label>
-      <label>Was ist nicht in Ordnung?<textarea id="mgnText" rows="3" placeholder="z. B. Schutztür schließt nicht, Leiter beschädigt"></textarea></label>
-      <label>Wie dringend?<select id="mgnBw">
-        <option value="gefahr">Sofort – akute Gefahr</option>
-        <option value="besorgnis" selected>Zeitnah beheben</option>
-        <option value="akzeptanz">Bei Gelegenheit</option></select></label>
-      <label>Foto<input type="file" id="mgnFoto" accept="image/*" capture="environment"></label>
+      <label>Was ist nicht in Ordnung?<textarea id="mgnText" rows="2" placeholder="z. B. Schutztür schließt nicht"></textarea></label>
+      <div class="mgn-feld">Gefahrenpotential
+        <div class="mgn-ampel" role="radiogroup" aria-label="Gefahrenpotential">
+          <button type="button" role="radio" aria-checked="false" class="mgn-stufe mgn-gruen" data-bw="akzeptanz"><i></i>gering</button>
+          <button type="button" role="radio" aria-checked="false" class="mgn-stufe mgn-gelb" data-bw="besorgnis"><i></i>mittel</button>
+          <button type="button" role="radio" aria-checked="false" class="mgn-stufe mgn-rot" data-bw="gefahr"><i></i>hoch</button>
+        </div></div>
+      <div class="mgn-zwei">
+        <label>Gemeldet von<input type="text" id="mgnWer" autocomplete="name" placeholder="Vor- und Nachname" value="${esc(/^Schichtf/i.test(window.__oakName || "") ? "" : (window.__oakName || ""))}"></label>
+        <label>Festgestellt am<input type="date" id="mgnDatum" value="${heute}" max="${heute}"></label>
+      </div>
+      <label class="mgn-foto"><input type="file" id="mgnFoto" accept="image/*" capture="environment"><span>Foto hinzufügen</span></label>
       <img id="mgnVorschau" class="mg-vorschau" alt="" hidden>
-      <label>Gemeldet von<input type="text" id="mgnWer" autocomplete="name" placeholder="Vor- und Nachname" value="${esc(/^Schichtf/i.test(window.__oakName || "") ? "" : (window.__oakName || ""))}"></label>
-      <label>Festgestellt am<input type="date" id="mgnDatum" value="${heute}" max="${heute}"></label>
       <p class="pw-msg" id="mgnMsg"></p>
       <div class="pw-akt"><button type="button" class="btn sek" id="mgnAbbruch">Abbrechen</button><button type="submit" class="btn" id="mgnSpeichern">Speichern</button></div>
     </form>`;
   const foto = dlg.querySelector("#mgnFoto"), vorschau = dlg.querySelector("#mgnVorschau"), msg = dlg.querySelector("#mgnMsg");
-  foto.addEventListener("change", () => { const f = foto.files[0]; if(f){ vorschau.src = URL.createObjectURL(f); vorschau.hidden = false; } else vorschau.hidden = true; });
+  foto.addEventListener("change", () => { const f = foto.files[0];
+    dlg.querySelector(".mgn-foto span").textContent = f ? "Foto ändern" : "Foto hinzufügen";
+    if(f){ vorschau.src = URL.createObjectURL(f); vorschau.hidden = false; } else vorschau.hidden = true; });
+  let bwWahl = "";
+  dlg.querySelectorAll(".mgn-stufe").forEach(b => b.addEventListener("click", () => {
+    bwWahl = b.dataset.bw;
+    dlg.querySelectorAll(".mgn-stufe").forEach(x => { x.classList.toggle("an", x === b); x.setAttribute("aria-checked", x === b ? "true" : "false"); });
+  }));
   dlg.querySelector("#mgnAbbruch").addEventListener("click", () => dlg.close());
   const fehler = (text, feld) => { msg.textContent = text; msg.className = "pw-msg fehler"; if(feld) dlg.querySelector(feld).focus(); };
   dlg.querySelector("form").addEventListener("submit", async ev => {
     ev.preventDefault();
     const wo = dlg.querySelector("#mgnWo").value, text = dlg.querySelector("#mgnText").value.trim();
-    const bw = dlg.querySelector("#mgnBw").value, wer = dlg.querySelector("#mgnWer").value.trim();
+    const bw = bwWahl, wer = dlg.querySelector("#mgnWer").value.trim();
     const datum = dlg.querySelector("#mgnDatum").value, datei = foto.files[0];
     if(!wo) return fehler("Bitte die Maschine wählen (oder „Halle / allgemein“).", "#mgnWo");
+    if(!bw) return fehler("Bitte das Gefahrenpotential antippen: grün, gelb oder rot.");
     if(text.length < 5) return fehler("Bitte kurz beschreiben, was nicht in Ordnung ist.", "#mgnText");
     if(wer.length < 3) return fehler("Bitte eintragen, wer den Mangel meldet.", "#mgnWer");
     if(!/^\d{4}-\d{2}-\d{2}$/.test(datum)) return fehler("Bitte das Datum eintragen.", "#mgnDatum");

@@ -765,3 +765,37 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .uw-teilen-link input{flex:1;min-width:0;font-size:13px}
 
 .mg-uebernahme{display:inline-block;margin-top:4px;font-size:12.5px;color:#8a6d0b;background:#fdf6e3;border-radius:8px;padding:1px 8px}
+
+/* Mangel erfassen: schlanker Dialog, Gefahrenpotential als Ampel */
+.mgn-form{display:flex;flex-direction:column;gap:12px}
+.mgn-form h3{margin-bottom:2px}
+.mgn-form label,.mgn-feld{margin:0;font-size:12.5px;font-weight:600;color:var(--dunkel)}
+.mgn-form select{display:block;width:100%;margin-top:4px;padding:9px 11px;border:1px solid var(--rand);border-radius:8px;font:inherit;font-size:14px;background:#fff;color:#1d2939}
+.mgn-form textarea{font-size:14px;min-height:0}
+.mgn-ampel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:6px}
+.mgn-stufe{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;border:2px solid var(--rand);border-radius:10px;background:#fff;
+  font:inherit;font-size:14px;font-weight:600;color:#344054;cursor:pointer}
+.mgn-stufe i{width:16px;height:16px;border-radius:50%;flex:0 0 auto}
+.mgn-gruen i{background:#2e7d32} .mgn-gelb i{background:#f2b705} .mgn-rot i{background:#c62828}
+.mgn-gruen.an{border-color:#2e7d32;background:#e8f5e9;color:#1b5e20}
+.mgn-gelb.an{border-color:#f2b705;background:#fff8e1;color:#7a5b00}
+.mgn-rot.an{border-color:#c62828;background:#fdecea;color:#8e1b1b}
+.mgn-zwei{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:10px}
+@media(max-width:480px){.mgn-zwei{grid-template-columns:1fr}}
+.mgn-foto{position:relative;align-self:flex-start}
+.mgn-foto input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.mgn-foto span{display:inline-flex;align-items:center;min-height:38px;padding:0 14px;border:1px dashed var(--rand);border-radius:9px;font-weight:600;color:var(--gruen)}
+.mgn-form .pw-msg{margin:0}
+.mgn-form .mg-vorschau{margin:0}
+
+/* Schalter Handy & Tablet */
+.uw-mobil:empty{display:none}
+.uw-schalter{display:inline-flex;align-items:center;gap:10px;min-height:68px;padding:0 18px;border:1px solid var(--rand,#d0d5dd);border-radius:12px;background:#fff;
+  font:inherit;font-size:15px;font-weight:600;color:#475467;cursor:pointer}
+.uw-schalter i{position:relative;width:42px;height:24px;border-radius:99px;background:#d0d5dd;flex:0 0 auto;transition:background .15s}
+.uw-schalter i::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:left .15s}
+.uw-schalter.an{border-color:#2e7d32;color:#1b5e20;background:#f1f8f2}
+.uw-schalter.an i{background:#2e7d32}
+.uw-schalter.an i::after{left:21px}
+.uw-teilen-schalter{display:flex;justify-content:center;margin:4px 0 10px}
+.uw-teilen-schalter .uw-schalter{min-height:48px}

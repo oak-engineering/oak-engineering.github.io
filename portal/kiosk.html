@@ -567,7 +567,19 @@ function goCockpit(){
 // Einen Modus betreten (Flags zur Laufzeit setzen, restliche Logik unverändert)
 function enterMode(term,ext){ try{ if(term && !kioskFlag() && !portalModus()) localStorage.setItem(KIOSK_AUTOKEY, ext?'extern':'terminal'); }catch(e){}   // im Portal kein Autostart: immer erst das Cockpit
   CONTENT.meta.terminal=!!term; CONTENT.meta.extern=!!ext; applyTheme(); applyMeta(); applyAudience(); updateGear(); goStart(); }
-document.querySelectorAll('.ck-tile[data-mode]').forEach(b=>{ b.onclick=()=>{ const md=b.dataset.mode; enterMode(md!=='online', md==='extern'); }; });
+/* Handy & Tablet koennen im Portal ausgeschaltet sein (Nikolai 16.09.2026) – dann gar nicht erst anfangen.
+   Ohne Netz startet es trotzdem (Surface in der Halle); der Nachweis geht spaeter raus. */
+async function zugangGesperrt(){
+  if(!portalModus() || navigator.onLine===false) return false;
+  try{ await portalRpc('unterweisung_config',{p_token:terminalZugang().token}); return false; }
+  catch(e){ return /gesperrt|unbekannt/i.test(String(e&&e.message||e)); }
+}
+function gesperrtHinweis(){
+  showModal({titel:'Unterweisung gerade ausgeschaltet',text:'Die Unterweisung am Handy/Tablet ist im Moment nicht freigegeben. Bitte beim Schichtführer melden.',okText:'OK'});
+}
+document.querySelectorAll('.ck-tile[data-mode]').forEach(b=>{ b.onclick=async()=>{ const md=b.dataset.mode;
+  if(await zugangGesperrt()){ gesperrtHinweis(); return; }
+  enterMode(md!=='online', md==='extern'); }; });
 /* Kundenportal in einem eigenen Fenster - die Unterweisung bleibt geoeffnet und laeuft
    weiter. `kiosk=1` sagt dem Portal, dass es an einem offenen Geraet steht: es meldet
    dann nach kurzer Untaetigkeit von selbst ab. Faellt das Fenster dem Popup-Blocker zum
@@ -1296,6 +1308,10 @@ async function saveNachweisLocal(){
         warteschlangeAbarbeiten();                       // Liegengebliebenes gleich mitnehmen
         return {ok:true, fn:fn, main:true, backup:false, dl:false, hasMain:true, hasBackup:false, errors:[]};
       }catch(e){
+        /* Ausgeschaltet oder Link gesperrt: NICHT in die Warteschlange – sonst kaeme der Nachweis beim naechsten Einschalten doch an */
+        if(/gesperrt|unbekannt/i.test(String(e&&e.message||e)))
+          return {ok:false, fn:fn, main:false, backup:false, dl:false, hasMain:true, hasBackup:false,
+                  errors:['Die Unterweisung am Handy/Tablet ist ausgeschaltet – bitte beim Schichtführer melden.']};
         const q=warteschlange(); q.push(n); warteschlangeSetzen(q);
         return {ok:true, fn:fn, main:false, backup:false, dl:false, hasMain:true, hasBackup:false,
                 queued:true, errors:[String(e.message||e)]};
