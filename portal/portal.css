@@ -805,3 +805,13 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .uw-teilen-schalter{margin:0 0 12px}
 .uw-teilen{position:relative}
 .uw-teilen.an::after{content:"";position:absolute;top:10px;right:10px;width:10px;height:10px;border-radius:50%;background:#2e7d32;box-shadow:0 0 0 2px #fff}
+
+/* Einstellungen: Module je Rolle */
+.uw-einst-dlg{max-width:min(1100px,96vw)}
+.uw-einst-dlg .uw-matrix th{text-align:center}
+.uw-einst-dlg .uw-matrix th:first-child,.uw-einst-dlg .uw-matrix td:first-child{text-align:left;white-space:nowrap}
+.uw-einst-neu{display:flex;gap:8px;margin:12px 0 4px;flex-wrap:wrap}
+.uw-einst-neu input{flex:1;min-width:200px;padding:9px 11px;border:1px solid var(--rand);border-radius:8px;font:inherit;font-size:14px;margin:0}
+.uw-einst-dlg .pw-akt{align-items:center;flex-wrap:wrap}
+.uw-einst-stand{margin-right:auto}
+.uw-rolle-weg{color:#98a2b3}

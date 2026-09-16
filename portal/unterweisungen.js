@@ -224,13 +224,15 @@ function renderUnterweisungen(wrap){
   const sekStart = document.createElement("section"); sekStart.className = "sektion uw-hero";
   sekStart.innerHTML = `${meld}
     ${tok ? `<div class="uw-start-reihe"><a class="uw-start" href="#mehr/terminal">Unterweisungs-Terminal starten</a>
-        <button type="button" class="btn sek uw-teilen" id="uwTeilen" title="QR-Code für Handy & Tablet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span>Teilen</span></button></div>`
+        <button type="button" class="btn sek uw-teilen" id="uwTeilen" title="QR-Code für Handy & Tablet"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span>Teilen</span></button>
+        <button type="button" class="btn sek uw-teilen uw-zahnrad" id="uwEinstellungen" title="Module je Rolle festlegen, Rollen anlegen"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Einstellungen</span></button></div>`
           : `<div class="uw-start uw-start-aus">Terminal noch nicht eingerichtet – Gerätecode bei OAK engineering anfordern.</div>`}
     <p class="uw-erkl uw-hero-text">Am Terminal: Name eingeben, Rolle wählen, Module durchgehen, unterschreiben.
       Der Nachweis landet automatisch hier im Portal.</p>`;
   wrap.appendChild(sekStart);
   { const tb = sekStart.querySelector("#uwTeilen"); if(tb) tb.addEventListener("click", () => uwTeilenDialog(false));
-    if(tb) uwMobilStatusLaden(); }
+    if(tb) uwMobilStatusLaden();
+    const eb = sekStart.querySelector("#uwEinstellungen"); if(eb) eb.addEventListener("click", uwEinstellungenDialog); }
 
   /* 2. Wer ist fällig – EINE Liste (Nikolai 16.09.: nicht doppelt unter „Nachweise"): je Person Stand und
         der letzte Nachweis als PDF mit Unterschrift. Alle Nachweise stehen im Excel-Export. */
@@ -258,7 +260,7 @@ function renderUnterweisungen(wrap){
   sekPers.innerHTML = `
     <div class="sek-kopf"><h2>Wer ist fällig</h2>
       <span class="zaehler">${zeilen.length ? (faellig ? faellig + " fällig" : "alle aktuell") : ""}</span>
-      <span class="uw-kopf-knoepfe">${(istAdmin || window.__oakFachkraft) ? '<button class="btn sek uw-zahnrad" id="uwEinst" title="Einstellungen: Module je Rolle, Versionen"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Einstellungen</span></button>' : ""}${rows.length ? '<button class="btn sek" id="uwCsvAlle">Excel-Export</button>' : ""}
+      <span class="uw-kopf-knoepfe">${rows.length ? '<button class="btn sek" id="uwCsvAlle">Excel-Export</button>' : ""}
         <button class="btn sek" id="uwPersNeu">Mitarbeiter anlegen</button></span></div>
     <div id="uwPersForm"></div>
     ${zeilen.length ? `<div class="mg-filter uw-filter">
@@ -315,11 +317,8 @@ function renderUnterweisungen(wrap){
   if(!(istAdmin || window.__oakFachkraft)) return;   // Erweiterte Funktionen nur fuer Admin/Fachkraft
   const sekMehr = document.createElement("section"); sekMehr.className = "sektion uw-mehr-sektion";
   sekMehr.innerHTML = `<details class="uw-mehr">
-    <summary>Einstellungen <span class="uw-leise">Module je Rolle · Versionsarchiv</span></summary>
+    <summary>Versionsarchiv <span class="uw-leise">Fassung je Modul · Text ändern</span></summary>
     <div class="uw-mehr-inhalt">
-      <div class="sek-kopf"><h3 class="uw-h3">Module je Rolle</h3>
-        <span class="uw-leise">${istAdmin ? "Haken setzen und speichern – gilt am Terminal ab dem nächsten Start" : "so ist das Terminal eingestellt"}</span></div>
-      <div id="uwZuordnung"><div class="uw-leise">wird geladen …</div></div>
       <div class="sek-kopf"><h3 class="uw-h3">Versionsarchiv</h3>
         <span class="uw-leise">${istAdmin ? "Auswahl = läuft am Terminal, sofort wirksam" : "hervorgehoben = läuft am Terminal"}</span></div>
       <div class="tabelle-wrap"><table class="uw-tab uw-archiv">
@@ -329,9 +328,6 @@ function renderUnterweisungen(wrap){
     </div></details>`;
   wrap.appendChild(sekMehr);
   const details = sekMehr.querySelector("details.uw-mehr");
-  const einst = sekPers.querySelector("#uwEinst");
-  if(einst) einst.addEventListener("click", () => { details.open = true; details.scrollIntoView({ behavior: "smooth", block: "start" }); });
-  details.addEventListener("toggle", () => { if(details.open) uwZuordnungLaden(sekMehr.querySelector("#uwZuordnung"), istAdmin); });
   sekMehr.querySelectorAll("[data-uwtext]").forEach(b => b.addEventListener("click", () => uwTextDialog(b.dataset.uwtext, b.dataset.titel)));
   sekMehr.querySelectorAll(".uw-pills .uw-pill").forEach(p => p.addEventListener("click", async () => {
     const th = p.closest(".uw-pills").dataset.thema, f = parseInt(p.dataset.f, 10);
@@ -346,67 +342,75 @@ function renderUnterweisungen(wrap){
   }));
 }
 
-/* ---- Module je Rolle (Terminal-Konfiguration, portal_unterweisung_config) ----------------------
-   Das Terminal holt beim Start die hoechste freigegebene Fassung. Speichern legt eine neue Fassung an
-   (Versionen bleiben nachvollziehbar), sonst aendert sich an der Konfiguration nichts. */
-async function uwZuordnungLaden(box, darfAendern){
-  if(!box) return;
+/* ---- Einstellungen: Module je Rolle (Nikolai 16.09.2026) ------------------------------------------
+   Knopf „Einstellungen" auf der Unterweisungsseite, fuer alle im Betrieb (auch Schichtfuehrer).
+   Matrix Rollen x Module, Rollen anlegen und entfernen. Gespeichert wird ueber die Funktion
+   unterweisung_zuordnung_speichern: neue freigegebene Fassung, geaendert werden NUR die Rollen –
+   Module und Texte bleiben bei OAK. Das Terminal uebernimmt die Fassung beim naechsten Start; das Logbuch schreibt mit. */
+async function uwEinstellungenDialog(){
+  if(!AKTIV){ alert("Bitte zuerst oben den Betrieb wählen."); return; }
+  let dlg = document.getElementById("uwEinstDlg");
+  if(!dlg){ dlg = document.createElement("dialog"); dlg.id = "uwEinstDlg"; dlg.className = "pw-dlg uw-einst-dlg"; document.body.appendChild(dlg); }
+  dlg.innerHTML = `<form method="dialog"><h3>Einstellungen</h3><p class="pw-hint">wird geladen …</p></form>`;
+  if(!dlg.open) dlg.showModal();
   let cfg = null;
-  try{
-    const r = await apiGet("/rest/v1/portal_unterweisung_config?select=id,version,daten,kunde,freigegeben_am,freigegeben_von&kunde_slug=eq." + encodeURIComponent(AKTIV) + "&freigegeben=is.true&order=version.desc&limit=1", false);
-    cfg = r && r[0];
-  }catch(e){}
-  if(!cfg || !cfg.daten || !Array.isArray(cfg.daten.roles)){ box.innerHTML = '<div class="uw-leise">Für diesen Betrieb ist noch keine Terminal-Konfiguration hinterlegt.</div>'; return; }
-  const module = (cfg.daten.modules || []).filter(m => m && m.id);
-  const rollen = cfg.daten.roles;
-  box.innerHTML = `<div class="tabelle-wrap"><table class="uw-tab uw-matrix">
-      <thead><tr><th>Rolle</th>${module.map(m => `<th title="${esc(m.title || m.id)}">${esc(m.title || m.id)}</th>`).join("")}</tr></thead>
-      <tbody>${rollen.map((r, i) => `<tr><td><b>${esc(r.name)}</b>${r.extern ? ' <span class="uw-leise">(Externe)</span>' : ""}</td>${module.map(m =>
-        `<td class="uw-matrix-zelle"><input type="checkbox" data-r="${i}" data-m="${esc(m.id)}"${(r.modules || []).includes(m.id) ? " checked" : ""}${darfAendern ? "" : " disabled"} aria-label="${esc(r.name)}: ${esc(m.title || m.id)}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>
-    <div class="uw-form-knoepfe">${darfAendern ? `<input type="text" id="uwNeueRolle" class="uw-suche" placeholder="Neue Rolle, z. B. Qualitätssicherung" autocomplete="off">
-      <button type="button" class="btn sek" id="uwRolleNeu">Rolle hinzufügen</button>
-      <button type="button" class="btn" id="uwZuordSpeichern">Zuordnung speichern</button>` : ""}
-      <span class="uw-leise" id="uwZuordMeld">Fassung ${esc(cfg.version)}${cfg.freigegeben_am ? " vom " + uwDatum(cfg.freigegeben_am) : ""}</span></div>`;
-  if(!darfAendern) return;
-  uwZuordnungRender(box, cfg);
-}
-/* Haken aus der Tabelle in die Rollen uebernehmen (vor Neuzeichnen und Speichern) */
-function uwZuordnungSync(box, cfg){
-  const module = (cfg.daten.modules || []).filter(m => m && m.id).map(m => m.id);
-  cfg.daten.roles.forEach((r, i) => {
-    const cbs = box.querySelectorAll(`input[data-r="${i}"]`);
-    if(cbs.length) r.modules = module.filter(id => [...cbs].some(cb => cb.dataset.m === id && cb.checked));
+  try{ cfg = await apiSend("POST", "/rest/v1/rpc/unterweisung_zuordnung_lesen", { p_kunde_slug: AKTIV }); }
+  catch(e){ dlg.querySelector(".pw-hint").textContent = "Konnte nicht geladen werden: " + (e.message || e); return; }
+  if(!cfg || !Array.isArray(cfg.roles) || !cfg.modules.length){
+    dlg.innerHTML = `<form method="dialog"><h3>Einstellungen</h3><p class="pw-hint">Für diesen Betrieb ist das Terminal noch nicht eingerichtet.</p><div class="pw-akt"><button class="btn">Schließen</button></div></form>`; return; }
+  const module = cfg.modules;
+  const rollen = cfg.roles.map(r => ({ name: r.name, extern: !!r.extern, modules: (r.modules || []).slice() }));
+  dlg.innerHTML = `<form method="dialog">
+      <h3>Einstellungen · Module je Rolle</h3>
+      <p class="pw-hint">Haken setzen: Diese Module bekommt die Rolle am Terminal. Gilt ab dem nächsten Start des Terminals.</p>
+      <div class="tabelle-wrap"><table class="uw-tab uw-matrix">
+        <thead><tr><th>Rolle</th>${module.map(m => `<th>${esc(m.title)}</th>`).join("")}<th></th></tr></thead>
+        <tbody></tbody></table></div>
+      <div class="uw-einst-neu"><input type="text" id="uwEinstNeu" placeholder="Neue Rolle, z. B. Qualitätssicherung" autocomplete="off" maxlength="60">
+        <button type="button" class="btn sek" id="uwEinstNeuKnopf">Rolle anlegen</button></div>
+      <p class="pw-msg" id="uwEinstMsg"></p>
+      <div class="pw-akt"><span class="uw-leise uw-einst-stand">Fassung ${esc(cfg.version)}${cfg.freigegeben_am ? " vom " + uwDatum(cfg.freigegeben_am) : ""}${cfg.freigegeben_von ? " · " + esc(cfg.freigegeben_von) : ""}</span>
+        <button type="button" class="btn sek" id="uwEinstAbbruch">Abbrechen</button><button type="button" class="btn" id="uwEinstSpeichern">Speichern</button></div>
+    </form>`;
+  const tbody = dlg.querySelector("tbody"), msg = dlg.querySelector("#uwEinstMsg");
+  const uebernehmen = () => rollen.forEach((r, i) => {
+    r.modules = module.map(m => m.id).filter(id => { const cb = tbody.querySelector(`input[data-r="${i}"][data-m="${CSS.escape(id)}"]`); return cb ? cb.checked : r.modules.includes(id); });
   });
-}
-function uwZuordnungRender(box, cfg){
-  const module = (cfg.daten.modules || []).filter(m => m && m.id), rollen = cfg.daten.roles;
-  box.querySelector("tbody").innerHTML = rollen.map((r, i) => `<tr><td><b>${esc(r.name)}</b>${r.extern ? ' <span class="uw-leise">(Externe)</span>' : ""}</td>${module.map(m =>
-    `<td class="uw-matrix-zelle"><input type="checkbox" data-r="${i}" data-m="${esc(m.id)}"${(r.modules || []).includes(m.id) ? " checked" : ""}></td>`).join("")}</tr>`).join("");
-  box.querySelector("#uwZuordSpeichern").onclick = () => { uwZuordnungSync(box, cfg); uwZuordnungSpeichern(box, cfg, rollen, module); };
-  box.querySelector("#uwRolleNeu").onclick = () => {
-    const eingabe = box.querySelector("#uwNeueRolle"), name = eingabe.value.trim();
-    if(name.length < 3 || rollen.some(r => r.name.toLowerCase() === name.toLowerCase())) return;
-    uwZuordnungSync(box, cfg);
-    rollen.splice(rollen.filter(r => !r.extern).length, 0, { name, modules: [] });
-    eingabe.value = ""; uwZuordnungRender(box, cfg);
+  const zeichnen = () => {
+    tbody.innerHTML = rollen.map((r, i) => `<tr><td><b>${esc(r.name)}</b>${r.extern ? ' <span class="uw-leise">(Externe)</span>' : ""}</td>${module.map(m =>
+      `<td class="uw-matrix-zelle"><input type="checkbox" data-r="${i}" data-m="${esc(m.id)}"${r.modules.includes(m.id) ? " checked" : ""} aria-label="${esc(r.name)}: ${esc(m.title)}"></td>`).join("")}
+      <td class="uw-matrix-zelle">${r.extern ? "" : `<button type="button" class="btn-klein uw-rolle-weg" data-weg="${i}" title="Rolle entfernen">entfernen</button>`}</td></tr>`).join("");
+    tbody.querySelectorAll("[data-weg]").forEach(b => b.addEventListener("click", () => {
+      const i = parseInt(b.dataset.weg, 10);
+      if(!confirm("Rolle „" + rollen[i].name + "“ entfernen? Sie steht dann am Terminal nicht mehr zur Auswahl.")) return;
+      uebernehmen(); rollen.splice(i, 1); zeichnen();
+    }));
   };
-}
-async function uwZuordnungSpeichern(box, cfg, rollen, module){
-  const meld = box.querySelector("#uwZuordMeld");
-  const reihenfolge = module.map(m => m.id);
-  const neuRollen = rollen.map((r, i) => Object.assign({}, r, { modules: reihenfolge.filter(id => { const cb = box.querySelector(`input[data-r="${i}"][data-m="${CSS.escape(id)}"]`); return cb ? cb.checked : (r.modules || []).includes(id); }) }));
-  const leer = neuRollen.filter(r => !r.modules.length).map(r => r.name);
-  if(leer.length && !confirm("Diese Rollen haben kein Modul: " + leer.join(", ") + ". Trotzdem speichern?")) return;
-  meld.textContent = "Wird gespeichert …";
-  try{
-    const daten = Object.assign({}, cfg.daten, { roles: neuRollen });
-    const jetzt = new Date().toISOString();
-    await apiSend("POST", "/rest/v1/portal_unterweisung_config", { kunde_slug: AKTIV, kunde: cfg.kunde || null, version: (cfg.version || 0) + 1,
-      daten, freigegeben: true, freigegeben_am: jetzt, freigegeben_von: window.__oakName || "", updated_at: jetzt }, "return=minimal");
-    UW_MELDUNG = "Zuordnung gespeichert (Fassung " + ((cfg.version || 0) + 1) + "). Das Terminal übernimmt sie beim nächsten Start.";
-    renderSektionen();
-    setTimeout(() => { const d = document.querySelector("details.uw-mehr"); if(d) d.open = true; }, 50);
-  }catch(e){ meld.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); }
+  zeichnen();
+  const neu = () => {
+    const f = dlg.querySelector("#uwEinstNeu"), name = f.value.trim();
+    msg.className = "pw-msg";
+    if(name.length < 2){ msg.textContent = "Bitte einen Namen für die Rolle eintragen."; msg.classList.add("fehler"); f.focus(); return; }
+    if(rollen.some(r => r.name.toLowerCase() === name.toLowerCase())){ msg.textContent = "Diese Rolle gibt es schon."; msg.classList.add("fehler"); return; }
+    uebernehmen(); rollen.splice(rollen.filter(r => !r.extern).length, 0, { name, extern: false, modules: [] });
+    f.value = ""; msg.textContent = "Rolle angelegt – jetzt die Module ankreuzen und speichern."; zeichnen();
+  };
+  dlg.querySelector("#uwEinstNeuKnopf").addEventListener("click", neu);
+  dlg.querySelector("#uwEinstNeu").addEventListener("keydown", e => { if(e.key === "Enter"){ e.preventDefault(); neu(); } });
+  dlg.querySelector("#uwEinstAbbruch").addEventListener("click", () => dlg.close());
+  dlg.querySelector("#uwEinstSpeichern").addEventListener("click", async () => {
+    uebernehmen();
+    const leer = rollen.filter(r => !r.modules.length).map(r => r.name);
+    if(leer.length && !confirm("Ohne Modul: " + leer.join(", ") + ". Trotzdem speichern?")) return;
+    const knopf = dlg.querySelector("#uwEinstSpeichern"); knopf.disabled = true;
+    msg.className = "pw-msg"; msg.textContent = "Wird gespeichert …";
+    try{
+      const v = await apiSend("POST", "/rest/v1/rpc/unterweisung_zuordnung_speichern",
+        { p_kunde_slug: AKTIV, p_rollen: rollen.map(r => ({ name: r.name, modules: r.modules })), p_version: cfg.version });
+      UW_MELDUNG = "Einstellungen gespeichert (Fassung " + v + "). Das Terminal übernimmt sie beim nächsten Start.";
+      dlg.close(); renderSektionen();
+    }catch(e){ knopf.disabled = false; msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.classList.add("fehler"); }
+  });
 }
 
 /* ---- Nachweis als PDF (Nikolai 16.09.2026) -------------------------------------------------
