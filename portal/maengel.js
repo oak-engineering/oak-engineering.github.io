@@ -36,19 +36,18 @@ async function renderMaengel(wrap){
   const gruppen = [];
   rows.forEach(m => { let g = gruppen.find(x => x.thema === m.thema); if(!g){ g = { thema: m.thema, rang: m.thema_rang || 9, liste: [] }; gruppen.push(g); } g.liste.push(m); });
   gruppen.sort((a, b) => a.rang - b.rang);
-  const karte = m => {
+  const typ = m => mgIstAllgemein(m) ? "allgemein" : String(m.maschinentyp || "").replace(/\s*\(mit [^)]*\)/i, "");
+  const zeile = m => {
     const erledigt = m.status === "erledigt";
-    const band = m.band || "ohne";
-    return `<div class="mg-karte mg-${band}${erledigt ? " mg-erledigt" : ""}">
-      <div class="mg-kopf"><b class="mg-maschine">${esc(mgMaschine(m))}</b><span class="uw-leise">${esc(mgIstAllgemein(m) ? "allgemein" : (m.maschinentyp || ""))}</span></div>
-      <div class="mg-label">${esc(m.label)}</div>
-      ${m.massnahme ? `<div class="mg-massnahme"><span class="uw-leise">Maßnahme:</span> ${esc(m.massnahme)}</div>` : ""}
-      ${erledigt
-        ? `<div class="mg-nachweis">✓ Erledigt am ${esc(mgDatum(m.erledigt_am))}${m.erledigt_von ? " · " + esc(m.erledigt_von) : ""}
-             ${m.notiz ? `<div>${esc(m.notiz)}</div>` : ""}
-             ${m.nachweis_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.nachweis_pfad)}">Foto ansehen</button>` : ""}
-             ${ADMIN ? `<button type="button" class="btn-klein" data-mgauf="${esc(m.id)}">wieder öffnen</button>` : ""}</div>`
-        : `<button type="button" class="btn mg-erledigt-knopf" data-mgerl="${esc(m.id)}">Erledigt melden</button>`}
+    return `<div class="mg-zeile mg-${m.band || "ohne"}${erledigt ? " mg-erledigt" : ""}">
+      <span class="mg-ampel" title="${esc(m.band === "gefahr" ? "Gefahrbereich" : m.band === "besorgnis" ? "Besorgnisbereich" : m.band === "akzeptanz" ? "Akzeptanzbereich" : "nicht bewertet")}"></span>
+      <div class="mg-wer"><b>${esc(mgMaschine(m))}</b><span>${esc(typ(m))}</span></div>
+      <div class="mg-text"><div class="mg-label">${esc(m.label)}</div>
+        ${m.massnahme ? `<div class="mg-massnahme">Maßnahme: ${esc(m.massnahme)}</div>` : ""}
+        ${erledigt ? `<div class="mg-nachweis">✓ erledigt ${esc(mgDatum(m.erledigt_am))}${m.erledigt_von ? " · " + esc(m.erledigt_von) : ""}${m.notiz ? " – " + esc(m.notiz) : ""}</div>` : ""}</div>
+      <div class="mg-aktion">${erledigt
+        ? `${m.nachweis_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.nachweis_pfad)}">Foto</button>` : ""}${ADMIN ? `<button type="button" class="btn-klein" data-mgauf="${esc(m.id)}">öffnen</button>` : ""}`
+        : `<button type="button" class="btn-klein mg-erl" data-mgerl="${esc(m.id)}">Erledigt</button>`}</div>
     </div>`;
   };
   const sec = document.createElement("section"); sec.className = "sektion mg-seite";
@@ -66,7 +65,7 @@ async function renderMaengel(wrap){
     </div>
     ${gruppen.length ? gruppen.map((g, i) => `<details class="mg-gruppe"${(i === 0 || MG_FILTER.maschine || MG_FILTER.status === "erledigt") ? " open" : ""}>
         <summary><span>${esc(MG_THEMA[g.thema] || g.thema)}</span><b>${g.liste.length}</b></summary>
-        <div class="mg-raster">${g.liste.map(karte).join("")}</div></details>`).join("")
+        <div class="mg-liste">${g.liste.map(zeile).join("")}</div></details>`).join("")
       : `<div class="ck-fuss">${alle.length ? "Nichts in dieser Auswahl." : "Noch keine Mängel übertragen."}</div>`}`;
   wrap.appendChild(sec);
   sec.querySelectorAll("[data-mgf]").forEach(b => b.addEventListener("click", () => { MG_FILTER.status = b.dataset.mgf; renderSektionen(); }));

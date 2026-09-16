@@ -213,7 +213,7 @@ function renderUnterweisungen(wrap){
   const tok = (UW_TOK.find(x => x.kunde_slug === AKTIV) || UW_TOK[0] || {}).token || "";
   const sekStart = document.createElement("section"); sekStart.className = "sektion uw-hero";
   sekStart.innerHTML = `${meld}
-    ${tok ? `<a class="uw-start" href="kiosk.html#t=${encodeURIComponent(tok)}" target="_blank" rel="noopener">Unterweisungs-Terminal starten</a>`
+    ${tok ? `<a class="uw-start" href="#mehr/terminal">Unterweisungs-Terminal starten</a>`
           : `<div class="uw-start uw-start-aus">Terminal noch nicht eingerichtet – Gerätecode bei OAK engineering anfordern.</div>`}
     <p class="uw-erkl uw-hero-text">Am Terminal: Name eingeben, Rolle wählen, Module durchgehen, unterschreiben.
       Der Nachweis landet automatisch hier im Portal.</p>`;
