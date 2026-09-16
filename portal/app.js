@@ -834,29 +834,32 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 /* ---- Neue Version live? (16.09.2026) --------------------------------------------------------
-   Ein offenes Portal-Fenster laeuft sonst stundenlang mit dem alten Programmstand weiter. Jede Minute
-   (und beim Zurueckkehren ins Fenster) wird verglichen, ob index.html eine neuere Fassung meldet.
-   Dann erscheint ein Hinweis mit Knopf; ohne laufende Eingabe wird automatisch neu geladen. */
+   Ein offenes Portal-Fenster (vor allem die installierte App) laeuft sonst mit dem alten Programmstand
+   weiter. Alle 30 Sekunden und beim Zurueckkehren ins Fenster wird verglichen, ob index.html eine neuere
+   Fassung meldet (der Deploy setzt portal.css?v=<Zeitstempel>). Dann erscheint oben im Kopf der Knopf
+   „Aktualisieren" – nichts laedt ungefragt neu, eine halb ausgefuellte Eingabe geht nicht verloren. */
 (function(){
   const stil = document.querySelector('link[href*="portal.css"]');
   const meins = stil ? stil.getAttribute("href") : "";
-  let hinweis = false;
+  let gezeigt = false;
+  function knopfZeigen(){
+    if(gezeigt) return; gezeigt = true;
+    const k = document.createElement("button");
+    k.type = "button"; k.className = "neu-laden"; k.title = "Neue Version ist online – jetzt laden";
+    k.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg><span>Aktualisieren</span>';
+    k.addEventListener("click", () => location.reload());
+    const ziel = document.querySelector("#appView .kopf .rechts");
+    if(ziel) ziel.insertBefore(k, ziel.firstChild); else document.body.appendChild(k);
+  }
   async function versionPruefen(){
-    if(!meins || hinweis) return;
+    if(!meins || gezeigt) return;
     try{
       const t = await (await fetch("index.html?stand=" + Date.now(), { cache: "no-store" })).text();
       const m = t.match(/href="(portal\.css\?v=[^"]+)"/);
-      if(!m || m[1] === meins) return;
-      const beschaeftigt = document.querySelector("dialog[open]") || /terminal|melden|pruefen|anfragen/.test(location.hash)
-        || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
-      if(!beschaeftigt && document.hidden === false){ location.reload(); return; }
-      hinweis = true;
-      const d = document.createElement("div"); d.className = "update-banner"; d.setAttribute("role", "status");
-      d.innerHTML = 'Neue Version des Portals verfügbar. <button type="button" class="btn">Jetzt aktualisieren</button>';
-      d.querySelector("button").addEventListener("click", () => location.reload());
-      document.body.appendChild(d);
+      if(m && m[1] !== meins) knopfZeigen();
     }catch(e){ /* offline – spaeter erneut */ }
   }
-  setInterval(versionPruefen, 60000);
+  setInterval(versionPruefen, 30000);
   document.addEventListener("visibilitychange", () => { if(!document.hidden) versionPruefen(); });
+  window.addEventListener("focus", versionPruefen);
 })();

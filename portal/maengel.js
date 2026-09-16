@@ -38,15 +38,19 @@ async function renderMaengel(wrap){
   rows.forEach(m => { let g = gruppen.find(x => x.thema === m.thema); if(!g){ g = { thema: m.thema, rang: m.thema_rang || 9, liste: [] }; gruppen.push(g); } g.liste.push(m); });
   gruppen.sort((a, b) => a.rang - b.rang);
   const typ = m => mgIstAllgemein(m) ? "allgemein" : String(m.maschinentyp || "").replace(/\s*\(mit [^)]*\)/i, "");
+  const darfBewerten = (typeof ADMIN !== "undefined" && ADMIN) || window.__oakFachkraft;
   const zeile = m => {
     const erledigt = m.status === "erledigt";
-    return `<div class="mg-zeile mg-${m.band || "ohne"}${erledigt ? " mg-erledigt" : ""}">
-      <span class="mg-ampel" title="${esc(m.band === "gefahr" ? "Gefahrbereich" : m.band === "besorgnis" ? "Besorgnisbereich" : m.band === "akzeptanz" ? "Akzeptanzbereich" : "nicht bewertet")}"></span>
+    const bw = m.bewertung_manuell || m.band || "ohne";
+    const bwText = { gefahr: "rot · dringend", besorgnis: "gelb · zeitnah", akzeptanz: "grün · bei Gelegenheit" };
+    return `<div class="mg-zeile mg-${bw}${erledigt ? " mg-erledigt" : ""}">
+      <span class="mg-ampel" title="${esc(bwText[bw] || "nicht bewertet")}${m.bewertung_manuell ? " (von Hand gesetzt)" : ""}"></span>
       <div class="mg-wer"><b>${esc(mgMaschine(m))}</b><span>${esc(typ(m))}</span></div>
       <div class="mg-text"><div class="mg-label">${esc(m.label)}</div>
         ${m.massnahme ? `<div class="mg-massnahme">Maßnahme: ${esc(m.massnahme)}</div>` : ""}
         ${erledigt ? `<div class="mg-nachweis">✓ erledigt ${esc(mgDatum(m.erledigt_am))}${m.erledigt_von ? " · " + esc(m.erledigt_von) : ""}${m.notiz ? " – " + esc(m.notiz) : ""}</div>` : ""}</div>
-      <div class="mg-aktion">${m.foto_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.foto_pfad)}">Befundfoto</button>` : ""}${erledigt
+      <div class="mg-aktion">${darfBewerten ? `<select class="mg-bewertung" data-mgbw="${esc(m.id)}" title="Bewertung ändern" aria-label="Bewertung ändern">
+          ${["gefahr", "besorgnis", "akzeptanz"].map(w => `<option value="${w}"${w === bw ? " selected" : ""}>${bwText[w]}</option>`).join("")}</select>` : ""}${m.foto_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.foto_pfad)}">Befundfoto</button>` : ""}${erledigt
         ? `${m.nachweis_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.nachweis_pfad)}">Foto</button>` : ""}${ADMIN ? `<button type="button" class="btn-klein" data-mgauf="${esc(m.id)}">öffnen</button>` : ""}`
         : `<button type="button" class="btn-klein mg-erl" data-mgerl="${esc(m.id)}">Erledigt</button>`}</div>
     </div>`;
@@ -72,6 +76,7 @@ async function renderMaengel(wrap){
   sec.querySelectorAll("[data-mgf]").forEach(b => b.addEventListener("click", () => { MG_FILTER.status = b.dataset.mgf; renderSektionen(); }));
   sec.querySelector("#mgMaschine").addEventListener("change", e => { MG_FILTER.maschine = e.target.value; renderSektionen(); });
   sec.querySelectorAll("[data-mgerl]").forEach(b => b.addEventListener("click", () => mgDialog(b.dataset.mgerl)));
+  sec.querySelectorAll("[data-mgbw]").forEach(s => s.addEventListener("change", () => mgBewerten(s.dataset.mgbw, s.value)));
   sec.querySelectorAll("[data-mgauf]").forEach(b => b.addEventListener("click", () => mgWiederAuf(b.dataset.mgauf)));
   sec.querySelectorAll("[data-mgfoto]").forEach(b => b.addEventListener("click", async () => {
     const u = (typeof anfrSigned === "function") ? await anfrSigned(b.dataset.mgfoto) : null;
@@ -139,6 +144,18 @@ function mgDialog(id){
     }catch(e){ knopf.disabled = false; msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.classList.add("fehler"); }
   });
   dlg.showModal();
+}
+
+/* Bewertung von Hand (Admin/Fachkraft): steht in bewertung_manuell, maengel_publish.py ueberschreibt sie nie; Log mit Name und Zeit */
+async function mgBewerten(id, wert){
+  const m = MAENGEL.find(x => x.id === id); if(!m) return;
+  const s = getSession(); const name = window.__oakName || (s && s.user && s.user.email) || "";
+  try{
+    await apiSend("PATCH", "/rest/v1/portal_maengel?id=eq." + encodeURIComponent(id), { bewertung_manuell: wert, updated_at: new Date().toISOString() }, "return=minimal");
+    await apiSend("POST", "/rest/v1/portal_maengel_log", { mangel_id: id, kunde_slug: m.kunde_slug, aktion: "Bewertung: " + wert,
+      von_name: name, von_user_id: s && s.user ? s.user.id : null }, "return=minimal");
+    m.bewertung_manuell = wert; MG_MELDUNG = "Bewertung geändert: " + mgMaschine(m) + " – " + m.label.slice(0, 60); renderSektionen();
+  }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
 }
 
 async function mgWiederAuf(id){

@@ -665,3 +665,15 @@ html:not(.ist-app) .app-rahmen{display:block}
 html:not(.ist-app) .tabbar-fest,html:not(.ist-app) .tb-blatt{display:none!important}
 html:not(.ist-app) body{padding-bottom:0!important}
 html:not(.ist-app) #katTabs:not(.hidden),html:not(.ist-app) #subTabs:not(.hidden){display:flex}
+
+/* Knopf „Aktualisieren" im Kopf, sobald eine neue Version online ist */
+.neu-laden{display:inline-flex;align-items:center;gap:8px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:14px;font-weight:600;
+  min-height:40px;padding:6px 14px;border:0;border-radius:10px;background:#e08e0b;color:#fff;cursor:pointer;
+  box-shadow:0 0 0 0 rgba(224,142,11,.6);animation:neuLadenPuls 1.8s ease-out 3}
+.neu-laden svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.neu-laden:hover{filter:brightness(1.05)}
+@keyframes neuLadenPuls{0%{box-shadow:0 0 0 0 rgba(224,142,11,.6)}100%{box-shadow:0 0 0 12px rgba(224,142,11,0)}}
+@media(max-width:620px){.neu-laden span{display:none}.neu-laden{padding:6px 10px}}
+body > .neu-laden{position:fixed;top:12px;right:12px;z-index:200}
+
+.mg-bewertung{font:inherit;font-size:12.5px;min-height:34px;padding:4px 6px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054;max-width:170px}

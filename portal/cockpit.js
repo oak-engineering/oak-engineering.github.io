@@ -103,7 +103,7 @@ function renderCockpit(wrap, bereich){
     const ART = { unfall: "Unfall", beinahe: "Beinahe-Unfall", mangel: "Mangel", umwelt: "Umweltvorfall", sonstiges: "Sonstiges" };
     const mgGeladen = (typeof MG_GELADEN !== "undefined" && MG_GELADEN);
     const mg = mgGeladen ? mgSichtbar().filter(m => m.status !== "erledigt") : [];
-    const mgZaun = mg.filter(m => m.thema === "schutzzaun").length, mgGefahr = mg.filter(m => m.band === "gefahr").length;
+    const mgZaun = mg.filter(m => m.thema === "schutzzaun").length, mgGefahr = mg.filter(m => (m.bewertung_manuell || m.band) === "gefahr").length;
     const begehungen = sichtbar().filter(r => r.kategorie === "begehungen");
     const letzteBeg = begehungen.map(r => r.stand).concat(sichtbar().filter(r => r.kategorie === "anlagen").map(r => r.stand)).filter(Boolean).sort().slice(-1)[0] || "";
     const uwF = (typeof uwFaelligZahl === "function") ? uwFaelligZahl() : 0;
@@ -112,7 +112,7 @@ function renderCockpit(wrap, bereich){
     inhalt = `
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich") : "wird geladen", mg.length ? "kritisch" : "gut", "maengel")}
+          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " dringend (rot)") : "wird geladen", mg.length ? "kritisch" : "gut", "maengel")}
           ${ckTile(uwF, "Unterweisungen fällig", uwLetzt ? "letzter Nachweis " + ckDatum(uwLetzt) : "noch kein Nachweis", uwF ? "warnung" : "gut", "mehr/unterweisungen")}
           ${ckTile(letzterV ? ckDatum(letzterV.ereignis_am || letzterV.angelegt_am) : "keiner", "letzter Vorfall", letzterV ? (ART[letzterV.art] || "Vorfall") + " · " + vOffenN + " offen" : "bisher nichts gemeldet", vOffenN ? "warnung" : "", "mehr/vorfaelle")}
           ${ckTile(ckDatum(letzteBeg), "letzte Begehung", begehungen.length + " Begehungsprotokolle", "", "unterlagen/begehungen")}
