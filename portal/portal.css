@@ -416,3 +416,4 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .uw-chip-aus{margin-top:12px;border-style:dashed}
 .uw-form-knoepfe{display:flex;align-items:center;gap:12px;margin-top:16px;flex-wrap:wrap}
 .sek-kopf .btn.sek{margin-left:auto}
+.uw-fassung{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--rand,#D6E4DA);border-radius:8px;min-height:44px;background:#fff}

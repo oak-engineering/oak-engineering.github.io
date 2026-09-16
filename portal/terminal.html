@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Unterweisungs-Terminal – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202609160923">
+<link rel="stylesheet" href="portal.css?v=202609160928">
 <style>
 /* Unterweisungs-Terminal ohne Login: Das Geraet traegt einen Token (wie melden.html),
    die Person tippt Name und Gruppe, bekommt ihre Module und arbeitet sie im Rahmen durch.
@@ -101,11 +101,6 @@ input[type=text]:focus{outline:none;border-color:var(--oak,#2D6A4F);box-shadow:0
         <button class="knopf haupt" id="sWeiter" disabled>Weiter</button>
         <span class="klein" id="sStand"></span>
       </div>
-      <div class="fassung" role="group" aria-label="Fassung der Inhalte">
-        <span class="fl">Fassung der Inhalte</span>
-        <button type="button" class="pille" data-f="1">Version 1.0<small>bewährte Module</small></button>
-        <button type="button" class="pille aktiv" data-f="2">Version 2.0<small>neue Module</small></button>
-      </div>
     </section>
 
     <section class="schirm" id="sModule">
@@ -115,11 +110,6 @@ input[type=text]:focus{outline:none;border-color:var(--oak,#2D6A4F);box-shadow:0
       <div class="hinweis" id="mHinweis" hidden></div>
       <div class="zeile-knoepfe"><button class="knopf haupt" id="mStart" hidden>Unterweisung starten</button>
         <span class="klein" id="mStartInfo"></span></div>
-      <div class="fassung" role="group" aria-label="Fassung der Inhalte">
-        <span class="fl">Fassung der Inhalte</span>
-        <button type="button" class="pille" data-f="1">Version 1.0<small>bewährte Module</small></button>
-        <button type="button" class="pille aktiv" data-f="2">Version 2.0<small>neue Module</small></button>
-      </div>
     </section>
 
     <section class="schirm" id="sModul" style="max-width:none;height:100%">
@@ -167,8 +157,8 @@ function zugangSetzen(token, kunde){ try{ localStorage.setItem(TERMKEY, JSON.str
   var m = (location.hash + '&' + location.search).match(/[#?&]t=([^&]+)/);
   if(m){ zugangSetzen(decodeURIComponent(m[1]), ''); history.replaceState(null, '', location.pathname); }
 })();
-/* Versions-Weiche: Vorgabe am Geraet ist Version 1.0 (kiosk.html, bewaehrte Module). Nur wer 2 gewaehlt hat
-   (Schalter oder #f=2), bleibt in diesem Terminal. */
+/* Das Terminal fuer den Betrieb ist kiosk.html (Fassung je Modul stellen Admins im Portal ein).
+   Diese Seite bleibt nur zum Testen der Blockformat-Module erreichbar: #f=2 setzt das Geraet darauf, #f=1 zurueck. */
 (function fassungAusAdresse(){
   var m = (location.hash + '&' + location.search).match(/[#?&]f=([12])(?![0-9])/);
   if(m){ try{ localStorage.setItem('oak-uw-fassung', m[1]); }catch(e){} history.replaceState(null, '', location.pathname); }
@@ -375,12 +365,6 @@ window.addEventListener('message', function(ev){
     else if(aktivesModul) erledigt[aktivesModul.thema] = true;
   }
   if(d.type === 'oak-uw-naechste'){ startAnzeigen(); }
-});
-
-/* ---- Versions-Schalter -------------------------------------------------------- */
-Array.prototype.forEach.call(document.querySelectorAll('.pille[data-f]'), function(b){
-  b.onclick = function(){ var f = b.getAttribute('data-f'); try{ localStorage.setItem('oak-uw-fassung', f); }catch(e){}
-    if(f === '1') location.href = 'kiosk.html'; };
 });
 
 /* ---- Leerlauf: nach 15 Minuten ohne Bedienung zurueck zum Start ---------------- */

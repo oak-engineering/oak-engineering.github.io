@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unterweisungs-Terminal (Version 1.0) – OAK engineering</title>
+<title>Unterweisungs-Terminal – OAK engineering</title>
 <link rel="manifest" href="kiosk.webmanifest">
 <meta name="theme-color" content="#003078">
 <!-- ONLINE-FASSUNG (portal/kiosk.html), erzeugt aus kunden/Wibo …/unterweisungen/terminal/index.html (Master).
@@ -266,12 +266,7 @@
     <div class="err" id="startErr"></div>
     <details style="margin-top:14px"><summary class="small">Datenschutzhinweis</summary>
       <p class="small muted" id="startPrivacy" style="margin-top:8px"></p></details>
-    <div class="fassung" id="fassungWahl" role="group" aria-label="Fassung der Inhalte">
-      <span class="fl">Fassung der Inhalte</span>
-      <button type="button" class="pille aktiv" data-f="1">Version 1.0<small>bewährte Module</small></button>
-      <button type="button" class="pille" data-f="2">Version 2.0<small>neue Module</small></button>
-    </div>
-    <button class="btn" style="width:100%;margin-top:18px" id="startBtn">Unterweisung starten ▶</button>
+        <button class="btn" style="width:100%;margin-top:18px" id="startBtn">Unterweisung starten ▶</button>
     <button class="btn ghost" style="width:100%;margin-top:8px" id="startCockpit">◀ Zurück zum Cockpit</button>
   </div>
 </section>
@@ -455,14 +450,11 @@ const LSKEY = 'oak-agu::'+location.pathname;
   try{
     if(!location.hash || location.hash.length<2) return;
     const p=new URLSearchParams(location.hash.slice(1));
-    const f=p.get('f'); if(f==='1'||f==='2') localStorage.setItem('oak-uw-fassung', f);
     const t=p.get('t');
     if(t) localStorage.setItem('oak-uw-terminal', JSON.stringify({token:t.trim(), kunde:(p.get('kn')||'').trim()}));
-    if(t||f) history.replaceState(null,'',location.pathname+location.search);
+    if(t) history.replaceState(null,'',location.pathname+location.search);
   }catch(e){}
 })();
-/* Versions-Weiche: 1 = diese Huelle (bewaehrte Module), 2 = neues Terminal (terminal.html). Vorgabe am Geraet: 1. */
-(function fassungWeiche(){ try{ if(localStorage.getItem('oak-uw-fassung')==='2') location.replace('terminal.html'); }catch(e){} })();
 function loadContent(){
   let base = JSON.parse($('#content-data').textContent);
   /* Portal-Modus: Die freigegebene Fassung aus dem Kundenportal fuehrt (lokal
@@ -796,20 +788,45 @@ function showVideo(m){
 let _activeModFrame=null;
 function showInteraktiv(m){
   const v=$('#viewer');
-  if(!m.url){ v.innerHTML='<div class="ph">Für dieses Modul ist noch keine interaktive Datei hinterlegt.</div>'; return; }
+  if(!m.url){ v.innerHTML='<div class="ph">F\u00fcr dieses Modul ist noch keine interaktive Datei hinterlegt.</div>'; return; }
   const name=encodeURIComponent(participant.name||'');
   const einbetten=(url)=>{ v.innerHTML='<iframe src="'+url+'" allow="fullscreen" style="width:100%;height:80vh;border:0;border-radius:10px;background:#fff"></iframe>'; _activeModFrame=v.querySelector('iframe'); };
   const absolut=/^(https?:)?\/\//i.test(m.url);
   if(absolut || !portalModus()){ einbetten(m.url+(m.url.indexOf('?')<0?'?':'&')+'name='+name); return; }
   /* Online-Fassung: Die Moduldatei liegt geschuetzt im Kundenportal (Storage) und wird ueber den
      Geraete-Code mit einer kurzlebigen signierten Adresse geholt (Edge Function unterweisung-datei).
-     Der Name haengt als ?name= dran, so wie es die Module vom lokalen Ordner her kennen. */
-  v.innerHTML='<div class="ph">Modul wird geladen …</div>';
+     Welche Fassung laeuft, stellen die Admins im Portal je Modul ein (uw_buchung.fassung):
+       1 = bewaehrtes Modul (Datei aus m.url, Name als ?name=, wie vom lokalen Ordner her bekannt)
+       2 = neues Blockformat-Modul (Einzeldatei <thema>.html), eingebettet mit Terminal-Kontext, damit es
+           am Ende an dieses Terminal zurueckgibt (Sammelnachweis bleibt hier). */
+  v.innerHTML='<div class="ph">Modul wird geladen \u2026</div>';
   const slug=(portalCache()||{}).kunde_slug||'';
   const datei=String(m.url).split('/').pop();
-  modulAdresse(slug+'/unterweisungen/'+datei)
-    .then(url=>{ einbetten(url+(url.indexOf('?')<0?'?':'&')+'name='+name); })
-    .catch(e=>{ v.innerHTML='<div class="ph">Modul konnte nicht geladen werden.<br><span class="small">'+esc(e.message||e)+' – bitte Netzverbindung prüfen oder die Sicherheitsfachkraft informieren.</span></div>'; });
+  const fehler=(e)=>{ v.innerHTML='<div class="ph">Modul konnte nicht geladen werden.<br><span class="small">'+esc(e.message||e)+' \u2013 bitte Netzverbindung pr\u00fcfen oder die Sicherheitsfachkraft informieren.</span></div>'; };
+  fassungenHolen().then(F=>{
+    const f=F[m.id]||null;
+    if(f && f.fassung===2 && f.datei_v2){
+      const kontext={ name:participant.name||'', rolle:participant.role||'', thema:f.thema, titel:m.title||f.titel||'',
+                      lauf:{ nr:mi+1, gesamt:runMods.length+1, letztes:false, bisher:[] } };
+      const kopf='<script>window.__OAK_TERMINAL='+JSON.stringify(kontext).replace(/</g,'\\u003c')+';</scr'+'ipt>';
+      return modulAdresse(f.datei_v2).then(url=>fetch(url)).then(r=>{ if(!r.ok) throw new Error('Datei nicht ladbar ('+r.status+')'); return r.text(); })
+        .then(html=>{ const h=html.replace(/<head([^>]*)>/i, x=>x+kopf);
+          v.innerHTML='<iframe allow="fullscreen" style="width:100%;height:80vh;border:0;border-radius:10px;background:#fff"></iframe>';
+          _activeModFrame=v.querySelector('iframe'); _activeModFrame.srcdoc=h; });
+    }
+    return modulAdresse(slug+'/unterweisungen/'+datei).then(url=>{ einbetten(url+(url.indexOf('?')<0?'?':'&')+'name='+name); });
+  }).catch(fehler);
+}
+let _fassungen=null;
+async function fassungenHolen(){
+  if(_fassungen) return _fassungen;
+  const z=terminalZugang(); if(!z) return {};
+  try{
+    const liste=await portalRpc('unterweisung_fassungen',{p_token:z.token});
+    const F={}; (liste||[]).forEach(x=>{ if(x.kiosk_modul) F[x.kiosk_modul]=x; });
+    _fassungen=F; setTimeout(()=>{ _fassungen=null; }, 5*60*1000);   // alle 5 Minuten neu fragen
+    return F;
+  }catch(e){ return {}; }
 }
 async function modulAdresse(pfad){
   const z=terminalZugang(); if(!z) throw new Error('kein Terminal-Zugang');
@@ -836,7 +853,7 @@ window.addEventListener('message',function(e){
   const d=e.data||{};
   if(!_activeModFrame || e.source!==_activeModFrame.contentWindow) return;   // nur das aktive Modul-iframe zählt
   if(d.type==='oak-unterweisung-abort'){ showAbortDialog(); return; }        // roter „Unterweisung abbrechen"-Button im Modul-Header
-  if(d.type!=='oak-unterweisung-complete') return;
+  if(d.type!=='oak-unterweisung-complete' && d.type!=='oak-uw-modul-fertig') return;   // alt: Wibo-Module, neu: Blockformat
   const m=runMods[mi]; if(!m || m.type!=='interaktiv') return;
   const base=(m.url||'').split(/[?#]/)[0].split('/').pop();
   const expect=MODKEYS[base];
@@ -1314,7 +1331,8 @@ async function _doFinish(){
     }
     const fullOk = r.hasMain ? (r.main && (!r.hasBackup || r.backup)) : r.ok;
     if(fullOk && r.main){
-      $('#saveMsg').innerHTML='<span style="color:var(--ok);font-weight:700">✓ Abgeschlossen und gespeichert – Haupt-Ordner'+(r.backup?' + Backup':'')+'</span>';
+      $('#saveMsg').innerHTML=portalModus() ? '<span style="color:var(--ok);font-weight:700">✓ Abgeschlossen – der Nachweis ist im Kundenportal gespeichert.</span>'
+        : '<span style="color:var(--ok);font-weight:700">✓ Abgeschlossen und gespeichert – Haupt-Ordner'+(r.backup?' + Backup':'')+'</span>';
       setTimeout(resetForNext,1100);
     } else if(r.backup && !r.main){
       $('#saveMsg').innerHTML='<span style="color:#8a5a00;font-weight:700">⚠ Nur im Backup-Ordner gespeichert.</span> <span class="small">'+esc(r.errors.join(' · '))+'</span>';
@@ -1350,7 +1368,8 @@ async function updateFolderBar(){
   else { bar.style.background='#fff4e5'; bar.innerHTML='<span style="color:#8a5a00;font-weight:600">Nachweis-Ordner noch nicht freigegeben</span> <button class="btn ghost sm" id="freeFolders" style="margin-left:8px">📁 Ordner freigeben</button>';
     const fb=$('#freeFolders'); if(fb) fb.onclick=async()=>{ if(mainDir)await ensurePerm(mainDir); if(backupDir)await ensurePerm(backupDir); updateFolderBar(); }; }
 }
-function resetForNext(){ participant.name=''; participant.role=''; participant.moduleIds=[]; participant.score=0; participant.company=''; participant.address=''; participant.host=''; participant.reason='';
+function standLoeschen(){ try{ const weg=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf('oak-uw-stand-')===0) weg.push(k); } weg.forEach(k=>localStorage.removeItem(k)); }catch(e){} }
+function resetForNext(){ standLoeschen(); participant.name=''; participant.role=''; participant.moduleIds=[]; participant.score=0; participant.company=''; participant.address=''; participant.host=''; participant.reason='';
   try{ $('#pName').value=''; ['pFirma','pAddr','pHost'].forEach(id=>{ const el=$('#'+id); if(el)el.value=''; }); const rs=$('#pReason'); if(rs)rs.value=''; const rl=$('#pRole'); if(rl){ rl.value=''; updateRoleModules(); } }catch(e){}
   try{ if(_sig.ctx){ const cv=$('#sigCanvas'); _sig.ctx.clearRect(0,0,cv.width,cv.height);} _sig.drawn=false; }catch(e){}
   try{ $('#confirmChk').checked=false; }catch(e){} $('#saveMsg').textContent=''; $('#signErr').textContent='';
@@ -1727,11 +1746,8 @@ _ensureCertLogo();
   window.addEventListener('online', lauf);
   setInterval(lauf, 15*60*1000);      // Terminal laeuft den ganzen Tag
 })();
-/* Versions-Schalter auf dem Startbildschirm: Wahl merken; 2 wechselt zum neuen Terminal. */
-(function(){
-  const KEY='oak-uw-fassung';
-  document.querySelectorAll('#fassungWahl .pille').forEach(b=>{ b.onclick=()=>{ try{ localStorage.setItem(KEY, b.dataset.f); }catch(e){} if(b.dataset.f==='2') location.href='terminal.html'; }; });
-})();
+/* Portal-Modus: Nachweise gehen in die Datenbank des Kundenportals - kein PDF, keine Mail, kein Ordner am Geraet. */
+(function(){ if(!portalModus()) return; ['pdfBtn','mailBtn'].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; }); standLoeschen(); })();
 // Versteckter Admin-Zugang immer verfügbar (greift, wenn das Zahnrad im Kiosk verborgen ist):
 // 5× oben links tippen ODER Strg+Alt+A. Admin-Passwort bleibt Pflicht.
 (function(){

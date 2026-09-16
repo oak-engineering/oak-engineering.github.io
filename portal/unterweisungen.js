@@ -11,6 +11,7 @@ let NACHWEISE = [];
 let BAUSTEINE = [];
 let UW_P = [], UW_R = [];        // Beschäftigte und Gruppen des Betriebs (Abschnitt „Wer ist fällig")
 let UW_MELDUNG = "";            // Bestätigung nach einer Aktion, einmal angezeigt
+let UW_TOK = [];                // Gerätecodes des Betriebs (Knopf „Terminal starten")
 /* Jährliche Wiederholung: DGUV Vorschrift 1 § 4 – „mindestens einmal jährlich". Wir warnen
    ab 11 Monaten, damit die Wiederholung planbar ist und nicht erst am Stichtag auffällt. */
 const UW_FAELLIG_TAGE = 365, UW_WARNUNG_TAGE = 335;
@@ -32,6 +33,7 @@ async function ladeNachweise(){
   }catch(e){ BAUSTEINE = []; }
   try{ UW_P = await apiGet("/rest/v1/uw_person?select=id,name,status,kunde_slug,uw_person_rolle(rolle_id)&order=name.asc", false) || []; }catch(e){ UW_P = []; }
   try{ UW_R = await apiGet("/rest/v1/uw_rolle?select=id,name,typ,status,kunde_slug&order=name.asc", false) || []; }catch(e){ UW_R = []; }
+  try{ UW_TOK = await apiGet("/rest/v1/portal_terminal_token?select=token,kunde_slug,bezeichnung&aktiv=is.true", false) || []; }catch(e){ UW_TOK = []; }
   await ladeFolien();
 }
 
@@ -207,14 +209,39 @@ function renderUnterweisungen(wrap){
   };
   const v1 = docs.filter(r => !istV2(r)), v2 = docs.filter(istV2);
   const sekModule = document.createElement("section"); sekModule.className = "sektion";
+  const tok = (UW_TOK.find(x => x.kunde_slug === AKTIV) || UW_TOK[0] || {}).token || "";
+  const startKnopf = tok
+    ? `<a class="btn sek" href="kiosk.html#t=${encodeURIComponent(tok)}" target="_blank" rel="noopener">Unterweisungs-Terminal starten</a>`
+    : `<span class="uw-leise">Gerätecode fehlt – bitte bei OAK engineering anfordern.</span>`;
+  const buchungen = (typeof UW_BUCHUNG !== "undefined" ? UW_BUCHUNG : []).filter(b => b.kunde_slug === AKTIV && b.aktiv);
+  const modulTitel = th => ((typeof UW_MODULE !== "undefined" && UW_MODULE.find(m => m.thema === th)) || {}).titel || th;
+  const fassungZeilen = buchungen.map(b => `<tr><td>${esc(modulTitel(b.thema))}</td><td>${
+      (typeof ADMIN !== "undefined" && ADMIN)
+        ? `<select class="uw-fassung" data-thema="${esc(b.thema)}"><option value="1"${b.fassung !== 2 ? " selected" : ""}>Version 1.0 · bewährtes Modul</option><option value="2"${b.fassung === 2 ? " selected" : ""}>Version 2.0 · neues Modul</option></select>`
+        : `<span class="uw-badge uw-gut">Version ${b.fassung === 2 ? "2.0" : "1.0"}</span>`}</td></tr>`).join("");
   sekModule.innerHTML = `${meld}
-    <div class="sek-kopf"><h2>Unterweisungen</h2><span class="zaehler">${docs.length} ${docs.length === 1 ? "Modul" : "Module"}</span></div>
-    <p class="uw-erkl">Zum Ansehen hier öffnen. Beschäftigte werden am <b>Unterweisungs-Terminal</b> unterwiesen
-      (Name eingeben, Gruppe wählen, Unterweisung durchgehen, unterschreiben) – der Nachweis erscheint danach unten.</p>
-    ${v2.length ? `<h3 class="uw-h3">Version 1.0 · bewährte Module</h3>` : ""}
+    <div class="sek-kopf"><h2>Unterweisungen</h2><span class="zaehler">${docs.length} ${docs.length === 1 ? "Modul" : "Module"}</span>${startKnopf}</div>
+    <p class="uw-erkl">Beschäftigte werden am <b>Unterweisungs-Terminal</b> unterwiesen: Name eingeben, Rolle wählen,
+      Module durchgehen, unterschreiben. Der Nachweis landet direkt hier im Portal (Abschnitt Nachweise).
+      <a href="unterweisungs-terminal-kurzanleitung.pdf" target="_blank" rel="noopener"><b>Kurzanleitung als PDF</b></a> ·
+      Einrichtung auf dem Gerät: Knopf „Unterweisungs-Terminal starten", dann im Browser „Als App installieren".</p>
+    ${fassungZeilen ? `<h3 class="uw-h3">Was am Terminal läuft</h3>
+      <div class="tabelle-wrap"><table class="uw-tab"><thead><tr><th>Modul</th><th style="width:300px">Fassung</th></tr></thead><tbody>${fassungZeilen}</tbody></table></div>
+      ${(typeof ADMIN !== "undefined" && ADMIN) ? '<div class="ck-fuss">Nur OAK-Admin: Die Fassung wirkt sofort am Terminal. Version 2.0 nur nach fachlicher Abnahme freischalten.</div>' : ""}` : ""}
+    <h3 class="uw-h3">Zum Ansehen im Portal</h3>
+    ${v2.length ? `<div class="uw-leise" style="margin-bottom:4px">Version 1.0 · bewährte Module</div>` : ""}
     ${uwDokTabelle(v1)}
-    ${v2.length ? `<h3 class="uw-h3">Version 2.0 · neue Module</h3>${uwDokTabelle(v2)}` : ""}`;
+    ${v2.length ? `<div class="uw-leise" style="margin:12px 0 4px">Version 2.0 · neue Module</div>${uwDokTabelle(v2)}` : ""}`;
   wrap.appendChild(sekModule);
+  sekModule.querySelectorAll("select.uw-fassung").forEach(s => s.addEventListener("change", async () => {
+    const th = s.dataset.thema, f = parseInt(s.value, 10);
+    try{
+      await apiSend("PATCH", "/rest/v1/uw_buchung?kunde_slug=eq." + encodeURIComponent(AKTIV) + "&thema=eq." + encodeURIComponent(th), { fassung: f }, "return=minimal");
+      const b = buchungen.find(x => x.thema === th); if(b) b.fassung = f;
+      UW_MELDUNG = modulTitel(th) + " läuft am Terminal jetzt in Version " + (f === 2 ? "2.0" : "1.0") + ".";
+      renderSektionen();
+    }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
+  }));
 
   /* 2. Wer ist fällig */
   const pers = uwPersonen();
@@ -258,7 +285,7 @@ function renderUnterweisungen(wrap){
   const sekNach = document.createElement("section"); sekNach.className = "sektion";
   sekNach.innerHTML = `
     <div class="sek-kopf"><h2>Nachweise</h2><span class="zaehler">${rows.length} ${rows.length === 1 ? "Nachweis" : "Nachweise"}</span>
-      ${rows.length ? '<button class="btn sek" id="uwCsv">Als Tabelle herunterladen</button>' : ""}</div>
+      ${rows.length ? '<button class="btn sek" id="uwCsv">Als Excel-Tabelle herunterladen</button>' : ""}</div>
     <p class="uw-erkl">Jede am Terminal abgeschlossene Unterweisung landet hier – auch wenn das Gerät zwischendurch
       ohne Netz war. Gespeichert werden Name, Gruppe, Datum, Module und bestanden ja/nein, <b>kein Punktestand</b>.</p>
     ${rows.length ? `<div class="tabelle-wrap"><table class="uw-tab">
