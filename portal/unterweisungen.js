@@ -68,9 +68,11 @@ function uwJeMitarbeiter(rows){
 function uwStatus(n){
   const t = uwTageSeit(n.created_at);
   if(t === null) return { klasse: "grau", text: "—" };
-  if(t >= UW_FAELLIG_TAGE) return { klasse: "kritisch", text: "überfällig" };
-  if(t >= UW_WARNUNG_TAGE) return { klasse: "warnung", text: "fällig in " + (UW_FAELLIG_TAGE - t) + " Tagen" };
-  return { klasse: "gut", text: "gültig" };
+  /* Gueltig 12 Monate (DGUV Vorschrift 1 § 4: mindestens jaehrlich) – das Datum steht dabei */
+  const bis = new Date(new Date(n.created_at).getTime() + UW_FAELLIG_TAGE * 86400000).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+  if(t >= UW_FAELLIG_TAGE) return { klasse: "kritisch", text: "überfällig seit " + bis };
+  if(t >= UW_WARNUNG_TAGE) return { klasse: "warnung", text: "fällig am " + bis };
+  return { klasse: "gut", text: "gültig bis " + bis };
 }
 /* Modul-Kuerzel aus dem Terminal (grund, spritzguss …) -> lesbarer Titel fuer Nachweis und Excel */
 function uwModulTitel(k){
@@ -84,10 +86,11 @@ function uwModule(n){
   return m.filter(Boolean).map(uwModulTitel);
 }
 function uwCsv(rows){
-  const kopf = ["Datum", "Name", "Rolle", "Bereich", "Module", "bestanden", "bestätigt", "Fassung"];
+  const kopf = ["Datum", "Name", "Rolle", "Module", "bestanden", "bestätigt", "gültig bis", "Fassung"];
   const zeilen = rows.map(n => [
-    uwDatum(n.created_at), n.mitarbeiter_name || "", n.funktion || "", n.bereich || "",
+    uwDatum(n.created_at), n.mitarbeiter_name || "", n.funktion || "",
     uwModule(n).join(" | "), n.bestanden ? "ja" : "nein", n.bestaetigung ? "ja" : "nein",
+    new Date(new Date(n.created_at).getTime() + UW_FAELLIG_TAGE * 86400000).toLocaleDateString("de-DE"),
     n.config_version || "",
   ]);
   return [kopf, ...zeilen].map(z => z.map(w => `"${String(w).replace(/"/g, '""')}"`).join(";")).join("\r\n");
@@ -252,7 +255,7 @@ function renderUnterweisungen(wrap){
   sekPers.innerHTML = `
     <div class="sek-kopf"><h2>Wer ist fällig</h2>
       <span class="zaehler">${zeilen.length ? (faellig ? faellig + " fällig" : "alle aktuell") : ""}</span>
-      <span class="uw-kopf-knoepfe">${rows.length ? '<button class="btn sek" id="uwCsvAlle">Excel-Export</button>' : ""}
+      <span class="uw-kopf-knoepfe">${(istAdmin || window.__oakFachkraft) ? '<button class="btn sek uw-zahnrad" id="uwEinst" title="Einstellungen: Module je Rolle, Versionen"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>Einstellungen</span></button>' : ""}${rows.length ? '<button class="btn sek" id="uwCsvAlle">Excel-Export</button>' : ""}
         <button class="btn sek" id="uwPersNeu">Mitarbeiter anlegen</button></span></div>
     <div id="uwPersForm"></div>
     ${zeilen.length ? `<div class="mg-filter uw-filter">
@@ -309,8 +312,11 @@ function renderUnterweisungen(wrap){
   if(!(istAdmin || window.__oakFachkraft)) return;   // Erweiterte Funktionen nur fuer Admin/Fachkraft
   const sekMehr = document.createElement("section"); sekMehr.className = "sektion uw-mehr-sektion";
   sekMehr.innerHTML = `<details class="uw-mehr">
-    <summary>Erweiterte Funktionen <span class="uw-leise">Versionsarchiv · Fassung je Modul</span></summary>
+    <summary>Einstellungen <span class="uw-leise">Module je Rolle · Versionsarchiv</span></summary>
     <div class="uw-mehr-inhalt">
+      <div class="sek-kopf"><h3 class="uw-h3">Module je Rolle</h3>
+        <span class="uw-leise">${istAdmin ? "Haken setzen und speichern – gilt am Terminal ab dem nächsten Start" : "so ist das Terminal eingestellt"}</span></div>
+      <div id="uwZuordnung"><div class="uw-leise">wird geladen …</div></div>
       <div class="sek-kopf"><h3 class="uw-h3">Versionsarchiv</h3>
         <span class="uw-leise">${istAdmin ? "Auswahl = läuft am Terminal, sofort wirksam" : "hervorgehoben = läuft am Terminal"}</span></div>
       <div class="tabelle-wrap"><table class="uw-tab uw-archiv">
@@ -319,6 +325,10 @@ function renderUnterweisungen(wrap){
       ${weitere.length ? `<div class="uw-leise" style="margin:10px 0 4px">Weitere Unterlagen</div>${uwDokTabelle(weitere)}` : ""}
     </div></details>`;
   wrap.appendChild(sekMehr);
+  const details = sekMehr.querySelector("details.uw-mehr");
+  const einst = sekPers.querySelector("#uwEinst");
+  if(einst) einst.addEventListener("click", () => { details.open = true; details.scrollIntoView({ behavior: "smooth", block: "start" }); });
+  details.addEventListener("toggle", () => { if(details.open) uwZuordnungLaden(sekMehr.querySelector("#uwZuordnung"), istAdmin); });
   sekMehr.querySelectorAll("[data-uwtext]").forEach(b => b.addEventListener("click", () => uwTextDialog(b.dataset.uwtext, b.dataset.titel)));
   sekMehr.querySelectorAll(".uw-pills .uw-pill").forEach(p => p.addEventListener("click", async () => {
     const th = p.closest(".uw-pills").dataset.thema, f = parseInt(p.dataset.f, 10);
@@ -331,6 +341,69 @@ function renderUnterweisungen(wrap){
       const d = document.querySelector(".uw-mehr"); if(d) d.open = true;
     }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
   }));
+}
+
+/* ---- Module je Rolle (Terminal-Konfiguration, portal_unterweisung_config) ----------------------
+   Das Terminal holt beim Start die hoechste freigegebene Fassung. Speichern legt eine neue Fassung an
+   (Versionen bleiben nachvollziehbar), sonst aendert sich an der Konfiguration nichts. */
+async function uwZuordnungLaden(box, darfAendern){
+  if(!box) return;
+  let cfg = null;
+  try{
+    const r = await apiGet("/rest/v1/portal_unterweisung_config?select=id,version,daten,kunde,freigegeben_am,freigegeben_von&kunde_slug=eq." + encodeURIComponent(AKTIV) + "&freigegeben=is.true&order=version.desc&limit=1", false);
+    cfg = r && r[0];
+  }catch(e){}
+  if(!cfg || !cfg.daten || !Array.isArray(cfg.daten.roles)){ box.innerHTML = '<div class="uw-leise">Für diesen Betrieb ist noch keine Terminal-Konfiguration hinterlegt.</div>'; return; }
+  const module = (cfg.daten.modules || []).filter(m => m && m.id);
+  const rollen = cfg.daten.roles;
+  box.innerHTML = `<div class="tabelle-wrap"><table class="uw-tab uw-matrix">
+      <thead><tr><th>Rolle</th>${module.map(m => `<th title="${esc(m.title || m.id)}">${esc(m.title || m.id)}</th>`).join("")}</tr></thead>
+      <tbody>${rollen.map((r, i) => `<tr><td><b>${esc(r.name)}</b>${r.extern ? ' <span class="uw-leise">(Externe)</span>' : ""}</td>${module.map(m =>
+        `<td class="uw-matrix-zelle"><input type="checkbox" data-r="${i}" data-m="${esc(m.id)}"${(r.modules || []).includes(m.id) ? " checked" : ""}${darfAendern ? "" : " disabled"} aria-label="${esc(r.name)}: ${esc(m.title || m.id)}"></td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    <div class="uw-form-knoepfe">${darfAendern ? `<input type="text" id="uwNeueRolle" class="uw-suche" placeholder="Neue Rolle, z. B. Qualitätssicherung" autocomplete="off">
+      <button type="button" class="btn sek" id="uwRolleNeu">Rolle hinzufügen</button>
+      <button type="button" class="btn" id="uwZuordSpeichern">Zuordnung speichern</button>` : ""}
+      <span class="uw-leise" id="uwZuordMeld">Fassung ${esc(cfg.version)}${cfg.freigegeben_am ? " vom " + uwDatum(cfg.freigegeben_am) : ""}</span></div>`;
+  if(!darfAendern) return;
+  uwZuordnungRender(box, cfg);
+}
+/* Haken aus der Tabelle in die Rollen uebernehmen (vor Neuzeichnen und Speichern) */
+function uwZuordnungSync(box, cfg){
+  const module = (cfg.daten.modules || []).filter(m => m && m.id).map(m => m.id);
+  cfg.daten.roles.forEach((r, i) => {
+    const cbs = box.querySelectorAll(`input[data-r="${i}"]`);
+    if(cbs.length) r.modules = module.filter(id => [...cbs].some(cb => cb.dataset.m === id && cb.checked));
+  });
+}
+function uwZuordnungRender(box, cfg){
+  const module = (cfg.daten.modules || []).filter(m => m && m.id), rollen = cfg.daten.roles;
+  box.querySelector("tbody").innerHTML = rollen.map((r, i) => `<tr><td><b>${esc(r.name)}</b>${r.extern ? ' <span class="uw-leise">(Externe)</span>' : ""}</td>${module.map(m =>
+    `<td class="uw-matrix-zelle"><input type="checkbox" data-r="${i}" data-m="${esc(m.id)}"${(r.modules || []).includes(m.id) ? " checked" : ""}></td>`).join("")}</tr>`).join("");
+  box.querySelector("#uwZuordSpeichern").onclick = () => { uwZuordnungSync(box, cfg); uwZuordnungSpeichern(box, cfg, rollen, module); };
+  box.querySelector("#uwRolleNeu").onclick = () => {
+    const eingabe = box.querySelector("#uwNeueRolle"), name = eingabe.value.trim();
+    if(name.length < 3 || rollen.some(r => r.name.toLowerCase() === name.toLowerCase())) return;
+    uwZuordnungSync(box, cfg);
+    rollen.splice(rollen.filter(r => !r.extern).length, 0, { name, modules: [] });
+    eingabe.value = ""; uwZuordnungRender(box, cfg);
+  };
+}
+async function uwZuordnungSpeichern(box, cfg, rollen, module){
+  const meld = box.querySelector("#uwZuordMeld");
+  const reihenfolge = module.map(m => m.id);
+  const neuRollen = rollen.map((r, i) => Object.assign({}, r, { modules: reihenfolge.filter(id => { const cb = box.querySelector(`input[data-r="${i}"][data-m="${CSS.escape(id)}"]`); return cb ? cb.checked : (r.modules || []).includes(id); }) }));
+  const leer = neuRollen.filter(r => !r.modules.length).map(r => r.name);
+  if(leer.length && !confirm("Diese Rollen haben kein Modul: " + leer.join(", ") + ". Trotzdem speichern?")) return;
+  meld.textContent = "Wird gespeichert …";
+  try{
+    const daten = Object.assign({}, cfg.daten, { roles: neuRollen });
+    const jetzt = new Date().toISOString();
+    await apiSend("POST", "/rest/v1/portal_unterweisung_config", { kunde_slug: AKTIV, kunde: cfg.kunde || null, version: (cfg.version || 0) + 1,
+      daten, freigegeben: true, freigegeben_am: jetzt, freigegeben_von: window.__oakName || "", updated_at: jetzt }, "return=minimal");
+    UW_MELDUNG = "Zuordnung gespeichert (Fassung " + ((cfg.version || 0) + 1) + "). Das Terminal übernimmt sie beim nächsten Start.";
+    renderSektionen();
+    setTimeout(() => { const d = document.querySelector("details.uw-mehr"); if(d) d.open = true; }, 50);
+  }catch(e){ meld.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); }
 }
 
 /* ---- Nachweis als PDF (Nikolai 16.09.2026) -------------------------------------------------

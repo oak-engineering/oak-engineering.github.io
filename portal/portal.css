@@ -733,3 +733,9 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .mg-kurz:hover{box-shadow:0 8px 20px rgba(16,24,40,.08)}
 .mg-kurz.aktiv{outline:2px solid var(--gruen);outline-offset:1px}
 @media(max-width:560px){.mg-kurzreihe{grid-template-columns:1fr 1fr 1fr;gap:8px}.mg-kurz .ck-hinweis{display:none}}
+
+.uw-zahnrad{display:inline-flex;align-items:center;gap:6px}
+.uw-zahnrad svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.uw-matrix th{font-size:12px;white-space:normal;min-width:90px;vertical-align:bottom}
+.uw-matrix td.uw-matrix-zelle{text-align:center;vertical-align:middle}
+.uw-matrix input[type=checkbox]{width:22px;height:22px;accent-color:var(--gruen);cursor:pointer}
