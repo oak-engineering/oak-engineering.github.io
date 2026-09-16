@@ -126,7 +126,7 @@ function renderCockpit(wrap, bereich){
           { name: "nicht bewertet", wert: z.ohne, klasse: "neutral" },
         ], "Maschinen")}
       </div>
-      <div class="ck-fuss">Risiko je Maschine = höchstes Ausgangsrisiko der Gefährdungsbeurteilung (1–3 Akzeptanz · 4–8 Besorgnis · 9–16 Gefahr), also vor Umsetzung der Maßnahmen.</div>`;
+`;
   }
 
   if(bereich === "umwelt"){

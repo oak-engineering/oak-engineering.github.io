@@ -9,7 +9,8 @@
 
 let MAENGEL = [], MG_GELADEN = false, MG_FILTER = { status: "offen", maschine: "" }, MG_MELDUNG = "";
 const MG_THEMA = { schutzzaun: "Schutzzäune & Roboterzellen", leiter_aufstieg: "Leitern & Aufstiege", leckage_ordnung: "Leckagen & Ordnung",
-                   pruefung: "Prüfungen & Dokumentation", elektrik: "Elektrik", sonstiges: "Sonstiges" };
+                   pruefung: "Prüfungen & Dokumentation", elektrik: "Elektrik", sonstiges: "Sonstiges",
+                   pruefung_meldung: "Gemeldet bei der Maschinenprüfung" };
 
 async function ladeMaengel(){
   try{ MAENGEL = await apiGet("/rest/v1/portal_maengel?select=*&order=prioritaet.asc,maschine.asc", false) || []; MG_GELADEN = true; }
@@ -45,7 +46,7 @@ async function renderMaengel(wrap){
       <div class="mg-text"><div class="mg-label">${esc(m.label)}</div>
         ${m.massnahme ? `<div class="mg-massnahme">Maßnahme: ${esc(m.massnahme)}</div>` : ""}
         ${erledigt ? `<div class="mg-nachweis">✓ erledigt ${esc(mgDatum(m.erledigt_am))}${m.erledigt_von ? " · " + esc(m.erledigt_von) : ""}${m.notiz ? " – " + esc(m.notiz) : ""}</div>` : ""}</div>
-      <div class="mg-aktion">${erledigt
+      <div class="mg-aktion">${m.foto_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.foto_pfad)}">Befundfoto</button>` : ""}${erledigt
         ? `${m.nachweis_pfad ? `<button type="button" class="btn-klein" data-mgfoto="${esc(m.nachweis_pfad)}">Foto</button>` : ""}${ADMIN ? `<button type="button" class="btn-klein" data-mgauf="${esc(m.id)}">öffnen</button>` : ""}`
         : `<button type="button" class="btn-klein mg-erl" data-mgerl="${esc(m.id)}">Erledigt</button>`}</div>
     </div>`;

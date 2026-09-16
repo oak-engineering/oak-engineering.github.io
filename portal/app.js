@@ -233,7 +233,7 @@ function renderEinbettung(wrap, was){
   const art = HASH_Q && HASH_Q.get("art"); HASH_Q = null;
   const url = was === "terminal" ? (tok ? "kiosk.html#t=" + encodeURIComponent(tok) : "")
             : was === "melden"   ? (mt ? "melden.html?t=" + encodeURIComponent(mt) + "&eingebettet=1" + (art ? "&art=" + encodeURIComponent(art) : "") : "")
-            : (mt ? "https://www.oak-engineering.de/oak-tools/begehung/?modus=kunde&kt=" + encodeURIComponent(mt) + "&kn=" + encodeURIComponent(kunde) : "");
+            : "pruefen.html?eingebettet=1&k=" + encodeURIComponent(AKTIV || "");   // eigene Checkliste (T 008-2), nicht der OAK-Begehungsbogen
   const sec = document.createElement("section"); sec.className = "sektion einbettung-sektion";
   if(!url){ sec.innerHTML = `<div class="ck-fuss">Für diesen Betrieb ist noch kein Zugang eingerichtet – bitte bei OAK engineering melden.</div>`; wrap.appendChild(sec); return; }
   sec.innerHTML = `<iframe class="einbettung" title="${esc(MEHR_LABEL[was] || "")}" allow="fullscreen; camera; microphone; geolocation"></iframe>
