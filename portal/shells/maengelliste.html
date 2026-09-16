@@ -76,16 +76,16 @@
   }
 
   /* ---- Bearbeitbare Kosten ---- */
-  .toolbar{position:sticky;top:0;z-index:20;background:#1B4332;padding:8px 12px;display:flex;
+  .toolbar{position:sticky;top:0;z-index:20;background:var(--dunkel);padding:8px 12px;display:flex;
     gap:8px;align-items:center;flex-wrap:wrap}
   .toolbar .tb{font:inherit;font-size:13px;padding:8px 12px;border:none;border-radius:8px;
-    background:#2D6A4F;color:#fff;cursor:pointer}
-  .toolbar .tb:hover{background:#52B788}
+    background:var(--gruen);color:#fff;cursor:pointer}
+  .toolbar .tb:hover{background:var(--hell)}
   .tb-hint{color:#b7cfc2;font-size:11.5px;margin-left:auto}
   input.zin{width:100%;font:inherit;font-size:13px;padding:5px 6px;border:1px solid #dbe5df;
     border-radius:6px;background:#fcfdfc;text-align:right;font-variant-numeric:tabular-nums}
   input.zin.ein{text-align:left}
-  input.zin:focus{outline:2px solid #52B788;outline-offset:-1px}
+  input.zin:focus{outline:2px solid var(--hell);outline-offset:-1px}
   .sw{cursor:pointer}
   .offen{color:#7a5b00;font-weight:600;font-size:12px}
   @media print{ .toolbar{display:none}

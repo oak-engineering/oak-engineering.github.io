@@ -254,12 +254,13 @@ document.addEventListener('click', e => {
     { id:'leistungen',     label:'Leistungen', ico:'raster' },
     { href:'kontakt.html', label:'Kontakt',    ico:'brief'  }
   ];
-  /* Die App fuer Schichtfuehrer: vier Ziele, mehr nicht. Start = vier Kacheln, Uebersicht = Cockpit,
-     Melden = Vorfall/Mangel mit Foto, Mehr = alles Weitere (Erweiterte Funktionen nur fuer Admins). */
+  /* Das Portal am Handy (16.09.2026): dieselben Ziele wie die Seitenleiste am PC. „Mehr" oeffnet
+     die Seitenleiste selbst (window.portalMenue) – eine Liste, keine zweite Menue-Logik. */
   const ZIELE_PORTAL_AN = [
-    { id:'start',      label:'Start',     ico:'haus'    },
-    { id:'ueberblick', label:'Übersicht', ico:'tafel'   },
-    { id:'melden',     label:'Melden',    ico:'warnung' }
+    { id:'start',          label:'Start',          ico:'haus'   },
+    { id:'maengel',        label:'Mängel',         ico:'pruef'  },
+    { id:'unterlagen',     label:'Unterlagen',     ico:'buch'   },
+    { id:'unterweisungen', label:'Unterweisung',   ico:'tafel'  }
   ];
   const ZIELE_PORTAL_AUS = [
     { id:'anmelden',      label:'Anmelden', ico:'schloss' },
@@ -314,14 +315,10 @@ document.addEventListener('click', e => {
       } else {
         /* Das Portal ist eine einzige Seite – der aktive Reiter folgt dem geoeffneten
            Unterbereich, nicht der Adresse. Cockpit heisst ck-…, Meldungen vf-… */
-        const sub = document.querySelector('#subTabs .sub-tab.aktiv');
-        const kat = sub ? (sub.dataset.sub || '') : '';
-        const b = document.body.classList;
-        treffer = b.contains('auf-start') ? reihe.querySelector('[data-ziel="start"]')
-                : b.contains('auf-mehr')  ? reihe.querySelector('[data-blatt="mehr"]')
-                : kat.indexOf('vf-') === 0 ? (reihe.querySelector('[data-ziel="vorfaelle"]') || reihe.querySelector('[data-ziel="melden"]'))
-                : kat.indexOf('ck-') === 0 ? reihe.querySelector('[data-ziel="ueberblick"]')
-                : null;
+        const seite = document.body.dataset.seite || '', unter = document.body.dataset.unterseite || '';
+        const id = (seite === 'mehr' && unter === 'unterweisungen') ? 'unterweisungen'
+                 : (seite === 'mehr') ? '' : seite;
+        treffer = id ? reihe.querySelector('[data-ziel="' + id + '"]') : reihe.querySelector('[data-blatt="mehr"]');
       }
     } else if(LEISTUNGSSEITEN.indexOf(datei) >= 0){
       treffer = reihe.querySelector('[data-ziel="leistungen"]');
@@ -415,7 +412,7 @@ document.addEventListener('click', e => {
     const subs = document.getElementById('subTabs');
     if(subs) new MutationObserver(() => aktivSetzen()).observe(subs, { childList:true, subtree:true });
     /* Startseite und Mehr setzen nur eine Klasse am body – darauf hoert der aktive Reiter ebenfalls. */
-    new MutationObserver(() => aktivSetzen()).observe(document.body, { attributes:true, attributeFilter:['class'] });
+    new MutationObserver(() => aktivSetzen()).observe(document.body, { attributes:true, attributeFilter:['class','data-seite','data-unterseite'] });
   }
 
   /* ── Klicks ── */
@@ -478,14 +475,23 @@ document.addEventListener('click', e => {
         text: (t.childNodes[0] && t.childNodes[0].textContent || t.textContent || '').trim()
       })), k);
 
-    } else if(k.dataset.blatt === 'start'){
-      if(window.portalGehe) window.portalGehe('start');
+    } else if(k.dataset.blatt === 'start' || k.dataset.blatt === 'maengel' || k.dataset.blatt === 'unterlagen'){
+      document.body.classList.remove('menue-auf');
+      if(window.portalGehe) window.portalGehe(k.dataset.blatt);
+      aktivSetzen();
+
+    } else if(k.dataset.blatt === 'unterweisungen'){
+      document.body.classList.remove('menue-auf');
+      if(window.portalGehe) window.portalGehe('mehr', 'unterweisungen');
       aktivSetzen();
 
     } else if(k.dataset.blatt === 'melden'){
       const kx = window.portalKontext ? window.portalKontext() : {};
       if(kx.meldeToken){ location.href = 'melden.html?t=' + encodeURIComponent(kx.meldeToken); }
       else if(window.portalGehe){ window.portalGehe('arbeitssicherheit', 'vf-arbeitssicherheit'); }
+
+    } else if(k.dataset.blatt === 'mehr' && window.portalMenue){
+      window.portalMenue();
 
     } else if(k.dataset.blatt === 'mehr'){
       const kx = window.portalKontext ? window.portalKontext() : {};

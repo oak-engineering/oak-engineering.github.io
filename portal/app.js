@@ -1,7 +1,7 @@
 /* OAK Kundenportal — Login + generischer Dokument-Hub (Kategorien). Nutzt auth.js (vorher geladen). */
 "use strict";
 const $ = s => document.querySelector(s);
-function zurLogin(){ $("#appView").classList.add("hidden"); $("#loginView").classList.remove("hidden"); }
+function zurLogin(){ document.documentElement.classList.remove("hat-sitzung"); $("#appView").classList.add("hidden"); $("#loginView").classList.remove("hidden"); }
 function zurApp(){ $("#loginView").classList.add("hidden"); $("#appView").classList.remove("hidden"); }
 
 /* Zwei-Ebenen-Navigation: Domänen-Tabs (oben) → Sub-Reiter (feine `kategorie`-Werte).
@@ -173,10 +173,12 @@ function statusBadge(r, neuestesDatum){
   return "";
 }
 
-/* ---- Startseite: die vier Dinge, die ein Schichtfuehrer braucht --------------------------
-   Unterweisung starten · Vorfall melden · Begehung durchfuehren · Unterlagen einsehen.
-   Alles andere (Reiter, Cockpit) liegt dahinter und ist ueber „Start" im Kopf jederzeit erreichbar. */
+/* ---- Startseite = Cockpit der App (Nikolai, 16.09.2026) ------------------------------------
+   Oben die vier Dinge, die ein Schichtfuehrer TUT. Darunter „Auf einen Blick" je Bereich
+   (Arbeitssicherheit · Umwelt · Energie, Umschalter) – jede Karte fuehrt auf ihre Liste.
+   Es gibt keine zweite Uebersicht daneben (renderCockpit in cockpit.js liefert die Karten). */
 let MELDE_TOK = [];
+let START_BEREICH = "arbeitssicherheit";
 async function meldeTokenLaden(){
   try{ MELDE_TOK = await apiGet("/rest/v1/portal_melde_token?select=token,kunde_slug,kunde&aktiv=is.true", false) || []; }catch(e){ MELDE_TOK = []; }
 }
@@ -184,82 +186,46 @@ const START_SVG = {
   terminal: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M8 10l2 2 4-4"/></svg>',
   warnung:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 9v5M12 17v.5"/></svg>',
   begehung: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8.5 11l2 2 4.5-4.5M8.5 16.5h7"/></svg>',
-  dokument: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>',
-  brief:    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
-  haken:    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7.5 12.5 3 3 6-7"/></svg>'
+  brief:    '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>'
 };
 function renderStart(wrap){
+  document.body.classList.add("auf-start");
   const tok = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
   const mt  = (MELDE_TOK.find(x => x.kunde_slug === AKTIV) || {}).token || "";
   const kunde = (ALLE.find(x => x.kunde_slug === AKTIV) || {}).kunde || "";
   const kachel = (href, titel, sub, svg, neu) =>
-    `<a class="start-kachel" href="${href}"${neu ? ' target="_blank" rel="noopener"' : ""}>${svg}<span class="sk-titel">${titel}</span><span class="sk-sub">${sub}</span></a>`;
+    `<a class="start-kachel" href="${href}"${neu ? ' target="_blank" rel="noopener"' : ""}><span class="sk-kopf"><span class="sk-titel">${titel}</span>${svg}</span><span class="sk-sub">${sub}</span></a>`;
   const sec = document.createElement("section"); sec.className = "sektion start-seite";
-  sec.innerHTML = `<h2 class="start-frage">Was möchten Sie tun?</h2>
-    <div class="start-raster">
-      ${kachel(tok ? "kiosk.html#t=" + encodeURIComponent(tok) : "#arbeitssicherheit/unterweisungen",
-               "Unterweisung starten", "Terminal für die Beschäftigten öffnen", START_SVG.terminal, !!tok)}
-      ${kachel(mt ? "melden.html?t=" + encodeURIComponent(mt) : "#arbeitssicherheit/vf-arbeitssicherheit",
-               "Vorfall melden", "Unfall, Beinahe-Unfall oder Mangel an einer Maschine", START_SVG.warnung, !!mt)}
-      ${kachel(mt ? "https://www.oak-engineering.de/oak-tools/begehung/?modus=kunde&kt=" + encodeURIComponent(mt) + "&kn=" + encodeURIComponent(kunde)
-                  : "#arbeitssicherheit/begehungen",
-               "Maschine prüfen", "Checkliste zur Maschinensicherheit", START_SVG.begehung, true)}
-      ${kachel("#arbeitssicherheit/anlagen", "Unterlagen einsehen", "Betriebsanweisungen, Gefährdungsbeurteilungen, Mängellisten", START_SVG.dokument, false)}
-      ${kachel("#arbeitssicherheit/maengel", "Mängel abarbeiten", (typeof mgOffen === "function" && MAENGEL.length ? mgOffen() + " offen · " : "") + "To-Do-Liste nach Priorität", START_SVG.haken, false)}
-      ${kachel("#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto – Antwort ins Portal und per Mail", START_SVG.brief, false)}
+  const bereiche = [["arbeitssicherheit", "Arbeitssicherheit"], ["umwelt", "Umwelt"], ["energie", "Energie"]];
+  sec.innerHTML = `<div class="start-raster">
+      ${kachel(tok ? "kiosk.html#t=" + encodeURIComponent(tok) : "#mehr/unterweisungen", "Unterweisung starten", "Terminal für die Beschäftigten", START_SVG.terminal, !!tok)}
+      ${kachel(mt ? "melden.html?t=" + encodeURIComponent(mt) + "&portal=1" : "#mehr/vorfaelle", "Vorfall melden", "Unfall, Beinahe-Unfall oder Mangel", START_SVG.warnung, false)}
+      ${kachel(mt ? "https://www.oak-engineering.de/oak-tools/begehung/?modus=kunde&kt=" + encodeURIComponent(mt) + "&kn=" + encodeURIComponent(kunde) : "#unterlagen/begehungen",
+               "Maschine prüfen", "Checkliste direkt an der Maschine", START_SVG.begehung, !!mt)}
+      ${kachel("#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", START_SVG.brief, false)}
     </div>
-    ${startZahlen()}
-    <p class="start-mehr"><a href="#arbeitssicherheit/ck-arbeitssicherheit">Ausführlicher Überblick</a></p>`;
+    <div class="start-blick-kopf"><h2>Auf einen Blick</h2>
+      <div class="uw-pills">${bereiche.map(([k, l]) => `<button type="button" class="uw-pill${k === START_BEREICH ? " aktiv" : ""}" data-bereich="${k}">${l}</button>`).join("")}</div></div>
+    <div id="startBlick"></div>`;
   wrap.appendChild(sec);
-  document.body.classList.add("auf-start");
-}
-/* Auf einen Blick: drei Zahlen, jede springt auf ihre Liste. */
-function startZahlen(){
-  let gefahr = 0, vorf = 0, faellig = 0;
-  try{ gefahr = ckAnlagenZahlen().gefahr || 0; }catch(e){}
-  try{ vorf = vSichtbar().filter(v => v.domaene !== "umwelt" && v.status !== "erledigt").length; }catch(e){}
-  try{
-    const pers = uwPersonen();
-    const rows = uwSichtbar();
-    faellig = pers.filter(p => { const n = uwLetzterNachweis(p.name); return !n || uwStatus(n).klasse !== "gut"; }).length
-            + uwJeMitarbeiter(rows).filter(n => !pers.some(p => uwNorm(p.name) === uwNorm(n.mitarbeiter_name)) && uwStatus(n).klasse !== "gut").length;
-  }catch(e){}
-  const z = (n, label, href, stufe) => `<a class="start-zahl${n ? " sz-" + stufe : ""}" href="${href}"><b>${n}</b><span>${label}</span></a>`;
-  return `<div class="start-zahlen">
-    ${z(gefahr, "Anlagen im Gefahrbereich", "#arbeitssicherheit/anlagen?status=gefahr", "kritisch")}
-    ${z((typeof mgOffen === "function") ? mgOffen() : 0, "offene Mängel", "#arbeitssicherheit/maengel", "kritisch")}
-    ${z(vorf, "offene Vorfälle", "#arbeitssicherheit/vf-arbeitssicherheit", "warnung")}
-    ${z(faellig, "Unterweisungen fällig", "#arbeitssicherheit/unterweisungen", "warnung")}
-  </div>`;
+  renderCockpit(sec.querySelector("#startBlick"), START_BEREICH);
+  sec.querySelectorAll("[data-bereich]").forEach(b => b.addEventListener("click", () => { START_BEREICH = b.dataset.bereich; renderSektionen(); }));
 }
 
 function setKundeName(){
   const r = AKTIV ? ALLE.find(x => x.kunde_slug===AKTIV) : ALLE[0];
-  $("#kundeName").textContent = (r && r.kunde) || "";
+  const kn = $("#kundeName"); if(kn) kn.textContent = (r && r.kunde) || "";
   markeAnwenden();
 }
 
-/* ---- Marke je Kunde (portal_kunde.marke): Farben und Logo des Betriebs statt OAK-Gruen ----
-   Das Portal soll fuer die Beschaeftigten wie IHR Werkzeug aussehen (wie das Unterweisungs-Terminal).
-   Die Farben werden als Inline-Variablen auf :root gesetzt, portal.css arbeitet ueberall mit var(...). */
+/* ---- Marke je Kunde (portal_kunde.marke) – gesetzt wird zentral in marke.js (auch Zwischenspeicher) ---- */
 let MARKEN = [];
 async function markeLaden(){
   try{ MARKEN = await apiGet("/rest/v1/portal_kunde?select=slug,name,marke", false) || []; }catch(e){ MARKEN = []; }
 }
 function markeAnwenden(){
   const k = MARKEN.find(x => x.slug === AKTIV);
-  const m = (k && k.marke) || {};
-  const st = document.documentElement.style;
-  const setz = (name, wert) => { if(wert) st.setProperty(name, wert); else st.removeProperty(name); };
-  setz("--gruen", m.farbe);        setz("--oak", m.farbe);
-  setz("--dunkel", m.farbe_tief);  setz("--oak-deep", m.farbe_tief);
-  setz("--hellgruen", m.farbe_hell); setz("--oak-light", m.farbe_hell); setz("--oak-mid", m.farbe_hell);
-  setz("--akzent", m.akzent);      setz("--oak-pale", m.akzent);
-  setz("--oak-ghost", m.hintergrund);
-  const img = $("#kundeLogo");
-  if(img){ if(m.logo){ img.src = m.logo; img.alt = (k && k.name) || ""; img.hidden = false; } else { img.hidden = true; img.removeAttribute("src"); } }
-  document.body.classList.toggle("marke-kunde", !!m.farbe);
-  const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute("content", m.farbe || "#2D6A4F");
+  if(window.OAK_MARKE) OAK_MARKE.setzen((k && k.marke) || {}, (k && k.name) || "");
 }
 function renderAdminBar(){
   const bar = $("#adminBar");
@@ -267,13 +233,10 @@ function renderAdminBar(){
   const kunden = [...new Map(ALLE.map(r => [r.kunde_slug, r.kunde || r.kunde_slug])).entries()]
     .sort((a,b) => String(a[1]).localeCompare(String(b[1])));
   bar.classList.remove("hidden");
-  const kopfWrap = document.querySelector("#appView .kopf .wrap");
-  if(kopfWrap && bar.parentElement !== kopfWrap) kopfWrap.insertBefore(bar, kopfWrap.querySelector(".rechts"));   // Nikolai: in die Kopfzeile
-  bar.innerHTML = `<span class="admin-tag">Admin</span> <label for="kundeWahl">Kunde:</label>
-    <select id="kundeWahl">${kunden.map(([slug,name]) =>
-      `<option value="${esc(slug)}"${slug===AKTIV?" selected":""}>${esc(name)}</option>`).join("")}</select>
-    <span class="admin-hint">Sie sehen die Ansicht dieses Kunden.</span>`;
-  $("#kundeWahl").addEventListener("change", e => { AKTIV = e.target.value; AKTIVE_DOM = null; AKTIVE_SUB = null; setKundeName(); renderTabs(); renderSubTabs(); renderSektionen(); });
+  bar.innerHTML = `<span class="admin-tag">Admin</span>
+    <select id="kundeWahl" aria-label="Kunde wählen">${kunden.map(([slug,name]) =>
+      `<option value="${esc(slug)}"${slug===AKTIV?" selected":""}>${esc(name)}</option>`).join("")}</select>`;
+  $("#kundeWahl").addEventListener("change", e => { AKTIV = e.target.value; setKundeName(); portalGehe("start"); });
 }
 
 /* Klick-Sortierung: Standard nach Priorität (rote oben). Klick auf einen Spaltenkopf setzt/dreht die
@@ -341,39 +304,73 @@ function docZeile(r){
 
 let AKTIVE_DOM = null, AKTIVE_SUB = null;
 let PORTAL_BEREIT = false;
-/* Reiter in der Adresse (#domaene/reiter): Browser-„Zurück" bleibt im Portal statt auf die Website
-   zu springen, und ein Reiter ist verlinkbar (z. B. #arbeitssicherheit/unterweisungen). */
+/* ---- Seiten der App (16.09.2026) ------------------------------------------------------------
+   EINE Navigation fuer alle Rollen, auch Admin (keine Reiterleisten mehr):
+     start · maengel · unterlagen[/kategorie] · mehr/<unterseite>
+   Die Seite steht in der Adresse – Browser-„Zurueck" bleibt im Portal. Alte Adressen
+   (#arbeitssicherheit/anlagen, Cockpit-Links …) werden umgeschrieben und funktionieren weiter. */
+const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vorfälle", "vf-umwelt": "Umweltvorfälle",
+                     anfragen: "Frage an OAK engineering", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
+                     kapitel: "Unterweisungs-Inhalte", "uw-ueberblick": "Unterweisungen – Überblick" };
+const UNTERLAGEN = [
+  { bereich: "Arbeitssicherheit", kats: [
+      ["anlagen", "Maschinen & Anlagen", "Gefährdungsbeurteilung, Betriebsanweisung und Mängelliste je Maschine"],
+      ["hallenplan", "Hallenplan", "Alle Maschinen mit ihrem Risiko"],
+      ["allg-gbu", "Allgemeine Gefährdungsbeurteilungen", "Tätigkeiten und Themen ohne feste Maschine"],
+      ["gefahrstoffe", "Gefahrstoffe", "Verzeichnis und Betriebsanweisungen"],
+      ["begehungen", "Begehungsprotokolle", "Was bei den Begehungen festgestellt wurde"],
+      ["vom-betrieb", "Vom Betrieb", "Eigene Dokumente hochladen und ansehen"] ]},
+  { bereich: "Umwelt", kats: [
+      ["umwelt-immissionsschutz", "Immissionsschutz", ""], ["umwelt-gewaesserschutz", "Gewässerschutz", ""],
+      ["umwelt-awsv", "AwSV", ""], ["umwelt-unterweisungen", "Unterweisungen Umwelt", ""] ]},
+  { bereich: "Energie", kats: [
+      ["energie-aspekte", "Energieaspekte", ""], ["energie-verbrauch", "Verbrauch & Messstellen", ""],
+      ["energie-massnahmen", "Effizienzmaßnahmen", ""] ]}
+];
+const UL_LABEL = Object.fromEntries(UNTERLAGEN.flatMap(b => b.kats.map(k => [k[0], k[1]])).concat([["sonstige", "Weitere Unterlagen"]]));
+function navNormal(dom, sub){
+  if(!dom) return ["start", null];
+  if(dom === "mehr" && sub === "upload") return ["unterlagen", "vom-betrieb"];
+  if(["start", "maengel", "unterlagen", "mehr"].includes(dom)) return (dom === "mehr" && !sub) ? ["start", null] : [dom, sub || null];
+  if(dom === "weitere") return ["unterlagen", "sonstige"];
+  if(!DOMAENEN.some(d => d.key === dom)) return ["start", null];
+  if(!sub || sub.indexOf("ck-") === 0){ START_BEREICH = dom; return ["start", null]; }
+  if(sub === "maengel") return ["maengel", null];
+  if(sub === "unterweisungen") return ["mehr", "unterweisungen"];
+  if(sub === "vf-arbeitssicherheit") return ["mehr", "vorfaelle"];
+  if(sub === "vf-umwelt") return ["mehr", "vf-umwelt"];
+  return ["unterlagen", sub];
+}
 function hashSetzen(ersetzen){
-  const h = "#" + (AKTIVE_DOM || "") + (AKTIVE_SUB ? "/" + AKTIVE_SUB : "");
+  const h = "#" + (AKTIVE_DOM || "start") + (AKTIVE_SUB ? "/" + AKTIVE_SUB : "");
   if(location.hash === h) return;
   try{ if(ersetzen) history.replaceState(null, "", h); else history.pushState(null, "", h); }catch(e){}
 }
-let HASH_Q = null;   // Parameter hinter dem Reiter, z. B. #arbeitssicherheit/anlagen?status=gefahr (Cockpit-Kacheln)
+let HASH_Q = null;   // Parameter hinter der Seite, z. B. #unterlagen/anlagen?status=gefahr (Cockpit-Karte)
 function hashLesen(){
   const roh = location.hash.replace(/^#/, "");
   const [pfad, q] = roh.split("?");
   const t = pfad.split("/");
   if(!t[0]) return false;
-  AKTIVE_DOM = decodeURIComponent(t[0]); AKTIVE_SUB = t[1] ? decodeURIComponent(t[1]) : null;
+  const n = navNormal(decodeURIComponent(t[0]), t[1] ? decodeURIComponent(t[1]) : null);
+  AKTIVE_DOM = n[0]; AKTIVE_SUB = n[1];
   HASH_Q = q ? new URLSearchParams(q) : null;
   return true;
 }
-/* Oeffentliche Portal-API fuer die Leiste unten (site.js): ein Aufruf statt DOM-Klicks. */
-const MEHR_LABEL = { "uw-katalog": "Modulkatalog", "personen": "Mitarbeiter", "kapitel": "Unterweisungs-Inhalte",
-                     "uw-ueberblick": "Unterweisungen – Überblick", "anfragen": "Frage an OAK engineering", "upload": "Dokument hochladen" };
+/* Oeffentliche Portal-API fuer die Leiste unten (site.js) */
 window.portalGehe = function(dom, sub){
-  AKTIVE_DOM = dom; AKTIVE_SUB = sub || null;
-  renderTabs(); renderSubTabs(); renderSektionen(); hashSetzen(false);
+  const n = navNormal(dom, sub); AKTIVE_DOM = n[0]; AKTIVE_SUB = n[1];
+  renderSektionen(); hashSetzen(false);
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 window.portalKontext = function(){
-  return { admin: !!ADMIN, fachkraft: !!window.__oakFachkraft, aktiv: AKTIV,
-           meldeToken: ((typeof MELDE_TOK !== "undefined" ? MELDE_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "",
-           domaenen: (typeof verfuegbareDomaenen === "function") ? verfuegbareDomaenen() : [] };
+  return { admin: !!ADMIN, fachkraft: !!window.__oakFachkraft, aktiv: AKTIV, seite: AKTIVE_DOM, unterseite: AKTIVE_SUB,
+           meldeToken: ((typeof MELDE_TOK !== "undefined" ? MELDE_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "" };
 };
 window.addEventListener("popstate", () => {
   if(!PORTAL_BEREIT) return;
-  hashLesen(); renderTabs(); renderSubTabs(); renderSektionen(); hashSetzen(true);
+  if(!hashLesen()){ AKTIVE_DOM = "start"; AKTIVE_SUB = null; }
+  renderSektionen(); hashSetzen(true); window.scrollTo(0, 0);
 });
 function katRows(kat){
   if(kat.indexOf("ck-") === 0) return [];                        // Cockpit hat keinen Zähler
@@ -461,64 +458,108 @@ function reiterUeberlaufPruefen(){
 }
 window.addEventListener("resize", reiterUeberlaufPruefen);
 
-/* Ebene 1: Domänen-Tabs */
-function renderTabs(){
-  const nav = $("#katTabs"); if(!nav) return;
-  const doms = verfuegbareDomaenen();
-  if(AKTIVE_DOM === "start" || AKTIVE_DOM === "mehr"){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }   // Startseite/Mehr ohne Reiter
-  if(!doms.length){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
-  // Standard-Tab: erste Domäne MIT Inhalt (Kunde landet auf Dokumenten, nicht auf leerem Bereich).
-  if(!AKTIVE_DOM || !doms.some(d => d.key===AKTIVE_DOM)) AKTIVE_DOM = (doms.find(domHatInhalt) || doms[0]).key;
-  nav.classList.remove("hidden");
-  nav.innerHTML = doms.map(d => {
-    const n = domCount(d);
-    return `<button type="button" class="kat-tab${d.key===AKTIVE_DOM?" aktiv":""}" data-dom="${esc(d.key)}"`
-      + ` role="tab" aria-selected="${d.key===AKTIVE_DOM}">${d.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
-  }).join("");
-  nav.querySelectorAll(".kat-tab").forEach(b => b.addEventListener("click", () => {
-    AKTIVE_DOM = b.dataset.dom; AKTIVE_SUB = null; renderTabs(); renderSubTabs(); renderSektionen(); hashSetzen(false);
-  }));
-  reiterUeberlauf(nav);
+/* Reiterleisten gibt es nicht mehr (eine Navigation fuer alle) – die Funktionen bleiben als leere Huelle,
+   weil andere Dateien sie nach dem Speichern noch aufrufen. */
+function renderTabs(){ const nav = $("#katTabs"); if(nav){ nav.classList.add("hidden"); nav.innerHTML = ""; } }
+function renderSubTabs(){ const nav = $("#subTabs"); if(nav){ nav.classList.add("hidden"); nav.innerHTML = ""; } }
+
+/* Kopf jeder Unterseite: „‹ Zurueck" + Titel. Unterlagen-Listen gehen zurueck auf Unterlagen, alles andere auf Start. */
+function seitenKopf(wrap){
+  let titel = "", ziel = ["start", null], zLabel = "Start";
+  if(AKTIVE_DOM === "unterlagen" && AKTIVE_SUB){ titel = UL_LABEL[AKTIVE_SUB] || AKTIVE_SUB; ziel = ["unterlagen", null]; zLabel = "Unterlagen"; }
+  else if(AKTIVE_DOM === "unterlagen"){ titel = "Unterlagen"; }
+  else if(AKTIVE_DOM === "maengel"){ titel = "Mängel"; }
+  else if(AKTIVE_DOM === "mehr"){ titel = MEHR_LABEL[AKTIVE_SUB] || ""; }
+  const k = document.createElement("div"); k.className = "seiten-kopf";
+  k.innerHTML = `<button type="button" class="zurueck">‹ ${esc(zLabel)}</button><h1>${esc(titel)}</h1>`;
+  k.querySelector(".zurueck").addEventListener("click", () => portalGehe(ziel[0], ziel[1]));
+  wrap.appendChild(k);
 }
 
-/* Ebene 2: Sub-Reiter der aktiven Domäne (verborgen, wenn nur ein Sub sichtbar) */
-function renderSubTabs(){
-  const nav = $("#subTabs"); if(!nav) return;
-  if(AKTIVE_DOM === "start"){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = null; return; }
-  if(AKTIVE_DOM === "mehr"){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
-  const dom = verfuegbareDomaenen().find(d => d.key===AKTIVE_DOM);
-  const subs = verfuegbareSubs(dom);
-  if(subs.length <= 1){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = subs[0] ? subs[0].kat : null; return; }
-  // Standard-Sub: das Cockpit, wenn die Domäne eines hat – sonst der erste Reiter mit Inhalt.
-  if(!AKTIVE_SUB || !subs.some(s => s.kat===AKTIVE_SUB))
-    AKTIVE_SUB = (subs.find(s => s.kat.indexOf("ck-")===0)
-               || subs.find(s => s.kat === "uw-ueberblick")
-               || subs.find(s => katRows(s.kat).length) || subs[0]).kat;
-  nav.classList.remove("hidden");
-  nav.innerHTML = subs.map(s => {
-    const n = katRows(s.kat).length;
-    return `<button type="button" class="sub-tab${s.kat===AKTIVE_SUB?" aktiv":""}" data-sub="${esc(s.kat)}"`
-      + ` role="tab" aria-selected="${s.kat===AKTIVE_SUB}">${s.label}${n?` <span class="tab-n">${n}</span>`:""}</button>`;
-  }).join("");
-  nav.querySelectorAll(".sub-tab").forEach(b => b.addEventListener("click", () => {
-    AKTIVE_SUB = b.dataset.sub; renderSubTabs(); renderSektionen(); hashSetzen(false);
-  }));
-  reiterUeberlauf(nav);
+/* Unterlagen: eine Seite mit den Gruppen je Bereich – nur was es gibt, „Vom Betrieb" immer (Hochladen). */
+function renderUnterlagen(wrap){
+  const anzahl = kat => kat === "energie-massnahmen" ? ((typeof eSichtbar === "function") ? eSichtbar().length : 0) : katRows(kat).length;
+  const sec = document.createElement("section"); sec.className = "sektion ul-seite";
+  const rest = katRows("sonstige").length;
+  sec.innerHTML = UNTERLAGEN.map(b => {
+    const kats = b.kats.filter(k => k[0] === "vom-betrieb" || anzahl(k[0]));
+    return `<h2 class="ul-bereich">${esc(b.bereich)}</h2>` + (kats.length
+      ? `<div class="ul-raster">${kats.map(k => { const n = anzahl(k[0]);
+          return `<a class="ul-karte" href="#unterlagen/${k[0]}"><span class="ul-titel">${esc(k[1])}</span>`
+            + `${k[2] ? `<span class="ul-sub">${esc(k[2])}</span>` : ""}<span class="ul-n">${k[0] === "vom-betrieb" ? (n ? n + " · hochladen" : "hochladen") : n}</span></a>`; }).join("")}</div>`
+      : `<div class="ul-leer">Noch keine Unterlagen – der Bereich wird mit OAK engineering aufgebaut.</div>`);
+  }).join("") + (rest ? `<h2 class="ul-bereich">Weitere</h2><div class="ul-raster"><a class="ul-karte" href="#unterlagen/sonstige"><span class="ul-titel">Weitere Unterlagen</span><span class="ul-n">${rest}</span></a></div>` : "");
+  wrap.appendChild(sec);
 }
+
+/* ---- Seitenleiste (Nikolai 16.09.: „staendig verfuegbare Seitenleiste ist deutlich intuitiver") ----
+   Am PC fest links, am Handy faehrt dieselbe Leiste ueber „Mehr" (Leiste unten) herein. Eine Liste, zwei Groessen. */
+const NAV_SVG = {
+  start: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/>',
+  maengel: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7.5 12.5 3 3 6-7"/>',
+  unterlagen: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/>',
+  unterweisungen: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  vorfaelle: '<path d="M12 3.5 2.8 20h18.4L12 3.5z"/><path d="M12 10v4.2M12 17.4h.01"/>',
+  anfragen: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m21 7-9 6-9-6"/>',
+  werkzeug: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  schloss: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  tuer: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>'
+};
+function uwFaelligZahl(){
+  try{
+    const pers = uwPersonen(), rows = uwSichtbar();
+    return pers.filter(p => { const n = uwLetzterNachweis(p.name); return !n || uwStatus(n).klasse !== "gut"; }).length
+         + uwJeMitarbeiter(rows).filter(n => !pers.some(p => uwNorm(p.name) === uwNorm(n.mitarbeiter_name)) && uwStatus(n).klasse !== "gut").length;
+  }catch(e){ return 0; }
+}
+function renderSeitenleiste(){
+  const el = $("#seitenleiste"); if(!el) return;
+  const mg = (typeof MG_GELADEN !== "undefined" && MG_GELADEN) ? mgOffen() : 0;
+  const uw = uwFaelligZahl();
+  const aktiv = (dom, sub) => dom === "unterlagen" ? AKTIVE_DOM === "unterlagen"
+    : dom === "mehr" ? (AKTIVE_DOM === "mehr" && (AKTIVE_SUB === sub || (sub === "vorfaelle" && AKTIVE_SUB === "vf-umwelt")))
+    : AKTIVE_DOM === dom;
+  const e = (dom, sub, ico, text, badge) => `<button type="button" class="sl-eintrag${aktiv(dom, sub) ? " aktiv" : ""}" data-nav="${dom}${sub ? "/" + sub : ""}">`
+    + `<svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG[ico]}</svg><span>${text}</span>${badge ? `<b class="sl-badge">${badge}</b>` : ""}</button>`;
+  const erweitert = (ADMIN || window.__oakFachkraft) ? `<div class="sl-kopf">Erweiterte Funktionen</div>
+      ${e("mehr", "uw-katalog", "werkzeug", "Modulkatalog")}${e("mehr", "personen", "werkzeug", "Mitarbeiter verwalten")}${e("mehr", "kapitel", "werkzeug", "Unterweisungs-Inhalte")}` : "";
+  el.innerHTML = `<nav class="sl-liste">
+      ${e("start", null, "start", "Start")}
+      ${e("maengel", null, "maengel", "Mängel", mg)}
+      ${e("unterlagen", null, "unterlagen", "Unterlagen")}
+      ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen", uw)}
+      ${e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
+      ${e("mehr", "anfragen", "anfragen", "Frage an OAK")}
+      ${erweitert}
+    </nav>
+    <div class="sl-fuss">
+      <button type="button" class="sl-eintrag" data-aktion-id="pwBtn"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.schloss}</svg><span>Passwort ändern</span></button>
+      <button type="button" class="sl-eintrag" data-aktion-id="logoutBtn"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.tuer}</svg><span>Abmelden</span></button>
+    </div>`;
+  el.querySelectorAll("[data-nav]").forEach(b => b.addEventListener("click", () => {
+    document.body.classList.remove("menue-auf"); const t = b.dataset.nav.split("/"); portalGehe(t[0], t[1] || null); }));
+  el.querySelectorAll("[data-aktion-id]").forEach(b => b.addEventListener("click", () => {
+    document.body.classList.remove("menue-auf"); const z = document.getElementById(b.dataset.aktionId); if(z) z.click(); }));
+}
+window.portalMenue = function(){ document.body.classList.toggle("menue-auf"); };
 
 function renderSektionen(){
   const wrap = $("#sektionen"); wrap.innerHTML = "";
   document.body.classList.remove("auf-start"); document.body.classList.remove("auf-mehr");
+  if(!AKTIVE_DOM || AKTIVE_DOM === "start" || (AKTIVE_DOM === "mehr" && !AKTIVE_SUB)){ AKTIVE_DOM = "start"; AKTIVE_SUB = null; }
+  document.body.dataset.seite = AKTIVE_DOM; document.body.dataset.unterseite = AKTIVE_SUB || "";
+  renderSeitenleiste();
   if(AKTIVE_DOM === "start"){ renderStart(wrap); return; }
-  if(AKTIVE_DOM === "mehr"){ document.body.classList.add("auf-mehr"); renderSektion(wrap, AKTIVE_SUB || "", MEHR_LABEL[AKTIVE_SUB] || KAT_LABEL[AKTIVE_SUB] || "", true); return; }
-  const doms = verfuegbareDomaenen();
-  if(!doms.length){ wrap.innerHTML = `<div class="leer">Für Sie sind derzeit keine Unterlagen hinterlegt.</div>`; return; }
-  const dom = doms.find(d => d.key===AKTIVE_DOM) || doms[0];
-  const subs = verfuegbareSubs(dom);
-  if(!subs.length){ wrap.innerHTML = `<div class="leer">In dieser Kategorie sind keine Unterlagen hinterlegt.</div>`; return; }
-  const sub = subs.find(s => s.kat===AKTIVE_SUB) || subs[0];
-  // Bei ausgeblendeter Sub-Leiste (nur ein Sub) die Zwischenüberschrift zeigen, sonst benennt der Reiter.
-  renderSektion(wrap, sub.kat, KAT_LABEL[sub.kat], subs.length <= 1);
+  seitenKopf(wrap);
+  if(AKTIVE_DOM === "maengel"){ renderMaengel(wrap); return; }
+  if(AKTIVE_DOM === "mehr"){
+    if(AKTIVE_SUB === "vorfaelle"){ renderVorfaelle(wrap, "arbeitssicherheit"); return; }
+    if(AKTIVE_SUB === "vf-umwelt"){ renderVorfaelle(wrap, "umwelt"); return; }
+    renderSektion(wrap, AKTIVE_SUB, MEHR_LABEL[AKTIVE_SUB] || "", false); return;
+  }
+  if(!AKTIVE_SUB){ renderUnterlagen(wrap); return; }
+  if(AKTIVE_SUB === "vom-betrieb"){ renderUpload(wrap); return; }
+  renderSektion(wrap, AKTIVE_SUB, UL_LABEL[AKTIVE_SUB] || KAT_LABEL[AKTIVE_SUB] || "", false);
   const s=$("#suche"); if(s){ s.addEventListener("input", renderAnlagen);
     ["#typFilter","#datumFilter","#statusFilter"].forEach(id=>{ const el=$(id); if(el) el.addEventListener("change", renderAnlagen); });
     const tab=$("#anlagen-tabelle"); if(tab){
@@ -568,7 +609,7 @@ async function ladePortal(){
        welche Knoepfe erscheinen. */
     window.__oakFachkraft = !!(me && me[0] && me[0].rolle === "fachkraft");
     window.__oakName = ADMIN_NAME;
-    document.body.classList.toggle("app-modus", !ADMIN);   // Schichtfuehrer/Fachkraft: Leiste unten statt Reiter
+    document.body.classList.add("app-modus");   // eine App fuer alle Rollen: Leiste unten, keine Reiter
     MITGLIED = (me && me[0]) || null;
 
     /* Welle 2 – alles parallel, ohne Ballast (qr_svg ist 1 MB und wird hier nie gebraucht) */
@@ -614,6 +655,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     finally{ btn.disabled=false; }
   });
   $("#logoutBtn").addEventListener("click", ()=>{ clearSession(); ALLE=[]; zurLogin(); });
+  $("#markeStart").addEventListener("click", ev => { ev.preventDefault(); if(PORTAL_BEREIT) portalGehe("start"); });
+  /* Handy: Seitenleiste schliesst bei Tipp daneben */
+  document.addEventListener("click", ev => {
+    if(document.body.classList.contains("menue-auf") && !ev.target.closest("#seitenleiste") && !ev.target.closest(".tab-i"))
+      document.body.classList.remove("menue-auf");
+  });
 
   /* Kiosk-Betrieb (?kiosk=1, gesetzt vom Unterweisungs-Terminal): Das Geraet steht offen in
      der Halle - eine angemeldete Sitzung darf dort nicht stehenbleiben, im Portal liegen

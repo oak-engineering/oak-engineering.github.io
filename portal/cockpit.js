@@ -95,35 +95,38 @@ function renderCockpit(wrap, bereich){
   let inhalt = "";
 
   if(bereich === "arbeitssicherheit"){
+    /* Startseite „Auf einen Blick" (16.09.2026): was ein Schichtfuehrer morgens wissen will – jede Karte fuehrt zur Liste. */
     const z = ckAnlagenZahlen();
     const vf = vSichtbar().filter(v => v.domaene !== "umwelt");
     const vOffenN = vf.filter(v => v.status !== "erledigt").length;
-    const unfaelle = vf.filter(v => v.art === "unfall").length;
-    const beinahe = vf.filter(v => v.art === "beinahe").length;
-    const tokT = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
+    const letzterV = vf.slice().sort((a, b) => String(b.ereignis_am || b.angelegt_am || "").localeCompare(String(a.ereignis_am || a.angelegt_am || "")))[0];
+    const ART = { unfall: "Unfall", beinahe: "Beinahe-Unfall", mangel: "Mangel", umwelt: "Umweltvorfall", sonstiges: "Sonstiges" };
+    const mgGeladen = (typeof MG_GELADEN !== "undefined" && MG_GELADEN);
+    const mg = mgGeladen ? mgSichtbar().filter(m => m.status !== "erledigt") : [];
+    const mgZaun = mg.filter(m => m.thema === "schutzzaun").length, mgGefahr = mg.filter(m => m.band === "gefahr").length;
+    const begehungen = sichtbar().filter(r => r.kategorie === "begehungen");
+    const letzteBeg = begehungen.map(r => r.stand).concat(sichtbar().filter(r => r.kategorie === "anlagen").map(r => r.stand)).filter(Boolean).sort().slice(-1)[0] || "";
+    const uwF = (typeof uwFaelligZahl === "function") ? uwFaelligZahl() : 0;
+    const uwRows = (typeof uwSichtbar === "function") ? uwSichtbar() : [];
+    const uwLetzt = uwRows.length ? uwRows[0].created_at : "";
     inhalt = `
-      <div class="ck-aktionen">${tokT ? `<a class="uw-start" href="kiosk.html#t=${encodeURIComponent(tokT)}" target="_blank" rel="noopener">Unterweisungs-Terminal starten</a>` : ""}
-        <a class="btn sek" href="#arbeitssicherheit/unterweisungen">Wer ist fällig</a></div>
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(z.gefahr, "Anlagen im Gefahrbereich", z.gefahr ? "vorrangig abstellen – Liste öffnen" : "keine", z.gefahr ? "kritisch" : "gut", "arbeitssicherheit/anlagen?status=gefahr")}
-          ${ckTile(z.maengel, "Mängel im Gefahrbereich", "aus den Mängellisten der Anlagen", z.maengel ? "kritisch" : "gut", "arbeitssicherheit/maengel")}
-          ${ckTile(z.gesamt - z.offen, "Maßnahmen wirksam", "von " + z.gesamt + " dokumentierten", (z.gesamt && !(z.gesamt - z.offen)) ? "warnung" : "", "arbeitssicherheit/anlagen")}
-          ${ckTile(vOffenN, "offene Vorfälle", unfaelle + " Unfälle · " + beinahe + " Beinahe-Unfälle", vOffenN ? "warnung" : "gut", "arbeitssicherheit/vf-arbeitssicherheit")}
-          ${ckTile(z.freigegeben + "/" + z.anlagen, "Anlagen-Dokumente freigegeben", "durch die Sicherheitsfachkraft", "", "arbeitssicherheit/anlagen")}
-          ${ckTile(ckDatum(z.letzte), "Unterlagen aktualisiert", "Stand der Anlagendokumente", "", "arbeitssicherheit/anlagen")}
+          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich") : "wird geladen", mg.length ? "kritisch" : "gut", "maengel")}
+          ${ckTile(uwF, "Unterweisungen fällig", uwLetzt ? "letzter Nachweis " + ckDatum(uwLetzt) : "noch kein Nachweis", uwF ? "warnung" : "gut", "mehr/unterweisungen")}
+          ${ckTile(letzterV ? ckDatum(letzterV.ereignis_am || letzterV.angelegt_am) : "keiner", "letzter Vorfall", letzterV ? (ART[letzterV.art] || "Vorfall") + " · " + vOffenN + " offen" : "bisher nichts gemeldet", vOffenN ? "warnung" : "", "mehr/vorfaelle")}
+          ${ckTile(ckDatum(letzteBeg), "letzte Begehung", begehungen.length + " Begehungsprotokolle", "", "unterlagen/begehungen")}
+          ${ckTile(z.gefahr + " von " + z.anlagen, "Anlagen im Gefahrbereich", z.besorgnis + " Besorgnis · " + z.akzeptanz + " Akzeptanz", z.gefahr ? "kritisch" : "gut", "unterlagen/anlagen?status=gefahr")}
+          ${ckTile(ckDatum(z.letzte), "Unterlagen aktualisiert", z.anlagen + " Maschinen dokumentiert", "", "unterlagen")}
         </div>
         ${ckRing([
           { name: "Gefahrbereich", wert: z.gefahr, klasse: "kritisch" },
           { name: "Besorgnisbereich", wert: z.besorgnis, klasse: "warnung" },
           { name: "Akzeptanzbereich", wert: z.akzeptanz, klasse: "gut" },
           { name: "nicht bewertet", wert: z.ohne, klasse: "neutral" },
-        ], "Anlagen")}
+        ], "Maschinen")}
       </div>
-      <div class="ck-fuss">Risiko = höchstes <b>Ausgangsrisiko</b> der Gefährdungsbeurteilung je Anlage
-        (1–3 Akzeptanz · 4–8 Besorgnis · 9–16 Gefahr) – also der Zustand <i>vor</i> Umsetzung der Maßnahmen.
-        „Maßnahmen wirksam" zählt die in den Gefährdungsbeurteilungen als umgesetzt und wirksam
-        bestätigten Maßnahmen; solange dort nichts abgehakt ist, steht der Wert bei null.</div>`;
+      <div class="ck-fuss">Risiko je Maschine = höchstes Ausgangsrisiko der Gefährdungsbeurteilung (1–3 Akzeptanz · 4–8 Besorgnis · 9–16 Gefahr), also vor Umsetzung der Maßnahmen.</div>`;
   }
 
   if(bereich === "umwelt"){
@@ -137,11 +140,11 @@ function renderCockpit(wrap, bereich){
     inhalt = `
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(offen, "offene Umweltvorfälle", vf.length + " insgesamt gemeldet", offen ? "warnung" : "gut", "umwelt/vf-umwelt")}
-          ${ckTile(kritisch, "davon mit Austritt", "Kanalisation, Boden oder Gewässer", kritisch ? "kritisch" : "gut", "umwelt/vf-umwelt")}
-          ${ckTile(dok("umwelt-immissionsschutz"), "Immissionsschutz", "Dokumente", "", "umwelt/umwelt-immissionsschutz")}
-          ${ckTile(dok("umwelt-gewaesserschutz"), "Gewässerschutz", "Dokumente", "", "umwelt/umwelt-gewaesserschutz")}
-          ${ckTile(dok("umwelt-awsv"), "AwSV", "Dokumente", "", "umwelt/umwelt-awsv")}
+          ${ckTile(offen, "offene Umweltvorfälle", vf.length + " insgesamt gemeldet", offen ? "warnung" : "gut", "mehr/vf-umwelt")}
+          ${ckTile(kritisch, "davon mit Austritt", "Kanalisation, Boden oder Gewässer", kritisch ? "kritisch" : "gut", "mehr/vf-umwelt")}
+          ${ckTile(dok("umwelt-immissionsschutz"), "Immissionsschutz", "Dokumente", "", "unterlagen/umwelt-immissionsschutz")}
+          ${ckTile(dok("umwelt-gewaesserschutz"), "Gewässerschutz", "Dokumente", "", "unterlagen/umwelt-gewaesserschutz")}
+          ${ckTile(dok("umwelt-awsv"), "AwSV", "Dokumente", "", "unterlagen/umwelt-awsv")}
         </div>
         ${ckRing([
           /* „neu gemeldet" statt „offen": die Kachel daneben zaehlt unter „offen" alles,
@@ -166,11 +169,11 @@ function renderCockpit(wrap, bereich){
     inhalt = `
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(nach("offen"), "offene Maßnahmen", em.length + " Befunde insgesamt", nach("offen") ? "warnung" : "gut", "energie/energie-massnahmen")}
-          ${ckTile(nach("geplant"), "geplant", "Umsetzung terminiert", "", "energie/energie-massnahmen")}
-          ${ckTile(nach("umgesetzt"), "umgesetzt", "abgeschlossen", nach("umgesetzt") ? "gut" : "", "energie/energie-massnahmen")}
-          ${ckTile(dok("energie-aspekte"), "Energieaspekte", "Dokumente", "", "energie/energie-aspekte")}
-          ${ckTile(dok("energie-verbrauch"), "Verbrauch & Messstellen", "Dokumente", "", "energie/energie-verbrauch")}
+          ${ckTile(nach("offen"), "offene Maßnahmen", em.length + " Befunde insgesamt", nach("offen") ? "warnung" : "gut", "unterlagen/energie-massnahmen")}
+          ${ckTile(nach("geplant"), "geplant", "Umsetzung terminiert", "", "unterlagen/energie-massnahmen")}
+          ${ckTile(nach("umgesetzt"), "umgesetzt", "abgeschlossen", nach("umgesetzt") ? "gut" : "", "unterlagen/energie-massnahmen")}
+          ${ckTile(dok("energie-aspekte"), "Energieaspekte", "Dokumente", "", "unterlagen/energie-aspekte")}
+          ${ckTile(dok("energie-verbrauch"), "Verbrauch & Messstellen", "Dokumente", "", "unterlagen/energie-verbrauch")}
         </div>
         ${ckRing([
           { name: "offen", wert: nach("offen"), klasse: "warnung" },
@@ -186,6 +189,7 @@ function renderCockpit(wrap, bereich){
         der Mängelliste Arbeitsschutz getrennt: keine Sicherheitsrelevanz, aber ein Kostenthema.</div>`;
   }
 
-  sec.innerHTML = `<div class="sek-kopf"><h2>Überblick</h2></div>${inhalt}`;
+  sec.className = "sektion ck-blick";
+  sec.innerHTML = inhalt;
   wrap.appendChild(sec);
 }

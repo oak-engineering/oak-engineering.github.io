@@ -438,14 +438,6 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .uw-mehr-inhalt{background:#fff;border:1px solid var(--rand,#D6E4DA);border-top:none;border-radius:0 0 10px 10px;padding:6px 18px 18px}
 .uw-mehr-inhalt .sek-kopf{margin-top:18px}
 
-/* ---- Marke je Kunde + App-Layout (16.09.2026) ---- */
-.kunde-logo{height:42px;max-width:170px;object-fit:contain;margin-left:6px}
-.marke-kunde .kopf{border-bottom-color:var(--gruen)}
-.marke-kunde .titelzeile .unter{color:var(--grau)}
-/* Tippziele ueberall */
-.kat-tab,.sub-tab{min-height:44px}
-.btn,.btn.sek{min-height:44px}
-
 /* ---- Versionsarchiv (16.09.2026) ---- */
 .uw-archiv td,.uw-archiv th{white-space:nowrap}
 .uw-archiv td:first-child{white-space:normal}
@@ -456,63 +448,10 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .uw-pill:disabled{opacity:.35;cursor:default}
 .uw-kompakt td,.uw-kompakt th{padding-top:6px;padding-bottom:6px}
 
-/* ---- Kundenlogo als Hauptmarke im Kopf (16.09.2026): gross, links; OAK klein daneben ---- */
-.marke-kunde .kopf .wrap{justify-content:flex-start}
-.marke-kunde .kopf #kundeLogo{order:-1;height:64px;max-width:260px;margin:0 18px 0 0;padding-right:18px;border-right:1px solid var(--rand)}
-.marke-kunde .kopf .marke{gap:8px;opacity:.9}
-.marke-kunde .kopf .marke .oak-logo{height:26px}
-.marke-kunde .kopf .marke .wort{font-size:16px}
-.marke-kunde .kopf .marke .sub{font-size:9px;letter-spacing:1.5px}
-.marke-kunde .kopf .rechts{margin-left:auto}
-@media(max-width:620px){
-  .marke-kunde .kopf #kundeLogo{height:48px;max-width:180px;margin-right:10px;padding-right:10px}
-  .marke-kunde .kopf .marke .wort{font-size:14px}
-  .marke-kunde .kopf .marke .sub{display:none}
-}
-
 /* ---- Cockpit-Kacheln als Links (16.09.2026) ---- */
 a.ck-kachel.ck-link{display:block;text-decoration:none;color:inherit;cursor:pointer;transition:box-shadow .15s,border-color .15s}
 a.ck-kachel.ck-link:hover{border-color:var(--gruen);box-shadow:0 6px 18px rgba(0,0,0,.08)}
 a.ck-kachel.ck-link .ck-hinweis::after{content:" ›";color:var(--gruen);font-weight:700}
-
-/* ---- Startseite: vier Knoepfe (16.09.2026) ---- */
-.start-seite{background:transparent;border:none;box-shadow:none;padding:6px 0 0}
-.start-frage{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:700;color:var(--dunkel);margin:0 0 16px}
-.start-raster{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-@media(max-width:560px){.start-raster{grid-template-columns:1fr}}
-.start-kachel{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;min-height:160px;padding:22px 24px;
-  background:var(--gruen);color:#fff;border-radius:18px;text-decoration:none;box-shadow:0 8px 22px rgba(0,0,0,.14);transition:background .15s,transform .1s}
-.start-kachel:hover{background:var(--dunkel)}
-.start-kachel:active{transform:translateY(1px)}
-.start-kachel svg{width:44px;height:44px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;margin-bottom:auto}
-.start-kachel .sk-titel{font-size:22px;font-weight:700;line-height:1.2}
-.start-kachel .sk-sub{font-size:14px;opacity:.9;line-height:1.35}
-.start-mehr{margin:20px 0 0;font-size:14px;color:var(--grau)}
-.start-mehr a{color:var(--gruen);font-weight:600;text-decoration:none}
-.start-mehr a:hover{text-decoration:underline}
-#startLink{text-decoration:none}
-.auf-start .titelzeile .unter,.auf-start .titelzeile h1{display:none}
-.auf-start .titelzeile{padding:4px 0 0}
-.start-zahlen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
-@media(max-width:560px){.start-zahlen{grid-template-columns:1fr}}
-.start-zahl{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border:1px solid var(--rand);border-left:4px solid var(--hellgruen);
-  border-radius:12px;text-decoration:none;color:var(--text);min-height:64px}
-.start-zahl b{font-size:28px;font-weight:700;color:var(--dunkel);min-width:44px;text-align:center}
-.start-zahl span{font-size:14px;line-height:1.3}
-.start-zahl.sz-kritisch{border-left-color:var(--rot)} .start-zahl.sz-kritisch b{color:var(--rot)}
-.start-zahl.sz-warnung{border-left-color:var(--orange)} .start-zahl.sz-warnung b{color:var(--orange)}
-.start-zahl:hover{border-color:var(--gruen)}
-
-/* ---- App-Modus (Rolle kunde/fachkraft): keine Reiter, Leiste unten auf allen Breiten (16.09.2026) ---- */
-body.app-modus #katTabs,body.app-modus #subTabs{display:none !important}
-body.app-modus .tabbar-fest,body.app-modus .tb-blatt{display:block}
-body.app-modus{padding-bottom:calc(var(--tb-h,69px) + 8px + env(safe-area-inset-bottom,0px))}
-body.app-modus .titelzeile .unter{display:none}
-/* Admin am Handy: ebenfalls Leiste statt Reiter */
-@media(max-width:900px){ #appView #katTabs,#appView #subTabs{display:none !important} }
-.tb-blatt{max-height:min(78vh,720px);overflow:auto}
-.tb-blatt h2.tb-kopf2{margin-top:.9rem}
-.tb-blatt a[data-portal],.tb-blatt a[data-aktion]{min-height:44px}
 
 /* ---- Frage an OAK (16.09.2026) ---- */
 .anfr-karte{background:#fff;border:1px solid var(--rand,#D6E4DA);border-left:4px solid var(--orange,#e08e0b);border-radius:12px;padding:14px 16px;margin:10px 0}
@@ -523,38 +462,137 @@ body.app-modus .titelzeile .unter{display:none}
 .anfr-antwort p{margin:4px 0 0;white-space:pre-wrap}
 .anfr-antworten{margin-top:10px}
 
-/* Kacheln etwas kleiner (Nikolai 16.09.) */
-.start-kachel{min-height:122px;padding:16px 18px;gap:4px}
-.start-kachel svg{width:34px;height:34px}
-.start-kachel .sk-titel{font-size:19px}
-.start-kachel .sk-sub{font-size:13px}
-@media(min-width:900px){.start-raster{grid-template-columns:repeat(3,1fr)}}
 
-.ck-aktionen{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 16px}
-.ck-aktionen .uw-start{min-height:56px;font-size:17px;padding:12px 24px;min-width:0}
-/* Kopf: bei Kundenmarke nur das Kundenlogo als Marke, OAK klein als Absender; Passwort steht unter Mehr → Konto */
-body.marke-kunde .kopf .marke .wort,body.marke-kunde .kopf .marke .sub{display:none}
-body.marke-kunde .kopf #kundeLogo{border-right:none;padding-right:0}
-body.app-modus #pwBtn{display:none}
-@media(max-width:900px){#pwBtn{display:none}}
-body.auf-start .fuss .fuss-text,body.app-modus .fuss .fuss-text{display:none}
+/* ======================= App-Layout Kundenportal (16.09.2026, zusammengefasst) =======================
+   Eine Navigation fuer alle Rollen: Seitenleiste links (PC), am Handy Leiste unten + dieselbe Seitenleiste
+   als Schublade. Volle Bildschirmbreite. Kopf: OAK-Marke links, Kundenlogo rechts. */
+.wrap{max-width:none;padding-left:clamp(16px,2.4vw,36px);padding-right:clamp(16px,2.4vw,36px)}
+body{background:var(--oak-ghost,#f3f7f5)}
+#katTabs,#subTabs{display:none!important}
+/* Angemeldet: sofort die App-Huelle statt kurz der Anmeldeseite */
+.hat-sitzung #loginView{display:none!important}
+.hat-sitzung #appView.hidden{display:block!important}
 
-/* Admin-Leiste (Kundenwahl) sitzt in der Kopfzeile */
-.kopf #adminBar{display:flex;align-items:center;gap:8px;margin:0 12px;padding:6px 10px;font-size:12.5px;flex:0 1 auto;
-  background:var(--akzent);border:1px solid var(--rand);border-radius:10px}
-.kopf #adminBar .admin-hint{display:none}
-.kopf #adminBar select{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--rand);border-radius:8px;background:#fff;min-height:36px}
-@media(max-width:620px){.kopf #adminBar{width:100%;margin:6px 0 0}}
+/* Kopf */
+.kopf .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:10px;padding-bottom:10px;min-height:70px;flex-wrap:nowrap}
+.kopf .marke{gap:12px}
+.kopf .oak-logo{height:44px}
+.kopf .rechts{display:flex;align-items:center;gap:14px;margin-left:auto;width:auto}
+.kunde-logo{height:54px;max-width:240px;object-fit:contain;display:block}
+.kunde-logo[hidden]{display:none}
+#kundeName{font-weight:600;color:var(--dunkel);font-size:15px}
+.marke-kunde #kundeName{display:none}
+#adminBar{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 8px;background:var(--akzent);border:1px solid var(--rand);border-radius:10px}
+#adminBar select{font:inherit;font-size:13px;padding:6px 8px;border:1px solid var(--rand);border-radius:8px;background:#fff;min-height:36px;max-width:220px}
+@media(max-width:620px){
+  .kopf .wrap{min-height:58px;gap:10px}
+  .kopf .oak-logo{height:34px}
+  .kopf .marke .wort{font-size:17px}
+  .kopf .marke .sub{font-size:8.5px;letter-spacing:1.5px}
+  .kunde-logo{height:38px;max-width:120px}
+  #adminBar .admin-tag{display:none}
+  #adminBar select{max-width:110px}
+}
 
-/* ---- Maengel-To-Do (16.09.2026) ---- */
-.mg-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 12px}
-.mg-tab td{vertical-align:top}
-.mg-label{font-weight:600;line-height:1.35}
-.mg-massnahme{max-width:360px;font-size:13.5px;line-height:1.4}
-.mg-check{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;cursor:pointer}
-.mg-check input{width:26px;height:26px;margin:0;accent-color:var(--gruen);cursor:pointer}
-tr.mg-erledigt td{opacity:.6}
-tr.mg-erledigt .mg-label{text-decoration:line-through}
-.start-zahlen{grid-template-columns:repeat(4,1fr)}
-@media(max-width:900px){.start-zahlen{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:560px){.start-zahlen{grid-template-columns:1fr}}
+/* Rahmen + Seitenleiste */
+.app-rahmen{display:grid;grid-template-columns:240px minmax(0,1fr);align-items:start}
+main.wrap{padding-top:20px;padding-bottom:40px;min-width:0}
+.seitenleiste{position:sticky;top:0;height:100vh;overflow-y:auto;background:#fff;border-right:1px solid var(--rand);
+  padding:14px 10px;display:flex;flex-direction:column;justify-content:space-between;gap:12px}
+.sl-liste,.sl-fuss{display:flex;flex-direction:column;gap:2px}
+.sl-eintrag{display:flex;align-items:center;gap:12px;width:100%;min-height:46px;padding:10px 12px;border:0;border-radius:10px;
+  background:none;font:inherit;font-size:15px;color:var(--text);cursor:pointer;text-align:left}
+.sl-eintrag svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;opacity:.75}
+.sl-eintrag span{flex:1}
+.sl-eintrag:hover{background:var(--akzent)}
+.sl-eintrag.aktiv{background:var(--gruen);color:#fff;font-weight:600}
+.sl-eintrag.aktiv svg{opacity:1}
+.sl-badge{min-width:26px;padding:2px 8px;border-radius:12px;background:#c0392b;color:#fff;font-size:12px;text-align:center;font-weight:700}
+.sl-eintrag.aktiv .sl-badge{background:#fff;color:var(--gruen)}
+.sl-kopf{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--grau);margin:14px 12px 4px}
+.sl-fuss{border-top:1px solid var(--rand);padding-top:8px}
+@media(min-width:901px){
+  body.app-modus .tabbar-fest,body.app-modus .tb-blatt{display:none!important}
+  body.app-modus{padding-bottom:0}
+}
+@media(max-width:900px){
+  .app-rahmen{display:block}
+  .seitenleiste{position:fixed;top:0;left:0;bottom:0;height:auto;width:min(84vw,320px);z-index:140;transform:translateX(-105%);
+    transition:transform .22s;box-shadow:0 0 40px rgba(0,0,0,.25);padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  body.menue-auf .seitenleiste{transform:none}
+  body.menue-auf::after{content:"";position:fixed;inset:0;background:rgba(10,20,30,.35);z-index:135}
+  body.app-modus .tabbar-fest{display:block}
+  body.app-modus .tb-blatt{display:none!important}
+  body.app-modus{padding-bottom:calc(var(--tb-h,69px) + 8px + env(safe-area-inset-bottom,0px))}
+  main.wrap{padding-top:14px}
+}
+.fuss .fuss-text{display:none}
+
+/* Seitenkopf jeder Unterseite: Zurueck + Titel */
+.seiten-kopf{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:0 0 16px}
+.seiten-kopf h1{font-size:30px;line-height:1.1}
+.zurueck{font:inherit;font-size:14px;font-weight:600;color:var(--gruen);background:#fff;border:1px solid var(--rand);
+  border-radius:22px;min-height:40px;padding:6px 14px;cursor:pointer}
+.zurueck:hover{border-color:var(--gruen)}
+.seiten-kopf + .sektion{margin-top:0}
+.seiten-kopf + .sektion > .sek-kopf > h2{display:none}
+
+/* Startseite: vier Aktionen, darunter „Auf einen Blick" */
+.start-seite{background:transparent;border:none;box-shadow:none;padding:0;margin-top:0}
+.start-raster{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+@media(max-width:1200px){.start-raster{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.start-raster{grid-template-columns:1fr}}
+.start-kachel{display:flex;flex-direction:column;gap:6px;padding:16px 18px;background:var(--gruen);color:#fff;border-radius:14px;
+  text-decoration:none;box-shadow:0 6px 18px rgba(0,0,0,.12);transition:background .15s,transform .1s}
+.start-kachel:hover{background:var(--dunkel)}
+.start-kachel:active{transform:translateY(1px)}
+.sk-kopf{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sk-titel{font-size:19px;font-weight:700;line-height:1.2}
+.start-kachel svg{width:28px;height:28px;flex:none;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sk-sub{font-size:13.5px;opacity:.9;line-height:1.35}
+.start-blick-kopf{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:28px 0 12px}
+.start-blick-kopf h2{font-size:26px}
+.ck-blick{margin:0}
+
+/* Unterlagen */
+.ul-seite{background:transparent;border:none;box-shadow:none;padding:0}
+.ul-bereich{font-size:22px;margin:22px 0 10px}
+.ul-bereich:first-child{margin-top:0}
+.ul-raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.ul-karte{display:grid;grid-template-columns:1fr auto;column-gap:12px;row-gap:4px;align-items:center;padding:16px 18px;background:#fff;
+  border:1px solid var(--rand);border-left:4px solid var(--gruen);border-radius:12px;text-decoration:none;color:var(--text);min-height:76px}
+.ul-karte:hover{border-color:var(--gruen);box-shadow:0 6px 16px rgba(0,0,0,.07)}
+.ul-titel{grid-column:1;font-weight:700;font-size:16px;color:var(--dunkel)}
+.ul-sub{grid-column:1;font-size:13px;color:#6b7c70;line-height:1.35}
+.ul-n{grid-column:2;grid-row:1 / span 2;font-weight:700;color:var(--gruen);white-space:nowrap}
+.ul-leer{color:#6b7c70;font-size:14px;padding:2px 2px 6px}
+
+/* Maengel: Karten je Prioritaetsgruppe, Erledigt nur mit Nachweis */
+.mg-seite{background:transparent;border:none;box-shadow:none;padding:0}
+.mg-filter{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:0 0 14px}
+.mg-filter select{min-width:220px}
+.mg-gruppe{margin:0 0 12px}
+.mg-gruppe>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;min-height:52px;padding:10px 16px;background:#fff;
+  border:1px solid var(--rand);border-radius:12px;font-size:17px;font-weight:700;color:var(--dunkel)}
+.mg-gruppe>summary::-webkit-details-marker{display:none}
+.mg-gruppe>summary::before{content:"▸";color:var(--gruen)}
+.mg-gruppe[open]>summary::before{content:"▾"}
+.mg-gruppe>summary span{flex:1}
+.mg-gruppe>summary b{background:var(--akzent);color:var(--dunkel);border-radius:14px;padding:2px 10px;font-size:14px}
+.mg-raster{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;padding:12px 0 4px}
+.mg-karte{display:flex;flex-direction:column;gap:8px;padding:14px 16px;background:#fff;border:1px solid var(--rand);border-left:5px solid #9aa8a1;border-radius:12px}
+.mg-karte.mg-gefahr{border-left-color:#c0392b}
+.mg-karte.mg-besorgnis{border-left-color:#e08e0b}
+.mg-karte.mg-akzeptanz{border-left-color:#2e7d32}
+.mg-kopf{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.mg-maschine{font-size:18px;color:var(--dunkel)}
+.mg-label{font-weight:600;line-height:1.4}
+.mg-massnahme{font-size:14px;line-height:1.45;color:#3d4d45}
+.mg-erledigt-knopf{align-self:flex-start;margin-top:auto}
+.mg-karte.mg-erledigt{background:#fafcfb}
+.mg-nachweis{font-size:14px;color:#2e7d32;font-weight:600;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.mg-nachweis div{color:var(--text);font-weight:400}
+.mg-dlg{max-width:480px}
+.mg-dlg textarea{display:block;width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--rand);border-radius:9px;margin-top:4px}
+.mg-dlg input[type=file]{width:auto;border:0;padding:6px 0}
+.mg-vorschau{max-width:100%;max-height:200px;border-radius:9px;display:block;margin:6px 0 10px}

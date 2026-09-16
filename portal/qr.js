@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("qrbox").innerHTML = r.qr_svg;   // server-generiertes SVG (segno), vertrauenswürdig
     document.getElementById("mkunde").textContent = r.kunde || "";
     document.getElementById("mname").textContent = r.maschine || mid;
-    document.getElementById("mmeta").textContent = (r.maschinentyp || "") + (r.maschinen_id ? " · " + r.maschinen_id : "");
+    document.getElementById("mmeta").textContent = r.maschinentyp || "";
     document.title = "QR-Aushang — " + (r.maschine || mid);
   }catch(e){
     if(e.message==="AUTH"){ location.replace("index.html"); return; }

@@ -1,16 +1,18 @@
-/* OAK Kundenportal – Marke je Kunde fuer die Nebenseiten (Dokument-Ansicht, Maschinenseite).
-   Liest portal_kunde.marke (Farben + Logo) und setzt sie als Inline-Variablen auf :root,
-   genau wie app.js es auf der Hauptseite tut. Ohne Marke bleibt alles OAK-gruen. */
+/* OAK Kundenportal – Marke je Kunde (Farben + Logo aus portal_kunde.marke), EINE Stelle fuer alle Seiten.
+   Wird im <head> geladen: die zuletzt gesehene Marke liegt im Browser (localStorage) und wird sofort
+   gesetzt, bevor etwas gezeichnet wird – kein gruenes Aufblitzen mehr beim Start (Nikolai, 16.09.2026).
+   Danach bestaetigt die Seite die Marke aus der Datenbank (setzen) und legt sie wieder ab.
+   Ohne Marke bleibt alles OAK-gruen. */
 "use strict";
 window.OAK_MARKE = {
   aktuell: null,
+  SCHLUESSEL: "oak_portal_marke",
   /* <style>-Block fuer eingebettete Dokumente (Shells laufen in einer eigenen Origin, erben die :root-Variablen nicht) */
   styleBlock(){
     const m = this.aktuell || {}; if(!m.farbe) return "";
     return '<style id="marke-kunde">:root{--gruen:' + m.farbe + ';--dunkel:' + (m.farbe_tief || m.farbe) + ';--hell:' + (m.farbe_hell || m.farbe) + ';--akzent:' + (m.akzent || '#eef2f8') + ';--primary:' + m.farbe + '}</style>';
   },
-  setzen(m, name){
-    m = m || {}; this.aktuell = m;
+  farben(m){
     const st = document.documentElement.style;
     const setz = (k, v) => { if(v) st.setProperty(k, v); else st.removeProperty(k); };
     setz("--gruen", m.farbe);          setz("--oak", m.farbe);
@@ -18,10 +20,28 @@ window.OAK_MARKE = {
     setz("--hellgruen", m.farbe_hell); setz("--oak-light", m.farbe_hell); setz("--oak-mid", m.farbe_hell);
     setz("--akzent", m.akzent);        setz("--oak-pale", m.akzent);
     setz("--oak-ghost", m.hintergrund);
-    const img = document.getElementById("kundeLogo");
-    if(img){ if(m.logo){ img.src = m.logo; img.alt = name || ""; img.hidden = false; } else { img.hidden = true; img.removeAttribute("src"); } }
-    document.body.classList.toggle("marke-kunde", !!m.farbe);
+    document.documentElement.classList.toggle("marke-kunde", !!m.farbe);
     const meta = document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute("content", m.farbe || "#2D6A4F");
+  },
+  logo(){
+    const m = this.aktuell || {};
+    document.querySelectorAll("#kundeLogo, img[data-kundenlogo]").forEach(img => {
+      if(m.logo){ img.src = m.logo; img.alt = m.name || ""; img.hidden = false; } else { img.hidden = true; img.removeAttribute("src"); }
+    });
+  },
+  setzen(m, name){
+    m = Object.assign({}, m || {}); if(name) m.name = name;
+    this.aktuell = m;
+    this.farben(m);
+    if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => this.logo(), { once: true }); else this.logo();
+    try{ if(m.farbe) localStorage.setItem(this.SCHLUESSEL, JSON.stringify(m)); else localStorage.removeItem(this.SCHLUESSEL); }catch(e){}
+  },
+  ausCache(){
+    try{
+      const m = JSON.parse(localStorage.getItem(this.SCHLUESSEL) || "null");
+      if(m && m.farbe){ this.aktuell = m; this.farben(m);
+        if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => this.logo(), { once: true }); else this.logo(); }
+    }catch(e){}
   },
   async anwenden(slug){
     if(!slug || typeof apiGet !== "function") return;
@@ -31,3 +51,4 @@ window.OAK_MARKE = {
     }catch(e){ /* ohne Marke weiter */ }
   }
 };
+OAK_MARKE.ausCache();

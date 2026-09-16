@@ -31,13 +31,17 @@ async function anfrMail(id){
       body: JSON.stringify({ anfrage_id: id }) });
   }catch(e){ /* Mail ist Komfort – die Anfrage steht im Portal */ }
 }
+function anfrMaschinenName(mid){
+  const r = (typeof ALLE !== "undefined" ? ALLE : []).find(x => x.maschinen_id === mid && x.maschine);
+  return r ? r.maschine : "Maschine";
+}
 function anfrMaschinenAuswahl(id, gewaehlt){
   const liste = (typeof anlagen === "function" ? anlagen() : [])
     .map(r => ({ id: r.maschinen_id, name: r.maschine || r.titel })).filter(x => x.id);
   if(!liste.length) return "";
   return `<label class="uw-lab" for="${id}">Maschine (optional)</label>
     <select id="${id}" class="uw-fassung" style="max-width:420px;width:100%"><option value="">– keine bestimmte Maschine –</option>
-    ${liste.map(m => `<option value="${esc(m.id)}"${m.id === gewaehlt ? " selected" : ""}>${esc(m.id)} · ${esc(m.name || "")}</option>`).join("")}</select>`;
+    ${liste.map(m => `<option value="${esc(m.id)}"${m.id === gewaehlt ? " selected" : ""}>${esc(m.name || m.id)}</option>`).join("")}</select>`;
 }
 
 async function renderAnfragen(wrap){
@@ -46,7 +50,7 @@ async function renderAnfragen(wrap){
   const meine = ANFRAGEN.filter(a => !AKTIV || a.kunde_slug === AKTIV);
   const sec = document.createElement("section"); sec.className = "sektion";
   const meld = ANFR_MELDUNG ? `<div class="uw-meld">${esc(ANFR_MELDUNG)}</div>` : ""; ANFR_MELDUNG = "";
-  const formular = istAdmin ? "" : `<div class="uw-form" id="anfrForm">
+  const formular = `<div class="uw-form" id="anfrForm">
       <label class="uw-lab" for="anfrBetreff">Worum geht es?</label>
       <input type="text" id="anfrBetreff" placeholder="z. B. Schutztür an der D100 schließt nicht richtig" autocomplete="off">
       <label class="uw-lab" for="anfrText">Ihre Frage oder Beschreibung</label>
@@ -59,7 +63,7 @@ async function renderAnfragen(wrap){
   const karte = a => `<div class="anfr-karte${a.status === "beantwortet" ? " anfr-beantwortet" : ""}" data-id="${esc(a.id)}">
       <div class="anfr-kopf"><b>${esc(a.betreff)}</b>
         <span class="uw-badge ${a.status === "beantwortet" ? "uw-gut" : "uw-warnung"}">${a.status === "beantwortet" ? "beantwortet" : "offen"}</span></div>
-      <div class="uw-leise">${anfrDatum(a.created_at)} · ${esc(a.von_name || "")}${istAdmin ? " · " + esc(a.kunde_slug) : ""}${a.maschinen_id ? " · Maschine " + esc(a.maschinen_id) : ""}</div>
+      <div class="uw-leise">${anfrDatum(a.created_at)} · ${esc(a.von_name || "")}${istAdmin ? " · " + esc(a.kunde_slug) : ""}${a.maschinen_id ? " · " + esc(anfrMaschinenName(a.maschinen_id)) : ""}</div>
       ${a.text ? `<p class="anfr-text">${esc(a.text)}</p>` : ""}
       ${a.anhang_pfad ? `<p><a class="btn-klein anfr-anhang" data-pfad="${esc(a.anhang_pfad)}" href="#">Anhang öffnen</a></p>` : ""}
       ${a.antwort ? `<div class="anfr-antwort"><b>Antwort von OAK engineering</b> <span class="uw-leise">${anfrDatum(a.beantwortet_am)}</span><p>${esc(a.antwort)}</p></div>` : ""}
@@ -67,12 +71,10 @@ async function renderAnfragen(wrap){
         <div class="uw-form-knoepfe"><button class="btn sek anfr-antwort-senden" data-id="${esc(a.id)}">Antwort senden</button><span class="uw-leise"></span></div></div>` : ""}
     </div>`;
   sec.innerHTML = `${meld}
-    <div class="sek-kopf"><h2>Frage an OAK engineering</h2><span class="zaehler">${meine.filter(a => a.status !== "beantwortet").length} offen</span>
-      <a class="btn sek" href="tel:+4915679787193">Anrufen</a></div>
     <p class="uw-erkl">Schreiben Sie, was Sie brauchen – ein Foto oder eine Datei können Sie anhängen. Die Antwort kommt hier ins
-      Portal und per E-Mail. Dringend? Anrufen: 0156 79787193.</p>
+      Portal und per E-Mail.</p>
     ${formular}
-    <h3 class="uw-h3">${istAdmin ? "Anfragen der Betriebe" : "Ihre Anfragen"}</h3>
+    <h3 class="uw-h3">${istAdmin ? "Anfragen der Betriebe" : "Ihre Anfragen"} <span class="uw-leise">${meine.filter(a => a.status !== "beantwortet").length} offen</span></h3>
     ${meine.length ? meine.map(karte).join("") : `<div class="ck-fuss">Noch keine Anfragen.</div>`}`;
   wrap.appendChild(sec);
 

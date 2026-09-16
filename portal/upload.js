@@ -19,9 +19,9 @@ function renderUpload(wrap){
     .map(r => ({ id: r.maschinen_id, name: r.maschine || r.titel })).filter(x => x.id);
   const eigene = (typeof sichtbar === "function" ? sichtbar() : []).filter(r => r.kategorie === "vom-betrieb");
   sec.innerHTML = `${meld}
-    <div class="sek-kopf"><h2>Dokument hochladen</h2><span class="zaehler">${eigene.length} vom Betrieb</span></div>
+    <h3 class="uw-h3" style="margin-top:0">Dokument hochladen</h3>
     <p class="uw-erkl">Prüfprotokolle, Lieferantenunterlagen, Fotos – alles, was OAK engineering und die Kollegen im Portal
-      sehen sollen. Erscheint sofort unter <b>Unterlagen → Vom Betrieb</b>.</p>
+      sehen sollen. Erscheint sofort hier in der Liste.</p>
     <div class="uw-form">
       <label class="uw-lab" for="uplDatei">Datei (PDF, Foto, Word, Excel)</label>
       <input type="file" id="uplDatei" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" style="font-size:15px">
@@ -29,7 +29,7 @@ function renderUpload(wrap){
       <input type="text" id="uplTitel" placeholder="z. B. Prüfprotokoll Hallenkran 2026" autocomplete="off">
       ${liste.length ? `<label class="uw-lab" for="uplMaschine">Maschine (optional)</label>
         <select id="uplMaschine" class="uw-fassung" style="max-width:420px;width:100%"><option value="">– keine bestimmte Maschine –</option>
-        ${liste.map(m => `<option value="${esc(m.id)}">${esc(m.id)} · ${esc(m.name || "")}</option>`).join("")}</select>` : ""}
+        ${liste.map(m => `<option value="${esc(m.id)}">${esc(m.name || m.id)}</option>`).join("")}</select>` : ""}
       <div class="uw-form-knoepfe"><button class="btn sek" id="uplGo">Hochladen</button><span class="uw-leise" id="uplMeld"></span></div>
     </div>
     ${eigene.length ? `<h3 class="uw-h3">Bisher vom Betrieb hochgeladen</h3>
@@ -71,7 +71,7 @@ async function uplHochladen(sec){
     const neu = await apiSend("POST", "/rest/v1/portal_dokumente", zeile, "return=representation");
     const row = Array.isArray(neu) ? neu[0] : neu;
     if(row) ALLE.push(row); else ALLE.push(zeile);
-    UPL_MELDUNG = "„" + titel + "“ ist hochgeladen und unter Unterlagen → Vom Betrieb zu finden.";
-    if(window.portalGehe) portalGehe("mehr", "upload");
+    UPL_MELDUNG = "„" + titel + "“ ist hochgeladen.";
+    if(window.portalGehe) portalGehe("unterlagen", "vom-betrieb");
   }catch(e){ meld.textContent = "Konnte nicht hochgeladen werden: " + (e.message || e); }
 }

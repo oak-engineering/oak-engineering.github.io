@@ -90,11 +90,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const r = rows && rows[0];
     if(!r){ el.innerHTML = `<div class="leer">Maschine nicht gefunden oder kein Zugriff.</div>`; return; }
     document.getElementById("mTitel").textContent = r.maschine || mid;
-    document.getElementById("mSub").textContent = (r.maschinentyp || "") + (r.maschinen_id ? " · " + r.maschinen_id : "");
+    document.getElementById("mSub").textContent = r.maschinentyp || "";
     el.innerHTML =
       `<div class="m-kopf"><span class="ampel ${ampelKlasse(r.status)}" title="${esc(ampelTitel(r.status))}"></span>
         <div><div class="m-name">${esc(r.maschine||mid)}</div>
-        <div class="m-typ">${esc(r.maschinentyp||"")}${r.maschinen_id ? " · " + esc(r.maschinen_id) : ""}</div></div></div>
+        <div class="m-typ">${esc(r.maschinentyp||"")}</div></div></div>
       <div class="m-docs">
         ${docBtn(r,"bda","Gefährdungsbeurteilung (GBU)","gbu")}
         ${docBtn(r,"ba","Betriebsanweisung (BA)")}

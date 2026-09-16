@@ -5,8 +5,8 @@
   "start_url": "/portal/",
   "scope": "/portal/",
   "display": "standalone",
-  "background_color": "#F6FAF7",
-  "theme_color": "#2D6A4F",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "lang": "de",
   "icons": [
     {

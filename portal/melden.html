@@ -5,14 +5,19 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Vorfall melden – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202609161058">
-<script src="marke.js?v=2026-09-16b"></script>
+<link rel="stylesheet" href="portal.css?v=202609161110">
+<script src="marke.js?v=2026-09-16c"></script>
 <style>
 /* Meldeformular: bewusst eigene, sehr grosse Bedienelemente - es wird am Handy in der Halle
    ausgefuellt, oft mit Handschuhen und unter Zeitdruck. */
 .mwrap{max-width:640px;margin:0 auto;padding:0 16px 40px;}
 .mkopf{background:#fff;border-bottom:3px solid var(--gruen);padding:14px 16px;text-align:center;}
-.mkopf img{height:44px;width:auto;display:block;margin:0 auto 6px;}
+.mkopf-logos{display:flex;align-items:center;justify-content:center;gap:16px;margin:0 auto 8px;}
+.mkopf-logos img{height:40px;width:auto;display:block;}
+.mkopf-logos img[data-kundenlogo]{height:48px;max-width:180px;object-fit:contain;padding-left:16px;border-left:1px solid var(--rand);}
+.mkopf-logos img[hidden]{display:none;}
+.mzurueck{display:inline-block;margin:0 0 8px;font-size:14px;font-weight:600;color:var(--gruen);text-decoration:none;}
+.mzurueck[hidden]{display:none;}
 .mkopf h1{font-size:27px;line-height:1.15;}
 .mkopf .doktyp{font-size:12.5px;color:var(--gruen);letter-spacing:.06em;text-transform:uppercase;margin-top:3px;}
 .notruf{background:#fdecea;border:1px solid #f5b7b1;color:#922b21;border-radius:10px;
@@ -53,7 +58,8 @@ textarea{min-height:130px;resize:vertical;line-height:1.5;}
 <body>
 
 <div class="mkopf">
-  <img src="../assets/oak-logo.png" alt="OAK engineering">
+  <a class="mzurueck" id="zurueckPortal" href="index.html#start" hidden>‹ Zurück ins Portal</a>
+  <div class="mkopf-logos"><img src="../assets/oak-logo.png" alt="OAK engineering"><img data-kundenlogo alt="" hidden></div>
   <h1>Vorfall melden</h1>
   <div class="doktyp">Unfall · Beinahe-Unfall · Umweltvorfall</div>
 </div>
@@ -322,13 +328,15 @@ $("#nochmal").addEventListener("click", () => location.reload());
 </script>
 
 <script>
+/* Aus dem Portal geoeffnet (?portal=1): Rueckweg anbieten */
+try{ if(new URLSearchParams(location.search).get("portal") === "1") document.getElementById("zurueckPortal").hidden = false; }catch(e){}
 /* Kundenmarke ohne Login: der Melde-Token verraet den Betrieb (RPC melde_marke), Farben + Logo wie im Portal. */
 (function(){
   try{
     const tk = (new URLSearchParams(location.search).get("t") || localStorage.getItem("oak-melde-code") || "").replace(/^"|"$/g, "").trim();
     if(!tk || !window.OAK_MARKE) return;
     fetch(CFG.url + "/rest/v1/rpc/melde_marke", { method:"POST", headers:{ apikey: CFG.anon, "Content-Type":"application/json" }, body: JSON.stringify({ p_token: tk }) })
-      .then(r => r.ok ? r.json() : null).then(j => { if(j && j.marke){ OAK_MARKE.setzen(j.marke, j.kunde); const lg = document.querySelector("img.oak-logo, .kopf img"); if(lg && j.marke.logo){ lg.src = j.marke.logo; lg.alt = j.kunde || ""; lg.style.height = "44px"; } } }).catch(() => {});
+      .then(r => r.ok ? r.json() : null).then(j => { if(j && j.marke) OAK_MARKE.setzen(j.marke, j.kunde); }).catch(() => {});
   }catch(e){}
 })();
 </script>
