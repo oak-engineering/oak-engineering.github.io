@@ -171,6 +171,61 @@ function statusBadge(r, neuestesDatum){
   return "";
 }
 
+/* ---- Startseite: die vier Dinge, die ein Schichtfuehrer braucht --------------------------
+   Unterweisung starten · Vorfall melden · Begehung durchfuehren · Unterlagen einsehen.
+   Alles andere (Reiter, Cockpit) liegt dahinter und ist ueber „Start" im Kopf jederzeit erreichbar. */
+let MELDE_TOK = [];
+async function meldeTokenLaden(){
+  try{ MELDE_TOK = await apiGet("/rest/v1/portal_melde_token?select=token,kunde_slug,kunde&aktiv=is.true", false) || []; }catch(e){ MELDE_TOK = []; }
+}
+const START_SVG = {
+  terminal: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="M8 10l2 2 4-4"/></svg>',
+  warnung:  '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2.5 20h19L12 3z"/><path d="M12 9v5M12 17v.5"/></svg>',
+  begehung: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5"/><path d="M8.5 11l2 2 4.5-4.5M8.5 16.5h7"/></svg>',
+  dokument: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>'
+};
+function renderStart(wrap){
+  const tok = ((typeof UW_TOK !== "undefined" ? UW_TOK : []).find(x => x.kunde_slug === AKTIV) || {}).token || "";
+  const mt  = (MELDE_TOK.find(x => x.kunde_slug === AKTIV) || {}).token || "";
+  const kunde = (ALLE.find(x => x.kunde_slug === AKTIV) || {}).kunde || "";
+  const kachel = (href, titel, sub, svg, neu) =>
+    `<a class="start-kachel" href="${href}"${neu ? ' target="_blank" rel="noopener"' : ""}>${svg}<span class="sk-titel">${titel}</span><span class="sk-sub">${sub}</span></a>`;
+  const sec = document.createElement("section"); sec.className = "sektion start-seite";
+  sec.innerHTML = `<h2 class="start-frage">Was möchten Sie tun?</h2>
+    <div class="start-raster">
+      ${kachel(tok ? "kiosk.html#t=" + encodeURIComponent(tok) : "#arbeitssicherheit/unterweisungen",
+               "Unterweisung starten", "Terminal für die Beschäftigten öffnen", START_SVG.terminal, !!tok)}
+      ${kachel(mt ? "melden.html?t=" + encodeURIComponent(mt) : "#arbeitssicherheit/vf-arbeitssicherheit",
+               "Vorfall melden", "Unfall, Beinahe-Unfall oder Mangel an einer Maschine", START_SVG.warnung, !!mt)}
+      ${kachel(mt ? "https://www.oak-engineering.de/oak-tools/begehung/?modus=kunde&kt=" + encodeURIComponent(mt) + "&kn=" + encodeURIComponent(kunde)
+                  : "#arbeitssicherheit/begehungen",
+               "Begehung durchführen", "Begehungsbogen öffnen und Anlagen erfassen", START_SVG.begehung, true)}
+      ${kachel("#arbeitssicherheit/anlagen", "Unterlagen einsehen", "Betriebsanweisungen, Gefährdungsbeurteilungen, Mängellisten", START_SVG.dokument, false)}
+    </div>
+    ${startZahlen()}
+    <p class="start-mehr"><a href="#arbeitssicherheit/ck-arbeitssicherheit">Ausführlicher Überblick</a></p>`;
+  wrap.appendChild(sec);
+  document.body.classList.add("auf-start");
+}
+/* Auf einen Blick: drei Zahlen, jede springt auf ihre Liste. */
+function startZahlen(){
+  let gefahr = 0, vorf = 0, faellig = 0;
+  try{ gefahr = ckAnlagenZahlen().gefahr || 0; }catch(e){}
+  try{ vorf = vSichtbar().filter(v => v.domaene !== "umwelt" && v.status !== "erledigt").length; }catch(e){}
+  try{
+    const pers = uwPersonen();
+    const rows = uwSichtbar();
+    faellig = pers.filter(p => { const n = uwLetzterNachweis(p.name); return !n || uwStatus(n).klasse !== "gut"; }).length
+            + uwJeMitarbeiter(rows).filter(n => !pers.some(p => uwNorm(p.name) === uwNorm(n.mitarbeiter_name)) && uwStatus(n).klasse !== "gut").length;
+  }catch(e){}
+  const z = (n, label, href, stufe) => `<a class="start-zahl${n ? " sz-" + stufe : ""}" href="${href}"><b>${n}</b><span>${label}</span></a>`;
+  return `<div class="start-zahlen">
+    ${z(gefahr, "Anlagen im Gefahrbereich", "#arbeitssicherheit/anlagen?status=gefahr", "kritisch")}
+    ${z(vorf, "offene Vorfälle", "#arbeitssicherheit/vf-arbeitssicherheit", "warnung")}
+    ${z(faellig, "Unterweisungen fällig", "#arbeitssicherheit/unterweisungen", "warnung")}
+  </div>`;
+}
+
 function setKundeName(){
   const r = AKTIV ? ALLE.find(x => x.kunde_slug===AKTIV) : ALLE[0];
   $("#kundeName").textContent = (r && r.kunde) || "";
@@ -284,10 +339,14 @@ function hashSetzen(ersetzen){
   if(location.hash === h) return;
   try{ if(ersetzen) history.replaceState(null, "", h); else history.pushState(null, "", h); }catch(e){}
 }
+let HASH_Q = null;   // Parameter hinter dem Reiter, z. B. #arbeitssicherheit/anlagen?status=gefahr (Cockpit-Kacheln)
 function hashLesen(){
-  const t = location.hash.replace(/^#/, "").split("/");
+  const roh = location.hash.replace(/^#/, "");
+  const [pfad, q] = roh.split("?");
+  const t = pfad.split("/");
   if(!t[0]) return false;
   AKTIVE_DOM = decodeURIComponent(t[0]); AKTIVE_SUB = t[1] ? decodeURIComponent(t[1]) : null;
+  HASH_Q = q ? new URLSearchParams(q) : null;
   return true;
 }
 window.addEventListener("popstate", () => {
@@ -380,6 +439,7 @@ window.addEventListener("resize", reiterUeberlaufPruefen);
 function renderTabs(){
   const nav = $("#katTabs"); if(!nav) return;
   const doms = verfuegbareDomaenen();
+  if(AKTIVE_DOM === "start"){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }   // Startseite ohne Reiter
   if(!doms.length){ nav.classList.add("hidden"); nav.innerHTML = ""; return; }
   // Standard-Tab: erste Domäne MIT Inhalt (Kunde landet auf Dokumenten, nicht auf leerem Bereich).
   if(!AKTIVE_DOM || !doms.some(d => d.key===AKTIVE_DOM)) AKTIVE_DOM = (doms.find(domHatInhalt) || doms[0]).key;
@@ -398,6 +458,7 @@ function renderTabs(){
 /* Ebene 2: Sub-Reiter der aktiven Domäne (verborgen, wenn nur ein Sub sichtbar) */
 function renderSubTabs(){
   const nav = $("#subTabs"); if(!nav) return;
+  if(AKTIVE_DOM === "start"){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = null; return; }
   const dom = verfuegbareDomaenen().find(d => d.key===AKTIVE_DOM);
   const subs = verfuegbareSubs(dom);
   if(subs.length <= 1){ nav.classList.add("hidden"); nav.innerHTML = ""; AKTIVE_SUB = subs[0] ? subs[0].kat : null; return; }
@@ -420,6 +481,8 @@ function renderSubTabs(){
 
 function renderSektionen(){
   const wrap = $("#sektionen"); wrap.innerHTML = "";
+  document.body.classList.remove("auf-start");
+  if(AKTIVE_DOM === "start"){ renderStart(wrap); return; }
   const doms = verfuegbareDomaenen();
   if(!doms.length){ wrap.innerHTML = `<div class="leer">Für Sie sind derzeit keine Unterlagen hinterlegt.</div>`; return; }
   const dom = doms.find(d => d.key===AKTIVE_DOM) || doms[0];
@@ -456,6 +519,8 @@ function renderSektionen(){
         }catch(e){ cb.checked=!cb.checked; cb.disabled=false; alert("Freigabe konnte nicht gespeichert werden: "+((e&&e.message)||e)); }
       });
     } }
+  /* Filter aus der Adresse (Cockpit-Kachel „Anlagen im Gefahrbereich" → Liste bereits gefiltert) */
+  if(HASH_Q && HASH_Q.get("status")){ const sf = $("#statusFilter"); if(sf) sf.value = HASH_Q.get("status"); HASH_Q = null; }
   renderAnlagen();
 }
 
@@ -493,8 +558,9 @@ async function ladePortal(){
                   : (MITGLIED && MITGLIED.kunde_slug) || null;
     await ladeUwStart();
     await markeLaden();
+    await meldeTokenLaden();
     AKTIVE_DOM = null; AKTIVE_SUB = null;
-    hashLesen();                       // Reiter aus der Adresse (Link oder Neuladen)
+    if(!hashLesen()) AKTIVE_DOM = "start";   // ohne Adresse: die Startseite mit den vier Knoepfen
     setKundeName();
     renderAdminBar();
     renderTabs();

@@ -469,3 +469,36 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
   .marke-kunde .kopf .marke .wort{font-size:14px}
   .marke-kunde .kopf .marke .sub{display:none}
 }
+
+/* ---- Cockpit-Kacheln als Links (16.09.2026) ---- */
+a.ck-kachel.ck-link{display:block;text-decoration:none;color:inherit;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+a.ck-kachel.ck-link:hover{border-color:var(--gruen);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+a.ck-kachel.ck-link .ck-hinweis::after{content:" ›";color:var(--gruen);font-weight:700}
+
+/* ---- Startseite: vier Knoepfe (16.09.2026) ---- */
+.start-seite{background:transparent;border:none;box-shadow:none;padding:6px 0 0}
+.start-frage{font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:700;color:var(--dunkel);margin:0 0 16px}
+.start-raster{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:560px){.start-raster{grid-template-columns:1fr}}
+.start-kachel{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;min-height:160px;padding:22px 24px;
+  background:var(--gruen);color:#fff;border-radius:18px;text-decoration:none;box-shadow:0 8px 22px rgba(0,0,0,.14);transition:background .15s,transform .1s}
+.start-kachel:hover{background:var(--dunkel)}
+.start-kachel:active{transform:translateY(1px)}
+.start-kachel svg{width:44px;height:44px;stroke:#fff;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;margin-bottom:auto}
+.start-kachel .sk-titel{font-size:22px;font-weight:700;line-height:1.2}
+.start-kachel .sk-sub{font-size:14px;opacity:.9;line-height:1.35}
+.start-mehr{margin:20px 0 0;font-size:14px;color:var(--grau)}
+.start-mehr a{color:var(--gruen);font-weight:600;text-decoration:none}
+.start-mehr a:hover{text-decoration:underline}
+#startLink{text-decoration:none}
+.auf-start .titelzeile .unter,.auf-start .titelzeile h1{display:none}
+.auf-start .titelzeile{padding:4px 0 0}
+.start-zahlen{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+@media(max-width:560px){.start-zahlen{grid-template-columns:1fr}}
+.start-zahl{display:flex;align-items:center;gap:14px;padding:14px 16px;background:#fff;border:1px solid var(--rand);border-left:4px solid var(--hellgruen);
+  border-radius:12px;text-decoration:none;color:var(--text);min-height:64px}
+.start-zahl b{font-size:28px;font-weight:700;color:var(--dunkel);min-width:44px;text-align:center}
+.start-zahl span{font-size:14px;line-height:1.3}
+.start-zahl.sz-kritisch{border-left-color:var(--rot)} .start-zahl.sz-kritisch b{color:var(--rot)}
+.start-zahl.sz-warnung{border-left-color:var(--orange)} .start-zahl.sz-warnung b{color:var(--orange)}
+.start-zahl:hover{border-color:var(--gruen)}

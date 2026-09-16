@@ -82,6 +82,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const t = await token();
   if(!t){ location.replace("index.html"); return; }          // ohne Login -> Anmeldung
   const slug = q("k"), mid = q("mid");
+  if(window.OAK_MARKE) OAK_MARKE.anwenden(slug);   // Farben + Logo des Betriebs
   const el = document.getElementById("inhalt");
   try{
     const rows = await apiGet("/rest/v1/portal_dokumente?select=*&kategorie=eq.anlagen&kunde_slug=eq."

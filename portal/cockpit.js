@@ -7,11 +7,13 @@
    trägt Zahl UND Text, damit die Ampel auch ohne Farbsehen lesbar bleibt. */
 "use strict";
 
-function ckTile(zahl, label, hinweis, stufe){
-  return `<div class="ck-kachel${stufe ? " ck-" + stufe : ""}">
-    <div class="ck-zahl">${esc(String(zahl))}</div>
+/* Kachel; mit `ziel` (#domaene/reiter[?status=…]) wird sie ein Link und springt auf die Liste dahinter. */
+function ckTile(zahl, label, hinweis, stufe, ziel){
+  const klassen = "ck-kachel" + (stufe ? " ck-" + stufe : "") + (ziel ? " ck-link" : "");
+  const innen = `<div class="ck-zahl">${esc(String(zahl))}</div>
     <div class="ck-label">${label}</div>
-    ${hinweis ? `<div class="ck-hinweis">${hinweis}</div>` : ""}</div>`;
+    ${hinweis ? `<div class="ck-hinweis">${hinweis}</div>` : ""}`;
+  return ziel ? `<a class="${klassen}" href="#${esc(ziel)}">${innen}</a>` : `<div class="${klassen}">${innen}</div>`;
 }
 
 /* Verteilungsbalken: Anteile mit Zahl + Name am Segment, 2px Lücke zwischen den Flächen. */
@@ -101,12 +103,12 @@ function renderCockpit(wrap, bereich){
     inhalt = `
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(z.gefahr, "im Gefahrbereich", z.gefahr ? "vorrangig abstellen" : "keine", z.gefahr ? "kritisch" : "gut")}
-          ${ckTile(z.maengel, "Mängel im Gefahrbereich", "aus den Mängellisten", z.maengel ? "kritisch" : "gut")}
-          ${ckTile(z.gesamt - z.offen, "Maßnahmen wirksam", "von " + z.gesamt + " dokumentierten", (z.gesamt && !(z.gesamt - z.offen)) ? "warnung" : "")}
-          ${ckTile(vOffenN, "offene Vorfälle", unfaelle + " Unfälle · " + beinahe + " Beinahe-Unfälle", vOffenN ? "warnung" : "gut")}
-          ${ckTile(z.freigegeben + "/" + z.anlagen, "Dokumente freigegeben", "durch die Sicherheitsfachkraft")}
-          ${ckTile(ckDatum(z.letzte), "Unterlagen aktualisiert", "Stand der Anlagendokumente")}
+          ${ckTile(z.gefahr, "Anlagen im Gefahrbereich", z.gefahr ? "vorrangig abstellen – Liste öffnen" : "keine", z.gefahr ? "kritisch" : "gut", "arbeitssicherheit/anlagen?status=gefahr")}
+          ${ckTile(z.maengel, "Mängel im Gefahrbereich", "aus den Mängellisten der Anlagen", z.maengel ? "kritisch" : "gut", "arbeitssicherheit/anlagen?status=gefahr")}
+          ${ckTile(z.gesamt - z.offen, "Maßnahmen wirksam", "von " + z.gesamt + " dokumentierten", (z.gesamt && !(z.gesamt - z.offen)) ? "warnung" : "", "arbeitssicherheit/anlagen")}
+          ${ckTile(vOffenN, "offene Vorfälle", unfaelle + " Unfälle · " + beinahe + " Beinahe-Unfälle", vOffenN ? "warnung" : "gut", "arbeitssicherheit/vf-arbeitssicherheit")}
+          ${ckTile(z.freigegeben + "/" + z.anlagen, "Anlagen-Dokumente freigegeben", "durch die Sicherheitsfachkraft", "", "arbeitssicherheit/anlagen")}
+          ${ckTile(ckDatum(z.letzte), "Unterlagen aktualisiert", "Stand der Anlagendokumente", "", "arbeitssicherheit/anlagen")}
         </div>
         ${ckRing([
           { name: "Gefahrbereich", wert: z.gefahr, klasse: "kritisch" },
@@ -132,11 +134,11 @@ function renderCockpit(wrap, bereich){
     inhalt = `
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(offen, "offene Umweltvorfälle", vf.length + " insgesamt gemeldet", offen ? "warnung" : "gut")}
-          ${ckTile(kritisch, "davon mit Austritt", "Kanalisation, Boden oder Gewässer", kritisch ? "kritisch" : "gut")}
-          ${ckTile(dok("umwelt-immissionsschutz"), "Immissionsschutz", "Dokumente")}
-          ${ckTile(dok("umwelt-gewaesserschutz"), "Gewässerschutz", "Dokumente")}
-          ${ckTile(dok("umwelt-awsv"), "AwSV", "Dokumente")}
+          ${ckTile(offen, "offene Umweltvorfälle", vf.length + " insgesamt gemeldet", offen ? "warnung" : "gut", "umwelt/vf-umwelt")}
+          ${ckTile(kritisch, "davon mit Austritt", "Kanalisation, Boden oder Gewässer", kritisch ? "kritisch" : "gut", "umwelt/vf-umwelt")}
+          ${ckTile(dok("umwelt-immissionsschutz"), "Immissionsschutz", "Dokumente", "", "umwelt/umwelt-immissionsschutz")}
+          ${ckTile(dok("umwelt-gewaesserschutz"), "Gewässerschutz", "Dokumente", "", "umwelt/umwelt-gewaesserschutz")}
+          ${ckTile(dok("umwelt-awsv"), "AwSV", "Dokumente", "", "umwelt/umwelt-awsv")}
         </div>
         ${ckRing([
           /* „neu gemeldet" statt „offen": die Kachel daneben zaehlt unter „offen" alles,
@@ -161,11 +163,11 @@ function renderCockpit(wrap, bereich){
     inhalt = `
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(nach("offen"), "offene Maßnahmen", em.length + " Befunde insgesamt", nach("offen") ? "warnung" : "gut")}
-          ${ckTile(nach("geplant"), "geplant", "Umsetzung terminiert")}
-          ${ckTile(nach("umgesetzt"), "umgesetzt", "abgeschlossen", nach("umgesetzt") ? "gut" : "")}
-          ${ckTile(dok("energie-aspekte"), "Energieaspekte", "Dokumente")}
-          ${ckTile(dok("energie-verbrauch"), "Verbrauch & Messstellen", "Dokumente")}
+          ${ckTile(nach("offen"), "offene Maßnahmen", em.length + " Befunde insgesamt", nach("offen") ? "warnung" : "gut", "energie/energie-massnahmen")}
+          ${ckTile(nach("geplant"), "geplant", "Umsetzung terminiert", "", "energie/energie-massnahmen")}
+          ${ckTile(nach("umgesetzt"), "umgesetzt", "abgeschlossen", nach("umgesetzt") ? "gut" : "", "energie/energie-massnahmen")}
+          ${ckTile(dok("energie-aspekte"), "Energieaspekte", "Dokumente", "", "energie/energie-aspekte")}
+          ${ckTile(dok("energie-verbrauch"), "Verbrauch & Messstellen", "Dokumente", "", "energie/energie-verbrauch")}
         </div>
         ${ckRing([
           { name: "offen", wert: nach("offen"), klasse: "warnung" },

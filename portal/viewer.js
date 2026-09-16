@@ -164,6 +164,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(istShell){
       // Live-Kontext: Mandant aus dem Storage-Pfad (<slug>/...), Nutzername fuers Log.
       LIVE.slug = String(p).split("/")[0] || "";
+      if(window.OAK_MARKE) OAK_MARKE.anwenden(LIVE.slug);   // Farben des Betriebs auch in der Dokument-Ansicht
       LIVE.mid = param("mid") || "";
       LIVE.docTyp = LIVE_TYPEN[typ] ? typ : "";
       const s = getSession();
