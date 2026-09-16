@@ -187,7 +187,11 @@ function uwLetzterNachweis(name){
 function uwGruppenName(p){
   return (p.uw_person_rolle || []).map(x => (UW_R.find(r => r.id === x.rolle_id) || {}).name).filter(Boolean).join(", ");
 }
-const UW_RANG = { kritisch: 0, warnung: 1, grau: 2, gut: 3 };
+/* Ampel-Rang fuer die Sortierung. Heisst bewusst NICHT UW_RANG: den Namen belegt bereits
+   unterweisungen-start.js (Faelligkeits-Rang). Zwei gleichnamige Top-Level-Konstanten sind im
+   Browser ein SyntaxError - am 16.09.2026 lief deshalb die Startdatei nicht mehr
+   ("ladeUwStart is not defined"), das ganze Portal blieb bei "laedt ...". */
+const UW_AMPEL_RANG = { kritisch: 0, warnung: 1, grau: 2, gut: 3 };
 
 function uwDokTabelle(rows){
   if(!rows.length) return `<div class="ck-fuss">Noch keine Unterweisungen hinterlegt.</div>`;
@@ -249,14 +253,14 @@ function renderUnterweisungen(wrap){
   const zeilen = pers.map(p => {
     const n = uwLetzterNachweis(p.name);
     const st = n ? uwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" };
-    return { rang: (UW_RANG[st.klasse] ?? 2), html: `<tr>
+    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr>
       <td><b>${esc(p.name)}</b></td><td>${esc(uwGruppenName(p) || "—")}</td>
       <td>${n ? uwDatum(n.created_at) : "—"}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
       <td><button class="btn-klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` };
   }).concat(zusatz.map(n => {
     const st = uwStatus(n);
-    return { rang: (UW_RANG[st.klasse] ?? 2), html: `<tr>
+    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr>
       <td><b>${esc(n.mitarbeiter_name)}</b> <span class="uw-leise">am Terminal eingetragen</span></td>
       <td>${esc(n.funktion || "—")}</td><td>${uwDatum(n.created_at)}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
