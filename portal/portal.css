@@ -705,3 +705,6 @@ a.mg-link:hover{color:var(--gruen);text-decoration:underline}
 .ts-leiste button[hidden]{display:none}
 html.terminal-aktiv,html.terminal-aktiv body{overflow:hidden}
 html.terminal-aktiv #appView,html.terminal-aktiv .tabbar-fest{visibility:hidden}
+
+#uwListe td{vertical-align:middle}
+#uwListe .uw-knoepfe .btn-klein{margin-top:0;margin-bottom:0}
