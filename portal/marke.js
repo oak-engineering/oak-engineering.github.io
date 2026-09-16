@@ -29,8 +29,17 @@ window.OAK_MARKE = {
       if(m.logo){ img.src = m.logo; img.alt = m.name || ""; img.hidden = false; } else { img.hidden = true; img.removeAttribute("src"); }
     });
   },
+  /* Nur saubere Werte durchlassen: Farben als #hex, Logo als Pfad unter marken/ oder https-Adresse.
+     Die Werte landen in CSS und im <style>-Block der Dokumentansicht – nichts anderes darf dort hinein. */
+  pruefen(m){
+    const farbe = v => (typeof v === "string" && /^#[0-9a-fA-F]{3,8}$/.test(v)) ? v : undefined;
+    const logo = v => (typeof v === "string" && /^(marken\/[\w.-]+|https:\/\/[\w.\/%-]+)$/.test(v)) ? v : undefined;
+    return { farbe: farbe(m.farbe), farbe_tief: farbe(m.farbe_tief), farbe_hell: farbe(m.farbe_hell), akzent: farbe(m.akzent),
+             hintergrund: farbe(m.hintergrund), logo: logo(m.logo), name: typeof m.name === "string" ? m.name.slice(0, 120) : undefined };
+  },
   setzen(m, name){
     m = Object.assign({}, m || {}); if(name) m.name = name;
+    m = this.pruefen(m);
     this.aktuell = m;
     this.farben(m);
     if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => this.logo(), { once: true }); else this.logo();
@@ -38,7 +47,8 @@ window.OAK_MARKE = {
   },
   ausCache(){
     try{
-      const m = JSON.parse(localStorage.getItem(this.SCHLUESSEL) || "null");
+      const roh = JSON.parse(localStorage.getItem(this.SCHLUESSEL) || "null");
+      const m = roh ? this.pruefen(roh) : null;
       if(m && m.farbe){ this.aktuell = m; this.farben(m);
         if(document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => this.logo(), { once: true }); else this.logo(); }
     }catch(e){}

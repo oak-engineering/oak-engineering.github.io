@@ -832,3 +832,31 @@ document.addEventListener("DOMContentLoaded", async () => {
   const t = await token();
   if(t){ zurApp(); await ladePortal(); } else { zurLogin(); }
 });
+
+/* ---- Neue Version live? (16.09.2026) --------------------------------------------------------
+   Ein offenes Portal-Fenster laeuft sonst stundenlang mit dem alten Programmstand weiter. Jede Minute
+   (und beim Zurueckkehren ins Fenster) wird verglichen, ob index.html eine neuere Fassung meldet.
+   Dann erscheint ein Hinweis mit Knopf; ohne laufende Eingabe wird automatisch neu geladen. */
+(function(){
+  const stil = document.querySelector('link[href*="portal.css"]');
+  const meins = stil ? stil.getAttribute("href") : "";
+  let hinweis = false;
+  async function versionPruefen(){
+    if(!meins || hinweis) return;
+    try{
+      const t = await (await fetch("index.html?stand=" + Date.now(), { cache: "no-store" })).text();
+      const m = t.match(/href="(portal\.css\?v=[^"]+)"/);
+      if(!m || m[1] === meins) return;
+      const beschaeftigt = document.querySelector("dialog[open]") || /terminal|melden|pruefen|anfragen/.test(location.hash)
+        || (document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));
+      if(!beschaeftigt && document.hidden === false){ location.reload(); return; }
+      hinweis = true;
+      const d = document.createElement("div"); d.className = "update-banner"; d.setAttribute("role", "status");
+      d.innerHTML = 'Neue Version des Portals verfügbar. <button type="button" class="btn">Jetzt aktualisieren</button>';
+      d.querySelector("button").addEventListener("click", () => location.reload());
+      document.body.appendChild(d);
+    }catch(e){ /* offline – spaeter erneut */ }
+  }
+  setInterval(versionPruefen, 60000);
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) versionPruefen(); });
+})();

@@ -201,14 +201,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       frame.srcdoc = mitLightbox(html, typ).replace(/<\/head>/i, (window.OAK_MARKE ? OAK_MARKE.styleBlock() : "") + "</head>");   // Kundenmarke ins Dokument
     } else if(typ==="html"){
-      if(/\/(vom-betrieb|anfragen)\//.test(p)) throw new Error("Vom Betrieb hochgeladene Dateien werden nicht als Seite angezeigt.");
+      if(/\/(vom-betrieb|anfragen|maengel)\//.test(p)) throw new Error("Vom Betrieb hochgeladene Dateien werden nicht als Seite angezeigt.");
       frame.srcdoc = await apiGet(storagePfad(p), true);
     } else if(typ==="pdf" || typ==="bild" || typ==="datei"){
       const roh = await (await apiFetch(storagePfad(p))).blob();
       /* Sicherheit: Typ erzwingen – PDF oder Bild wird angezeigt, alles andere nur heruntergeladen; kein Skript im Portal-Ursprung */
       const mime = typ==="pdf" ? "application/pdf" : (typ==="bild" && /^image\/(png|jpe?g|webp|gif)$/.test(roh.type) ? roh.type : "application/octet-stream");
       frame.removeAttribute("srcdoc");
-      if(/\/(vom-betrieb|anfragen)\//.test(p)) frame.setAttribute("sandbox", "");
+      if(/\/(vom-betrieb|anfragen|maengel)\//.test(p)) frame.setAttribute("sandbox", "");
       frame.src = URL.createObjectURL(new Blob([roh], {type: mime}));
     }
     frame.classList.remove("hidden");
