@@ -668,11 +668,11 @@ html:not(.ist-app) #katTabs:not(.hidden),html:not(.ist-app) #subTabs:not(.hidden
 
 /* Knopf „Aktualisieren" im Kopf, sobald eine neue Version online ist */
 .neu-laden{display:inline-flex;align-items:center;gap:8px;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:14px;font-weight:600;
-  min-height:40px;padding:6px 14px;border:0;border-radius:10px;background:#e08e0b;color:#fff;cursor:pointer;
-  box-shadow:0 0 0 0 rgba(224,142,11,.6);animation:neuLadenPuls 1.8s ease-out 3}
+  min-height:40px;padding:6px 14px;border:0;border-radius:10px;background:#2e7d32;color:#fff;cursor:pointer;
+  box-shadow:0 0 0 0 rgba(46,125,50,.6);animation:neuLadenPuls 1.8s ease-out 3}
 .neu-laden svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .neu-laden:hover{filter:brightness(1.05)}
-@keyframes neuLadenPuls{0%{box-shadow:0 0 0 0 rgba(224,142,11,.6)}100%{box-shadow:0 0 0 12px rgba(224,142,11,0)}}
+@keyframes neuLadenPuls{0%{box-shadow:0 0 0 0 rgba(46,125,50,.6)}100%{box-shadow:0 0 0 12px rgba(46,125,50,0)}}
 @media(max-width:620px){.neu-laden span{display:none}.neu-laden{padding:6px 10px}}
 body > .neu-laden{position:fixed;top:12px;right:12px;z-index:200}
 
@@ -712,3 +712,24 @@ html.terminal-aktiv #appView,html.terminal-aktiv .tabbar-fest{visibility:hidden}
 .vf-melden-hero{padding:6px 0 4px;text-align:left}
 .vf-melden-hero .uw-start{min-height:56px;font-size:17px;padding:12px 26px;min-width:0}
 .vf-melden-hero .uw-hero-text{margin:10px 0 0;max-width:none}
+
+/* Bereich-Umschalter im Kopf (nur App; im Browser gibt es die Reiter) */
+.bereich-wahl{display:flex;gap:0;border:1px solid var(--linie,#e3e8ef);border-radius:10px;overflow:hidden;background:#fff;margin:0 auto}
+.bereich-wahl:empty{display:none}
+html:not(.ist-app) .bereich-wahl{display:none}
+.bw-knopf{font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:14.5px;font-weight:500;min-height:42px;padding:6px 18px;border:0;background:#fff;color:#344054;cursor:pointer}
+.bw-knopf + .bw-knopf{border-left:1px solid var(--linie,#e3e8ef)}
+.bw-knopf.aktiv{background:var(--gruen);color:#fff;font-weight:600}
+@media(max-width:900px){
+  #appView .kopf .wrap{flex-wrap:wrap;height:auto;padding-top:8px;padding-bottom:8px;row-gap:8px}
+  .bereich-wahl{order:3;width:100%}
+  .bw-knopf{flex:1;padding:6px 8px;font-size:13.5px;min-height:40px}
+  #appView{--kopf-h:110px}
+}
+
+/* Maengel: Kurzuebersicht nach Ampel, klickbar */
+.mg-kurzreihe{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 16px}
+.mg-kurz{font:inherit;text-align:left;cursor:pointer;width:100%}
+.mg-kurz:hover{box-shadow:0 8px 20px rgba(16,24,40,.08)}
+.mg-kurz.aktiv{outline:2px solid var(--gruen);outline-offset:1px}
+@media(max-width:560px){.mg-kurzreihe{grid-template-columns:1fr 1fr 1fr;gap:8px}.mg-kurz .ck-hinweis{display:none}}

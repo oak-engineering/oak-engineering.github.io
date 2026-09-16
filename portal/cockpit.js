@@ -113,7 +113,7 @@ function renderCockpit(wrap, bereich){
     inhalt = `
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " dringend (rot)") : "wird geladen", mg.length ? "kritisch" : "gut", "maengel")}
+          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich") : "wird geladen", mg.length ? "kritisch" : "gut", "maengel")}
           ${ckTile(uwF, "Unterweisungen fällig", uwLetzt ? "letzter Nachweis " + ckDatum(uwLetzt) : "noch kein Nachweis", uwF ? "warnung" : "gut", "mehr/unterweisungen")}
           ${ckTile(letzterV ? ckDatum(letzterV.ereignis_am || letzterV.angelegt_am) : "keiner", "letzter Vorfall", letzterV ? (ART[letzterV.art] || "Vorfall") + " · " + vOffenN + " offen" : "bisher nichts gemeldet", vOffenN ? "warnung" : "", "mehr/vorfaelle")}
           ${ckTile(ckDatum(letzteBeg), "letzte Begehung", begehungen.length + " Begehungsprotokolle", "", "unterlagen/begehungen")}

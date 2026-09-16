@@ -7,7 +7,7 @@
    Daten: portal_maengel (befüllt von tools/maengel_publish.py), Fotos im Speicher unter <slug>/maengel/. */
 "use strict";
 
-let MAENGEL = [], MG_GELADEN = false, MG_FILTER = { status: "offen", maschine: "" }, MG_MELDUNG = "";
+let MAENGEL = [], MG_GELADEN = false, MG_FILTER = { status: "offen", maschine: "", ampel: "" }, MG_MELDUNG = "";
 const MG_THEMA = { schutzzaun: "Schutzzäune & Roboterzellen", leiter_aufstieg: "Leitern & Aufstiege", leckage_ordnung: "Leckagen & Ordnung",
                    pruefung: "Prüfungen & Dokumentation", elektrik: "Elektrik", sonstiges: "Sonstiges",
                    pruefung_meldung: "Gemeldet bei der Maschinenprüfung" };
@@ -43,6 +43,14 @@ async function renderMaengel(wrap){
   let rows = MG_FILTER.status === "ausgeblendet" ? aus
            : alle.filter(m => MG_FILTER.status === "erledigt" ? m.status === "erledigt" : m.status !== "erledigt");
   if(MG_FILTER.maschine) rows = rows.filter(m => mgMaschine(m) === MG_FILTER.maschine);
+  /* Kurzuebersicht nach Ampel (wie bei den Maschinen), klickbar als Filter */
+  const bwVon = m => m.bewertung_manuell || m.band || "ohne";
+  const zahl = { gefahr: 0, besorgnis: 0, akzeptanz: 0 };
+  rows.forEach(m => { if(zahl[bwVon(m)] != null) zahl[bwVon(m)]++; });
+  const kurz = [["gefahr", "Gefahrbereich", "sofort", "kritisch"], ["besorgnis", "Besorgnisbereich", "zeitnah", "warnung"], ["akzeptanz", "Akzeptanzbereich", "bei Gelegenheit", "gut"]]
+    .map(([k, l, h, stufe]) => `<button type="button" class="ck-kachel ck-${stufe} mg-kurz${MG_FILTER.ampel === k ? " aktiv" : ""}" data-mgampel="${k}">
+        <div class="ck-zahl">${zahl[k]}</div><div class="ck-label">${l}</div><div class="ck-hinweis">${h}${MG_FILTER.ampel === k ? " · Filter aktiv" : ""}</div></button>`).join("");
+  if(MG_FILTER.ampel) rows = rows.filter(m => bwVon(m) === MG_FILTER.ampel);
   const maschinen = [...new Set(alle.filter(m => !mgIstAllgemein(m)).map(mgMaschine))].sort((a, b) => a.localeCompare(b, "de", { numeric: true }));
   const allgemein = [...new Set(alle.filter(mgIstAllgemein).map(mgMaschine))].sort();
   const meld = MG_MELDUNG ? `<div class="uw-meld">${esc(MG_MELDUNG)}</div>` : ""; MG_MELDUNG = "";
@@ -53,7 +61,7 @@ async function renderMaengel(wrap){
     if(!g){ g = { thema: th, rang: MG_RANG[th] || m.thema_rang || 9, liste: [] }; gruppen.push(g); } g.liste.push(m); });
   gruppen.sort((a, b) => a.rang - b.rang);
   const typ = m => mgIstAllgemein(m) ? "allgemein" : String(m.maschinentyp || "").replace(/\s*\(mit [^)]*\)/i, "");
-  const bwText = { gefahr: "rot · dringend", besorgnis: "gelb · zeitnah", akzeptanz: "grün · bei Gelegenheit" };
+  const bwText = { gefahr: "Gefahrbereich · sofort", besorgnis: "Besorgnisbereich · zeitnah", akzeptanz: "Akzeptanzbereich · bei Gelegenheit" };
   const zeile = m => {
     const erledigt = m.status === "erledigt";
     const bw = m.bewertung_manuell || m.band || "ohne";
@@ -85,12 +93,14 @@ async function renderMaengel(wrap){
         ${allgemein.length ? `<optgroup label="Allgemein">${allgemein.map(n => `<option${MG_FILTER.maschine === n ? " selected" : ""}>${esc(n)}</option>`).join("")}</optgroup>` : ""}
       </select>
     </div>
-    ${gruppen.length ? gruppen.map((g, i) => `<details class="mg-gruppe"${(i === 0 || MG_FILTER.maschine || MG_FILTER.status !== "offen") ? " open" : ""}>
+    <div class="mg-kurzreihe">${kurz}</div>
+    ${gruppen.length ? gruppen.map((g, i) => `<details class="mg-gruppe"${(i === 0 || MG_FILTER.maschine || MG_FILTER.ampel || MG_FILTER.status !== "offen") ? " open" : ""}>
         <summary><span>${esc(MG_THEMA[g.thema] || g.thema)}</span><b>${g.liste.length}</b></summary>
         <div class="mg-liste">${g.liste.map(zeile).join("")}</div></details>`).join("")
       : `<div class="ck-fuss">${alle.length ? "Nichts in dieser Auswahl." : "Noch keine Mängel übertragen."}</div>`}`;
   wrap.appendChild(sec);
   sec.querySelectorAll("[data-mgf]").forEach(b => b.addEventListener("click", () => { MG_FILTER.status = b.dataset.mgf; renderSektionen(); }));
+  sec.querySelectorAll("[data-mgampel]").forEach(b => b.addEventListener("click", () => { MG_FILTER.ampel = MG_FILTER.ampel === b.dataset.mgampel ? "" : b.dataset.mgampel; renderSektionen(); }));
   sec.querySelector("#mgMaschine").addEventListener("change", e => { MG_FILTER.maschine = e.target.value; renderSektionen(); });
   sec.querySelectorAll("[data-mgerl]").forEach(b => b.addEventListener("click", () => mgDialog(b.dataset.mgerl)));
   sec.querySelectorAll("[data-mgedit]").forEach(b => b.addEventListener("click", () => mgBearbeiten(b.dataset.mgedit)));
@@ -113,7 +123,7 @@ function mgBearbeiten(id){
       <p class="pw-hint"><b>${esc(mgMaschine(m))}</b>${m.mangel_nr ? " · " + esc(m.mangel_nr) : ""}</p>
       <label>Mangel<textarea id="mgeLabel" rows="3">${esc(mgFeld(m, "label") || "")}</textarea></label>
       <label>Maßnahme<textarea id="mgeMassnahme" rows="3">${esc(mgFeld(m, "massnahme") || "")}</textarea></label>
-      <label>Bewertung<select id="mgeBw">${[["gefahr", "rot · dringend"], ["besorgnis", "gelb · zeitnah"], ["akzeptanz", "grün · bei Gelegenheit"]]
+      <label>Bewertung<select id="mgeBw">${[["gefahr", "Gefahrbereich · sofort"], ["besorgnis", "Besorgnisbereich · zeitnah"], ["akzeptanz", "Akzeptanzbereich · bei Gelegenheit"]]
         .map(([w, l]) => `<option value="${w}"${w === bw ? " selected" : ""}>${l}</option>`).join("")}</select></label>
       <label>Thema<select id="mgeThema">${Object.keys(MG_THEMA).map(k => `<option value="${k}"${k === th ? " selected" : ""}>${esc(MG_THEMA[k])}</option>`).join("")}</select></label>
       <label class="mg-edit-aus"><input type="checkbox" id="mgeAus"${m.ausgeblendet ? " checked" : ""}> Mangel ausblenden (trifft nicht zu)</label>

@@ -180,7 +180,20 @@ function statusBadge(r, neuestesDatum){
    (Arbeitssicherheit · Umwelt · Energie, Umschalter) – jede Karte fuehrt auf ihre Liste.
    Es gibt keine zweite Uebersicht daneben (renderCockpit in cockpit.js liefert die Karten). */
 let MELDE_TOK = [];
-let START_BEREICH = "arbeitssicherheit";
+let START_BEREICH = (() => { try{ return localStorage.getItem("oak_portal_bereich") || "arbeitssicherheit"; }catch(e){ return "arbeitssicherheit"; } })();
+const BEREICHE_APP = [["arbeitssicherheit", "Arbeitssicherheit"], ["umwelt", "Umwelt"], ["energie", "Energie"]];
+/* Bereich-Umschalter im Kopf (App): gilt fuer Start, Unterlagen und Vorfaelle – nicht je Seite einzeln (Nikolai 16.09.) */
+function renderBereichWahl(){
+  const el = $("#bereichWahl"); if(!el) return;
+  el.innerHTML = BEREICHE_APP.map(([k, l]) => `<button type="button" role="tab" class="bw-knopf${k === START_BEREICH ? " aktiv" : ""}" data-bereich="${k}" aria-selected="${k === START_BEREICH}">${l}</button>`).join("");
+  el.querySelectorAll("[data-bereich]").forEach(b => b.addEventListener("click", () => {
+    START_BEREICH = b.dataset.bereich;
+    try{ localStorage.setItem("oak_portal_bereich", START_BEREICH); }catch(e){}
+    if(AKTIVE_DOM === "mehr" && (AKTIVE_SUB === "vorfaelle" || AKTIVE_SUB === "vf-umwelt")) AKTIVE_SUB = START_BEREICH === "umwelt" ? "vf-umwelt" : "vorfaelle";
+    if(AKTIVE_DOM === "unterlagen") AKTIVE_SUB = null;
+    renderSektionen(); hashSetzen(true);
+  }));
+}
 async function meldeTokenLaden(){
   try{ MELDE_TOK = await apiGet("/rest/v1/portal_melde_token?select=token,kunde_slug,kunde&aktiv=is.true", false) || []; }catch(e){ MELDE_TOK = []; }
 }
@@ -216,13 +229,11 @@ function renderStart(wrap){
   const kachel = k => `<a class="start-kachel" href="${k[0]}"><span class="sk-kopf"><span class="sk-titel">${esc(k[1])}</span>${START_SVG[k[3]] || ""}</span><span class="sk-sub">${esc(k[2])}</span></a>`;
   const sec = document.createElement("section"); sec.className = "sektion start-seite";
   const bereiche = [["arbeitssicherheit", "Arbeitssicherheit"], ["umwelt", "Umwelt"], ["energie", "Energie"]];
-  sec.innerHTML = `<div class="start-blick-kopf"><h2>Auf einen Blick</h2>
-      <div class="uw-pills">${bereiche.map(([k, l]) => `<button type="button" class="uw-pill${k === START_BEREICH ? " aktiv" : ""}" data-bereich="${k}">${l}</button>`).join("")}</div></div>
+  sec.innerHTML = `<div class="start-blick-kopf"><h2>Auf einen Blick · ${esc((BEREICHE_APP.find(b => b[0] === START_BEREICH) || [])[1] || "")}</h2></div>
     <div id="startBlick"></div>
     <div class="start-raster">${(START_AKTIONEN[START_BEREICH] || START_AKTIONEN.arbeitssicherheit).map(kachel).join("")}</div>`;
   wrap.appendChild(sec);
   renderCockpit(sec.querySelector("#startBlick"), START_BEREICH);
-  sec.querySelectorAll("[data-bereich]").forEach(b => b.addEventListener("click", () => { START_BEREICH = b.dataset.bereich; renderSektionen(); }));
 }
 
 /* Terminal, Meldeformular und Maschinen-Checkliste laufen im Portal (Rahmen), damit die Seitenleiste bleibt. */
@@ -416,7 +427,7 @@ const UNTERLAGEN = [
       ["allg-gbu", "Allgemeine Gefährdungsbeurteilungen", "Tätigkeiten und Themen ohne feste Maschine"],
       ["gefahrstoffe", "Gefahrstoffe", "Verzeichnis und Betriebsanweisungen"],
       ["begehungen", "Begehungsprotokolle", "Was bei den Begehungen festgestellt wurde"],
-      ["vom-betrieb", "Interne Unterlagen", "Eigene Dokumente hochladen und ansehen"] ]},
+      ["vom-betrieb", "Interne Unterlagen", "Unterlagen hochladen und ansehen"] ]},
   { bereich: "Umwelt", kats: [
       ["umwelt-immissionsschutz", "Immissionsschutz", ""], ["umwelt-gewaesserschutz", "Gewässerschutz", ""],
       ["umwelt-awsv", "AwSV", ""], ["umwelt-unterweisungen", "Unterweisungen Umwelt", ""] ]},
@@ -640,8 +651,10 @@ function renderUnterlagen(wrap){
   const anzahl = kat => kat === "energie-massnahmen" ? ((typeof eSichtbar === "function") ? eSichtbar().length : 0) : katRows(kat).length;
   const sec = document.createElement("section"); sec.className = "sektion ul-seite";
   const rest = katRows("sonstige").length;
-  sec.innerHTML = UNTERLAGEN.map(b => {
-    const kats = b.kats.filter(k => k[0] === "vom-betrieb" || anzahl(k[0]));
+  const gewaehlt = (BEREICHE_APP.find(b => b[0] === START_BEREICH) || [])[1];
+  const intern = ["vom-betrieb", "Interne Unterlagen", "Unterlagen hochladen und ansehen"];
+  sec.innerHTML = UNTERLAGEN.filter(b => !IST_APP || b.bereich === gewaehlt).map(b => {
+    const kats = b.kats.filter(k => k[0] !== "vom-betrieb" && anzahl(k[0])).concat([intern]);
     return `<h2 class="ul-bereich">${esc(b.bereich)}</h2>` + (kats.length
       ? `<div class="ul-raster">${kats.map(k => { const n = anzahl(k[0]);
           return `<a class="ul-karte" href="#unterlagen/${k[0]}"><span class="ul-titel">${esc(k[1])}</span>`
@@ -689,7 +702,7 @@ function renderSeitenleiste(){
       ${e("maengel", null, "maengel", "Mängel", mg)}
       ${e("unterlagen", null, "unterlagen", "Unterlagen")}
       ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen", uw)}
-      ${e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
+      ${START_BEREICH === "umwelt" ? e("mehr", "vf-umwelt", "vorfaelle", "Umweltvorfälle") : e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
       ${e("mehr", "anfragen", "anfragen", "Frage an OAK")}
       ${erweitert}
     </div>
@@ -714,7 +727,7 @@ function renderSektionen(){
   if(!IST_APP){ renderKlassisch(wrap); return; }
   if(!AKTIVE_DOM || AKTIVE_DOM === "start" || (AKTIVE_DOM === "mehr" && !AKTIVE_SUB)){ AKTIVE_DOM = "start"; AKTIVE_SUB = null; }
   document.body.dataset.seite = AKTIVE_DOM; document.body.dataset.unterseite = AKTIVE_SUB || "";
-  renderSeitenleiste();
+  renderSeitenleiste(); renderBereichWahl();
   if(AKTIVE_DOM === "start"){ renderStart(wrap); return; }
   seitenKopf(wrap);
   if(AKTIVE_DOM === "maengel"){ renderMaengel(wrap); return; }
