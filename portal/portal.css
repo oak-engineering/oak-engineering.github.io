@@ -455,3 +455,17 @@ details.v-karte > .v-fuss{padding-bottom:12px;}
 .uw-pill.aktiv{background:var(--gruen);color:#fff}
 .uw-pill:disabled{opacity:.35;cursor:default}
 .uw-kompakt td,.uw-kompakt th{padding-top:6px;padding-bottom:6px}
+
+/* ---- Kundenlogo als Hauptmarke im Kopf (16.09.2026): gross, links; OAK klein daneben ---- */
+.marke-kunde .kopf .wrap{justify-content:flex-start}
+.marke-kunde .kopf #kundeLogo{order:-1;height:64px;max-width:260px;margin:0 18px 0 0;padding-right:18px;border-right:1px solid var(--rand)}
+.marke-kunde .kopf .marke{gap:8px;opacity:.9}
+.marke-kunde .kopf .marke .oak-logo{height:26px}
+.marke-kunde .kopf .marke .wort{font-size:16px}
+.marke-kunde .kopf .marke .sub{font-size:9px;letter-spacing:1.5px}
+.marke-kunde .kopf .rechts{margin-left:auto}
+@media(max-width:620px){
+  .marke-kunde .kopf #kundeLogo{height:48px;max-width:180px;margin-right:10px;padding-right:10px}
+  .marke-kunde .kopf .marke .wort{font-size:14px}
+  .marke-kunde .kopf .marke .sub{display:none}
+}
