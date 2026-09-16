@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Maschine prüfen – Kundenportal</title>
-<link rel="stylesheet" href="portal.css?v=202609161212">
+<link rel="stylesheet" href="portal.css?v=202609161216">
 <script src="marke.js?v=2026-09-16d"></script>
 <style>
 /* Maschinenpruefung fuer Schichtfuehrer (16.09.2026): Checkliste BG RCI T 008-2 „Wiederkehrende Pruefung"
@@ -223,7 +223,7 @@ async function start(){
     const me = await apiGet("/rest/v1/portal_mitglied?select=rolle,kunde_slug,kunde,name&user_id=eq." + encodeURIComponent(s.user.id), false) || [];
     const ich = me[0] || {};
     SLUG = (ich.rolle === "admin" && Q.get("k")) ? Q.get("k") : (ich.kunde_slug || Q.get("k") || "");
-    $("#pruefer").value = ich.rolle === "admin" ? "" : (ich.name || "");
+    $("#pruefer").value = (ich.rolle === "admin" || /^Schichtf/i.test(ich.name || "")) ? "" : (ich.name || "");   // gemeinsamer Zugang: Name selbst eintragen
     if(window.OAK_MARKE && SLUG) OAK_MARKE.anwenden(SLUG);
     const rows = await apiGet("/rest/v1/portal_dokumente?select=maschine,maschinen_id,maschinentyp,kunde&kategorie=eq.anlagen&kunde_slug=eq." + encodeURIComponent(SLUG), false) || [];
     const gesehen = new Set();
