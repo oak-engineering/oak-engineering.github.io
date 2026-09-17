@@ -219,7 +219,7 @@ const START_AKTIONEN = {
     ["#mehr/melden", "Vorfall melden", "Unfall oder Beinahe-Unfall", "warnung"],
     ["#maengel?neu=1", "Mangel erfassen", "An Maschine oder Halle, mit Foto", "mangel"],
     ["#mehr/pruefen", "Maschine prüfen", "Checkliste direkt an der Maschine", "begehung"],
-    ["#unterlagen/ba-sammel", "Betriebsanweisungen", "Sammel-BA je Maschinentyp", "ba"],
+    ["#unterlagen/ba", "Betriebsanweisungen", "Sammel-BA je Maschinentyp und je Maschine", "ba"],
     ["#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", "brief"] ],
   umwelt: [
     ["#mehr/melden?art=umwelt", "Umweltvorfall melden", "Austritt, Leckage, falsch entsorgt", "warnung"],
@@ -430,10 +430,11 @@ const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vor
                      terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch" };
 const UNTERLAGEN = [
   { bereich: "Arbeitssicherheit", kats: [
-      ["anlagen", "Maschinen & Anlagen", "Gefährdungsbeurteilung, Betriebsanweisung und Mängelliste je Maschine"],
-      ["ba-sammel", "Betriebsanweisungen", "Sammel-BA je Maschinentyp"],
+      ["anlagen", "Anlagenkataster", "Alle Anlagen – Kurzinfo, offene Mängel und Dokumente"],
       ["hallenplan", "Hallenplan", "Alle Maschinen mit ihrem Risiko"],
-      ["allg-gbu", "Allgemeine Gefährdungsbeurteilungen", "Tätigkeiten und Themen ohne feste Maschine"],
+      ["gbu", "Gefährdungsbeurteilungen", "Je Maschine und je Tätigkeit"],
+      ["ba", "Betriebsanweisungen", "Sammel-BA je Maschinentyp und je Maschine"],
+      ["qr", "QR-Codes", "Je Anlage zum Ausdrucken"],
       ["gefahrstoffe", "Gefahrstoffe", "Verzeichnis und Betriebsanweisungen"],
       ["begehungen", "Begehungsprotokolle", "Was bei den Begehungen festgestellt wurde"],
       ["vom-betrieb", "Interne Unterlagen", "Unterlagen hochladen und ansehen"] ]},
@@ -454,6 +455,8 @@ function navKlassisch(dom, sub){
   if(dom === "unterlagen"){
     if(!sub) return ["arbeitssicherheit", "anlagen"];
     if(sub === "sonstige") return ["weitere", "sonstige"];
+    if(sub === "ba") return ["arbeitssicherheit", "ba-sammel"];
+    if(sub === "gbu" || sub === "qr") return ["arbeitssicherheit", "anlagen"];
     const d = domVon(sub); return d ? [d, sub] : ["arbeitssicherheit", null];
   }
   if(dom === "mehr"){
@@ -669,7 +672,8 @@ function direktDokument(kat){
 }
 /* Unterlagen: eine Seite mit den Gruppen je Bereich – nur was es gibt, „Vom Betrieb" immer (Hochladen). */
 function renderUnterlagen(wrap){
-  const anzahl = kat => kat === "energie-massnahmen" ? ((typeof eSichtbar === "function") ? eSichtbar().length : 0) : katRows(kat).length;
+  const anzahl = kat => kat === "energie-massnahmen" ? ((typeof eSichtbar === "function") ? eSichtbar().length : 0)
+    : (typeof ulAnzahl === "function" && ulAnzahl(kat) != null) ? ulAnzahl(kat) : katRows(kat).length;
   const sec = document.createElement("section"); sec.className = "sektion ul-seite";
   const rest = katRows("sonstige").length;
   const gewaehlt = (BEREICHE_APP.find(b => b[0] === START_BEREICH) || [])[1];
@@ -761,6 +765,7 @@ function renderSektionen(){
   }
   if(!AKTIVE_SUB){ renderUnterlagen(wrap); return; }
   if(AKTIVE_SUB === "vom-betrieb"){ renderUpload(wrap); return; }
+  if(["anlagen", "gbu", "ba", "qr"].includes(AKTIVE_SUB) && typeof renderUnterlagenListe === "function"){ renderUnterlagenListe(wrap, AKTIVE_SUB); return; }   // unterlagen.js
   renderSektion(wrap, AKTIVE_SUB, UL_LABEL[AKTIVE_SUB] || KAT_LABEL[AKTIVE_SUB] || "", false);
   anlagenVerdrahten();
 }

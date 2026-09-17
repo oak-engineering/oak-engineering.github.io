@@ -846,3 +846,40 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .dok-dock-titel{font-size:12.5px;font-weight:600;color:#667085;margin-right:4px}
 .dok-dock .dok-reiter{border:1px solid #d5dbe4;border-radius:10px;min-height:38px;background:#f2f4f7;max-width:240px}
 .dok-dock .dok-reiter:hover{background:#e9edf3}
+
+/* Unterlagen-Listen: Anlagenkataster, GBU, BA, QR */
+.ul-filter{margin-bottom:6px}
+.ul-gruppe + .ul-gruppe{margin-top:18px}
+.ul-zeilen{display:flex;flex-direction:column;border:1px solid var(--linie,#e3e8ef);border-radius:12px;background:#fff;overflow:hidden}
+.ul-zeile{display:flex;align-items:center;gap:14px;padding:10px 16px;border-top:1px solid #eef1f5;min-height:52px}
+.ul-zeile:first-child{border-top:0}
+.ul-zeile[hidden]{display:none}
+.ul-klick{cursor:pointer}
+.ul-klick:hover{background:#f7f9fc}
+.ul-z-name{display:flex;flex-direction:column;min-width:0;flex:1 1 auto}
+.ul-z-name b{font-size:15px;color:#101828}
+.ul-z-name span{font-size:13px;color:#667085}
+.ul-z-info{display:flex;gap:12px;align-items:center;font-size:13px;color:#667085;white-space:nowrap}
+.ul-mg{font-weight:600;color:#8a4b00;background:#fdf1e3;border-radius:99px;padding:2px 9px}
+.ul-z-akt{flex:0 0 auto;display:flex;gap:8px}
+.ul-btn{min-height:36px;padding:6px 14px;font-size:14px;text-decoration:none;display:inline-flex;align-items:center}
+.ul-pfeil{font-size:24px;color:#98a2b3;line-height:1}
+.ul-ampel{width:12px;height:12px;border-radius:50%;flex:0 0 auto;background:#d0d5dd}
+.ul-gefahr.ul-ampel{background:#c0392b} .ul-besorgnis.ul-ampel{background:#e08e0b} .ul-akzeptanz.ul-ampel{background:#2e7d32}
+.ul-aus.ul-ampel{background:#fff;border:2px dashed #98a2b3}
+@media(max-width:640px){.ul-zeile{flex-wrap:wrap}.ul-z-info{order:3;width:100%;padding-left:26px}}
+/* Pop-up Kurzinfo */
+.ul-dlg{max-width:min(620px,94vw)}
+.ul-dlg-inhalt{padding:20px 24px 22px}
+.ul-dlg-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.ul-dlg-kopf h3{margin:0}
+.ul-risiko{display:inline-block;margin:10px 0 6px;padding:5px 12px;border-radius:8px;font-weight:600;font-size:14px;background:#f2f4f7;color:#344054}
+.ul-risiko.ul-gefahr{background:#fdecea;color:#8e1b1b} .ul-risiko.ul-besorgnis{background:#fff4e0;color:#7a4a00} .ul-risiko.ul-akzeptanz{background:#e8f5e9;color:#1b5e20}
+.ul-hinweis{margin:6px 0;padding:7px 12px;border-radius:8px;background:#f2f4f7;font-size:13.5px;color:#344054}
+.ul-dl{display:grid;grid-template-columns:max-content 1fr;gap:5px 16px;margin:12px 0 4px;font-size:14px}
+.ul-dl dt{color:#667085} .ul-dl dd{margin:0;color:#101828}
+.ul-h4{margin:16px 0 6px;font-size:14px;font-weight:700;color:#101828}
+.ul-mgliste{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-direction:column;gap:6px;max-height:220px;overflow:auto}
+.ul-mgliste li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4}
+.ul-mgliste .mg-ampel{flex:0 0 auto}
+.ul-docs{display:flex;flex-wrap:wrap;gap:8px}
