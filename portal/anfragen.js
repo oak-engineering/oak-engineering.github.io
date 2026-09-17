@@ -65,6 +65,7 @@ async function renderAnfragen(wrap){
         <span class="uw-badge ${a.status === "beantwortet" ? "uw-gut" : "uw-warnung"}">${a.status === "beantwortet" ? "beantwortet" : "offen"}</span></div>
       <div class="uw-leise">${anfrDatum(a.created_at)} · ${esc(a.von_name || "")}${istAdmin ? " · " + esc(a.kunde_slug) : ""}${a.maschinen_id ? " · " + esc(anfrMaschinenName(a.maschinen_id)) : ""}</div>
       ${a.text ? `<p class="anfr-text">${esc(a.text)}</p>` : ""}
+      ${a.dokument_link && /^(viewer|maschine)\.html\?/.test(a.dokument_link) ? `<p><a class="btn-klein" href="${esc(a.dokument_link)}" target="_blank" rel="noopener">Zum Dokument${a.dokument_titel ? ": " + esc(a.dokument_titel) : ""}</a></p>` : ""}
       ${a.anhang_pfad ? `<p><a class="btn-klein anfr-anhang" data-pfad="${esc(a.anhang_pfad)}" href="#">Anhang öffnen</a></p>` : ""}
       ${a.antwort ? `<div class="anfr-antwort"><b>Antwort von OAK engineering</b> <span class="uw-leise">${anfrDatum(a.beantwortet_am)}</span><p>${esc(a.antwort)}</p></div>` : ""}
       ${istAdmin && a.status !== "beantwortet" ? `<div class="anfr-antworten"><textarea rows="3" placeholder="Antwort schreiben …" style="width:100%;padding:10px 12px;font:inherit;font-size:15px;border:1px solid var(--rand,#D6E4DA);border-radius:10px"></textarea>

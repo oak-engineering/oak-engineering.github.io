@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>OAK Kundenportal — Dokument</title>
-<link rel="stylesheet" href="portal.css?v=202609170838">
+<link rel="stylesheet" href="portal.css?v=202609170840">
 <style>
   html,body{height:100%}
   body{display:flex;flex-direction:column;background:#e7efeb}
   .vkopf{background:#fff;border-bottom:3px solid var(--gruen);flex:0 0 auto;}
-  .vkopf .wrap{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;gap:12px;}
+  .vkopf .wrap{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;gap:12px;flex-wrap:wrap;}
   .vkopf .titel{font-family:'Cormorant Garamond',serif;font-weight:700;font-size:20px;color:var(--dunkel);}
   .vkopf .typ{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gruen);font-weight:600;}
   #rahmen{flex:1 1 auto;border:0;width:100%;background:#f3f7f5;}
@@ -30,6 +30,8 @@
   <div style="display:flex;align-items:center;gap:10px">
     <span id="saveBadge" class="save-badge hidden"></span>
     <button class="btn sek hidden" id="logBtn" type="button">Bearbeitungslog</button>
+    <button class="btn sek" id="teilenBtn" type="button" title="Link zu diesem Dokument per E-Mail verschicken">Per Mail teilen</button>
+    <button class="btn sek" id="frageBtn" type="button" title="Frage, Rückmeldung oder Unklarheit zu diesem Dokument an OAK engineering">Frage zum Dokument</button>
     <a class="btn sek" href="index.html">← Übersicht</a>
   </div>
 </div></div>
@@ -42,10 +44,20 @@
     <div id="logListe" style="font-size:13.5px;color:var(--text)">lädt …</div>
   </div>
 </div>
+<dialog id="frageDlg" class="pw-dlg" style="max-width:520px">
+  <form method="dialog" id="frageForm">
+    <h3>Frage zum Dokument</h3>
+    <p class="pw-hint" id="frageDok"></p>
+    <label>Ihre Frage oder Rückmeldung<textarea id="frageText" rows="5" style="display:block;width:100%;margin-top:4px;padding:10px 12px;font:inherit;font-size:15px;border:1px solid var(--rand);border-radius:8px" placeholder="z. B. Was ist mit Punkt 3 gemeint? / Die Maßnahme ist so nicht umsetzbar, weil …"></textarea></label>
+    <label>Ihr Name<input type="text" id="frageName" autocomplete="name" placeholder="Vor- und Nachname"></label>
+    <p class="pw-msg" id="frageMsg"></p>
+    <div class="pw-akt"><button type="button" class="btn sek" id="frageAbbruch">Abbrechen</button><button type="submit" class="btn" id="frageSenden">Absenden</button></div>
+  </form>
+</dialog>
 <div id="ladehinweis">Dokument wird geladen …</div>
 <iframe id="rahmen" class="hidden" title="Dokument"></iframe>
 <script src="auth.js?v=2026-08-19d"></script>
-<script src="viewer.js?v=2026-09-17b"></script>
+<script src="viewer.js?v=2026-09-17c"></script>
 <script src="tab.js?v=2026-09-17a"></script>
 </body>
 </html>

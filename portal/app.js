@@ -874,6 +874,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     ev.preventDefault();
     const btn=$("#loginBtn"); btn.disabled=true; $("#loginFehler").textContent="";
     try{ await login($("#email").value.trim(), $("#pass").value); $("#pass").value="";
+      /* per Mail geteilter Dokument-Link: nach der Anmeldung direkt dorthin */
+      let ziel = ""; try{ ziel = sessionStorage.getItem("oak_nach_login") || ""; sessionStorage.removeItem("oak_nach_login"); }catch(e){}
+      if(/^(viewer|maschine)\.html\?/.test(ziel)){ location.replace(ziel); return; }
       zurApp(); await ladePortal(); }
     catch(e){ $("#loginFehler").textContent = /Invalid login|invalid_grant/i.test(e.message) ? "E-Mail oder Passwort falsch." : e.message; }
     finally{ btn.disabled=false; }

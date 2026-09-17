@@ -144,7 +144,7 @@ async function zeigeLog(){
 
 document.addEventListener("DOMContentLoaded", async () => {
   const t = await token();
-  if(!t){ location.replace("index.html"); return; }
+  if(!t){ try{ sessionStorage.setItem("oak_nach_login", location.pathname.split("/").pop() + location.search); }catch(e){} location.replace("index.html"); return; }
 
   const typ = param("typ"), p = param("p");
   const titel = param("t") || (param("m") + (param("mid") ? " · " + param("mid") : ""));
@@ -231,4 +231,62 @@ window.addEventListener("message", ev => {
   const ziel = u.pathname.replace(/^\/portal\//, "") + u.search, titel = String(d.titel || "").slice(0, 80);
   let oben = null; try{ if(window.top !== window && typeof window.top.portalDokOeffnen === "function") oben = window.top; }catch(e){}
   if(oben) oben.portalDokOeffnen(ziel, titel); else window.open(ziel, "_blank", "noopener");
+});
+
+/* ---- Teilen und Fragen (Nikolai 17.09.2026) --------------------------------------------------
+   Teilen: E-Mail mit dem Link zu diesem Dokument – GBU/BA bleiben hinter dem Login (Geschaeftsgeheimnisse),
+   der Empfaenger meldet sich an und landet direkt im Dokument. Kein Download, keine Kopie im Mailpostfach.
+   Frage: geht als Anfrage an OAK (portal_anfrage, mit Link zurueck zum Dokument) + Mail an OAK. */
+function vDokTitel(){
+  const typ = param("typ"), label = SHELL_TYPEN[typ] || FMT_LABEL[typ] || "Dokument";
+  const titel = param("t") || param("m") || "";
+  return titel && titel.indexOf(label) !== 0 ? label + " · " + titel : (titel || label);
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const teilen = document.getElementById("teilenBtn"), frage = document.getElementById("frageBtn");
+  if(teilen) teilen.addEventListener("click", () => {
+    const link = location.origin + location.pathname + location.search;
+    const betreff = vDokTitel();
+    const text = "Hallo,\n\nhier das Dokument „" + betreff + "“ im Kundenportal:\n" + link
+      + "\n\nZum Öffnen ist die Anmeldung im Kundenportal nötig.\n";
+    location.href = "mailto:?subject=" + encodeURIComponent(betreff) + "&body=" + encodeURIComponent(text);
+  });
+  if(!frage) return;
+  const dlg = document.getElementById("frageDlg"), msg = document.getElementById("frageMsg");
+  frage.addEventListener("click", async () => {
+    document.getElementById("frageDok").textContent = vDokTitel();
+    document.getElementById("frageText").value = ""; msg.textContent = ""; msg.className = "pw-msg";
+    const nameFeld = document.getElementById("frageName");
+    if(!nameFeld.value){
+      try{ const s = getSession();
+        const me = await apiGet("/rest/v1/portal_mitglied?select=name&user_id=eq." + encodeURIComponent((s && s.user && s.user.id) || ""), false);
+        const n = (me && me[0] && me[0].name) || ""; if(!/^Schichtf/i.test(n)) nameFeld.value = n; }catch(e){}
+    }
+    dlg.showModal();
+  });
+  document.getElementById("frageAbbruch").addEventListener("click", () => dlg.close());
+  document.getElementById("frageForm").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const text = document.getElementById("frageText").value.trim(), name = document.getElementById("frageName").value.trim();
+    msg.className = "pw-msg";
+    if(text.length < 3){ msg.textContent = "Bitte die Frage kurz beschreiben."; msg.classList.add("fehler"); return; }
+    if(name.length < 3){ msg.textContent = "Bitte den Namen eintragen."; msg.classList.add("fehler"); return; }
+    const knopf = document.getElementById("frageSenden"); knopf.disabled = true; msg.textContent = "Wird gesendet …";
+    try{
+      const s = getSession();
+      const slug = String(param("p")).split("/")[0] || null;
+      const titel = vDokTitel();
+      const neu = await apiSend("POST", "/rest/v1/portal_anfrage", {
+        kunde_slug: slug, von_user_id: s && s.user ? s.user.id : null, von_name: name, von_email: s && s.user ? s.user.email : null,
+        betreff: ("Frage zu: " + titel).slice(0, 200), text, maschinen_id: param("mid") || null,
+        dokument_link: location.pathname.split("/").pop() + location.search, dokument_titel: titel.slice(0, 200)
+      }, "return=representation");
+      const id = Array.isArray(neu) ? (neu[0] && neu[0].id) : (neu && neu.id);
+      if(id){ try{ const tk = await token();
+        await fetch(CFG.url + "/functions/v1/anfrage-mail", { method: "POST",
+          headers: { apikey: CFG.anon, Authorization: "Bearer " + tk, "Content-Type": "application/json" }, body: JSON.stringify({ anfrage_id: id }) }); }catch(e){} }
+      msg.textContent = "Danke – die Frage ist bei OAK engineering. Die Antwort kommt unter „Frage an OAK“ und per E-Mail."; msg.classList.add("ok");
+      setTimeout(() => { dlg.close(); knopf.disabled = false; }, 2200);
+    }catch(e){ knopf.disabled = false; msg.textContent = "Konnte nicht gesendet werden: " + (e.message || e); msg.classList.add("fehler"); }
+  });
 });
