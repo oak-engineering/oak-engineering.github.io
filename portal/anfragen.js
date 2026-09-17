@@ -1,15 +1,20 @@
-/* OAK Kundenportal — „Frage an OAK engineering": ein Formular mit Anhang, kein Chat.
-   Der Betrieb schreibt Betreff, Frage, optional Maschine und Foto/Datei. Die Anfrage landet in
-   portal_anfrage (RLS je Betrieb), OAK bekommt eine Mail (Edge Function anfrage-mail) und antwortet
-   im Portal (Admin); der Betrieb sieht Status und Antwort in seiner Liste und per Mail. */
+/* OAK EHS-Cockpit — „Fragen zur Arbeitssicherheit" als Forum (Nikolai 17.09.2026: „eher wie Foren-Einträge, als Admin direkt im
+   Cockpit antworten, per Mail nur die Info, dass es einen neuen Eintrag gibt").
+   Themen: portal_anfrage (Betreff, erster Beitrag, Anhang, optional Maschine/Dokument). Antworten: portal_anfrage_beitrag –
+   beliebig viele, von OAK und aus dem Betrieb. Alle im Betrieb lesen mit (RLS je Betrieb). Status „beantwortet" setzt die
+   Datenbank, sobald OAK antwortet; ein neuer Beitrag aus dem Betrieb öffnet das Thema wieder.
+   Mail (Edge Function anfrage-mail): nur Hinweis mit Link, kein Inhalt. */
 "use strict";
 
-let ANFRAGEN = [];
-let ANFR_MELDUNG = "";
+const FRAGE_TITEL = "Fragen zur Arbeitssicherheit";
+let ANFRAGEN = [], ANFR_BEITRAEGE = [];
+let ANFR_MELDUNG = "", ANFR_OFFEN = null, ANFR_FILTER = "", ANFR_SCROLL = false;
 
 async function ladeAnfragen(){
-  try{ ANFRAGEN = await apiGet("/rest/v1/portal_anfrage?select=*&order=created_at.desc&limit=200", false) || []; }
+  try{ ANFRAGEN = await apiGet("/rest/v1/portal_anfrage?select=*&order=letzte_aktivitaet.desc.nullslast,created_at.desc&limit=300", false) || []; }
   catch(e){ ANFRAGEN = []; }
+  try{ ANFR_BEITRAEGE = await apiGet("/rest/v1/portal_anfrage_beitrag?select=*&order=created_at.asc&limit=3000", false) || []; }
+  catch(e){ ANFR_BEITRAEGE = []; }
 }
 function anfrDatum(s){
   if(!s) return "";
@@ -17,19 +22,14 @@ function anfrDatum(s){
   return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }) + " · "
        + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 }
-async function anfrSigned(pfad){
-  try{
-    const r = await apiSend("POST", "/storage/v1/object/sign/" + CFG.bucket + "/" + pfad, { expiresIn: 600 });
-    return (r && r.signedURL) ? CFG.url + "/storage/v1" + r.signedURL : null;
-  }catch(e){ return null; }
-}
-async function anfrMail(id){
+async function anfrSigned(pfad){ return ehsSigniert(pfad); }
+async function anfrMail(body){
   try{
     const t = await token(); if(!t) return;
     await fetch(CFG.url + "/functions/v1/anfrage-mail", { method: "POST",
       headers: { apikey: CFG.anon, Authorization: "Bearer " + t, "Content-Type": "application/json" },
-      body: JSON.stringify({ anfrage_id: id }) });
-  }catch(e){ /* Mail ist Komfort – die Anfrage steht im Portal */ }
+      body: JSON.stringify(typeof body === "string" ? { anfrage_id: body } : body) });
+  }catch(e){ /* Mail ist nur ein Hinweis – der Eintrag steht im Cockpit */ }
 }
 function anfrMaschinenName(mid){
   const r = (typeof ALLE !== "undefined" ? ALLE : []).find(x => x.maschinen_id === mid && x.maschine);
@@ -39,95 +39,144 @@ function anfrMaschinenAuswahl(id, gewaehlt){
   const liste = (typeof anlagen === "function" ? anlagen() : [])
     .map(r => ({ id: r.maschinen_id, name: r.maschine || r.titel })).filter(x => x.id);
   if(!liste.length) return "";
-  return `<label class="uw-lab" for="${id}">Maschine (optional)</label>
-    <select id="${id}" class="uw-fassung" style="max-width:420px;width:100%"><option value="">– keine bestimmte Maschine –</option>
-    ${liste.map(m => `<option value="${esc(m.id)}"${m.id === gewaehlt ? " selected" : ""}>${esc(m.name || m.id)}</option>`).join("")}</select>`;
+  return `<label>Maschine (optional)<select id="${id}"><option value="">– keine bestimmte Maschine –</option>
+    ${liste.map(m => `<option value="${esc(m.id)}"${m.id === gewaehlt ? " selected" : ""}>${esc(m.name || m.id)}</option>`).join("")}</select></label>`;
 }
+function anfrBeitraege(id){ return ANFR_BEITRAEGE.filter(b => b.anfrage_id === id); }
 
 async function renderAnfragen(wrap){
-  await ladeAnfragen();
-  const istAdmin = (typeof ADMIN !== "undefined" && ADMIN);
-  const meine = ANFRAGEN.filter(a => !AKTIV || a.kunde_slug === AKTIV);
-  const sec = document.createElement("section"); sec.className = "sektion";
-  const meld = ANFR_MELDUNG ? `<div class="uw-meld">${esc(ANFR_MELDUNG)}</div>` : ""; ANFR_MELDUNG = "";
-  const formular = `<div class="uw-form" id="anfrForm">
-      <label class="uw-lab" for="anfrBetreff">Worum geht es?</label>
-      <input type="text" id="anfrBetreff" placeholder="z. B. Schutztür an der D100 schließt nicht richtig" autocomplete="off">
-      <label class="uw-lab" for="anfrText">Ihre Frage oder Beschreibung</label>
-      <textarea id="anfrText" rows="4" style="width:100%;max-width:640px;padding:12px 14px;font:inherit;font-size:16px;border:1px solid var(--rand,#D6E4DA);border-radius:10px"></textarea>
-      ${anfrMaschinenAuswahl("anfrMaschine")}
-      <label class="uw-lab" for="anfrDatei">Foto oder Datei anhängen (optional)</label>
-      <input type="file" id="anfrDatei" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="font-size:15px">
-      <div class="uw-form-knoepfe"><button class="btn sek" id="anfrSenden">Absenden</button><span class="uw-leise" id="anfrMeld"></span></div>
-    </div>`;
-  const karte = a => `<div class="anfr-karte${a.status === "beantwortet" ? " anfr-beantwortet" : ""}" data-id="${esc(a.id)}">
-      <div class="anfr-kopf"><b>${esc(a.betreff)}</b>
-        <span class="uw-badge ${a.status === "beantwortet" ? "uw-gut" : "uw-warnung"}">${a.status === "beantwortet" ? "beantwortet" : "offen"}</span></div>
-      <div class="uw-leise">${anfrDatum(a.created_at)} · ${esc(a.von_name || "")}${istAdmin ? " · " + esc(a.kunde_slug) : ""}${a.maschinen_id ? " · " + esc(anfrMaschinenName(a.maschinen_id)) : ""}</div>
-      ${a.text ? `<p class="anfr-text">${esc(a.text)}</p>` : ""}
-      ${a.dokument_link && /^(viewer|maschine)\.html\?/.test(a.dokument_link) ? `<p><a class="btn-klein" href="${esc(a.dokument_link)}" target="_blank" rel="noopener">Zum Dokument${a.dokument_titel ? ": " + esc(a.dokument_titel) : ""}</a></p>` : ""}
-      ${a.anhang_pfad ? `<p><a class="btn-klein anfr-anhang" data-pfad="${esc(a.anhang_pfad)}" href="#">Anhang öffnen</a></p>` : ""}
-      ${a.antwort ? `<div class="anfr-antwort"><b>Antwort von OAK engineering</b> <span class="uw-leise">${anfrDatum(a.beantwortet_am)}</span><p>${esc(a.antwort)}</p></div>` : ""}
-      ${istAdmin && a.status !== "beantwortet" ? `<div class="anfr-antworten"><textarea rows="3" placeholder="Antwort schreiben …" style="width:100%;padding:10px 12px;font:inherit;font-size:15px;border:1px solid var(--rand,#D6E4DA);border-radius:10px"></textarea>
-        <div class="uw-form-knoepfe"><button class="btn sek anfr-antwort-senden" data-id="${esc(a.id)}">Antwort senden</button><span class="uw-leise"></span></div></div>` : ""}
-    </div>`;
-  sec.innerHTML = `${meld}
-    <p class="uw-erkl">Schreiben Sie, was Sie brauchen – ein Foto oder eine Datei können Sie anhängen. Die Antwort kommt hier ins
-      Portal und per E-Mail.</p>
-    ${formular}
-    <h3 class="uw-h3">${istAdmin ? "Anfragen der Betriebe" : "Ihre Anfragen"} <span class="uw-leise">${meine.filter(a => a.status !== "beantwortet").length} offen</span></h3>
-    ${meine.length ? meine.map(karte).join("") : `<div class="ck-fuss">Noch keine Anfragen.</div>`}`;
+  const sec = document.createElement("section"); sec.className = "sektion anfr-seite";
+  sec.innerHTML = `<div class="ck-fuss">wird geladen …</div>`;
   wrap.appendChild(sec);
-
-  sec.querySelectorAll(".anfr-anhang").forEach(a => a.addEventListener("click", async ev => {
-    ev.preventDefault(); const u = await anfrSigned(a.dataset.pfad); if(u) window.open(u, "_blank", "noopener"); else alert("Anhang konnte nicht geöffnet werden.");
-  }));
-  const senden = sec.querySelector("#anfrSenden");
-  if(senden) senden.addEventListener("click", () => anfrAbsenden(sec));
-  sec.querySelectorAll(".anfr-antwort-senden").forEach(b => b.addEventListener("click", () => anfrAntworten(b)));
+  await ladeAnfragen();
+  if(typeof HASH_Q !== "undefined" && HASH_Q && HASH_Q.get("thema")){ ANFR_OFFEN = HASH_Q.get("thema"); HASH_Q = null; }
+  const istAdmin = (typeof ADMIN !== "undefined" && ADMIN);
+  const zeichnen = () => {
+    const themen = ANFRAGEN.filter(a => !AKTIV || a.kunde_slug === AKTIV);
+    const meld = ANFR_MELDUNG ? `<div class="uw-meld">${esc(ANFR_MELDUNG)}</div>` : ""; ANFR_MELDUNG = "";
+    const offen = themen.filter(a => a.status !== "beantwortet").length;
+    const karte = a => {
+      const bt = anfrBeitraege(a.id), auf = ANFR_OFFEN === a.id;
+      return `<article class="anfr-thema${a.status === "beantwortet" ? " anfr-beantwortet" : ""}${auf ? " anfr-auf" : ""}" data-id="${esc(a.id)}"
+          data-suche="${esc([a.betreff, a.text, a.von_name, ...bt.map(b => b.text)].filter(Boolean).join(" ").toLowerCase())}" data-status="${a.status === "beantwortet" ? "beantwortet" : "offen"}">
+        <button type="button" class="anfr-zeile" aria-expanded="${auf}">
+          <span class="anfr-z-text"><b>${esc(a.betreff)}</b>
+            <span class="uw-leise">${esc(a.von_name || "")} · ${anfrDatum(a.created_at)}${istAdmin && !AKTIV ? " · " + esc(a.kunde_slug) : ""}${a.maschinen_id ? " · " + esc(anfrMaschinenName(a.maschinen_id)) : ""}${a.dokument_titel ? " · zum Dokument" : ""}</span></span>
+          <span class="anfr-z-meta"><span class="anfr-anzahl" title="Antworten">${bt.length} ${bt.length === 1 ? "Antwort" : "Antworten"}</span>
+            <span class="uw-badge ${a.status === "beantwortet" ? "uw-gut" : "uw-warnung"}">${a.status === "beantwortet" ? "beantwortet" : "offen"}</span></span>
+        </button>
+        ${auf ? anfrDetail(a, bt) : ""}
+      </article>`;
+    };
+    sec.innerHTML = `${meld}
+      <div class="anfr-kopf-leiste">
+        <p class="uw-erkl">Fragen stellen, Antworten lesen – wie in einem Forum. Alle im Betrieb sehen die Beiträge; ${istAdmin ? "du antwortest direkt hier." : "OAK engineering antwortet direkt hier."}</p>
+        <button type="button" class="btn" id="anfrNeu">Neue Frage stellen</button></div>
+      <div id="anfrFormBox"></div>
+      <div class="mg-filter"><input type="search" class="uw-suche" id="anfrSuche" placeholder="In Fragen und Antworten suchen" autocomplete="off">
+        <div class="uw-pills">${[["", "Alle"], ["offen", "Offen" + (offen ? " (" + offen + ")" : "")], ["beantwortet", "Beantwortet"]].map(p => `<button type="button" class="uw-pill${ANFR_FILTER === p[0] ? " aktiv" : ""}" data-filter="${p[0]}">${p[1]}</button>`).join("")}</div>
+        <span class="uw-leise" id="anfrZahl"></span></div>
+      <div class="anfr-liste">${themen.length ? themen.map(karte).join("") : `<div class="leer">Noch keine Fragen. Stellen Sie die erste – ein Foto oder eine Datei können Sie anhängen.</div>`}</div>`;
+    const filtern = () => { const q = (sec.querySelector("#anfrSuche").value || "").toLowerCase().trim(); let n = 0;
+      sec.querySelectorAll(".anfr-thema").forEach(t => { const ok = (!q || t.dataset.suche.includes(q)) && (!ANFR_FILTER || t.dataset.status === ANFR_FILTER); t.hidden = !ok; if(ok) n++; });
+      sec.querySelector("#anfrZahl").textContent = themen.length ? n + (n === 1 ? " Thema" : " Themen") : ""; };
+    sec.querySelector("#anfrSuche").addEventListener("input", filtern);
+    sec.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click", () => { ANFR_FILTER = b.dataset.filter; zeichnen(); }));
+    filtern();
+    sec.querySelector("#anfrNeu").addEventListener("click", () => anfrFormular(sec.querySelector("#anfrFormBox"), neu));
+    sec.querySelectorAll(".anfr-zeile").forEach(b => b.addEventListener("click", () => { const id = b.closest(".anfr-thema").dataset.id; ANFR_OFFEN = ANFR_OFFEN === id ? null : id; zeichnen(); }));
+    sec.querySelectorAll(".anfr-anhang").forEach(a => a.addEventListener("click", async ev => {
+      ev.preventDefault(); const u = await ehsSigniert(a.dataset.pfad); if(u) window.open(u, "_blank", "noopener"); else alert("Anhang konnte nicht geöffnet werden."); }));
+    const antwort = sec.querySelector(".anfr-antwort-form"); if(antwort) anfrAntwortVerdrahten(antwort, neu);
+    const auf = sec.querySelector(".anfr-auf"); if(auf && ANFR_SCROLL){ ANFR_SCROLL = false; auf.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  };
+  const neu = async () => { await ladeAnfragen(); zeichnen(); };
+  ANFR_SCROLL = !!ANFR_OFFEN;
+  zeichnen();
 }
 
-async function anfrAbsenden(sec){
-  const meld = sec.querySelector("#anfrMeld");
-  const betreff = sec.querySelector("#anfrBetreff").value.trim();
-  const text = sec.querySelector("#anfrText").value.trim();
-  const masch = sec.querySelector("#anfrMaschine"); const maschine = masch ? masch.value : "";
-  const datei = sec.querySelector("#anfrDatei").files[0];
-  if(betreff.length < 3){ meld.textContent = "Bitte kurz sagen, worum es geht."; return; }
-  if(!text && !datei){ meld.textContent = "Bitte eine Frage schreiben oder ein Foto anhängen."; return; }
-  const s = getSession();
-  meld.textContent = "Wird gesendet …";
-  try{
-    let pfad = null;
-    if(datei){
-      if(datei.size > 15 * 1024 * 1024){ meld.textContent = "Die Datei ist größer als 15 MB."; return; }
-      const rein = datei.name.replace(/[^A-Za-z0-9._-]+/g, "-");
-      pfad = AKTIV + "/anfragen/" + Date.now() + "-" + rein;
-      const t = await token();
-      const r = await fetch(CFG.url + "/storage/v1/object/" + CFG.bucket + "/" + pfad, { method: "POST",
-        headers: { apikey: CFG.anon, Authorization: "Bearer " + t, "x-upsert": "true" }, body: datei });
-      if(!r.ok) throw new Error("Anhang konnte nicht hochgeladen werden (" + r.status + ")");
-    }
-    const neu = await apiSend("POST", "/rest/v1/portal_anfrage", {
-      kunde_slug: AKTIV, von_user_id: s && s.user ? s.user.id : null, von_name: window.__oakName || "",
-      von_email: s && s.user ? s.user.email : null, betreff, text, maschinen_id: maschine || null, anhang_pfad: pfad
-    }, "return=representation");
-    const id = Array.isArray(neu) ? neu[0].id : (neu && neu.id);
-    if(id) anfrMail(id);
-    ANFR_MELDUNG = "Ihre Frage ist bei OAK engineering eingegangen. Sie bekommen die Antwort hier und per E-Mail.";
-    if(window.portalGehe) portalGehe("mehr", "anfragen");
-  }catch(e){ meld.textContent = "Konnte nicht gesendet werden: " + (e.message || e); }
+function anfrDetail(a, bt){
+  const beitrag = (von, admin, zeit, text, anhang) => `<div class="anfr-beitrag${admin ? " anfr-oak" : ""}">
+      <div class="anfr-b-kopf"><b>${esc(von || (admin ? "OAK engineering" : ""))}</b><span class="uw-leise">${anfrDatum(zeit)}</span></div>
+      ${text ? `<div class="anfr-text">${esc(text)}</div>` : ""}
+      ${anhang ? `<a class="btn-klein anfr-anhang" data-pfad="${esc(anhang)}" href="#">Anhang öffnen</a>` : ""}</div>`;
+  const dok = a.dokument_link && /^(viewer|maschine)\.html\?/.test(a.dokument_link)
+    ? `<p><a class="btn-klein" href="${esc(a.dokument_link)}" target="_blank" rel="noopener">Zum Dokument${a.dokument_titel ? ": " + esc(a.dokument_titel) : ""}</a></p>` : "";
+  return `<div class="anfr-detail">
+      ${beitrag(a.von_name, false, a.created_at, a.text, a.anhang_pfad)}${dok}
+      ${bt.map(b => beitrag(b.von_name, b.von_admin, b.created_at, b.text, b.anhang_pfad)).join("")}
+      <form class="anfr-antwort-form" data-id="${esc(a.id)}">
+        ${ehsGemeinsamerZugang() && !(typeof ADMIN !== "undefined" && ADMIN) ? `<label class="uw-lab">Ihr Name<input type="text" class="anfr-name" autocomplete="name" value="${esc(ehsVorname())}" placeholder="Vor- und Nachname"></label>` : ""}
+        <textarea rows="3" class="anfr-antwort-text" placeholder="Antwort schreiben …"></textarea>
+        <div class="uw-form-knoepfe"><input type="file" class="anfr-antwort-datei" accept="image/*,.pdf">
+          <button type="submit" class="btn sek">Antworten</button><span class="uw-leise anfr-antwort-meld"></span></div>
+      </form></div>`;
 }
 
-async function anfrAntworten(btn){
-  const box = btn.closest(".anfr-antworten"); const ta = box.querySelector("textarea"); const meld = box.querySelector("span");
-  const antwort = ta.value.trim(); if(antwort.length < 2){ meld.textContent = "Bitte eine Antwort schreiben."; return; }
-  meld.textContent = "Speichere …";
-  try{
-    await apiSend("PATCH", "/rest/v1/portal_anfrage?id=eq." + encodeURIComponent(btn.dataset.id),
-      { antwort, status: "beantwortet", beantwortet_am: new Date().toISOString() }, "return=minimal");
-    anfrMail(btn.dataset.id);
-    ANFR_MELDUNG = "Antwort gespeichert und per E-Mail verschickt.";
-    if(window.portalGehe) portalGehe("mehr", "anfragen");
-  }catch(e){ meld.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); }
+function anfrAntwortVerdrahten(form, neu){
+  form.addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const meld = form.querySelector(".anfr-antwort-meld"), text = form.querySelector(".anfr-antwort-text").value.trim();
+    const datei = form.querySelector(".anfr-antwort-datei").files[0];
+    const nameFeld = form.querySelector(".anfr-name");
+    let name = window.__oakName || "";
+    if(nameFeld){ name = nameFeld.value.trim().replace(/\s+/g, " "); if(name.length < 3){ meld.textContent = "Bitte Ihren Namen eintragen."; nameFeld.focus(); return; }
+      try{ localStorage.setItem(EHS_NAME_KEY, name); }catch(e){} }
+    if(!text){ meld.textContent = "Bitte eine Antwort schreiben."; return; }
+    meld.textContent = "Wird gesendet …";
+    try{
+      ehsDateiOk(datei);
+      const pfad = datei ? await ehsHochladen(datei, anfrSlug(form.dataset.id) + "/anfragen/" + Date.now() + "-" + ehsDateiName(datei)) : null;
+      const neuB = await apiSend("POST", "/rest/v1/portal_anfrage_beitrag", { anfrage_id: form.dataset.id, kunde_slug: anfrSlug(form.dataset.id), von_name: name, text, anhang_pfad: pfad }, "return=representation");
+      const id = Array.isArray(neuB) ? neuB[0].id : (neuB && neuB.id);
+      if(id) anfrMail({ beitrag_id: id });
+      await neu();
+    }catch(e){ meld.textContent = "Konnte nicht gesendet werden: " + (e.message || e); }
+  });
+}
+/* Slug des Themas (Admin ohne gewählten Betrieb antwortet in den Betrieb des Themas) */
+function anfrSlug(anfrageId){ const a = ANFRAGEN.find(x => x.id === anfrageId); return (a && a.kunde_slug) || AKTIV; }
+
+function anfrFormular(box, neu){
+  if(box.innerHTML){ box.innerHTML = ""; return; }
+  box.innerHTML = `<form class="uw-form anfr-neu-form">
+      ${ehsGemeinsamerZugang() && !(typeof ADMIN !== "undefined" && ADMIN) ? `<label class="uw-lab" for="anfrName">Ihr Name</label><input type="text" id="anfrName" autocomplete="name" value="${esc(ehsVorname())}" placeholder="Vor- und Nachname">` : ""}
+      <label class="uw-lab" for="anfrBetreff">Worum geht es?</label>
+      <input type="text" id="anfrBetreff" maxlength="200" placeholder="z. B. Schutztür an der D100 schließt nicht richtig" autocomplete="off">
+      <label class="uw-lab" for="anfrText">Ihre Frage oder Beschreibung</label>
+      <textarea id="anfrText" rows="4"></textarea>
+      <div class="anfr-neu-zwei">${anfrMaschinenAuswahl("anfrMaschine")}
+        <label>Foto oder Datei (optional)<input type="file" id="anfrDatei" accept="image/*,.pdf"></label></div>
+      <div class="uw-form-knoepfe"><button type="submit" class="btn">Frage veröffentlichen</button><button type="button" class="btn-klein" id="anfrAbbruch">Abbrechen</button><span class="uw-leise" id="anfrMeld"></span></div>
+    </form>`;
+  box.querySelector("#anfrAbbruch").addEventListener("click", () => { box.innerHTML = ""; });
+  box.querySelector("#anfrBetreff").focus();
+  box.querySelector("form").addEventListener("submit", async ev => {
+    ev.preventDefault();
+    const meld = box.querySelector("#anfrMeld");
+    const betreff = box.querySelector("#anfrBetreff").value.trim(), text = box.querySelector("#anfrText").value.trim();
+    const masch = box.querySelector("#anfrMaschine"), datei = box.querySelector("#anfrDatei").files[0];
+    const nameFeld = box.querySelector("#anfrName");
+    let name = window.__oakName || "";
+    if(nameFeld){ name = nameFeld.value.trim().replace(/\s+/g, " "); if(name.length < 3){ meld.textContent = "Bitte Ihren Namen eintragen."; nameFeld.focus(); return; }
+      try{ localStorage.setItem(EHS_NAME_KEY, name); }catch(e){} }
+    if(betreff.length < 3){ meld.textContent = "Bitte kurz sagen, worum es geht."; return; }
+    if(!text && !datei){ meld.textContent = "Bitte eine Frage schreiben oder ein Foto anhängen."; return; }
+    if(!AKTIV){ meld.textContent = "Bitte zuerst oben einen Betrieb wählen."; return; }
+    const s = getSession();
+    meld.textContent = "Wird gesendet …";
+    try{
+      ehsDateiOk(datei);
+      const pfad = datei ? await ehsHochladen(datei, AKTIV + "/anfragen/" + Date.now() + "-" + ehsDateiName(datei)) : null;
+      const neuA = await apiSend("POST", "/rest/v1/portal_anfrage", {
+        kunde_slug: AKTIV, von_user_id: s && s.user ? s.user.id : null, von_name: name,
+        von_email: s && s.user ? s.user.email : null, betreff, text, maschinen_id: masch && masch.value ? masch.value : null, anhang_pfad: pfad,
+        letzte_aktivitaet: new Date().toISOString()
+      }, "return=representation");
+      const id = Array.isArray(neuA) ? neuA[0].id : (neuA && neuA.id);
+      if(id){ anfrMail(id); ANFR_OFFEN = id; }
+      ANFR_MELDUNG = "Ihre Frage ist veröffentlicht. OAK engineering ist benachrichtigt – die Antwort erscheint hier.";
+      await neu();
+    }catch(e){ meld.textContent = "Konnte nicht gesendet werden: " + (e.message || e); }
+  });
 }

@@ -13,6 +13,7 @@ let UW_P = [], UW_R = [];        // Beschäftigte und Gruppen des Betriebs (Absc
 let UW_MELDUNG = "";            // Bestätigung nach einer Aktion, einmal angezeigt
 let UW_TOK = [];                // Gerätecodes des Betriebs (Knopf „Terminal starten")
 let UW_BELEG = [];              // Belegschaft je Betrieb: Stammkräfte + aktuelle Leiharbeiter (portal_belegschaft)
+let UW_EINARB = [];             // praktische Einarbeitung je Person (portal_einarbeitung)              // Belegschaft je Betrieb: Stammkräfte + aktuelle Leiharbeiter (portal_belegschaft)
 /* Jährliche Wiederholung: DGUV Vorschrift 1 § 4 – „mindestens einmal jährlich". Wir warnen
    ab 11 Monaten, damit die Wiederholung planbar ist und nicht erst am Stichtag auffällt. */
 const UW_FAELLIG_TAGE = 365, UW_WARNUNG_TAGE = 335;
@@ -32,6 +33,7 @@ async function ladeNachweiseStart(){
   try{ UW_P = await apiGet("/rest/v1/uw_person?select=id,name,status,kunde_slug,uw_person_rolle(rolle_id)&order=name.asc", false) || []; }catch(e){ UW_P = []; }
   try{ UW_TOK = await apiGet("/rest/v1/portal_terminal_token?select=token,kunde_slug,bezeichnung&aktiv=is.true", false) || []; }catch(e){ UW_TOK = []; }
   try{ UW_BELEG = await apiGet("/rest/v1/portal_belegschaft?select=*", false) || []; }catch(e){ UW_BELEG = []; }
+  await uwEinarbeitungLaden();
 }
 async function ladeNachweiseRest(){
   try{
@@ -88,12 +90,13 @@ function uwModule(n){
   return m.filter(Boolean).map(uwModulTitel);
 }
 function uwCsv(rows){
-  const kopf = ["Datum", "Name", "Rolle", "Module", "bestanden", "bestätigt", "gültig bis", "Fassung"];
+  const kopf = ["Datum", "Name", "Rolle", "Module", "bestanden", "bestätigt", "gültig bis", "Fassung", "praktische Einarbeitung"];
   const zeilen = rows.map(n => [
     uwDatum(n.created_at), n.mitarbeiter_name || "", n.funktion || "",
     uwModule(n).join(" | "), n.bestanden ? "ja" : "nein", n.bestaetigung ? "ja" : "nein",
     new Date(new Date(n.created_at).getTime() + UW_FAELLIG_TAGE * 86400000).toLocaleDateString("de-DE"),
     n.config_version || "",
+    (e => e ? uwDatum(e.am) + " (" + e.bestaetigt_von + ")" : "")(uwEinarbeitung(n.mitarbeiter_name)),
   ]);
   return [kopf, ...zeilen].map(z => z.map(w => `"${String(w).replace(/"/g, '""')}"`).join(";")).join("\r\n");
 }
@@ -244,17 +247,19 @@ function renderUnterweisungen(wrap){
   const zeilen = pers.map(p => {
     const n = uwLetzterNachweis(p.name);
     const st = n ? uwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" };
-    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(uwGruppenName(p) || "")}" data-stand="${n ? st.klasse : "kritisch"}">
+    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(uwGruppenName(p) || "")}" data-stand="${n ? st.klasse : "kritisch"}" data-einarb="${uwEinarbeitung(p.name) ? "ja" : "nein"}">
       <td><b>${esc(p.name)}</b></td><td>${esc(uwGruppenName(p) || "—")}</td>
       <td>${n ? uwDatum(n.created_at) : "—"}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
+      <td>${uwEinarbZelle(p.name, uwGruppenName(p))}</td>
       <td class="uw-knoepfe">${pdfKnopf(n)}<button class="btn-klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` };
   }).concat(zusatz.map(n => {
     const st = uwStatus(n);
-    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}">
+    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}" data-einarb="${uwEinarbeitung(n.mitarbeiter_name) ? "ja" : "nein"}">
       <td><b>${esc(n.mitarbeiter_name)}</b></td>
       <td>${esc(n.funktion || "—")}${n.bereich ? `<div class="uw-leise">${esc(n.bereich)}</div>` : ""}</td><td>${uwDatum(n.created_at)}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
+      <td>${uwEinarbZelle(n.mitarbeiter_name, n.funktion)}</td>
       <td class="uw-knoepfe">${pdfKnopf(n)}</td></tr>` };
   })).sort((a, b) => a.rang - b.rang);
   const faellig = zeilen.filter(z => z.rang <= 1).length;
@@ -269,10 +274,10 @@ function renderUnterweisungen(wrap){
     ${zeilen.length ? `<div class="mg-filter uw-filter">
         <input type="search" class="uw-suche" id="uwfName" placeholder="Name suchen" autocomplete="off">
         <select class="uw-fassung" id="uwfGruppe"><option value="">Alle Gruppen</option>${[...new Set(pers.map(p => uwGruppenName(p)).concat(zusatz.map(n => n.funktion)).filter(Boolean).flatMap(g => g.split(", ")))].sort().map(g => `<option>${esc(g)}</option>`).join("")}</select>
-        <select class="uw-fassung" id="uwfStand"><option value="">Alle</option><option value="faellig">fällig oder überfällig</option><option value="gut">gültig</option></select>
+        <select class="uw-fassung" id="uwfStand"><option value="">Alle</option><option value="faellig">fällig oder überfällig</option><option value="gut">gültig</option><option value="einarb">Einarbeitung offen</option></select>
         <span class="uw-leise" id="uwfZahl"></span></div>` : ""}
     ${zeilen.length ? `<div class="tabelle-wrap"><table class="uw-tab" id="uwListe">
-      <thead><tr><th>Name</th><th>Gruppe</th><th>zuletzt unterwiesen</th><th>Stand</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Gruppe</th><th>zuletzt unterwiesen</th><th>Stand</th><th>Praktische Einarbeitung</th><th></th></tr></thead>
       <tbody>${zeilen.map(z => z.html).join("")}</tbody></table></div>`
     : `<div class="ck-fuss">Noch niemand eingetragen. <b>„Mitarbeiter anlegen"</b> – oder die Beschäftigten tragen sich am
         Terminal selbst ein und erscheinen dann hier.</div>`}`;
@@ -280,6 +285,7 @@ function renderUnterweisungen(wrap){
   sekPers.querySelector("#uwPersNeu").addEventListener("click", () => uwPersonForm(null));
   sekPers.querySelectorAll("[data-pedit]").forEach(b => b.addEventListener("click", () => uwPersonForm(UW_P.find(p => p.id === b.dataset.pedit))));
   sekPers.querySelectorAll("[data-uwpdf]").forEach(b => b.addEventListener("click", () => uwNachweisPdf(b.dataset.uwpdf)));
+  sekPers.querySelectorAll("[data-einarb-name]").forEach(b => b.addEventListener("click", () => uwEinarbeitungDialog(b.dataset.einarbName, b.dataset.einarbTaet, renderSektionen)));
   const btnAlle = sekPers.querySelector("#uwCsvAlle"); if(btnAlle) btnAlle.addEventListener("click", uwExport);
   /* Filter: Name, Gruppe, Stand – direkt in der Liste, ohne Neuladen */
   const filtern = () => {
@@ -287,7 +293,7 @@ function renderUnterweisungen(wrap){
     let n = 0;
     sekPers.querySelectorAll("#uwListe tbody tr").forEach(tr => {
       const ok = (!q || tr.dataset.name.includes(q.toLowerCase().trim())) && (!g || (", " + tr.dataset.gruppe + ",").includes(", " + g + ","))
-        && (!s || (s === "gut" ? tr.dataset.stand === "gut" : tr.dataset.stand !== "gut"));
+        && (!s || (s === "einarb" ? tr.dataset.einarb === "nein" : s === "gut" ? tr.dataset.stand === "gut" : tr.dataset.stand !== "gut"));
       tr.hidden = !ok; if(ok) n++;
     });
     const z = sekPers.querySelector("#uwfZahl"); if(z) z.textContent = n + " von " + zeilen.length;
@@ -890,4 +896,50 @@ function uwBelegBlock(){
     catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
   }));
   return el;
+}
+
+/* ---- Praktische Einarbeitung (Nikolai 17.09.2026: „in der Liste der Unterweisungen für jeden Mitarbeiter einen Button
+   ‚praktische Einarbeitung erfolgt'") --------------------------------------------------------------------------------
+   Die Unterweisung am Terminal vermittelt die Inhalte; § 12 Abs. 1 ArbSchG verlangt Anweisungen und Erläuterungen, die eigens
+   auf den Arbeitsplatz ausgerichtet sind. Die Einarbeitung an der Maschine bestätigt der Schichtführer hier – mit Name und Datum. */
+async function uwEinarbeitungLaden(){
+  try{ UW_EINARB = await apiGet("/rest/v1/portal_einarbeitung?select=*&archiviert=is.false&order=am.desc", false) || []; }catch(e){ UW_EINARB = []; }
+}
+function uwEinarbeitung(name){
+  const k = uwNorm(name);
+  return UW_EINARB.find(e => (!AKTIV || e.kunde_slug === AKTIV) && uwNorm(e.person_name) === k) || null;
+}
+function uwEinarbZelle(name, taetigkeit){
+  const e = uwEinarbeitung(name);
+  if(e) return `<span class="uw-badge uw-gut" title="${esc("bestätigt von " + e.bestaetigt_von + (e.taetigkeit ? " · " + e.taetigkeit : "") + (e.notiz ? " – " + e.notiz : ""))}">erfolgt ${uwDatum(e.am)}</span>`;
+  return `<button type="button" class="btn-klein uw-einarb-btn" data-einarb-name="${esc(name)}" data-einarb-taet="${esc(taetigkeit || "")}">Einarbeitung bestätigen</button>`;
+}
+function uwEinarbeitungDialog(name, taetigkeit, danach){
+  const dlg = ehsDialog("uwEinarbDlg");
+  const heute = ehsHeute();
+  dlg.innerHTML = `<form method="dialog">
+      <h3>Praktische Einarbeitung</h3>
+      <p class="pw-hint"><b>${esc(name)}</b> wurde am Arbeitsplatz praktisch eingearbeitet – ergänzend zur Unterweisung am Terminal (§ 12 ArbSchG).</p>
+      <label>Tätigkeit / Arbeitsplatz<input type="text" id="uwEaTaet" maxlength="200" value="${esc(taetigkeit || "")}" placeholder="z. B. Maschinenbediener D100, Staplerfahrt Halle 14"></label>
+      <label>Eingearbeitet am<input type="date" id="uwEaAm" value="${heute}" max="${heute}"></label>
+      ${ehsNameFeld("uwEaWer", "Bestätigt von (Einarbeiter/in)")}
+      <label>Notiz (optional)<textarea id="uwEaNotiz" rows="2" maxlength="1000"></textarea></label>
+      <p class="pw-msg" id="uwEaMsg"></p>
+      <div class="pw-akt"><button type="button" class="btn sek" id="uwEaAbbruch">Abbrechen</button><button type="submit" class="btn">Bestätigen</button></div>
+    </form>`;
+  dlg.querySelector("#uwEaAbbruch").addEventListener("click", () => dlg.close());
+  dlg.querySelector("form").addEventListener("submit", async ev => {
+    ev.preventDefault(); const msg = dlg.querySelector("#uwEaMsg"); msg.className = "pw-msg";
+    const wer = ehsNameLesen(dlg, "uwEaWer"); if(!wer){ msg.textContent = "Bitte eintragen, wer die Einarbeitung bestätigt."; msg.classList.add("fehler"); return; }
+    const am = dlg.querySelector("#uwEaAm").value;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(am) || am > heute){ msg.textContent = "Bitte ein Datum bis heute eintragen."; msg.classList.add("fehler"); return; }
+    try{
+      await apiSend("POST", "/rest/v1/portal_einarbeitung", { kunde_slug: AKTIV, person_name: name, taetigkeit: dlg.querySelector("#uwEaTaet").value.trim() || null,
+        am, bestaetigt_von: wer, notiz: dlg.querySelector("#uwEaNotiz").value.trim() || null }, "return=minimal");
+      await uwEinarbeitungLaden();
+      UW_MELDUNG = "Praktische Einarbeitung von " + name + " bestätigt.";
+      dlg.close(); if(danach) danach();
+    }catch(e){ msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.classList.add("fehler"); }
+  });
+  dlg.showModal();
 }

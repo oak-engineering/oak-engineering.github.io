@@ -299,7 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if(id){ try{ const tk = await token();
         await fetch(CFG.url + "/functions/v1/anfrage-mail", { method: "POST",
           headers: { apikey: CFG.anon, Authorization: "Bearer " + tk, "Content-Type": "application/json" }, body: JSON.stringify({ anfrage_id: id }) }); }catch(e){} }
-      msg.textContent = "Danke – die Frage ist bei OAK engineering. Die Antwort kommt unter „Frage an OAK“ und per E-Mail."; msg.classList.add("ok");
+      msg.textContent = "Danke – die Frage ist veröffentlicht. Die Antwort erscheint unter „Fragen zur Arbeitssicherheit“."; msg.classList.add("ok");
       setTimeout(() => { dlg.close(); knopf.disabled = false; }, 2200);
     }catch(e){ knopf.disabled = false; msg.textContent = "Konnte nicht gesendet werden: " + (e.message || e); msg.classList.add("fehler"); }
   });

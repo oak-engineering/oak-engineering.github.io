@@ -40,7 +40,8 @@ async function renderAktuelles(wrap){
   const laden = [aktRechtLaden(),
     apiGet("/rest/v1/portal_logbuch?select=am,wer,bereich,aktion,objekt,details&kunde_slug=eq." + encodeURIComponent(AKTIV || "")
       + "&am=gte." + encodeURIComponent(von.toISOString()) + "&am=lt." + encodeURIComponent(bis.toISOString()) + "&order=am.desc&limit=1000", false)
-      .then(r => { log = r || []; }).catch(() => { log = []; })];
+      .then(r => { log = r || []; }).catch(() => { log = []; }),
+    typeof kalLaden === "function" ? kalLaden(true).catch(() => null) : null, typeof nwLaden === "function" ? nwLaden(true).catch(() => null) : null];
   if(istAdmin){
     if(typeof MG_GELADEN !== "undefined" && !MG_GELADEN && typeof ladeMaengel === "function") laden.push(ladeMaengel());
     if(typeof ladeAnfragen === "function") laden.push(ladeAnfragen());
@@ -77,7 +78,13 @@ async function renderAktuelles(wrap){
     liste("Unterweisungen", nach("unterweisungen"), false),
     liste("Neue Unterlagen", unterlagenNeu, false),
     liste("Aktualisierte Unterlagen", unterlagenAkt, false, 5),
-    liste("Fragen an OAK engineering", nach("anfragen"), false),
+    liste(FRAGE_TITEL, nach("anfragen"), false),
+    liste("Termine erledigt", nach("kalender", /erledigt/), true),
+    liste("Termine angelegt oder geändert", nach("kalender", /angelegt|geändert|entfernt/), false, 5),
+    liste("Nachweise", nach("nachweise"), true, 6),
+    liste("Vorsorge eingetragen", nach("vorsorge"), false, 6),
+    liste("Aufgaben quittiert", nach("aufgaben"), true, 6),
+    liste("Gefahrstoffe", nach("gefahrstoffe"), true, 5),
     liste("Einstellungen", nach("einstellungen"), false, 5),
   ].filter(Boolean);
 
@@ -95,15 +102,34 @@ async function renderAktuelles(wrap){
         ${punkt(fragen, "offene Fragen beantworten", "fragen")}</ul></section>`;
   }
 
+  /* Ausblick: was in der Woche danach ansteht (Kalender, Nachweise, Vorsorge, Unterweisungen) */
+  const abV = new Date(bis), abB = new Date(bis); abB.setDate(abB.getDate() + 7);
+  const isoT = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  const eintraege = (typeof kalEintraege === "function") ? kalEintraege() : [];
+  const naechste = eintraege.filter(e => String(e.datum) >= isoT(abV) && String(e.datum) < isoT(abB));
+  const ueberfaellig = AKT_WOCHE === 0 ? eintraege.filter(e => typeof ehsTage === "function" && ehsTage(e.datum) < 0) : [];
+  const ausblickPosten = e => `<li><span class="akt-zeit">${esc(new Date(String(e.datum).slice(0, 10) + "T12:00:00").toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }))}</span>
+      <span>${esc(e.titel)}${e.sub ? `<br><span class="uw-leise">${esc(e.sub)}</span>` : ""}</span></li>`;
+  const ausblick = (ueberfaellig.length ? `<div class="akt-block akt-ueberfaellig"><h4>Bereits überfällig <span class="akt-zahl">${ueberfaellig.length}</span></h4><ul class="akt-liste">${ueberfaellig.slice(0, 10).map(ausblickPosten).join("")}</ul></div>` : "")
+    + (naechste.length ? `<div class="akt-block"><h4>Termine KW ${aktKw(abV)} <span class="akt-zahl">${naechste.length}</span></h4><ul class="akt-liste">${naechste.map(ausblickPosten).join("")}</ul></div>` : "");
   const wochen = [0, 1, 2, 3].map(v => { const m = aktMontag(v); return `<button type="button" class="uw-pill${v === AKT_WOCHE ? " aktiv" : ""}" data-akt-woche="${v}">${v === 0 ? "Diese Woche" : "KW " + aktKw(m)}</button>`; }).join("");
-  sec.innerHTML = `<div class="akt-kopf"><div><h2 class="akt-titel">KW ${aktKw(von)} · ${aktTag(von)}–${aktTag(new Date(bis.getTime() - 86400000))}</h2></div>
-      <div class="uw-pills">${wochen}</div></div>
+  sec.innerHTML = `<div class="akt-kopf"><div><h2 class="akt-titel">Wochenbericht KW ${aktKw(von)} · ${aktTag(von)}–${aktTag(new Date(bis.getTime() - 86400000))}</h2></div>
+      <div class="akt-kopf-rechts"><div class="uw-pills">${wochen}</div><button type="button" class="btn sek" id="aktDruck">Drucken</button></div></div>
     ${todo}
+    <div class="akt-druck">
+    <h2 class="ul-bereich">Was ${AKT_WOCHE === 0 ? "diese Woche" : "in KW " + aktKw(von)} lief</h2>
+    ${bloecke.length ? `<div class="akt-bloecke">${bloecke.join("")}</div>` : `<div class="ck-fuss">In dieser Woche gab es keine Änderungen.</div>`}
+    <h2 class="ul-bereich">Was in KW ${aktKw(abV)} ansteht</h2>
+    ${ausblick ? `<div class="akt-bloecke">${ausblick}</div>` : `<div class="ck-fuss">Keine Termine – der Kalender ist für diese Woche leer.</div>`}
     <h2 class="ul-bereich">Rechtliche Neuerungen</h2>
     ${rechtSortiert.length ? `<div class="akt-recht-raster">${rechtSortiert.map(rechtKarte).join("")}</div>` : `<div class="ck-fuss">Keine Einträge.</div>`}
-    <h2 class="ul-bereich">Diese Woche im Portal</h2>
-    ${bloecke.length ? `<div class="akt-bloecke">${bloecke.join("")}</div>` : `<div class="ck-fuss">In dieser Woche gab es keine Änderungen.</div>`}
+    </div>
     <p class="uw-leise">Alle Einzelheiten stehen im <a href="#mehr/logbuch">Logbuch</a>.</p>`;
+  sec.querySelector("#aktDruck").addEventListener("click", () => {
+    const d = sec.querySelector(".akt-druck").cloneNode(true); d.querySelectorAll("button").forEach(b => b.remove());
+    const betrieb = ((typeof MARKEN !== "undefined" ? MARKEN : []).find(k => k.slug === AKTIV) || {}).name || "";
+    ehsDrucken("Wochenbericht KW " + aktKw(von), `<h1>Wochenbericht KW ${aktKw(von)}</h1><p class="leise">${esc(betrieb)} · ${aktTag(von)}–${aktTag(new Date(bis.getTime() - 86400000))} · OAK EHS-Cockpit</p>` + d.innerHTML);
+  });
   sec.querySelectorAll("[data-akt-woche]").forEach(b => b.addEventListener("click", () => { AKT_WOCHE = parseInt(b.dataset.aktWoche, 10) || 0; renderSektionen(); }));
   sec.querySelectorAll("[data-akt-ziel]").forEach(b => b.addEventListener("click", () => {
     const z = b.dataset.aktZiel;

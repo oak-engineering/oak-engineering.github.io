@@ -968,3 +968,119 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .veraltet-panel p{margin:0 0 6px}
 .veraltet-panel ul{margin:0;padding-left:18px}
 .veraltet-panel li span{color:#667085}
+
+/* ---- EHS-Cockpit 17.09.2026: Dialoge, Kalender, Nachweise, Gefahrstoffe, Forum, Aufgaben ---- */
+.ehs-dlg{max-width:min(560px,94vw)}
+.ehs-dlg.ul-dlg{max-width:min(640px,94vw)}
+.ehs-dlg form{max-height:88vh;overflow:auto}
+.ehs-dlg select,.ehs-dlg textarea{display:block;width:100%;margin-top:4px;padding:9px 11px;border:1px solid var(--rand);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box;background:#fff;color:#101828}
+.ehs-dlg textarea{resize:vertical}
+.ehs-dlg .ehs-zwei{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media(max-width:520px){.ehs-dlg .ehs-zwei{grid-template-columns:1fr}}
+.ehs-dlg .ehs-check,.gs-nur{display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer}
+.ehs-dlg .ehs-check input,.gs-nur input{display:inline-block;width:auto;margin:0;padding:0}
+.ehs-dlg .ehs-check[hidden]{display:none}
+.kal-weg{color:#b42318;margin-right:auto}
+.sl-eintrag span{white-space:normal}
+
+/* Heute zu tun */
+.auf-box{margin-bottom:22px}
+.auf-kopf{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.auf-kopf h2{margin:0;font-size:22px}
+.auf-kopf .btn-klein{margin-left:auto}
+.auf-liste{display:flex;flex-direction:column;gap:8px}
+.auf-karte{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid var(--linie,#e3e8ef);border-left:5px solid #98a2b3;border-radius:12px;padding:12px 16px}
+.auf-karte.auf-kritisch{border-left-color:#c0392b}
+.auf-karte.auf-warnung{border-left-color:#e08e0b}
+.auf-karte.auf-info{border-left-color:var(--gruen,#2D6A4F)}
+.auf-text{display:flex;flex-direction:column;flex:1 1 280px;min-width:0}
+.auf-text b{font-size:15.5px;color:#101828}
+.auf-text span{font-size:13px;color:#667085;margin-top:2px}
+.auf-akt{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.auf-quitt{color:#475467}
+.auf-mehr{margin-top:8px}
+.auf-leer{padding:14px 16px;border-radius:12px;background:#e8f5e9;color:#1b5e20;font-weight:600}
+.auf-quittiert{margin-top:10px;font-size:13.5px}
+.auf-quittiert summary{cursor:pointer;color:#475467}
+.auf-quittiert ul{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:4px}
+.auf-quittiert li{display:flex;flex-wrap:wrap;gap:4px 12px}
+
+/* Kalender */
+.kal-kopf{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.kal-knoepfe,.kal-rechts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.kal-gruppe{margin-top:8px}
+.kal-gruppe>summary{list-style:none;cursor:pointer}
+.kal-gruppe>summary::-webkit-details-marker{display:none}
+.kal-gruppe>summary h2{display:inline-flex;align-items:center;gap:8px}
+.kal-gruppe>summary h2::before{content:"›";display:inline-block;transition:transform .15s;color:#98a2b3}
+.kal-gruppe[open]>summary h2::before{transform:rotate(90deg)}
+.kal-zeilen{display:flex;flex-direction:column;border:1px solid var(--linie,#e3e8ef);border-radius:12px;background:#fff;overflow:hidden}
+.kal-zeile{display:flex;align-items:center;gap:14px;padding:10px 16px;border-top:1px solid #eef1f5;flex-wrap:wrap}
+.kal-zeile:first-child{border-top:0}
+.kal-datum{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:4px 6px;border-radius:8px;background:#f2f4f7}
+.kal-datum b{font-size:16px;color:#101828} .kal-datum span{font-size:11.5px;color:#667085}
+.kal-kritisch .kal-datum{background:#fdecea} .kal-warnung .kal-datum{background:#fff4e0} .kal-erledigt .kal-datum{background:#e8f5e9}
+.kal-text{flex:1 1 260px;min-width:0}
+.kal-titel{font-weight:600;color:#101828}
+.kal-akt{display:flex;gap:8px;align-items:center}
+.kal-btn{min-height:36px;padding:6px 14px;font-size:14px}
+.kal-monat-kopf{display:flex;align-items:center;gap:10px;margin:4px 0 10px}
+.kal-monat-kopf h2{margin:0 8px;font-size:20px;min-width:180px;text-align:center}
+.kal-raster{display:grid;grid-template-columns:repeat(7,minmax(96px,1fr));gap:1px;background:var(--linie,#e3e8ef);border:1px solid var(--linie,#e3e8ef);border-radius:12px;overflow:hidden;min-width:700px}
+.kal-wt{background:#f7f9fc;padding:6px 8px;font-size:12px;font-weight:700;color:#475467}
+.kal-tag{background:#fff;min-height:96px;padding:6px;display:flex;flex-direction:column;gap:3px}
+.kal-fremd{background:#fafbfc} .kal-fremd .kal-nr{color:#c0c5cc}
+.kal-heute{box-shadow:inset 0 0 0 2px var(--gruen,#2D6A4F)}
+.kal-nr{font-size:12px;font-weight:700;color:#344054}
+.kal-punkt{display:block;width:100%;text-align:left;font:inherit;font-size:11.5px;line-height:1.25;padding:2px 6px;border:0;border-radius:6px;cursor:pointer;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#e8f5e9;color:#1b5e20}
+.kal-punkt.kal-warnung{background:#fff4e0;color:#7a4a00} .kal-punkt.kal-kritisch{background:#fdecea;color:#8e1b1b} .kal-punkt.kal-grau{background:#f2f4f7;color:#344054}
+.uw-badge.uw-grau{background:#f2f4f7;color:#475467;border-color:#d0d5dd}
+
+/* Nachweise & Vorsorge */
+.nw-kopf{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.nw-datenschutz{padding:10px 14px;border-radius:10px;background:#f7f9fc;border:1px solid var(--linie,#e3e8ef);font-size:13.5px;line-height:1.5;color:#344054;margin-bottom:10px}
+.nw-fehlt{color:#b42318;font-weight:600}
+
+/* Gefahrstoffkataster */
+.gs-signal{flex:0 0 auto;min-width:64px;text-align:center;font-size:12px;font-weight:700;border-radius:99px;padding:2px 8px;background:#f2f4f7;color:#475467}
+.gs-signal.gs-gefahr{background:#fdecea;color:#8e1b1b} .gs-signal.gs-achtung{background:#fff4e0;color:#7a4a00}
+.gs-luecke{font-weight:600;color:#475467;background:#f2f4f7;border-radius:99px;padding:2px 9px;cursor:help}
+.gs-hliste{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:14px}
+.gs-hliste b{display:inline-block;min-width:44px;color:#101828}
+.gs-gbu-hinweis{margin:8px 0 0}
+.gs-ba-wahl{margin:4px 0 10px}
+.gs-ba-wahl .ehs-check{margin-bottom:4px}
+.gs-seite .ul-docs{margin-bottom:4px}
+
+/* Fragen zur Arbeitssicherheit (Forum) */
+.anfr-kopf-leiste{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.anfr-kopf-leiste .uw-erkl{margin:0;flex:1 1 320px}
+.anfr-neu-form textarea,.anfr-antwort-text{width:100%;max-width:760px;padding:10px 12px;font:inherit;font-size:15px;border:1px solid var(--rand,#D6E4DA);border-radius:10px;box-sizing:border-box}
+.anfr-neu-form select{display:block;margin-top:4px;padding:8px 10px;border:1px solid var(--rand);border-radius:8px;font:inherit;max-width:420px;width:100%}
+.anfr-neu-zwei{display:flex;gap:16px;flex-wrap:wrap;margin:8px 0}
+.anfr-neu-zwei label{font-size:13px;font-weight:600;color:var(--dunkel)}
+.anfr-liste{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.anfr-thema{background:#fff;border:1px solid var(--linie,#e3e8ef);border-left:4px solid var(--orange,#e08e0b);border-radius:12px;overflow:hidden}
+.anfr-thema.anfr-beantwortet{border-left-color:var(--hellgruen,#52B788)}
+.anfr-thema[hidden]{display:none}
+.anfr-zeile{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:12px 16px;border:0;background:transparent;font:inherit;text-align:left;cursor:pointer;box-shadow:none;color:inherit}
+.anfr-zeile:hover{background:#f7f9fc}
+.anfr-z-text{display:flex;flex-direction:column;min-width:0}
+.anfr-z-text b{font-size:15.5px;color:#101828}
+.anfr-z-meta{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.anfr-anzahl{font-size:13px;color:#475467;white-space:nowrap}
+.anfr-detail{padding:4px 16px 16px;border-top:1px solid #eef1f5;display:flex;flex-direction:column;gap:10px}
+.anfr-beitrag{max-width:760px;padding:10px 14px;border-radius:12px;background:#f7f9fc;border:1px solid #eef1f5}
+.anfr-beitrag.anfr-oak{background:var(--akzent,#D8F3DC);border-color:#b7e4c7;margin-left:clamp(0px,6vw,60px)}
+.anfr-b-kopf{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:4px}
+.anfr-text{white-space:pre-wrap;line-height:1.5}
+.anfr-antwort-form{max-width:760px;display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.anfr-antwort-form .uw-lab input{display:block;margin-top:4px;padding:8px 10px;border:1px solid var(--rand);border-radius:8px;font:inherit;max-width:320px;width:100%}
+
+/* Unterweisungen: praktische Einarbeitung */
+.uw-einarb-btn{white-space:nowrap}
+
+/* Wochenbericht */
+.akt-kopf-rechts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.akt-ueberfaellig{border-color:#f5b7b1}

@@ -6,7 +6,8 @@
 
 let LB_ROWS = [], LB_GELADEN_FUER = null, LB_FILTER = { bereich: "", suche: "" };
 const LB_BEREICH = { maengel: "Mängel", unterlagen: "Unterlagen", unterweisungen: "Unterweisungen", vorfaelle: "Vorfälle",
-                     anfragen: "Fragen an OAK", pruefung: "Maschine prüfen", einstellungen: "Einstellungen" };
+                     anfragen: "Fragen zur Arbeitssicherheit", pruefung: "Maschine prüfen", einstellungen: "Einstellungen",
+                     kalender: "Kalender", nachweise: "Nachweise", vorsorge: "Vorsorge", aufgaben: "Aufgaben", gefahrstoffe: "Gefahrstoffe" };
 
 async function lbLaden(){
   const slug = AKTIV || "";

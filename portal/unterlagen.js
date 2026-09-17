@@ -25,6 +25,7 @@ function ulTyp(r){ return String(r.maschinentyp || "").replace(/\s*\(.*\)\s*$/, 
 /* Zaehler fuer die Karten auf der Unterlagen-Seite */
 function ulAnzahl(kat){
   if(kat === "anlagen" || kat === "qr") return ulAnlagen().length;
+  if(kat === "gefahrstoffe" && typeof GS_ROWS !== "undefined" && GS_GELADEN_FUER === AKTIV) return GS_ROWS.filter(g => g.aktiv).length || null;
   if(kat === "gbu") return ulAnlagen().filter(r => ulHat(r, "bda")).length + ulAllg().filter(r => ulHat(r, "bda")).length;
   if(kat === "ba") return ulSammel().length + ulAnlagen().filter(r => ulHat(r, "ba")).length + ulAllg().filter(r => ulHat(r, "ba")).length;
   return null;

@@ -20,7 +20,7 @@ const DOMAENEN = [
       { kat: "ba-sammel",     label: "Betriebsanweisungen" },
       { kat: "maengel",       label: "Mängel" },
       { kat: "allg-gbu",      label: "Allgemeine GBU" },
-      { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
+      { kat: "gefahrstoffe",  label: "Gefahrstoffkataster" },
       { kat: "begehungen",    label: "Begehungen" },
       { kat: "vom-betrieb",   label: "Interne Unterlagen" },
       { kat: "unterweisungen", label: "Unterweisungen" },
@@ -225,28 +225,30 @@ const START_AKTIONEN = {
     ["#maengel?neu=1", "Mangel erfassen", "An Maschine oder Halle, mit Foto", "mangel"],
     ["#mehr/pruefen", "Maschine prüfen", "Checkliste direkt an der Maschine", "begehung"],
     ["#unterlagen/ba", "Betriebsanweisungen", "Sammel-BA je Maschinentyp und je Maschine", "ba"],
-    ["#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", "brief"],
+    ["#mehr/anfragen", FRAGE_TITEL, "Fragen stellen und Antworten lesen – wie im Forum", "brief"],
     ["#mehr/aktuelles", "Aktuelles", "Rechtliche Neuerungen und Wochenrückblick", "aktuelles"] ],
   umwelt: [
     ["#mehr/melden?art=umwelt", "Umweltvorfall melden", "Austritt, Leckage, falsch entsorgt", "warnung"],
     ["#mehr/vf-umwelt", "Umweltvorfälle", "Gemeldete Vorfälle und ihr Stand", "liste"],
     ["#unterlagen", "Umwelt-Unterlagen", "Immissionsschutz, Gewässerschutz, AwSV", "dokument"],
-    ["#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", "brief"] ],
+    ["#mehr/anfragen", FRAGE_TITEL, "Fragen stellen und Antworten lesen – wie im Forum", "brief"] ],
   energie: [
     ["#unterlagen/energie-massnahmen", "Effizienzmaßnahmen", "Befunde aus den Begehungen", "blitz"],
     ["#unterlagen/energie-verbrauch", "Verbrauch & Messstellen", "Zähler und Messkonzept", "dokument"],
     ["#unterlagen/energie-aspekte", "Energieaspekte", "Antriebe, Druckluft, Temperierung", "dokument"],
-    ["#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", "brief"] ]
+    ["#mehr/anfragen", FRAGE_TITEL, "Fragen stellen und Antworten lesen – wie im Forum", "brief"] ]
 };
 function renderStart(wrap){
   document.body.classList.add("auf-start");
   const kachel = k => `<a class="start-kachel" href="${k[0]}"><span class="sk-kopf"><span class="sk-titel">${esc(k[1])}</span>${START_SVG[k[3]] || ""}</span><span class="sk-sub">${esc(k[2])}</span></a>`;
   const sec = document.createElement("section"); sec.className = "sektion start-seite";
   const bereiche = [["arbeitssicherheit", "Arbeitssicherheit"], ["umwelt", "Umwelt"], ["energie", "Energie"]];
-  sec.innerHTML = `<div class="start-blick-kopf"><h2>Auf einen Blick · ${esc((BEREICHE_APP.find(b => b[0] === START_BEREICH) || [])[1] || "")}</h2></div>
+  sec.innerHTML = `<div id="startAufgaben" class="auf-box"></div>
+    <div class="start-blick-kopf"><h2>Auf einen Blick · ${esc((BEREICHE_APP.find(b => b[0] === START_BEREICH) || [])[1] || "")}</h2></div>
     <div id="startBlick"></div>
     <div id="startSchnell"></div>`;
   wrap.appendChild(sec);
+  if(typeof renderAufgaben === "function") renderAufgaben(sec.querySelector("#startAufgaben"));   // aufgaben.js: Heute zu tun
   renderCockpit(sec.querySelector("#startBlick"), START_BEREICH);
   if(typeof renderSchnellzugriffe === "function") renderSchnellzugriffe(sec.querySelector("#startSchnell"), START_BEREICH);   // schnellzugriffe.js
   else sec.querySelector("#startSchnell").innerHTML = `<div class="start-raster">${(START_AKTIONEN[START_BEREICH] || START_AKTIONEN.arbeitssicherheit).map(kachel).join("")}</div>`;
@@ -436,7 +438,7 @@ let PORTAL_BEREIT = false;
    Die Seite steht in der Adresse – Browser-„Zurueck" bleibt im Portal. Alte Adressen
    (#arbeitssicherheit/anlagen, Cockpit-Links …) werden umgeschrieben und funktionieren weiter. */
 const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vorfälle", "vf-umwelt": "Umweltvorfälle",
-                     anfragen: "Frage an OAK engineering", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
+                     anfragen: FRAGE_TITEL, kalender: "Kalender", nachweise: "Nachweise & Vorsorge", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
                      kapitel: "Unterweisungs-Inhalte", "uw-ueberblick": "Unterweisungen – Überblick",
                      terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch", aktuelles: "Aktuelles", datenschutz: "Datenschutz" };
 const UNTERLAGEN = [
@@ -446,7 +448,7 @@ const UNTERLAGEN = [
       ["gbu", "Gefährdungsbeurteilungen", "Je Maschine und je Tätigkeit"],
       ["ba", "Betriebsanweisungen", "Sammel-BA je Maschinentyp und je Maschine"],
       ["qr", "QR-Codes", "Je Anlage zum Ausdrucken"],
-      ["gefahrstoffe", "Gefahrstoffe", "Verzeichnis und Betriebsanweisungen"],
+      ["gefahrstoffe", "Gefahrstoffkataster", "Stoffe mit Sicherheitsdatenblatt, BA und GBU"],
       ["begehungen", "Begehungsprotokolle", "Was bei den Begehungen festgestellt wurde"],
       ["vom-betrieb", "Interne Unterlagen", "Unterlagen hochladen und ansehen"] ]},
   { bereich: "Umwelt", kats: [
@@ -576,7 +578,10 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "personen"){ renderPersonen(wrap); return; }
   if(kat === "kapitel"){ renderKapitel(wrap); return; }
   if(kat === "unterweisungen"){ renderUnterweisungen(wrap); return; }   // unterweisungen.js: eine Seite, drei Abschnitte
-  if(kat === "anfragen"){ renderAnfragen(wrap); return; }             // anfragen.js: Frage an OAK (Formular)
+  if(kat === "anfragen"){ renderAnfragen(wrap); return; }
+  if(kat === "kalender"){ renderKalender(wrap); return; }             // kalender.js
+  if(kat === "nachweise"){ renderNachweise(wrap); return; }           // nachweise.js: Qualifikationen + Vorsorge
+  if(kat === "gefahrstoffe"){ renderGefahrstoffe(wrap); return; }     // gefahrstoffe.js: Gefahrstoffkataster             // anfragen.js: Frage an OAK (Formular)
   if(kat === "maengel"){ renderMaengel(wrap); return; }               // maengel.js: To-Do-Liste
   if(kat === "logbuch"){ renderLogbuch(wrap); return; }
   if(kat === "aktuelles"){ renderAktuelles(wrap); return; }
@@ -718,6 +723,8 @@ const NAV_SVG = {
   aktuelles: '<path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2z"/><path d="M19 9h1.5V18a1.5 1.5 0 0 1-3 0"/><path d="M7.5 9h8M7.5 12.5h8M7.5 16h5"/>',
   logbuch: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7.5h6M9 11h6"/>',
   klapp: '<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>',
+  kalender: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h3v3H8z"/>',
+  nachweise: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.2a3.4 3.4 0 0 1 6.4 0M14.5 10h4M14.5 13.5h3"/>',
   tuer: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>'
 };
 function uwFaelligZahl(){
@@ -743,10 +750,12 @@ function renderSeitenleiste(){
       ${e("start", null, "start", "Start")}
       ${e("mehr", "aktuelles", "aktuelles", "Aktuelles")}
       ${e("maengel", null, "maengel", "Mängel")}
+      ${e("mehr", "kalender", "kalender", "Kalender")}
       ${e("unterlagen", null, "unterlagen", "Unterlagen")}
       ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen")}
+      ${e("mehr", "nachweise", "nachweise", "Nachweise & Vorsorge")}
       ${START_BEREICH === "umwelt" ? e("mehr", "vf-umwelt", "vorfaelle", "Umweltvorfälle") : e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
-      ${e("mehr", "anfragen", "anfragen", "Frage an OAK")}
+      ${e("mehr", "anfragen", "anfragen", FRAGE_TITEL)}
       ${e("mehr", "logbuch", "logbuch", "Logbuch")}
       ${erweitert}
     </div>
@@ -763,10 +772,15 @@ function renderSeitenleiste(){
   });
   { const ib = el.querySelector("#slInstall");
     if(ib){ ib.hidden = !window.__oakInstallPrompt || document.documentElement.classList.contains("installiert");
-      ib.addEventListener("click", async () => { const p = window.__oakInstallPrompt; if(!p) return; p.prompt(); try{ await p.userChoice; }catch(e){} window.__oakInstallPrompt = null; ib.hidden = true; }); } }
+      ib.addEventListener("click", async () => { const p = window.__oakInstallPrompt; if(!p) return; p.prompt(); try{ const c = await p.userChoice; if(c && c.outcome === "accepted") setTimeout(() => alert(AUTOSTART_HINWEIS), 1200); }catch(e){} window.__oakInstallPrompt = null; ib.hidden = true; }); } }
   el.querySelectorAll("[data-aktion-id]").forEach(b => b.addEventListener("click", () => {
     document.body.classList.remove("menue-auf"); const z = document.getElementById(b.dataset.aktionId); if(z) z.click(); }));
 }
+/* Schichtfuehrer-PC: das EHS-Cockpit soll beim Anmelden von selbst starten (Nikolai 17.09.2026) */
+const AUTOSTART_HINWEIS = "Das EHS-Cockpit ist installiert.\n\nDamit es beim Anmelden am PC automatisch startet:\n"
+  + "1. Windows-Taste + R drücken, shell:startup eingeben, Enter.\n"
+  + "2. Im Startmenü „OAK EHS-Cockpit“ suchen, Rechtsklick → Dateispeicherort öffnen.\n"
+  + "3. Die Verknüpfung in den Autostart-Ordner aus Schritt 1 kopieren.";
 window.portalMenue = function(){ document.body.classList.toggle("menue-auf"); };
 
 function renderSektionen(){
@@ -787,6 +801,7 @@ function renderSektionen(){
   }
   if(!AKTIVE_SUB){ renderUnterlagen(wrap); return; }
   if(AKTIVE_SUB === "vom-betrieb"){ renderUpload(wrap); return; }
+  if(AKTIVE_SUB === "gefahrstoffe" && typeof renderGefahrstoffe === "function"){ renderGefahrstoffe(wrap); return; }
   if(["anlagen", "gbu", "ba", "qr"].includes(AKTIVE_SUB) && typeof renderUnterlagenListe === "function"){ renderUnterlagenListe(wrap, AKTIVE_SUB); return; }   // unterlagen.js
   renderSektion(wrap, AKTIVE_SUB, UL_LABEL[AKTIVE_SUB] || KAT_LABEL[AKTIVE_SUB] || "", false);
   anlagenVerdrahten();
@@ -887,7 +902,8 @@ async function ladePortal(){
     Promise.all([
       apiGet("/rest/v1/portal_freigabe?select=kunde_slug,maschinen_id,freigegeben_am,freigegeben_von&freigegeben=eq.true", false)
         .then(fgr => { FREIGABE = {}; (fgr||[]).forEach(x=> FREIGABE[(x.kunde_slug||"")+"|"+(x.maschinen_id||"")]=x); }).catch(() => { FREIGABE = {}; }),
-      ladeEnergie().catch(() => {}), ladeNachweiseRest().catch(() => {}), ladeUwStart().catch(() => {}), ladeMaengel().catch(() => {})
+      ladeEnergie().catch(() => {}), ladeNachweiseRest().catch(() => {}), ladeUwStart().catch(() => {}), ladeMaengel().catch(() => {}),
+      (typeof gsLaden === "function" ? gsLaden().catch(() => {}) : null)
     ]).then(() => { renderSektionen(); updateWaechterStarten(); });
   }catch(e){
     if(e.message==="AUTH"){ zurLogin(); return; }

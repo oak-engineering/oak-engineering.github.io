@@ -38,7 +38,8 @@ function renderDatenschutz(wrap){
 
     <h2 class="ul-bereich">Wofür werden Daten verarbeitet?</h2>
     <p>Für die Organisation von Arbeitsschutz, Umweltschutz und Energie im Betrieb: Gefährdungsbeurteilungen, Betriebsanweisungen, Mängel,
-      Unterweisungsnachweise, Meldungen von Vorfällen und Prüfungen von Maschinen. Rechtsgrundlage ist die Erfüllung der Arbeitgeberpflichten
+      Unterweisungsnachweise, Meldungen von Vorfällen, Prüfungen von Maschinen,
+      Prüf- und Fristentermine, Qualifikationsnachweise und die Vorsorgekartei. Rechtsgrundlage ist die Erfüllung der Arbeitgeberpflichten
       (Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit dem Arbeitsschutzgesetz, u. a. §§ 5, 6 und 12 ArbSchG).</p>
     <p><b>Keine Leistungs- oder Verhaltenskontrolle:</b> Unterweisungen werden ohne Punktestand gespeichert, das Logbuch dient nur der
       Nachvollziehbarkeit von Änderungen.</p>
@@ -49,6 +50,11 @@ function renderDatenschutz(wrap){
       <li><b>Unterweisungen:</b> Name, Tätigkeit, Arbeitgeber (Stamm/Leiharbeit), Datum, Module, bestanden ja/nein und die Unterschrift als Nachweis.</li>
       <li><b>Mängel und Maschinenprüfungen:</b> Beschreibung, Fotos von Anlagen und Befunden, Name und Datum bei Erfassung oder Erledigung.</li>
       <li><b>Vorfälle:</b> Beschreibung, Ort, Zeitpunkt, optional Foto. Der Name ist freiwillig – ohne Namen bleibt die Meldung anonym.</li>
+      <li><b>Praktische Einarbeitung:</b> Name, Tätigkeit, Datum und wer die Einarbeitung bestätigt hat.</li>
+      <li><b>Qualifikationsnachweise:</b> Name, Art des Nachweises (z. B. Staplerschein, Ersthelfer), Ausstellungs- und Ablaufdatum, Beauftragung, optional eine Kopie des Nachweises.</li>
+      <li><b>Arbeitsmedizinische Vorsorge:</b> nur dass, wann und aus welchem Anlass Vorsorge stattgefunden hat und der nächste Termin (Vorsorgekartei nach § 3 Abs. 4 ArbMedVV) – keine Befunde oder Diagnosen. Die Angaben werden nach dem Ende der Beschäftigung gelöscht; die Person erhält vorher eine Kopie.</li>
+      <li><b>Kalender und Aufgaben:</b> Termine sowie Name und Zeitpunkt, wenn ein Termin erledigt oder eine Aufgabe quittiert wird.</li>
+      <li><b>Fragen zur Arbeitssicherheit:</b> Fragen und Antworten mit Namen – sichtbar für alle Nutzer des Betriebs.</li>
       <li><b>Logbuch:</b> wer wann was im EHS-Cockpit geändert hat.</li>
     </ul>
 
