@@ -14,7 +14,7 @@ function dsFussZeichnen(){
   const f = document.querySelector("#appView .fuss"); if(!f) return;
   const k = dsKunde();
   f.innerHTML = `<div class="fuss-links">
-      <span>OAK EHS-Cockpit V1.0</span><span>·</span>
+      <a href="#mehr/aktuelles?teil=versionen" title="Versionshinweise">OAK EHS-Cockpit V${typeof EHS_VERSION !== "undefined" ? EHS_VERSION : "1.0"}</a><span>·</span>
       <a href="#mehr/datenschutz">Datenschutz</a><span>·</span>
       <span class="${k && k.avv_abgeschlossen_am ? "" : "ds-offen"}">${esc(dsAvvText(k))}</span><span>·</span>
       <a href="../impressum.html" target="_blank" rel="noopener">Impressum</a><span>·</span>

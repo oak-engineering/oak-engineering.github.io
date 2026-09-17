@@ -226,7 +226,7 @@ const START_AKTIONEN = {
     ["#mehr/pruefen", "Maschine prüfen", "Checkliste direkt an der Maschine", "begehung"],
     ["#unterlagen/ba", "Betriebsanweisungen", "Sammel-BA je Maschinentyp und je Maschine", "ba"],
     ["#mehr/anfragen", FRAGE_TITEL, "Fragen stellen und Antworten lesen – wie im Forum", "brief"],
-    ["#mehr/aktuelles", "Aktuelles", "Rechtliche Neuerungen und Wochenrückblick", "aktuelles"] ],
+    ["#mehr/aktuelles", "Aktuelles", "Rechtliche Neuerungen und Versionshinweise", "aktuelles"] ],
   umwelt: [
     ["#mehr/melden?art=umwelt", "Umweltvorfall melden", "Austritt, Leckage, falsch entsorgt", "warnung"],
     ["#mehr/vf-umwelt", "Umweltvorfälle", "Gemeldete Vorfälle und ihr Stand", "liste"],
@@ -243,12 +243,11 @@ function renderStart(wrap){
   const kachel = k => `<a class="start-kachel" href="${k[0]}"><span class="sk-kopf"><span class="sk-titel">${esc(k[1])}</span>${START_SVG[k[3]] || ""}</span><span class="sk-sub">${esc(k[2])}</span></a>`;
   const sec = document.createElement("section"); sec.className = "sektion start-seite";
   const bereiche = [["arbeitssicherheit", "Arbeitssicherheit"], ["umwelt", "Umwelt"], ["energie", "Energie"]];
-  sec.innerHTML = `<div id="startAufgaben" class="auf-box"></div>
-    <div class="start-blick-kopf"><h2>Auf einen Blick · ${esc((BEREICHE_APP.find(b => b[0] === START_BEREICH) || [])[1] || "")}</h2></div>
+  sec.innerHTML = `<div class="start-blick-kopf"><h2>Auf einen Blick · ${esc((BEREICHE_APP.find(b => b[0] === START_BEREICH) || [])[1] || "")}</h2><span id="startAufgaben"></span></div>
     <div id="startBlick"></div>
     <div id="startSchnell"></div>`;
   wrap.appendChild(sec);
-  if(typeof renderAufgaben === "function") renderAufgaben(sec.querySelector("#startAufgaben"));   // aufgaben.js: Heute zu tun
+  if(typeof renderAufgabenHinweis === "function") renderAufgabenHinweis(sec.querySelector("#startAufgaben"));   // aufgaben.js: „9 offene Aufgaben"
   renderCockpit(sec.querySelector("#startBlick"), START_BEREICH);
   if(typeof renderSchnellzugriffe === "function") renderSchnellzugriffe(sec.querySelector("#startSchnell"), START_BEREICH);   // schnellzugriffe.js
   else sec.querySelector("#startSchnell").innerHTML = `<div class="start-raster">${(START_AKTIONEN[START_BEREICH] || START_AKTIONEN.arbeitssicherheit).map(kachel).join("")}</div>`;
@@ -438,7 +437,7 @@ let PORTAL_BEREIT = false;
    Die Seite steht in der Adresse – Browser-„Zurueck" bleibt im Portal. Alte Adressen
    (#arbeitssicherheit/anlagen, Cockpit-Links …) werden umgeschrieben und funktionieren weiter. */
 const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vorfälle", "vf-umwelt": "Umweltvorfälle",
-                     anfragen: FRAGE_TITEL, kalender: "Kalender", nachweise: "Nachweise & Vorsorge", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
+                     anfragen: FRAGE_TITEL, kalender: "Kalender", todos: "To-dos", nachweise: "Nachweise & Vorsorge", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
                      kapitel: "Unterweisungs-Inhalte", "uw-ueberblick": "Unterweisungen – Überblick",
                      terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch", aktuelles: "Aktuelles", datenschutz: "Datenschutz" };
 const UNTERLAGEN = [
@@ -580,6 +579,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "unterweisungen"){ renderUnterweisungen(wrap); return; }   // unterweisungen.js: eine Seite, drei Abschnitte
   if(kat === "anfragen"){ renderAnfragen(wrap); return; }
   if(kat === "kalender"){ renderKalender(wrap); return; }             // kalender.js
+  if(kat === "todos"){ renderTodos(wrap); return; }                   // aufgaben.js
   if(kat === "nachweise"){ renderNachweise(wrap); return; }           // nachweise.js: Qualifikationen + Vorsorge
   if(kat === "gefahrstoffe"){ renderGefahrstoffe(wrap); return; }     // gefahrstoffe.js: Gefahrstoffkataster             // anfragen.js: Frage an OAK (Formular)
   if(kat === "maengel"){ renderMaengel(wrap); return; }               // maengel.js: To-Do-Liste
@@ -675,7 +675,9 @@ function renderSubTabs(){
 /* Kopf jeder Unterseite: „‹ Zurueck" + Titel. Unterlagen-Listen gehen zurueck auf Unterlagen, alles andere auf Start. */
 function seitenKopf(wrap){
   let titel = "", ziel = ["start", null], zLabel = IST_APP ? "Start" : "Überblick";
-  if(AKTIVE_DOM === "unterlagen" && AKTIVE_SUB){ titel = UL_LABEL[AKTIVE_SUB] || AKTIVE_SUB; ziel = ["unterlagen", null]; zLabel = "Unterlagen"; }
+  if(AKTIVE_DOM === "unterlagen" && AKTIVE_SUB && START_BEREICH === "arbeitssicherheit" && (AKTIVE_SUB === "gefahrstoffe" || AK_REITER.some(r => r[0] === AKTIVE_SUB))){
+    titel = AKTIVE_SUB === "gefahrstoffe" ? "Gefahrstoffkataster" : "Anlagenkataster"; }
+  else if(AKTIVE_DOM === "unterlagen" && AKTIVE_SUB){ titel = UL_LABEL[AKTIVE_SUB] || AKTIVE_SUB; ziel = ["unterlagen", null]; zLabel = "Unterlagen"; }
   else if(AKTIVE_DOM === "unterlagen"){ titel = "Unterlagen"; }
   else if(AKTIVE_DOM === "maengel"){ titel = "Mängel"; }
   else if(AKTIVE_DOM === "mehr"){ titel = MEHR_LABEL[AKTIVE_SUB] || ""; }
@@ -683,6 +685,22 @@ function seitenKopf(wrap){
   k.innerHTML = `<button type="button" class="zurueck">‹ ${esc(zLabel)}</button><h1>${esc(titel)}</h1>`;
   k.querySelector(".zurueck").addEventListener("click", () => portalGehe(ziel[0], ziel[1]));
   wrap.appendChild(k);
+}
+
+/* ---- Anlagenkataster als eigener Navigationspunkt (Nikolai 17.09.2026: „Unterlagen unterteilen in Gefahrstoffkataster und
+   Anlagenkataster, je eigener Navigationspunkt"). Alles, was zu den Anlagen gehört, steht als Leiste über der Seite. ---- */
+const AK_REITER = [["anlagen", "Anlagen"], ["hallenplan", "Hallenplan"], ["gbu", "Gefährdungsbeurteilungen"], ["ba", "Betriebsanweisungen"],
+                   ["qr", "QR-Codes"], ["begehungen", "Begehungsprotokolle"], ["vom-betrieb", "Interne Unterlagen"], ["sonstige", "Weitere Unterlagen"]];
+function akReiter(wrap){
+  const n = kat => (typeof ulAnzahl === "function" && ulAnzahl(kat) != null) ? ulAnzahl(kat) : katRows(kat).length;
+  const leiste = document.createElement("nav"); leiste.className = "ak-reiter"; leiste.setAttribute("aria-label", "Anlagenkataster");
+  leiste.innerHTML = AK_REITER.filter(r => r[0] === "anlagen" || r[0] === "vom-betrieb" || n(r[0])).map(r => {
+    const direkt = direktDokument(r[0]);
+    return direkt
+      ? `<a class="ak-knopf" href="${viewerUrl(direkt.doc_typ, direkt.storage_path, direkt.titel)}" target="_blank" rel="noopener">${esc(r[1])}</a>`
+      : `<a class="ak-knopf${AKTIVE_SUB === r[0] ? " aktiv" : ""}" href="#unterlagen/${r[0]}">${esc(r[1])}</a>`;
+  }).join("");
+  wrap.appendChild(leiste);
 }
 
 /* Hallenplan: ein Dokument – Klick oeffnet es direkt statt einer Liste mit einer Zeile (Nikolai 16.09.) */
@@ -723,6 +741,9 @@ const NAV_SVG = {
   aktuelles: '<path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2z"/><path d="M19 9h1.5V18a1.5 1.5 0 0 1-3 0"/><path d="M7.5 9h8M7.5 12.5h8M7.5 16h5"/>',
   logbuch: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7.5h6M9 11h6"/>',
   klapp: '<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>',
+  todos: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/>',
+  anlagen: '<path d="M3 21V10.5l5.5 3.5V10.5l5.5 3.5V7l7 4v10z"/><path d="M7 17.5h2M11.5 17.5h2M16 17.5h2"/>',
+  gefahrstoffe: '<path d="M9 3h6M10 3v6.5L4.6 18.8A1.5 1.5 0 0 0 5.9 21h12.2a1.5 1.5 0 0 0 1.3-2.2L14 9.5V3"/><path d="M7.2 14.5h9.6"/>',
   kalender: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h3v3H8z"/>',
   nachweise: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.2a3.4 3.4 0 0 1 6.4 0M14.5 10h4M14.5 13.5h3"/>',
   tuer: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>'
@@ -738,7 +759,7 @@ function uwFaelligZahl(){
 }
 function renderSeitenleiste(){
   const el = $("#seitenleiste"); if(!el) return;
-  const aktiv = (dom, sub) => dom === "unterlagen" ? AKTIVE_DOM === "unterlagen"
+  const aktiv = (dom, sub) => dom === "unterlagen" ? (AKTIVE_DOM === "unterlagen" && (!sub || (sub === "gefahrstoffe" ? AKTIVE_SUB === "gefahrstoffe" : AKTIVE_SUB !== "gefahrstoffe")))
     : dom === "mehr" ? (AKTIVE_DOM === "mehr" && (AKTIVE_SUB === sub || (sub === "vorfaelle" && AKTIVE_SUB === "vf-umwelt")))
     : AKTIVE_DOM === dom;
   const e = (dom, sub, ico, text, badge) => `<button type="button" class="sl-eintrag${aktiv(dom, sub) ? " aktiv" : ""}" data-nav="${dom}${sub ? "/" + sub : ""}" title="${text}">`
@@ -748,10 +769,13 @@ function renderSeitenleiste(){
   el.innerHTML = `<div class="sl-liste">
       <button type="button" class="sl-eintrag sl-klapp" id="slKlapp" title="Seitenleiste ein- oder ausklappen"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.klapp}</svg><span>Einklappen</span></button>
       ${e("start", null, "start", "Start")}
+      ${e("mehr", "todos", "todos", "To-dos")}
       ${e("mehr", "aktuelles", "aktuelles", "Aktuelles")}
       ${e("maengel", null, "maengel", "Mängel")}
       ${e("mehr", "kalender", "kalender", "Kalender")}
-      ${e("unterlagen", null, "unterlagen", "Unterlagen")}
+      ${START_BEREICH === "arbeitssicherheit"
+        ? e("unterlagen", "anlagen", "anlagen", "Anlagenkataster") + e("unterlagen", "gefahrstoffe", "gefahrstoffe", "Gefahrstoffkataster")
+        : e("unterlagen", null, "unterlagen", "Unterlagen")}
       ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen")}
       ${e("mehr", "nachweise", "nachweise", "Nachweise & Vorsorge")}
       ${START_BEREICH === "umwelt" ? e("mehr", "vf-umwelt", "vorfaelle", "Umweltvorfälle") : e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
@@ -788,6 +812,7 @@ function renderSektionen(){
   document.body.classList.remove("auf-start"); document.body.classList.remove("auf-mehr");
   if(!IST_APP){ renderKlassisch(wrap); return; }
   if(!AKTIVE_DOM || AKTIVE_DOM === "start" || (AKTIVE_DOM === "mehr" && !AKTIVE_SUB)){ AKTIVE_DOM = "start"; AKTIVE_SUB = null; }
+  if(AKTIVE_DOM === "unterlagen" && !AKTIVE_SUB && START_BEREICH === "arbeitssicherheit"){ AKTIVE_SUB = "anlagen"; hashSetzen(true); }
   document.body.dataset.seite = AKTIVE_DOM; document.body.dataset.unterseite = AKTIVE_SUB || "";
   renderSeitenleiste(); renderBereichWahl();
   if(AKTIVE_DOM === "start"){ renderStart(wrap); return; }
@@ -799,6 +824,7 @@ function renderSektionen(){
     if(["terminal", "melden", "pruefen"].includes(AKTIVE_SUB)){ renderEinbettung(wrap, AKTIVE_SUB); return; }
     renderSektion(wrap, AKTIVE_SUB, MEHR_LABEL[AKTIVE_SUB] || "", false); return;
   }
+  if(START_BEREICH === "arbeitssicherheit" && AK_REITER.some(r => r[0] === AKTIVE_SUB)) akReiter(wrap);   // Anlagenkataster: Dokumentarten als Leiste
   if(!AKTIVE_SUB){ renderUnterlagen(wrap); return; }
   if(AKTIVE_SUB === "vom-betrieb"){ renderUpload(wrap); return; }
   if(AKTIVE_SUB === "gefahrstoffe" && typeof renderGefahrstoffe === "function"){ renderGefahrstoffe(wrap); return; }

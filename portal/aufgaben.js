@@ -1,15 +1,17 @@
-/* OAK EHS-Cockpit — „Heute zu tun" auf der Startseite (Nikolai 17.09.2026: „Cockpit startet auf dem Schichtführer-PC automatisch
+/* OAK EHS-Cockpit — „To-dos" (Seite) und Hinweis „N offene Aufgaben" auf der Startseite (Nikolai 17.09.2026: „Cockpit startet auf dem Schichtführer-PC automatisch
    und nennt konkrete To-dos/Termine, fordert also zur aktiven Arbeit auf – mit Quittierungssystem").
    Aufgaben entstehen aus den Daten, niemand muss sie anlegen:
      Termine (≤ 14 Tage oder überfällig) · ablaufende Nachweise (≤ 60 Tage) · fehlende Beauftragung · fällige Vorsorge ·
      Unterweisungen fällig · praktische Einarbeitung offen · Vorfälle ohne Auswertung · neue rechtliche Hinweise ·
      neue Antworten im Forum · (nur OAK) Mängel bewerten/übernehmen, offene Fragen.
+   Rechtliche Neuerungen sind KEINE Aufgabe (Nikolai 17.09.: „rein informativ") – sie stehen nur in Aktuelles.
+   Startseite: nur der Hinweis „9 offene Aufgaben" (Nikolai: „nicht so wuchtig"), Klick führt zu den To-dos.
    Erledigt wird am Ort der Aufgabe (Termin erledigen, Nachweis eintragen …) – dann verschwindet sie von selbst.
    Hinweise ohne eigene Handlung werden quittiert: portal_aufgabe_quittung (wer, wann, Notiz; Logbuch). Der Schlüssel enthält
    den Stand (z. B. „bald" → „abgelaufen"), damit eine Verschärfung wieder auftaucht. */
 "use strict";
 
-let AUF_QUITT = [], AUF_ALLE = false;
+let AUF_QUITT = [];
 
 async function aufQuittungenLaden(){
   try{ AUF_QUITT = await apiGet("/rest/v1/portal_aufgabe_quittung?select=*" + (AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "")
@@ -72,10 +74,6 @@ function aufAufgaben(){
     && !(v.ausgewertet_am || v.sofortmassnahme || v.langzeitmassnahme)).forEach(v => l.push({
       schluessel: "vorfall:" + v.id, stufe: "warnung", titel: "Vorfall auswerten: " + ({ unfall: "Unfall", beinahe: "Beinahe-Unfall", mangel: "Mangel" }[v.art] || "Vorfall") + (v.ort ? " · " + v.ort : ""),
       sub: "gemeldet für " + ehsDatum(v.ereignis_am) + " · Ausfalltage, Sofort- und Langzeitmaßnahme eintragen", aktionen: [["Auswerten", () => portalGehe("mehr", "vorfaelle")]] }));
-  /* 7. Neue rechtliche Hinweise (14 Tage) */
-  (typeof AKT_RECHT !== "undefined" && AKT_RECHT ? AKT_RECHT : []).filter(r => (!r.kunde_slug || r.kunde_slug === AKTIV) && ehsTage(String(r.erfasst_am).slice(0, 10)) >= -14)
-    .forEach(r => l.push({ schluessel: "recht:" + r.id, stufe: "info", quittierbar: true, quittText: "Gelesen", titel: "Neu in Aktuelles: " + r.titel,
-      sub: r.fuer_betrieb || r.kurz || "", aktionen: [["Lesen", () => portalGehe("mehr", "aktuelles")]] }));
   /* 8. Forum */
   (typeof ANFRAGEN !== "undefined" ? ANFRAGEN : []).filter(a => a.kunde_slug === AKTIV).forEach(a => {
     const zuOeffnen = () => { ANFR_OFFEN = a.id; ANFR_SCROLL = true; portalGehe("mehr", "anfragen"); };
@@ -98,32 +96,50 @@ function aufAufgaben(){
     .sort((a, b) => (rang[a.stufe] - rang[b.stufe]) || ((a.frist ?? 999) - (b.frist ?? 999)));
 }
 
-async function renderAufgaben(box){
-  if(!box) return;
-  box.innerHTML = `<div class="auf-kopf"><h2>Heute zu tun</h2></div><div class="ck-fuss">wird geladen …</div>`;
+async function aufLaden(){
   await Promise.all([
     typeof kalLaden === "function" ? kalLaden(true) : null, typeof nwLaden === "function" ? nwLaden(true) : null, aufQuittungenLaden(),
-    typeof aktRechtLaden === "function" ? aktRechtLaden() : null, typeof ladeAnfragen === "function" ? ladeAnfragen() : null,
+    typeof ladeAnfragen === "function" ? ladeAnfragen() : null,
     typeof uwEinarbeitungLaden === "function" ? uwEinarbeitungLaden() : null].map(p => Promise.resolve(p).catch(() => null)));
-  const liste = aufAufgaben();
-  const zeigen = AUF_ALLE ? liste : liste.slice(0, 6);
-  const heute = AUF_QUITT.filter(q => (!AKTIV || q.kunde_slug === AKTIV) && ehsTage(String(q.quittiert_am).slice(0, 10)) >= -7);
-  box.innerHTML = `<div class="auf-kopf"><h2>Heute zu tun</h2>
-      <span class="uw-leise">${liste.length ? liste.length + (liste.length === 1 ? " offene Aufgabe" : " offene Aufgaben") : ""}</span>
-      <a class="btn-klein" href="#mehr/kalender">Kalender</a></div>
-    ${liste.length ? `<div class="auf-liste">${zeigen.map((a, i) => `<div class="auf-karte auf-${a.stufe}">
-        <div class="auf-text"><b>${esc(a.titel)}</b>${a.sub ? `<span>${esc(a.sub)}</span>` : ""}</div>
-        ${a.frist != null ? `<span class="uw-badge uw-${a.frist < 0 ? "kritisch" : "warnung"}">${esc(ehsFristText(a.frist))}</span>` : ""}
-        <div class="auf-akt">${a.aktionen.map((x, j) => `<button type="button" class="${j === 0 ? "btn sek" : "btn-klein"}" data-auf="${i}" data-akt="${j}">${esc(x[0])}</button>`).join("")}
-          ${a.quittierbar ? `<button type="button" class="btn-klein auf-quitt" data-quitt="${i}" title="Zur Kenntnis genommen – verschwindet aus der Liste, bleibt im Logbuch">${esc(a.quittText || "Quittieren")}</button>` : ""}</div>
-      </div>`).join("")}</div>
-      ${liste.length > 6 ? `<button type="button" class="btn-klein auf-mehr" id="aufAlle">${AUF_ALLE ? "weniger anzeigen" : "alle " + liste.length + " anzeigen"}</button>` : ""}`
-      : `<div class="auf-leer">Alles erledigt – keine offenen Aufgaben.</div>`}
-    ${heute.length ? `<details class="auf-quittiert"><summary>Zuletzt quittiert <span class="uw-leise">${heute.length}</span></summary>
-      <ul>${heute.map(q => `<li><span>${esc(q.titel || q.schluessel)}</span><span class="uw-leise">${esc(q.quittiert_von)} · ${esc(anfrDatum(q.quittiert_am))}${q.notiz ? " – " + esc(q.notiz) : ""}</span></li>`).join("")}</ul></details>` : ""}`;
-  box.querySelectorAll("[data-auf]").forEach(b => b.addEventListener("click", () => zeigen[+b.dataset.auf].aktionen[+b.dataset.akt][1]()));
-  box.querySelectorAll("[data-quitt]").forEach(b => b.addEventListener("click", () => aufQuittierenDialog(zeigen[+b.dataset.quitt], () => renderAufgaben(box))));
-  const alle = box.querySelector("#aufAlle"); if(alle) alle.addEventListener("click", () => { AUF_ALLE = !AUF_ALLE; renderAufgaben(box); });
+}
+
+/* Startseite: ein schlanker Hinweis */
+async function renderAufgabenHinweis(box){
+  if(!box) return;
+  box.innerHTML = "";
+  await aufLaden();
+  if(!box.isConnected) return;
+  const liste = aufAufgaben(), ueber = liste.filter(a => a.stufe === "kritisch").length;
+  box.innerHTML = liste.length
+    ? `<a class="auf-hinweis${ueber ? " auf-h-kritisch" : ""}" href="#mehr/todos"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.todos}</svg>
+        <b>${liste.length} ${liste.length === 1 ? "offene Aufgabe" : "offene Aufgaben"}</b><span class="auf-pfeil" aria-hidden="true">›</span></a>`
+    : `<a class="auf-hinweis auf-h-leer" href="#mehr/todos"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.todos}</svg><b>Keine offenen Aufgaben</b></a>`;
+}
+
+/* Seite „To-dos" */
+async function renderTodos(wrap){
+  const box = document.createElement("section"); box.className = "sektion auf-seite";
+  box.innerHTML = `<div class="ck-fuss">wird geladen …</div>`;
+  wrap.appendChild(box);
+  await aufLaden();
+  const zeichnen = () => {
+    const liste = aufAufgaben();
+    const kuerzlich = AUF_QUITT.filter(q => (!AKTIV || q.kunde_slug === AKTIV) && ehsTage(String(q.quittiert_am).slice(0, 10)) >= -7);
+    box.innerHTML = `<p class="uw-erkl">Aufgaben entstehen aus Kalender, Nachweisen, Vorsorge, Unterweisungen, Vorfällen und dem Forum.
+        Erledigen Sie sie direkt hier – Hinweise ohne eigene Handlung quittieren Sie.</p>
+      ${liste.length ? `<div class="auf-liste">${liste.map((a, i) => `<div class="auf-karte auf-${a.stufe}">
+          <div class="auf-text"><b>${esc(a.titel)}</b>${a.sub ? `<span>${esc(a.sub)}</span>` : ""}</div>
+          ${a.frist != null ? `<span class="uw-badge uw-${a.frist < 0 ? "kritisch" : "warnung"}">${esc(ehsFristText(a.frist))}</span>` : ""}
+          <div class="auf-akt">${a.aktionen.map((x, j) => `<button type="button" class="${j === 0 ? "btn sek" : "btn-klein"}" data-auf="${i}" data-akt="${j}">${esc(x[0])}</button>`).join("")}
+            ${a.quittierbar ? `<button type="button" class="btn-klein auf-quitt" data-quitt="${i}" title="Zur Kenntnis genommen – verschwindet aus der Liste, bleibt im Logbuch">${esc(a.quittText || "Quittieren")}</button>` : ""}</div>
+        </div>`).join("")}</div>`
+        : `<div class="auf-leer">Alles erledigt – keine offenen Aufgaben.</div>`}
+      ${kuerzlich.length ? `<details class="auf-quittiert"><summary>Zuletzt quittiert <span class="uw-leise">${kuerzlich.length}</span></summary>
+        <ul>${kuerzlich.map(q => `<li><span>${esc(q.titel || q.schluessel)}</span><span class="uw-leise">${esc(q.quittiert_von)} · ${esc(anfrDatum(q.quittiert_am))}${q.notiz ? " – " + esc(q.notiz) : ""}</span></li>`).join("")}</ul></details>` : ""}`;
+    box.querySelectorAll("[data-auf]").forEach(b => b.addEventListener("click", () => liste[+b.dataset.auf].aktionen[+b.dataset.akt][1]()));
+    box.querySelectorAll("[data-quitt]").forEach(b => b.addEventListener("click", () => aufQuittierenDialog(liste[+b.dataset.quitt], zeichnen)));
+  };
+  zeichnen();
 }
 
 function aufQuittierenDialog(a, danach){

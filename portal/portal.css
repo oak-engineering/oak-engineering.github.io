@@ -1084,3 +1084,38 @@ html:not(.ist-app) .bereich-wahl{display:none}
 /* Wochenbericht */
 .akt-kopf-rechts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .akt-ueberfaellig{border-color:#f5b7b1}
+
+/* ---- 17.09.2026 nachmittags: To-dos-Hinweis, Anlagenkataster-Leiste, GHS-Piktogramme, Versionshinweise ---- */
+.start-blick-kopf{flex-wrap:wrap}
+.auf-hinweis{margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;border:1px solid #f5c26b;background:#fff8eb;
+  color:#7a4a00;text-decoration:none;font-size:14.5px;line-height:1.2}
+.auf-hinweis svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.auf-hinweis:hover{background:#fff1d6}
+.auf-hinweis.auf-h-kritisch{border-color:#f5b7b1;background:#fdf0ee;color:#8e1b1b}
+.auf-hinweis.auf-h-leer{border-color:#b7e4c7;background:#eef8f1;color:#1b5e20}
+.auf-pfeil{font-size:18px;line-height:1}
+.auf-seite .uw-erkl{margin-top:0}
+.ak-reiter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+.ak-knopf{display:inline-flex;align-items:center;min-height:36px;padding:6px 14px;border-radius:99px;border:1px solid var(--linie,#e3e8ef);background:#fff;
+  color:#344054;text-decoration:none;font-size:14px;font-weight:500}
+.ak-knopf:hover{border-color:var(--gruen,#2D6A4F)}
+.ak-knopf.aktiv{background:var(--gruen,#2D6A4F);border-color:var(--gruen,#2D6A4F);color:#fff}
+.kal-ueber{display:block;width:100%;text-align:left;font:inherit;font-weight:600;margin:0 0 10px;padding:9px 14px;border-radius:10px;border:1px solid #f5b7b1;
+  background:#fdf0ee;color:#8e1b1b;cursor:pointer}
+.gs-piktos{display:flex;gap:3px;flex:0 0 auto;min-width:32px}
+.gs-pikto{width:30px;height:30px;display:block}
+.gs-piktos-gross{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0 4px}
+.gs-piktos-gross figure{margin:0;display:flex;flex-direction:column;align-items:center;width:84px;text-align:center}
+.gs-piktos-gross img{width:64px;height:64px}
+.gs-piktos-gross figcaption{font-size:11px;line-height:1.25;color:#475467;margin-top:2px}
+.gs-pikto-hinweis{margin:6px 0 0;font-size:12px}
+@media(max-width:640px){.gs-pikto{width:24px;height:24px}}
+.lb-ansicht{margin-bottom:14px}
+.vh-version{background:#fff;border:1px solid var(--linie,#e3e8ef);border-radius:12px;padding:14px 18px;margin-bottom:12px}
+.vh-version.vh-aktuell{border-left:5px solid var(--gruen,#2D6A4F)}
+.vh-kopf{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.vh-kopf b{font-size:17px}
+.vh-titel{margin:2px 0 8px;color:#344054}
+.vh-gruppen{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px 22px}
+.vh-gruppe h4{margin:8px 0 4px;font-size:14px}
+.vh-gruppe ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.5;color:#344054}

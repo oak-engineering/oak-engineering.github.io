@@ -6,7 +6,7 @@
    die verbindliche Frist legt der Betrieb in seiner Gefährdungsbeurteilung fest. */
 "use strict";
 
-let KAL_ROWS = [], KAL_GELADEN_FUER = null, KAL_ANSICHT = "liste", KAL_MONAT = null, KAL_FILTER = "";
+let KAL_ROWS = [], KAL_GELADEN_FUER = null, KAL_ANSICHT = "monat", KAL_MONAT = null, KAL_FILTER = "";
 const KAL_ART = { pruefung: "Prüfung", wartung: "Wartung", schulung: "Schulung", vorsorge: "Vorsorge", begehung: "Begehung", frist: "Frist", sonstiges: "Sonstiges",
                   nachweis: "Nachweis läuft ab", unterweisung: "Unterweisung" };
 const KAL_INTERVALLE = [[0, "einmalig"], [1, "monatlich"], [3, "alle 3 Monate"], [6, "alle 6 Monate"], [12, "jährlich"], [24, "alle 2 Jahre"],
@@ -74,7 +74,7 @@ async function renderKalender(wrap){
         <div class="kal-knoepfe"><button type="button" class="btn" id="kalNeu">Termin anlegen</button>
           <button type="button" class="btn sek" id="kalVorlage">Aus Vorlage (UVV-Prüfungen …)</button></div>
         <div class="kal-rechts"><select class="uw-fassung" id="kalFilter" aria-label="Art">${filterOpt.map(o => `<option value="${o[0]}"${o[0] === KAL_FILTER ? " selected" : ""}>${o[1]}</option>`).join("")}</select>
-          <div class="uw-pills"><button type="button" class="uw-pill${KAL_ANSICHT === "liste" ? " aktiv" : ""}" data-ansicht="liste">Liste</button><button type="button" class="uw-pill${KAL_ANSICHT === "monat" ? " aktiv" : ""}" data-ansicht="monat">Monat</button></div></div>
+          <div class="uw-pills"><button type="button" class="uw-pill${KAL_ANSICHT === "monat" ? " aktiv" : ""}" data-ansicht="monat">Monat</button><button type="button" class="uw-pill${KAL_ANSICHT === "liste" ? " aktiv" : ""}" data-ansicht="liste">Liste</button></div></div>
       </div>
       <div id="kalInhalt"></div>`;
     const inhalt = sec.querySelector("#kalInhalt");
@@ -151,10 +151,13 @@ function kalMonat(box, alle, neuZeichnen){
       ${tag.slice(0, 3).map(e => `<button type="button" class="kal-punkt kal-${ehsStufe(ehsTage(e.datum), 30)}" data-idx="${esc(e.quelle + ":" + e.id)}" title="${esc(e.titel)}">${esc(e.titel)}</button>`).join("")}
       ${tag.length > 3 ? `<span class="uw-leise">+${tag.length - 3} weitere</span>` : ""}</div>`;
   }
-  box.innerHTML = `<div class="kal-monat-kopf"><button type="button" class="btn-klein" id="kalZurueck">‹</button>
+  const ueber = alle.filter(e => ehsTage(e.datum) < 0);
+  box.innerHTML = (ueber.length ? `<button type="button" class="kal-ueber" id="kalUeber">${ueber.length} ${ueber.length === 1 ? "Termin ist" : "Termine sind"} überfällig – in der Liste ansehen</button>` : "")
+    + `<div class="kal-monat-kopf"><button type="button" class="btn-klein" id="kalZurueck">‹</button>
       <h2>${KAL_MONAT.toLocaleDateString("de-DE", { month: "long", year: "numeric" })}</h2>
       <button type="button" class="btn-klein" id="kalVor">›</button><button type="button" class="btn-klein" id="kalHeute">Heute</button></div>
     <div class="tabelle-wrap"><div class="kal-raster">${["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map(t => `<div class="kal-wt">${t}</div>`).join("")}${zellen}</div></div>`;
+  { const ub = box.querySelector("#kalUeber"); if(ub) ub.addEventListener("click", () => { KAL_ANSICHT = "liste"; neuZeichnen(); }); }
   box.querySelector("#kalZurueck").addEventListener("click", () => { KAL_MONAT = new Date(jahr, mon - 1, 1); neuZeichnen(); });
   box.querySelector("#kalVor").addEventListener("click", () => { KAL_MONAT = new Date(jahr, mon + 1, 1); neuZeichnen(); });
   box.querySelector("#kalHeute").addEventListener("click", () => { KAL_MONAT = null; neuZeichnen(); });

@@ -24,6 +24,37 @@ const GS_H = {
   H413: "Kann für Wasserorganismen schädlich sein, mit langfristiger Wirkung."
 };
 
+/* GHS-Piktogramme aus den H-Sätzen nach CLP-Verordnung (Anhang I) mit Vorrangregeln aus Art. 26:
+   GHS06 -> kein GHS07 · GHS05 -> kein GHS07 für Haut-/Augenreizung · H334 (GHS08) -> kein GHS07 für Hautsensibilisierung/-reizung.
+   H229 allein, H412, H413 und H362 haben kein Piktogramm. Verbindlich bleibt das Etikett bzw. SDB Abschnitt 2.2. */
+const GS_GHS = {
+  GHS01: ["H200", "H201", "H202", "H203", "H204", "H240", "H241"],
+  GHS02: ["H220", "H221", "H222", "H223", "H224", "H225", "H226", "H228", "H241", "H242", "H250", "H251", "H252", "H260", "H261"],
+  GHS03: ["H270", "H271", "H272"],
+  GHS04: ["H280", "H281"],
+  GHS05: ["H290", "H314", "H318"],
+  GHS06: ["H300", "H301", "H310", "H311", "H330", "H331"],
+  GHS07: ["H302", "H312", "H315", "H317", "H319", "H332", "H335", "H336", "H420"],
+  GHS08: ["H304", "H334", "H340", "H341", "H350", "H351", "H360", "H361", "H370", "H371", "H372", "H373"],
+  GHS09: ["H400", "H410", "H411"]
+};
+const GS_GHS_NAME = { GHS01: "Explodierende Bombe", GHS02: "Flamme", GHS03: "Flamme über einem Kreis", GHS04: "Gasflasche", GHS05: "Ätzwirkung",
+  GHS06: "Totenkopf mit gekreuzten Knochen", GHS07: "Ausrufezeichen", GHS08: "Gesundheitsgefahr", GHS09: "Umwelt" };
+function gsPiktogramme(hs){
+  const h = new Set((hs || []).map(x => String(x).toUpperCase().slice(0, 4)));
+  const hat = k => GS_GHS[k].some(x => h.has(x));
+  const p = Object.keys(GS_GHS).filter(k => k !== "GHS07" && hat(k));
+  let g07 = GS_GHS.GHS07.filter(x => h.has(x));
+  if(p.includes("GHS06")) g07 = [];
+  if(p.includes("GHS05")) g07 = g07.filter(x => x !== "H315" && x !== "H319");
+  if(h.has("H334")) g07 = g07.filter(x => !["H315", "H317", "H319"].includes(x));
+  if(g07.length) p.push("GHS07");
+  return p.sort();
+}
+function gsPiktoHtml(hs, klasse){
+  return gsPiktogramme(hs).map(k => `<img class="${klasse || "gs-pikto"}" src="ghs/ghs${k.slice(3)}.png" alt="${esc(k + " " + GS_GHS_NAME[k])}" title="${esc(k + " – " + GS_GHS_NAME[k])}" loading="lazy">`).join("");
+}
+
 async function gsLaden(erzwingen){
   if(!erzwingen && GS_GELADEN_FUER === AKTIV) return GS_ROWS;
   try{ GS_ROWS = await apiGet("/rest/v1/portal_gefahrstoff?select=*" + (AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "") + "&order=bezeichnung.asc", false) || []; }
@@ -49,6 +80,7 @@ async function renderGefahrstoffe(wrap){
   const zeile = g => `<div class="ul-zeile ul-klick" data-id="${esc(g.id)}" data-suche="${esc([g.bezeichnung, g.hersteller, g.verwendung, g.artikelnummer, (g.h_saetze || []).join(" ")].filter(Boolean).join(" ").toLowerCase())}"
       data-bereiche="${esc((g.bereiche || []).join("|"))}" data-signal="${esc(g.signalwort || "")}" data-luecke="${!g.sdb_pfad || !g.gbu_pfad ? "1" : ""}">
       <span class="gs-signal gs-${g.signalwort === "Gefahr" ? "gefahr" : g.signalwort === "Achtung" ? "achtung" : "ohne"}">${esc(g.signalwort || "–")}</span>
+      <span class="gs-piktos">${gsPiktoHtml(g.h_saetze)}</span>
       <div class="ul-z-name"><b>${esc(g.bezeichnung)}</b><span>${esc([g.hersteller, (g.bereiche || []).join(", ")].filter(Boolean).join(" · "))}</span></div>
       <div class="ul-z-info">${(g.h_saetze || []).length ? `<span>${(g.h_saetze || []).length} H-Sätze</span>` : ""}
         ${g.sdb_pfad ? `<span>SDB${g.sdb_ausgabe ? " " + esc(ehsDatum(g.sdb_ausgabe)) : ""}</span>` : `<span class="ul-mg">SDB fehlt</span>`}
@@ -94,12 +126,14 @@ function gsKurzinfo(g, neu){
   dlg.innerHTML = `<div class="ul-dlg-inhalt">
       <div class="ul-dlg-kopf"><div><h3>${esc(g.bezeichnung)}</h3><div class="uw-leise">${esc([g.hersteller, g.artikelnummer ? "Art.-Nr. " + g.artikelnummer : ""].filter(Boolean).join(" · "))}</div></div>
         <button type="button" class="dok-zu ul-dlg-zu" aria-label="Schließen">✕</button></div>
+      ${gsPiktogramme(g.h_saetze).length ? `<div class="gs-piktos-gross">${gsPiktogramme(g.h_saetze).map(k => `<figure><img src="ghs/ghs${k.slice(3)}.png" alt="${esc(k)}"><figcaption>${esc(k)}<br>${esc(GS_GHS_NAME[k])}</figcaption></figure>`).join("")}</div>` : ""}
       ${g.signalwort ? `<div class="ul-risiko ${g.signalwort === "Gefahr" ? "ul-gefahr" : "ul-besorgnis"}">Signalwort: ${esc(g.signalwort)}</div>` : ""}
       ${g.hinweis ? `<div class="ul-hinweis">${esc(g.hinweis)}</div>` : ""}
       ${!g.aktiv ? `<div class="ul-hinweis">Wird nicht mehr verwendet.</div>` : ""}
       <dl class="ul-dl">${feld("Bereiche", (g.bereiche || []).join(", "))}${feld("Verwendung", g.verwendung)}${feld("Menge", g.menge)}${feld("Lagerort", g.lagerort)}
         ${feld("Sicherheitsdatenblatt", g.sdb_pfad ? (g.sdb_ausgabe ? "Ausgabe " + ehsDatum(g.sdb_ausgabe) : "vorhanden") : "fehlt – beim Lieferanten anfordern")}</dl>
-      ${(g.h_saetze || []).length ? `<h4 class="ul-h4">Gefahrenhinweise</h4><ul class="gs-hliste">${g.h_saetze.map(h => `<li><b>${esc(h)}</b> ${esc(GS_H[h] || "")}</li>`).join("")}</ul>` : ""}
+      ${(g.h_saetze || []).length ? `<h4 class="ul-h4">Gefahrenhinweise</h4><ul class="gs-hliste">${g.h_saetze.map(h => `<li><b>${esc(h)}</b> ${esc(GS_H[h] || "")}</li>`).join("")}</ul>
+        <p class="uw-leise gs-pikto-hinweis">Piktogramme nach CLP-Verordnung aus den H-Sätzen abgeleitet – verbindlich sind Etikett und Sicherheitsdatenblatt (Abschnitt 2.2).</p>` : ""}
       <h4 class="ul-h4">Dokumente</h4>
       <div class="ul-docs">${docs || '<span class="uw-leise">Keine Dokumente hinterlegt.</span>'}</div>
       ${g.gbu_pfad ? "" : `<p class="uw-leise gs-gbu-hinweis">Gefährdungsbeurteilung für Tätigkeiten mit diesem Stoff (§ 6 GefStoffV) ist noch nicht hinterlegt.</p>`}
