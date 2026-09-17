@@ -17,6 +17,7 @@ const DOMAENEN = [
       { kat: "ck-arbeitssicherheit", label: "Überblick" },
       { kat: "hallenplan",    label: "Hallenplan" },
       { kat: "anlagen",       label: "Anlagen &amp; Maschinensicherheit" },
+      { kat: "ba-sammel",     label: "Betriebsanweisungen" },
       { kat: "maengel",       label: "Mängel" },
       { kat: "allg-gbu",      label: "Allgemeine GBU" },
       { kat: "gefahrstoffe",  label: "Gefahrstoffe" },
@@ -208,6 +209,7 @@ const START_SVG = {
 };
 START_SVG.dokument = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>';
 START_SVG.liste = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>';
+START_SVG.ba = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="18" rx="2"/><path d="M9 3.5h6v3H9z"/><path d="M12 10.5v4.5M12 17.8v.2"/></svg>';
 START_SVG.mangel = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3.5 17.3a1.8 1.8 0 0 0 2.5 2.5l5.8-5.8a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.1-.4-.4-2.1z"/><path d="M19 15v4M17 17h4"/></svg>';
 START_SVG.blitz ='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>';
 /* Kacheln je Bereich – jede fuehrt INNERHALB des Portals weiter (Seitenleiste bleibt stehen) */
@@ -217,6 +219,7 @@ const START_AKTIONEN = {
     ["#mehr/melden", "Vorfall melden", "Unfall oder Beinahe-Unfall", "warnung"],
     ["#maengel?neu=1", "Mangel erfassen", "An Maschine oder Halle, mit Foto", "mangel"],
     ["#mehr/pruefen", "Maschine prüfen", "Checkliste direkt an der Maschine", "begehung"],
+    ["#unterlagen/ba-sammel", "Betriebsanweisungen", "Sammel-BA je Maschinentyp", "ba"],
     ["#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", "brief"] ],
   umwelt: [
     ["#mehr/melden?art=umwelt", "Umweltvorfall melden", "Austritt, Leckage, falsch entsorgt", "warnung"],
@@ -428,6 +431,7 @@ const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vor
 const UNTERLAGEN = [
   { bereich: "Arbeitssicherheit", kats: [
       ["anlagen", "Maschinen & Anlagen", "Gefährdungsbeurteilung, Betriebsanweisung und Mängelliste je Maschine"],
+      ["ba-sammel", "Betriebsanweisungen", "Sammel-BA je Maschinentyp"],
       ["hallenplan", "Hallenplan", "Alle Maschinen mit ihrem Risiko"],
       ["allg-gbu", "Allgemeine Gefährdungsbeurteilungen", "Tätigkeiten und Themen ohne feste Maschine"],
       ["gefahrstoffe", "Gefahrstoffe", "Verzeichnis und Betriebsanweisungen"],
@@ -957,3 +961,60 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.addEventListener("visibilitychange", () => { if(!document.hidden) versionPruefen(); });
   window.addEventListener("focus", versionPruefen);
 })();
+
+/* ---- Dokumente als Tab im laufenden Programm (Nikolai 17.09.2026) ----------------------------
+   In der installierten App oeffnete jeder Dokument-Link (target=_blank) ein zweites Programmfenster.
+   Jetzt: Tab-Leiste ueber dem Portal, jeder Tab mit ✕ zum Schliessen, „‹ Portal" fuehrt zurueck.
+   Seiten im Tab (viewer/maschine/qr) laden tab.js: kein „← Übersicht"-Knopf, ihre Links werden weitere Tabs. */
+const DOK_TABS = []; let DOK_AKTIV = null;
+window.portalDokOeffnen = function(url, titel){
+  let el = document.getElementById("dokTabs");
+  if(!el){
+    el = document.createElement("div"); el.id = "dokTabs"; el.className = "dok-tabs";
+    el.innerHTML = '<div class="dok-leiste" role="tablist"></div><div class="dok-inhalt"></div>';
+    document.body.appendChild(el);
+  }
+  let tab = DOK_TABS.find(x => x.url === url);
+  if(!tab){
+    tab = { id: "dok" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), url, titel: (titel || "Dokument").trim() || "Dokument" };
+    const f = document.createElement("iframe"); f.src = url; f.title = tab.titel;
+    el.querySelector(".dok-inhalt").appendChild(f); tab.frame = f; DOK_TABS.push(tab);
+  }
+  DOK_AKTIV = tab.id; dokTabsZeichnen();
+};
+window.portalDokSchliessenAktiv = function(){ if(DOK_AKTIV) dokTabSchliessen(DOK_AKTIV); };
+function dokTabSchliessen(id){
+  const i = DOK_TABS.findIndex(x => x.id === id); if(i < 0) return;
+  DOK_TABS[i].frame.remove(); DOK_TABS.splice(i, 1);
+  if(DOK_AKTIV === id) DOK_AKTIV = null;
+  dokTabsZeichnen();
+}
+function dokTabsZeichnen(){
+  const el = document.getElementById("dokTabs"); if(!el) return;
+  const offen = !!DOK_AKTIV && DOK_TABS.length > 0;
+  el.classList.toggle("offen", offen);
+  document.documentElement.classList.toggle("dok-tab-offen", offen);
+  el.querySelector(".dok-leiste").innerHTML = '<button type="button" class="dok-reiter dok-portal" data-dok="">‹ Portal</button>'
+    + DOK_TABS.map(x => `<div class="dok-reiter${x.id === DOK_AKTIV ? " aktiv" : ""}" data-dok="${x.id}" role="tab" title="${esc(x.titel)}"><span>${esc(x.titel)}</span>`
+      + `<button type="button" class="dok-zu" data-zu="${x.id}" aria-label="Tab schließen">✕</button></div>`).join("")
+    + (offen ? '<button type="button" class="dok-schliessen" data-zu-aktiv>Schließen</button>' : "");
+  DOK_TABS.forEach(x => { x.frame.hidden = x.id !== DOK_AKTIV; });
+  el.querySelectorAll("[data-dok]").forEach(b => b.addEventListener("click", () => { DOK_AKTIV = b.dataset.dok || null; dokTabsZeichnen(); }));
+  el.querySelectorAll("[data-zu]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); dokTabSchliessen(b.dataset.zu); }));
+  const zu = el.querySelector("[data-zu-aktiv]"); if(zu) zu.addEventListener("click", () => dokTabSchliessen(DOK_AKTIV));
+  /* zurueck im Portal, aber noch Tabs offen: kleiner Knopf unten links */
+  let chip = document.getElementById("dokChip");
+  if(!offen && DOK_TABS.length){
+    if(!chip){ chip = document.createElement("button"); chip.type = "button"; chip.id = "dokChip"; chip.className = "dok-chip"; document.body.appendChild(chip);
+      chip.addEventListener("click", () => { DOK_AKTIV = DOK_TABS[DOK_TABS.length - 1].id; dokTabsZeichnen(); }); }
+    chip.textContent = DOK_TABS.length === 1 ? "1 Dokument offen" : DOK_TABS.length + " Dokumente offen";
+  } else if(chip) chip.remove();
+}
+if(IST_APP) document.addEventListener("click", ev => {
+  const a = ev.target.closest && ev.target.closest('a[target="_blank"]'); if(!a) return;
+  let u; try{ u = new URL(a.href, location.href); }catch(e){ return; }
+  if(u.origin !== location.origin || !/\/portal\/(viewer|maschine|qr)\.html$/.test(u.pathname)) return;
+  ev.preventDefault(); ev.stopPropagation();
+  const p = u.searchParams;
+  window.portalDokOeffnen(u.pathname.split("/").pop() + u.search, p.get("t") || p.get("m") || a.textContent);
+}, true);

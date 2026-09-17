@@ -218,3 +218,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     fehler("Dokument konnte nicht geladen werden: " + e.message);
   }
 });
+
+/* Links aus einem Dokument (z. B. Hallenplan „Zu den Dokumenten"): das Dokument laeuft ohne Popup-Recht
+   in einer Sandbox und meldet den Wunsch per postMessage. Nur Portal-Seiten, nur aus dem eigenen Rahmen. */
+window.addEventListener("message", ev => {
+  const f = document.getElementById("rahmen");
+  if(!f || ev.source !== f.contentWindow) return;
+  const d = ev.data || {}; if(d.oak !== "dokument-oeffnen") return;
+  let u; try{ u = new URL(String(d.url || ""), location.href); }catch(e){ return; }
+  if(!(u.origin === location.origin || /(^|\.)oak-engineering\.de$/.test(u.hostname))) return;
+  if(!/^\/portal\/(maschine|viewer|qr)\.html$/.test(u.pathname)) return;
+  const ziel = u.pathname.replace(/^\/portal\//, "") + u.search, titel = String(d.titel || "").slice(0, 80);
+  let oben = null; try{ if(window.top !== window && typeof window.top.portalDokOeffnen === "function") oben = window.top; }catch(e){}
+  if(oben) oben.portalDokOeffnen(ziel, titel); else window.open(ziel, "_blank", "noopener");
+});
