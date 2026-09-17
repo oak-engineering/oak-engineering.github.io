@@ -927,3 +927,12 @@ html:not(.ist-app) .bereich-wahl{display:none}
 
 .sl-install{color:var(--gruen,#2D6A4F);font-weight:600}
 .sl-install[hidden]{display:none}
+
+/* Datenschutz im EHS-Cockpit */
+.ds-seite p{max-width:900px;line-height:1.6;color:#344054}
+.ds-liste{max-width:900px;line-height:1.6;color:#344054;padding-left:20px}
+.ds-stand{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border-radius:10px;margin-bottom:6px}
+.ds-stand.ds-ok{background:#e8f5e9;color:#1b5e20}
+.ds-stand.ds-warn{background:#fdf6e3;color:#7a5b00}
+#appView .fuss .ds-offen{color:#8a6d0b}
+#appView .fuss .fuss-links{flex-wrap:wrap;row-gap:4px}

@@ -339,11 +339,12 @@ function setKundeName(){
 /* ---- Marke je Kunde (portal_kunde.marke) – gesetzt wird zentral in marke.js (auch Zwischenspeicher) ---- */
 let MARKEN = [];
 async function markeLaden(){
-  try{ MARKEN = await apiGet("/rest/v1/portal_kunde?select=slug,name,marke", false) || []; }catch(e){ MARKEN = []; }
+  try{ MARKEN = await apiGet("/rest/v1/portal_kunde?select=slug,name,marke,avv_abgeschlossen_am,datenschutz_kontakt", false) || []; }catch(e){ MARKEN = []; }
 }
 function markeAnwenden(){
   const k = MARKEN.find(x => x.slug === AKTIV);
   if(window.OAK_MARKE) OAK_MARKE.setzen((k && k.marke) || {}, (k && k.name) || "");
+  if(typeof dsFussZeichnen === "function") dsFussZeichnen();   // datenschutz.js: Fußzeile mit Stand AVV
 }
 function renderAdminBar(){
   const bar = $("#adminBar");
@@ -432,7 +433,7 @@ let PORTAL_BEREIT = false;
 const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vorfälle", "vf-umwelt": "Umweltvorfälle",
                      anfragen: "Frage an OAK engineering", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
                      kapitel: "Unterweisungs-Inhalte", "uw-ueberblick": "Unterweisungen – Überblick",
-                     terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch", aktuelles: "Aktuelles" };
+                     terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch", aktuelles: "Aktuelles", datenschutz: "Datenschutz" };
 const UNTERLAGEN = [
   { bereich: "Arbeitssicherheit", kats: [
       ["anlagen", "Anlagenkataster", "Alle Anlagen – Kurzinfo, offene Mängel und Dokumente"],
@@ -573,7 +574,8 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "anfragen"){ renderAnfragen(wrap); return; }             // anfragen.js: Frage an OAK (Formular)
   if(kat === "maengel"){ renderMaengel(wrap); return; }               // maengel.js: To-Do-Liste
   if(kat === "logbuch"){ renderLogbuch(wrap); return; }
-  if(kat === "aktuelles"){ renderAktuelles(wrap); return; }             // aktuelles.js: Rechtliches + Wochenrückblick               // logbuch.js: wer hat was geaendert
+  if(kat === "aktuelles"){ renderAktuelles(wrap); return; }
+  if(kat === "datenschutz"){ renderDatenschutz(wrap); return; }         // datenschutz.js             // aktuelles.js: Rechtliches + Wochenrückblick               // logbuch.js: wer hat was geaendert
   if(kat === "upload" || kat === "vom-betrieb"){ renderUpload(wrap); return; }   // upload.js: hochladen + Liste
   const rows = katRows(kat);
   if(!rows.length){
@@ -724,7 +726,6 @@ function uwFaelligZahl(){
 }
 function renderSeitenleiste(){
   const el = $("#seitenleiste"); if(!el) return;
-  const uw = uwFaelligZahl();
   const aktiv = (dom, sub) => dom === "unterlagen" ? AKTIVE_DOM === "unterlagen"
     : dom === "mehr" ? (AKTIVE_DOM === "mehr" && (AKTIVE_SUB === sub || (sub === "vorfaelle" && AKTIVE_SUB === "vf-umwelt")))
     : AKTIVE_DOM === dom;
@@ -738,7 +739,7 @@ function renderSeitenleiste(){
       ${e("mehr", "aktuelles", "aktuelles", "Aktuelles")}
       ${e("maengel", null, "maengel", "Mängel")}
       ${e("unterlagen", null, "unterlagen", "Unterlagen")}
-      ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen", uw)}
+      ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen")}
       ${START_BEREICH === "umwelt" ? e("mehr", "vf-umwelt", "vorfaelle", "Umweltvorfälle") : e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
       ${e("mehr", "anfragen", "anfragen", "Frage an OAK")}
       ${e("mehr", "logbuch", "logbuch", "Logbuch")}
