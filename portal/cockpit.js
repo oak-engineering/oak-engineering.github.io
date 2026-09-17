@@ -116,7 +116,10 @@ function renderCockpit(wrap, bereich){
       <div class="ck-oben">
         <div class="ck-reihe">
           ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich") : "wird geladen", mg.length ? "kritisch" : "gut", "maengel")}
-          ${ckTile(uwF, "Unterweisungen fällig", uwLetzt ? "letzter Nachweis " + ckDatum(uwLetzt) : "noch kein Nachweis", uwF ? "warnung" : "gut", "mehr/unterweisungen")}
+          ${(() => { const bz = (typeof uwBelegZahlen === "function") ? uwBelegZahlen() : null;
+            const sub = bz ? (bz.stammOk + " von " + bz.stamm + " Stammkräften unterwiesen" + (bz.leih ? " · Leiharbeit " + bz.leihOk + " von " + bz.leih : ""))
+                           : (uwLetzt ? "letzter Nachweis " + ckDatum(uwLetzt) : "noch kein Nachweis");
+            return ckTile(uwF, "Unterweisungen fällig", sub, uwF ? "warnung" : "gut", "mehr/unterweisungen"); })()}
           ${ckTile(letzterV ? ckDatum(letzterV.ereignis_am || letzterV.angelegt_am) : "keiner", "letzter Vorfall", letzterV ? (ART[letzterV.art] || "Vorfall") + " · " + vOffenN + " offen" : "bisher nichts gemeldet", vOffenN ? "warnung" : "", "mehr/vorfaelle")}
           ${ckTile(ckDatum(letzteBeg), "letzte Begehung", begehungen.length + " Begehungsprotokolle", "", "unterlagen/begehungen")}
           ${ckTile(z.gefahr + " von " + z.anlagen, "Anlagen im Gefahrbereich", z.besorgnis + " Besorgnis · " + z.akzeptanz + " Akzeptanz", z.gefahr ? "kritisch" : "gut", "unterlagen/anlagen?status=gefahr")}

@@ -260,6 +260,7 @@
     <div id="fAddr" class="extf hidden"><label for="pAddr">Adresse</label><input type="text" id="pAddr" placeholder="Straße, PLZ Ort" autocomplete="off"></div>
     <div id="fHost" class="extf hidden"><label for="pHost">Besucht / betreut von <span class="small muted">(interne/r Mitarbeiter/in)</span></label><input type="text" id="pHost" placeholder="Name des Ansprechpartners" autocomplete="off"></div>
     <div id="fReason" class="extf hidden"><label for="pReason">Grund des Besuchs</label><select id="pReason"><option value="">– bitte wählen –</option><option>Besprechung / Meeting</option><option>Wartung / Instandhaltung</option><option>Anlieferung / Abholung</option><option>Montage / Aufbau</option><option>Besichtigung / Führung</option><option>Schulung</option><option>Sonstiges</option></select></div>
+    <div id="fArbeitgeber" style="display:none"><label for="pArbeitgeber">Beschäftigt bei</label><select id="pArbeitgeber"></select></div>
     <div id="fRole"><label for="pRole">Rolle / Tätigkeit</label>
     <select id="pRole"></select>
     <div id="roleModules" class="small muted"></div></div>
@@ -474,7 +475,11 @@ let admCurMod = 0;
 const participant = {name:'', role:'', moduleIds:[], score:0, passed:false, company:'', address:'', host:'', reason:''};
 function applyAudience(){ const ex=!!CONTENT.meta.extern;
   document.querySelectorAll('.extf').forEach(e=>e.classList.toggle('hidden',!ex));
-  const fr=$('#fRole'); if(fr) fr.style.display=ex?'none':''; }
+  const fr=$('#fRole'); if(fr) fr.style.display=ex?'none':'';
+  /* „Beschäftigt bei" (Stamm/Leiharbeit) – zählt im Portal gegen die Belegschaft (Nikolai 17.09.2026) */
+  const ag=(CONTENT.meta.arbeitgeber||[]).filter(Boolean), fa=$('#fArbeitgeber'), sel=$('#pArbeitgeber');
+  if(fa&&sel){ fa.style.display=(!ex&&ag.length)?'':'none';
+    if(sel.options.length!==ag.length+1) sel.innerHTML='<option value="">– bitte wählen –</option>'+ag.map(a=>'<option>'+esc(a)+'</option>').join(''); } }
 let runMods=[], aggQuiz=[];
 const moduleById = id => CONTENT.modules.find(m=>m.id===id);
 function assignedModules(roleName){
@@ -626,6 +631,9 @@ $('#startBtn').onclick=async()=>{
     if(!$('#pReason').value){ $('#startErr').textContent='Bitte den Grund des Besuchs wählen.'; return; }
     participant.company=firma; participant.address=$('#pAddr').value.trim(); participant.host=$('#pHost').value.trim(); participant.reason=$('#pReason').value; }
   else { participant.company=''; participant.address=''; participant.host=''; participant.reason=''; }
+  const agListe=(CONTENT.meta.arbeitgeber||[]).filter(Boolean);
+  if(!ex && agListe.length && !$('#pArbeitgeber').value){ $('#startErr').textContent='Bitte wähle aus, wo du beschäftigt bist.'; return; }
+  participant.bereich = (!ex && agListe.length) ? $('#pArbeitgeber').value : (participant.bereich||'');
   const role = ex ? ((CONTENT.roles.find(r=>r.extern)||CONTENT.roles[0]||{}).name||'Extern') : ($('#pRole').value||'');
   if(!ex && !role){ $('#startErr').textContent='Bitte wähle zuerst deine Rolle / Tätigkeit aus.'; return; }
   const mods=assignedModules(role);
@@ -1404,7 +1412,7 @@ async function updateFolderBar(){
     const fb=$('#freeFolders'); if(fb) fb.onclick=async()=>{ if(mainDir)await ensurePerm(mainDir); if(backupDir)await ensurePerm(backupDir); updateFolderBar(); }; }
 }
 function standLoeschen(){ try{ const weg=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf('oak-uw-stand-')===0) weg.push(k); } weg.forEach(k=>localStorage.removeItem(k)); }catch(e){} }
-function resetForNext(){ standLoeschen(); participant.name=''; participant.role=''; participant.moduleIds=[]; participant.score=0; participant.company=''; participant.address=''; participant.host=''; participant.reason='';
+function resetForNext(){ standLoeschen(); participant.name=''; participant.bereich=''; try{ const ag=$('#pArbeitgeber'); if(ag) ag.value=''; }catch(e){} participant.role=''; participant.moduleIds=[]; participant.score=0; participant.company=''; participant.address=''; participant.host=''; participant.reason='';
   try{ $('#pName').value=''; ['pFirma','pAddr','pHost'].forEach(id=>{ const el=$('#'+id); if(el)el.value=''; }); const rs=$('#pReason'); if(rs)rs.value=''; const rl=$('#pRole'); if(rl){ rl.value=''; updateRoleModules(); } }catch(e){}
   try{ if(_sig.ctx){ const cv=$('#sigCanvas'); _sig.ctx.clearRect(0,0,cv.width,cv.height);} _sig.drawn=false; }catch(e){}
   try{ $('#confirmChk').checked=false; }catch(e){} $('#saveMsg').textContent=''; $('#signErr').textContent='';

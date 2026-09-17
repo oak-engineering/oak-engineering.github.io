@@ -12,6 +12,7 @@ let BAUSTEINE = [];
 let UW_P = [], UW_R = [];        // Beschäftigte und Gruppen des Betriebs (Abschnitt „Wer ist fällig")
 let UW_MELDUNG = "";            // Bestätigung nach einer Aktion, einmal angezeigt
 let UW_TOK = [];                // Gerätecodes des Betriebs (Knopf „Terminal starten")
+let UW_BELEG = [];              // Belegschaft je Betrieb: Stammkräfte + aktuelle Leiharbeiter (portal_belegschaft)
 /* Jährliche Wiederholung: DGUV Vorschrift 1 § 4 – „mindestens einmal jährlich". Wir warnen
    ab 11 Monaten, damit die Wiederholung planbar ist und nicht erst am Stichtag auffällt. */
 const UW_FAELLIG_TAGE = 365, UW_WARNUNG_TAGE = 335;
@@ -30,6 +31,7 @@ async function ladeNachweiseStart(){
   }catch(e){ NACHWEISE = []; }
   try{ UW_P = await apiGet("/rest/v1/uw_person?select=id,name,status,kunde_slug,uw_person_rolle(rolle_id)&order=name.asc", false) || []; }catch(e){ UW_P = []; }
   try{ UW_TOK = await apiGet("/rest/v1/portal_terminal_token?select=token,kunde_slug,bezeichnung&aktiv=is.true", false) || []; }catch(e){ UW_TOK = []; }
+  try{ UW_BELEG = await apiGet("/rest/v1/portal_belegschaft?select=*", false) || []; }catch(e){ UW_BELEG = []; }
 }
 async function ladeNachweiseRest(){
   try{
@@ -251,11 +253,12 @@ function renderUnterweisungen(wrap){
     const st = uwStatus(n);
     return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}">
       <td><b>${esc(n.mitarbeiter_name)}</b></td>
-      <td>${esc(n.funktion || "—")}</td><td>${uwDatum(n.created_at)}</td>
+      <td>${esc(n.funktion || "—")}${n.bereich ? `<div class="uw-leise">${esc(n.bereich)}</div>` : ""}</td><td>${uwDatum(n.created_at)}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
       <td class="uw-knoepfe">${pdfKnopf(n)}</td></tr>` };
   })).sort((a, b) => a.rang - b.rang);
   const faellig = zeilen.filter(z => z.rang <= 1).length;
+  wrap.appendChild(uwBelegBlock());
   const sekPers = document.createElement("section"); sekPers.className = "sektion";
   sekPers.innerHTML = `
     <div class="sek-kopf"><h2>Wer ist fällig</h2>
@@ -837,4 +840,54 @@ async function uwTeilenDialog(neu){
   dlg.querySelector("#uwTeilenSperren").addEventListener("click", () => {
     if(confirm("Link wirklich sperren? Wer den alten QR-Code gespeichert hat, kommt nicht mehr hinein – bitte danach neu scannen lassen.")) uwTeilenDialog(true);
   });
+}
+
+/* ---- Belegschaft (Nikolai 17.09.2026): „fällig" = Beschäftigte ohne gültige Unterweisung ----
+   Stammbelegschaft (WIBO + Remaplan: 63) und die wechselnde Zahl Leiharbeiter. Jede gültige Unterweisung
+   (jüngster Nachweis je Name, nicht älter als 12 Monate) nimmt eine Person heraus. Leiharbeit erkennt das
+   Terminal an „Beschäftigt bei" (Spalte bereich). Namen werden nicht abgeglichen – das ist eine Zählung. */
+function uwBelegschaft(){ return UW_BELEG.find(b => b.kunde_slug === AKTIV) || null; }
+function uwIstLeih(n){ return /leih|zeitarb/i.test(n.bereich || ""); }
+function uwBelegZahlen(){
+  const b = uwBelegschaft(); if(!b) return null;
+  const gueltig = uwJeMitarbeiter(uwSichtbar()).filter(n => uwStatus(n).klasse !== "kritisch");
+  const leihOk = gueltig.filter(uwIstLeih).length, stammOk = gueltig.length - leihOk;
+  return { stamm: b.stamm, leih: b.leih, stammOk: Math.min(stammOk, b.stamm), leihOk: Math.min(leihOk, b.leih),
+           stammFaellig: Math.max(0, b.stamm - stammOk), leihFaellig: Math.max(0, b.leih - leihOk), hinweis: b.stamm_hinweis || "" };
+}
+async function uwBelegSpeichern(felder){
+  const b = uwBelegschaft(); const s = getSession();
+  const daten = Object.assign({ kunde_slug: AKTIV, geaendert_am: new Date().toISOString(), geaendert_von: window.__oakName || "" }, felder);
+  if(b) await apiSend("PATCH", "/rest/v1/portal_belegschaft?kunde_slug=eq." + encodeURIComponent(AKTIV), daten, "return=minimal");
+  else await apiSend("POST", "/rest/v1/portal_belegschaft", Object.assign({ stamm: 0, leih: 0 }, daten), "return=minimal");
+  if(b) Object.assign(b, daten); else UW_BELEG.push(Object.assign({ stamm: 0, leih: 0 }, daten));
+}
+function uwBelegBlock(){
+  const z = uwBelegZahlen();
+  const el = document.createElement("section"); el.className = "sektion uw-beleg";
+  if(!z){
+    el.innerHTML = `<div class="uw-beleg-karte"><b>Belegschaft noch nicht eingetragen</b><span class="uw-leise">Ohne Mitarbeiterzahl kann das Portal nicht zählen, wer noch fällig ist.</span>
+      <button type="button" class="btn sek" data-beleg="stamm">Mitarbeiterzahl eintragen</button></div>`;
+  } else {
+    el.innerHTML = `<div class="uw-beleg-reihe">
+        <div class="uw-beleg-karte${z.stammFaellig ? " uw-beleg-offen" : ""}"><div class="uw-beleg-zahl">${z.stammFaellig}</div>
+          <div><b>Stammbelegschaft fällig</b><span class="uw-leise">${z.stammOk} von ${z.stamm} gültig unterwiesen${z.hinweis ? " · " + esc(z.hinweis) : ""}</span></div>
+          <button type="button" class="btn-klein" data-beleg="stamm">ändern</button></div>
+        <div class="uw-beleg-karte${z.leihFaellig ? " uw-beleg-offen" : ""}"><div class="uw-beleg-zahl">${z.leihFaellig}</div>
+          <div><b>Leiharbeiter fällig</b><span class="uw-leise">${z.leih ? z.leihOk + " von " + z.leih + " unterwiesen" : "aktuelle Anzahl bitte eintragen"}</span></div>
+          <button type="button" class="btn-klein" data-beleg="leih">${z.leih ? "Anzahl ändern" : "Anzahl eintragen"}</button></div>
+      </div>
+      <p class="uw-leise uw-beleg-fuss">Gezählt wird der jüngste Nachweis je Name (gültig 12 Monate). Leiharbeiter wählen am Terminal „Leiharbeit / Zeitarbeit“.</p>`;
+  }
+  el.querySelectorAll("[data-beleg]").forEach(btn => btn.addEventListener("click", async () => {
+    const art = btn.dataset.beleg, b = uwBelegschaft();
+    const alt = b ? (art === "stamm" ? b.stamm : b.leih) : "";
+    const eingabe = prompt(art === "stamm" ? "Anzahl fester Mitarbeiter (Stammbelegschaft):" : "Aktuelle Anzahl Leiharbeiter:", alt === "" ? "" : String(alt));
+    if(eingabe === null) return;
+    const zahl = parseInt(eingabe, 10);
+    if(isNaN(zahl) || zahl < 0 || zahl > 100000){ alert("Bitte eine Zahl eintragen."); return; }
+    try{ await uwBelegSpeichern(art === "stamm" ? { stamm: zahl } : { leih: zahl }); UW_MELDUNG = art === "stamm" ? "Stammbelegschaft gespeichert." : "Anzahl Leiharbeiter gespeichert."; renderSektionen(); }
+    catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
+  }));
+  return el;
 }
