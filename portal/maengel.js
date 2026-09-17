@@ -110,6 +110,7 @@ async function renderMaengel(wrap){
         ${istAdmin ? `<button type="button" class="uw-pill${MG_FILTER.status === "uebernehmen" ? " aktiv" : ""}" data-mgf="uebernehmen" title="Erledigt, aber GBU/BA/Mängelliste noch nicht nachgezogen">In Unterlagen übernehmen · ${zuUebernehmen.length}</button>` : ""}
         ${istAdmin ? `<button type="button" class="uw-pill${MG_FILTER.status === "ausgeblendet" ? " aktiv" : ""}" data-mgf="ausgeblendet">Ausgeblendet · ${aus.length}</button>` : ""}
       </div>
+      ${istAdmin ? `<button type="button" class="btn sek" id="mgZusammenstellung" title="Alle Mängel mit Maschinendaten und Richtkosten, getrennt nach kaufrechtlicher Relevanz (nur für OAK sichtbar)">Zusammenstellung (Excel)</button>` : ""}
       <select class="uw-fassung" id="mgMaschine" aria-label="Maschine">
         <option value="">Alle Maschinen</option>
         ${maschinen.map(n => `<option${MG_FILTER.maschine === n ? " selected" : ""}>${esc(n)}</option>`).join("")}
@@ -123,6 +124,7 @@ async function renderMaengel(wrap){
       : `<div class="ck-fuss">${alle.length ? "Nichts in dieser Auswahl." : "Noch keine Mängel übertragen."}</div>`}`;
   wrap.appendChild(sec);
   sec.querySelectorAll("[data-mgf]").forEach(b => b.addEventListener("click", () => { MG_FILTER.status = b.dataset.mgf; renderSektionen(); }));
+  { const zb = sec.querySelector("#mgZusammenstellung"); if(zb) zb.addEventListener("click", mgZusammenstellung); }
   sec.querySelectorAll("[data-mgampel]").forEach(b => b.addEventListener("click", () => { MG_FILTER.ampel = MG_FILTER.ampel === b.dataset.mgampel ? "" : b.dataset.mgampel; renderSektionen(); }));
   sec.querySelector("#mgMaschine").addEventListener("change", e => { MG_FILTER.maschine = e.target.value; renderSektionen(); });
   sec.querySelectorAll("[data-mgerl]").forEach(b => b.addEventListener("click", () => mgDialog(b.dataset.mgerl)));
@@ -371,4 +373,35 @@ async function mgWiederAuf(id){
     Object.assign(m, { status: "offen", erledigt_am: null, erledigt_von: null, notiz: null, nachweis_pfad: null });
     MG_MELDUNG = "Wieder offen: " + mgMaschine(m); renderSektionen();
   }catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); }
+}
+
+/* ---- Zusammenstellung fuer die rechtliche Pruefung (nur Admin, Wibo 17.09.2026: Anspruch gegen den Verkaeufer) ----
+   Gruppe A Beschaffenheit der Anlage (kaufrechtlich pruefen) · B Zustand/Verschleiss (Uebergabe klaeren) · C Betreiberpflichten.
+   Gleiche Einteilung wie tools/maengel_zusammenstellung.py (dort zusaetzlich als PDF). Vorschlag nach Stichworten, kein Gutachten. */
+const MG_KAUF_C = /gefährdungsbeurteilung|betriebsanweisung \(ba\)|\bgbu\b|\bba fehlt|prüf(ung|status|plakette|frist)|ungeprüft|dguv v(orschrift)? ?3|leiter|tritt|podest|aufstieg|befüll|gefahrstoff|kanister|ordnung|sauberkeit|feuerlöscher|verkehrsweg|stolper|hinweisschild|lesbar|stuhl|ergonom|arbeitsplatz|platzverhältnis|augenschutz|psa\b|unterweis|innerhalb der schutzumzäunung|fremdgerät|etikettier|abgestellt|lagerung|lagern|materialsäcke|hebe/i;
+const MG_KAUF_A = /schutzz|umzäunung|umhausung|schutzabdeckung|abdeckung|schutzhaube|schutzeinrichtung|verriegel|not-?halt|not-?aus|\bce\b|ce-|konformität|typenschild|betriebsanleitung|anleitung|ungeschützt|ungesichert|einzug|eingreif|hineingreif|untergreif|durchgreif|durchgang|überfahren|bewegungsbereich|standsicher|schneidwerk|zugänglich/i;
+function mgGruppeKauf(m){
+  const label = mgFeld(m, "label") || "", thema = mgFeld(m, "thema") || "";
+  if(/^ALLG/i.test(m.maschinen_id || "")) return "C";
+  if(MG_KAUF_C.test(label) && !/schutzz|umzäunung|schutzabdeckung|schutzhaube/i.test(label)) return "C";
+  if(thema === "schutzzaun" || MG_KAUF_A.test(label)) return "A";
+  if(thema === "pruefung" || thema === "leiter_aufstieg") return "C";
+  return "B";
+}
+async function mgZusammenstellung(){
+  const ki = (typeof ulKurzinfoLaden === "function") ? await ulKurzinfoLaden() : {};
+  const gName = { A: "A Beschaffenheit der Anlage (kaufrechtlich prüfen)", B: "B Zustand/Verschleiß (Übergabe klären)", C: "C Betreiberpflicht (kein Mangel der Kaufsache)" };
+  const zeilen = mgSichtbar().map(m => ({ m, g: mgGruppeKauf(m), k: ki[m.maschinen_id] || {} }))
+    .sort((x, y) => x.g.localeCompare(y.g) || mgMaschine(x.m).localeCompare(mgMaschine(y.m), "de", { numeric: true }));
+  const zelle = v => '"' + String(v == null ? "" : v).replace(/"/g, '""').replace(/\r?\n/g, " ") + '"';
+  const tag = s => s ? new Date(String(s).slice(0, 10) + "T12:00:00").toLocaleDateString("de-DE") : "";
+  const kopf = ["Gruppe", "Maschine", "Hersteller", "Typ", "Baujahr", "Serien-Nr.", "Mangel", "Norm / Rechtsgrundlage", "festgestellt am", "Richtkosten (€ netto)", "Status", "Einstufung"];
+  const csv = [kopf.map(zelle).join(";")].concat(zeilen.map(({ m, g, k }) => [gName[g], mgMaschine(m), k.hersteller, k.typ, k.baujahr, k.seriennr, mgFeld(m, "label"),
+    m.rechtsquelle, tag(m.gemeldet_am || k.datum), m.kosten != null ? String(m.kosten).replace(".", ",") : "",
+    m.status === "erledigt" ? "erledigt " + mgDatum(m.erledigt_am) : "offen",
+    ({ gefahr: "Gefahrbereich", besorgnis: "Besorgnisbereich", akzeptanz: "Akzeptanzbereich" })[m.bewertung_manuell || m.band] || ""].map(zelle).join(";"))).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  a.download = "Maengel-Zusammenstellung-" + (AKTIV || "betrieb") + "-" + new Date().toISOString().slice(0, 10) + ".csv";
+  document.body.appendChild(a); a.click(); a.remove();
 }
