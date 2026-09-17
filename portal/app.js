@@ -994,7 +994,7 @@ function dokTabsZeichnen(){
   const offen = !!DOK_AKTIV && DOK_TABS.length > 0;
   el.classList.toggle("offen", offen);
   document.documentElement.classList.toggle("dok-tab-offen", offen);
-  el.querySelector(".dok-leiste").innerHTML = '<button type="button" class="dok-reiter dok-portal" data-dok="">‹ Portal</button>'
+  el.querySelector(".dok-leiste").innerHTML = '<button type="button" class="dok-reiter dok-portal" data-dok="">‹ Zurück zum Portal</button>'
     + DOK_TABS.map(x => `<div class="dok-reiter${x.id === DOK_AKTIV ? " aktiv" : ""}" data-dok="${x.id}" role="tab" title="${esc(x.titel)}"><span>${esc(x.titel)}</span>`
       + `<button type="button" class="dok-zu" data-zu="${x.id}" aria-label="Tab schließen">✕</button></div>`).join("")
     + (offen ? '<button type="button" class="dok-schliessen" data-zu-aktiv>Schließen</button>' : "");
@@ -1002,13 +1002,15 @@ function dokTabsZeichnen(){
   el.querySelectorAll("[data-dok]").forEach(b => b.addEventListener("click", () => { DOK_AKTIV = b.dataset.dok || null; dokTabsZeichnen(); }));
   el.querySelectorAll("[data-zu]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); dokTabSchliessen(b.dataset.zu); }));
   const zu = el.querySelector("[data-zu-aktiv]"); if(zu) zu.addEventListener("click", () => dokTabSchliessen(DOK_AKTIV));
-  /* zurueck im Portal, aber noch Tabs offen: kleiner Knopf unten links */
-  let chip = document.getElementById("dokChip");
+  /* Zurueck im Portal, aber noch Dokumente offen: dieselben Tabs unten als Leiste – anklicken wechselt, ✕ schliesst */
+  let dock = document.getElementById("dokDock");
   if(!offen && DOK_TABS.length){
-    if(!chip){ chip = document.createElement("button"); chip.type = "button"; chip.id = "dokChip"; chip.className = "dok-chip"; document.body.appendChild(chip);
-      chip.addEventListener("click", () => { DOK_AKTIV = DOK_TABS[DOK_TABS.length - 1].id; dokTabsZeichnen(); }); }
-    chip.textContent = DOK_TABS.length === 1 ? "1 Dokument offen" : DOK_TABS.length + " Dokumente offen";
-  } else if(chip) chip.remove();
+    if(!dock){ dock = document.createElement("div"); dock.id = "dokDock"; dock.className = "dok-dock"; document.body.appendChild(dock); }
+    dock.innerHTML = '<span class="dok-dock-titel">Offene Dokumente</span>' + DOK_TABS.map(x => `<div class="dok-reiter" data-dok="${x.id}" title="${esc(x.titel)}"><span>${esc(x.titel)}</span>`
+      + `<button type="button" class="dok-zu" data-zu="${x.id}" aria-label="Schließen">✕</button></div>`).join("");
+    dock.querySelectorAll("[data-dok]").forEach(b => b.addEventListener("click", () => { DOK_AKTIV = b.dataset.dok; dokTabsZeichnen(); }));
+    dock.querySelectorAll("[data-zu]").forEach(b => b.addEventListener("click", ev => { ev.stopPropagation(); dokTabSchliessen(b.dataset.zu); }));
+  } else if(dock) dock.remove();
 }
 if(IST_APP) document.addEventListener("click", ev => {
   const a = ev.target.closest && ev.target.closest('a[target="_blank"]'); if(!a) return;

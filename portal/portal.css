@@ -839,3 +839,10 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .dok-inhalt iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
 .dok-chip{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:250;font:inherit;font-size:14px;font-weight:600;padding:10px 16px;border:0;border-radius:99px;
   background:var(--dunkel,#1B4332);color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.22);cursor:pointer}
+
+/* Offene Dokumente als Leiste unten, solange man im Portal ist */
+.dok-dock{position:fixed;left:16px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:250;display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+  max-width:calc(100vw - 32px);padding:8px 10px;border-radius:14px;background:#fff;border:1px solid var(--linie,#e3e8ef);box-shadow:0 10px 30px rgba(16,24,40,.18)}
+.dok-dock-titel{font-size:12.5px;font-weight:600;color:#667085;margin-right:4px}
+.dok-dock .dok-reiter{border:1px solid #d5dbe4;border-radius:10px;min-height:38px;background:#f2f4f7;max-width:240px}
+.dok-dock .dok-reiter:hover{background:#e9edf3}
