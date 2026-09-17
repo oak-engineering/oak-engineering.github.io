@@ -802,9 +802,10 @@ function renderSeitenleiste(){
 }
 /* Schichtfuehrer-PC: das EHS-Cockpit soll beim Anmelden von selbst starten (Nikolai 17.09.2026) */
 const AUTOSTART_HINWEIS = "Das EHS-Cockpit ist installiert.\n\nDamit es beim Anmelden am PC automatisch startet:\n"
-  + "1. Windows-Taste + R drücken, shell:startup eingeben, Enter.\n"
-  + "2. Im Startmenü „OAK EHS-Cockpit“ suchen, Rechtsklick → Dateispeicherort öffnen.\n"
-  + "3. Die Verknüpfung in den Autostart-Ordner aus Schritt 1 kopieren.";
+  + "1. Windows-Taste + R, shell:startup eingeben, Enter – der Autostart-Ordner öffnet sich.\n"
+  + "2. Noch einmal Windows-Taste + R, shell:programs eingeben, Enter – bei Chrome den Ordner „Chrome-Apps“ öffnen.\n"
+  + "3. Die Verknüpfung „OAK EHS-Cockpit“ (frühere Installation: „OAK Kundenportal“) mit gedrückter Strg-Taste in den Autostart-Ordner ziehen.\n\n"
+  + "Nicht über „Dateispeicherort öffnen“ gehen – das zeigt nur den Programmordner des Browsers.";
 window.portalMenue = function(){ document.body.classList.toggle("menue-auf"); };
 
 function renderSektionen(){
