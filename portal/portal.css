@@ -936,3 +936,24 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .ds-stand.ds-warn{background:#fdf6e3;color:#7a5b00}
 #appView .fuss .ds-offen{color:#8a6d0b}
 #appView .fuss .fuss-links{flex-wrap:wrap;row-gap:4px}
+
+/* Schnellzugriffe (Startseite) */
+.schnell-kopf{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:22px}
+.schnell-knoepfe{display:flex;gap:8px;align-items:center}
+.sk-edit{position:relative;cursor:default;padding-bottom:52px}
+.sk-bearbeiten .start-kachel{border-style:dashed}
+.sk-werkzeug{position:absolute;left:12px;right:12px;bottom:10px;display:flex;gap:6px}
+.sk-werkzeug button{font:inherit;font-size:15px;min-width:40px;min-height:34px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:#344054;cursor:pointer}
+.sk-werkzeug button:disabled{opacity:.35;cursor:default}
+.sk-werkzeug .sk-weg{margin-left:auto;color:#b42318;border-color:#f3c3be}
+.sk-neu{align-items:center;justify-content:center;text-align:center;border:2px dashed #d0d5dd !important;background:#fafbfd !important;cursor:pointer;font:inherit;min-height:120px}
+.sk-neu .sk-titel{color:#475467}
+.sk-plus{font-size:30px;line-height:1;color:var(--gruen,#2D6A4F)}
+.start-kachel.sk-edit:first-child .sk-werkzeug button{background:#fff}
+.sk-dlg{max-width:min(720px,94vw)}
+.sk-auswahl{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin:10px 0 14px;max-height:60vh;overflow:auto}
+.sk-option{display:flex;align-items:center;gap:12px;text-align:left;font:inherit;padding:10px 12px;border:1px solid var(--linie,#e3e8ef);border-radius:10px;background:#fff;cursor:pointer}
+.sk-option:hover{border-color:var(--gruen,#2D6A4F);background:#f7f9fc}
+.sk-option svg{width:34px;height:34px;padding:7px;flex:none;border-radius:9px;background:var(--akzent);stroke:var(--gruen);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sk-option span{display:flex;flex-direction:column}
+.sk-option b{font-size:14.5px;color:#101828}

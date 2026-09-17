@@ -242,9 +242,11 @@ function renderStart(wrap){
   const bereiche = [["arbeitssicherheit", "Arbeitssicherheit"], ["umwelt", "Umwelt"], ["energie", "Energie"]];
   sec.innerHTML = `<div class="start-blick-kopf"><h2>Auf einen Blick · ${esc((BEREICHE_APP.find(b => b[0] === START_BEREICH) || [])[1] || "")}</h2></div>
     <div id="startBlick"></div>
-    <div class="start-raster">${(START_AKTIONEN[START_BEREICH] || START_AKTIONEN.arbeitssicherheit).map(kachel).join("")}</div>`;
+    <div id="startSchnell"></div>`;
   wrap.appendChild(sec);
   renderCockpit(sec.querySelector("#startBlick"), START_BEREICH);
+  if(typeof renderSchnellzugriffe === "function") renderSchnellzugriffe(sec.querySelector("#startSchnell"), START_BEREICH);   // schnellzugriffe.js
+  else sec.querySelector("#startSchnell").innerHTML = `<div class="start-raster">${(START_AKTIONEN[START_BEREICH] || START_AKTIONEN.arbeitssicherheit).map(kachel).join("")}</div>`;
 }
 
 /* Terminal, Meldeformular und Maschinen-Checkliste laufen im Portal (Rahmen), damit die Seitenleiste bleibt. */
