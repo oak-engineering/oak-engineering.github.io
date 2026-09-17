@@ -52,7 +52,7 @@ async function renderUnterlagenListe(wrap, art){
   wrap.appendChild(sec);
   let gruppen = [];
   const oeffnen = (url, text) => `<a class="btn sek ul-btn" href="${url}" target="_blank" rel="noopener">${esc(text)}</a>`;
-  const zeile = (r, inhalt, akt, extra) => `<div class="ul-zeile${extra || ""}" data-suche="${esc([r.maschine, r.titel, r.maschinentyp].filter(Boolean).join(" ").toLowerCase())}"${r.maschinen_id ? ` data-mid="${esc(r.maschinen_id)}"` : ""}>${inhalt}<div class="ul-z-akt">${akt}</div></div>`;
+  const zeile = (r, inhalt, akt, extra) => `<div class="ul-zeile${extra || ""}" data-typ="${esc(r.kategorie === "ba-sammel" ? ulTyp({ maschinentyp: r.maschinentyp }) : ulTyp(r))}" data-suche="${esc([r.maschine, r.titel, r.maschinentyp].filter(Boolean).join(" ").toLowerCase())}"${r.maschinen_id ? ` data-mid="${esc(r.maschinen_id)}"` : ""}>${inhalt}<div class="ul-z-akt">${akt}</div></div>`;
   const name = r => `<div class="ul-z-name"><b>${esc(r.maschine || r.titel || "")}</b>${ulTyp(r) ? `<span>${esc(ulTyp(r))}</span>` : ""}</div>`;
 
   if(art === "anlagen"){
@@ -76,17 +76,22 @@ async function renderUnterlagenListe(wrap, art){
       `<a class="btn sek ul-btn" href="qr.html?k=${encodeURIComponent(r.kunde_slug || "")}&mid=${encodeURIComponent(r.maschinen_id)}" target="_blank" rel="noopener">QR-Code drucken</a>`))]];
   }
   gruppen = gruppen.filter(g => g[1].length);
-  sec.innerHTML = `<div class="mg-filter ul-filter"><input type="search" class="uw-suche" id="ulSuche" placeholder="Suchen (Maschine, Typ …)" autocomplete="off"><span class="uw-leise" id="ulZahl"></span></div>`
+  const typen = [...new Set(ulAnlagen().map(ulTyp).filter(Boolean))].sort((a, b) => a.localeCompare(b, "de"));
+  sec.innerHTML = `<div class="mg-filter ul-filter"><input type="search" class="uw-suche" id="ulSuche" placeholder="Suchen (Maschine, Typ …)" autocomplete="off">
+      ${typen.length > 1 ? `<select class="uw-fassung" id="ulTyp" aria-label="Maschinentyp"><option value="">Alle Maschinentypen</option>${typen.map(x => `<option>${esc(x)}</option>`).join("")}</select>` : ""}
+      <span class="uw-leise" id="ulZahl"></span></div>`
     + (gruppen.length ? gruppen.map(g => `<div class="ul-gruppe">${g[0] ? `<h2 class="ul-bereich">${esc(g[0])}</h2>` : ""}<div class="ul-zeilen">${g[1].join("")}</div></div>`).join("")
       : `<div class="ck-fuss">Noch keine Unterlagen hinterlegt.</div>`);
   const zaehlen = () => {
     const q = (sec.querySelector("#ulSuche").value || "").toLowerCase().trim(); let n = 0;
+    const typ = (sec.querySelector("#ulTyp") || {}).value || "";
     sec.querySelectorAll(".ul-gruppe").forEach(g => { let sichtbarG = 0;
-      g.querySelectorAll(".ul-zeile").forEach(z => { const ok = !q || z.dataset.suche.includes(q); z.hidden = !ok; if(ok){ sichtbarG++; n++; } });
+      g.querySelectorAll(".ul-zeile").forEach(z => { const ok = (!q || z.dataset.suche.includes(q)) && (!typ || z.dataset.typ === typ); z.hidden = !ok; if(ok){ sichtbarG++; n++; } });
       g.hidden = !sichtbarG; });
     sec.querySelector("#ulZahl").textContent = n + (n === 1 ? " Eintrag" : " Einträge");
   };
   sec.querySelector("#ulSuche").addEventListener("input", zaehlen);
+  { const ts = sec.querySelector("#ulTyp"); if(ts) ts.addEventListener("change", zaehlen); }
   zaehlen();
   if(art === "anlagen") sec.querySelectorAll(".ul-klick").forEach(z => z.addEventListener("click", () => ulKurzinfoDialog(z.dataset.mid)));
 }

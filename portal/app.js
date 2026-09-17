@@ -25,6 +25,7 @@ const DOMAENEN = [
       { kat: "vom-betrieb",   label: "Interne Unterlagen" },
       { kat: "unterweisungen", label: "Unterweisungen" },
       { kat: "vf-arbeitssicherheit", label: "Vorfälle" },
+      { kat: "aktuelles",     label: "Aktuelles" },
       { kat: "logbuch",       label: "Logbuch" },
   ]},
   { key: "umwelt", label: "Umwelt", subs: [
@@ -209,6 +210,7 @@ const START_SVG = {
 };
 START_SVG.dokument = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/></svg>';
 START_SVG.liste = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>';
+START_SVG.aktuelles = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2z"/><path d="M19 9h1.5V18a1.5 1.5 0 0 1-3 0"/><path d="M7.5 9h8M7.5 12.5h8M7.5 16h5"/></svg>';
 START_SVG.ba = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="18" rx="2"/><path d="M9 3.5h6v3H9z"/><path d="M12 10.5v4.5M12 17.8v.2"/></svg>';
 START_SVG.mangel = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3.5 17.3a1.8 1.8 0 0 0 2.5 2.5l5.8-5.8a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.1-.4-.4-2.1z"/><path d="M19 15v4M17 17h4"/></svg>';
 START_SVG.blitz ='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>';
@@ -220,7 +222,8 @@ const START_AKTIONEN = {
     ["#maengel?neu=1", "Mangel erfassen", "An Maschine oder Halle, mit Foto", "mangel"],
     ["#mehr/pruefen", "Maschine prüfen", "Checkliste direkt an der Maschine", "begehung"],
     ["#unterlagen/ba", "Betriebsanweisungen", "Sammel-BA je Maschinentyp und je Maschine", "ba"],
-    ["#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", "brief"] ],
+    ["#mehr/anfragen", "Frage an OAK engineering", "Formular mit Foto, Antwort per Mail", "brief"],
+    ["#mehr/aktuelles", "Aktuelles", "Rechtliche Neuerungen und Wochenrückblick", "aktuelles"] ],
   umwelt: [
     ["#mehr/melden?art=umwelt", "Umweltvorfall melden", "Austritt, Leckage, falsch entsorgt", "warnung"],
     ["#mehr/vf-umwelt", "Umweltvorfälle", "Gemeldete Vorfälle und ihr Stand", "liste"],
@@ -427,7 +430,7 @@ let PORTAL_BEREIT = false;
 const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vorfälle", "vf-umwelt": "Umweltvorfälle",
                      anfragen: "Frage an OAK engineering", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
                      kapitel: "Unterweisungs-Inhalte", "uw-ueberblick": "Unterweisungen – Überblick",
-                     terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch" };
+                     terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch", aktuelles: "Aktuelles" };
 const UNTERLAGEN = [
   { bereich: "Arbeitssicherheit", kats: [
       ["anlagen", "Anlagenkataster", "Alle Anlagen – Kurzinfo, offene Mängel und Dokumente"],
@@ -465,6 +468,7 @@ function navKlassisch(dom, sub){
     if(sub === "vf-umwelt") return ["umwelt", "vf-umwelt"];
     if(sub === "upload") return ["arbeitssicherheit", "vom-betrieb"];
     if(sub === "logbuch") return ["arbeitssicherheit", "logbuch"];
+    if(sub === "aktuelles") return ["arbeitssicherheit", "aktuelles"];
     return sub ? ["mehr", sub] : ["arbeitssicherheit", null];
   }
   return ["arbeitssicherheit", null];
@@ -482,6 +486,7 @@ function navNormal(dom, sub){
   if(sub === "vf-arbeitssicherheit") return ["mehr", "vorfaelle"];
   if(sub === "vf-umwelt") return ["mehr", "vf-umwelt"];
   if(sub === "logbuch") return ["mehr", "logbuch"];
+  if(sub === "aktuelles") return ["mehr", "aktuelles"];
   return ["unterlagen", sub];
 }
 function hashSetzen(ersetzen){
@@ -520,7 +525,7 @@ function katRows(kat){
   if(kat.indexOf("ck-") === 0) return [];                        // Cockpit hat keinen Zähler
   if(kat.indexOf("uw-") === 0) return [];                        // Überblick/Katalog rechnen selbst
   if(kat === "maengel") return [];                               // eigene Tabelle
-  if(kat === "logbuch") return [];
+  if(kat === "logbuch" || kat === "aktuelles") return [];
   if(kat === "vf-arbeitssicherheit") return vBereich("arbeitssicherheit");
   if(kat === "vf-umwelt") return vBereich("umwelt");
   if(kat === "energie-massnahmen") return eSichtbar();           // Register statt Dokumentliste
@@ -565,7 +570,8 @@ function renderSektion(wrap, kat, label, zeigeHeading){
   if(kat === "unterweisungen"){ renderUnterweisungen(wrap); return; }   // unterweisungen.js: eine Seite, drei Abschnitte
   if(kat === "anfragen"){ renderAnfragen(wrap); return; }             // anfragen.js: Frage an OAK (Formular)
   if(kat === "maengel"){ renderMaengel(wrap); return; }               // maengel.js: To-Do-Liste
-  if(kat === "logbuch"){ renderLogbuch(wrap); return; }               // logbuch.js: wer hat was geaendert
+  if(kat === "logbuch"){ renderLogbuch(wrap); return; }
+  if(kat === "aktuelles"){ renderAktuelles(wrap); return; }             // aktuelles.js: Rechtliches + Wochenrückblick               // logbuch.js: wer hat was geaendert
   if(kat === "upload" || kat === "vom-betrieb"){ renderUpload(wrap); return; }   // upload.js: hochladen + Liste
   const rows = katRows(kat);
   if(!rows.length){
@@ -700,6 +706,7 @@ const NAV_SVG = {
   anfragen: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m21 7-9 6-9-6"/>',
   werkzeug: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   schloss: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  aktuelles: '<path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2z"/><path d="M19 9h1.5V18a1.5 1.5 0 0 1-3 0"/><path d="M7.5 9h8M7.5 12.5h8M7.5 16h5"/>',
   logbuch: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7.5h6M9 11h6"/>',
   klapp: '<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>',
   tuer: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>'
@@ -724,6 +731,7 @@ function renderSeitenleiste(){
   el.innerHTML = `<div class="sl-liste">
       <button type="button" class="sl-eintrag sl-klapp" id="slKlapp" title="Seitenleiste ein- oder ausklappen"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.klapp}</svg><span>Einklappen</span></button>
       ${e("start", null, "start", "Start")}
+      ${e("mehr", "aktuelles", "aktuelles", "Aktuelles")}
       ${e("maengel", null, "maengel", "Mängel")}
       ${e("unterlagen", null, "unterlagen", "Unterlagen")}
       ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen", uw)}
