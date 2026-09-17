@@ -94,7 +94,10 @@ function machDoc(row, typ, label, extra){
   if(!(row.typen||[]).includes(typ)) return "";
   const u = viewerUrl(typ, row.storage_path, (row.maschine||"") + " · " + label,
     "&m=" + encodeURIComponent(row.maschine||"") + "&mid=" + encodeURIComponent(row.maschinen_id||""));
-  return `<a class="${extra||""}" href="${u}" target="_blank" rel="noopener">${label}</a>`;
+  /* behobene, noch nicht eingearbeitete Maengel -> Symbol mit Erklaerung (aktualitaet.js) */
+  const veraltet = (typeof dokVeraltetInfo === "function" && typeof MAENGEL !== "undefined" && typeof MG_GELADEN !== "undefined" && MG_GELADEN)
+    ? dokVeraltetInfo(row, MAENGEL, typ) : null;
+  return `<a class="${extra||""}${veraltet ? " ist-veraltet" : ""}" href="${u}" target="_blank" rel="noopener">${label}${veraltet ? dokVeraltetSymbol(veraltet) : ""}</a>`;
 }
 /* URL der Maschinenseite (Ziel des QR-Codes) und QR-Druck-Button je Anlage. */
 function maschineUrl(slug, mid){ return "maschine.html?k=" + encodeURIComponent(slug||"") + "&mid=" + encodeURIComponent(mid||""); }

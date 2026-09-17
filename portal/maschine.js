@@ -71,11 +71,13 @@ function viewerUrl(typ, path, titel, extra){
   return "viewer.html?typ=" + encodeURIComponent(typ) + "&p=" + encodeURIComponent(path||"")
     + "&t=" + encodeURIComponent(titel||"") + (extra||"");
 }
+let M_MAENGEL = [];
 function docBtn(row, typ, label, cls){
   if(!(row.typen||[]).includes(typ)) return "";
   const u = viewerUrl(typ, row.storage_path, (row.maschine||"") + " · " + label,
     "&m=" + encodeURIComponent(row.maschine||"") + "&mid=" + encodeURIComponent(row.maschinen_id||""));
-  return `<a class="doc-btn ${cls||""}" href="${u}" target="_blank" rel="noopener">${esc(label)}</a>`;
+  const v = (typeof dokVeraltetInfo === "function") ? dokVeraltetInfo(row, M_MAENGEL, typ) : null;
+  return `<a class="doc-btn ${cls||""}${v ? " ist-veraltet" : ""}" href="${u}" target="_blank" rel="noopener">${esc(label)}${v ? dokVeraltetSymbol(v) : ""}</a>`;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -89,6 +91,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       + encodeURIComponent(slug) + "&maschinen_id=eq." + encodeURIComponent(mid), false);
     const r = rows && rows[0];
     if(!r){ el.innerHTML = `<div class="leer">Maschine nicht gefunden oder kein Zugriff.</div>`; return; }
+    try{ M_MAENGEL = await apiGet("/rest/v1/portal_maengel?select=maschinen_id,kunde_slug,status,erledigt_am,uebernommen_am,ausgeblendet&kunde_slug=eq."
+      + encodeURIComponent(slug) + "&maschinen_id=eq." + encodeURIComponent(mid), false) || []; }catch(e){ M_MAENGEL = []; }
     document.getElementById("mTitel").textContent = r.maschine || mid;
     document.getElementById("mSub").textContent = r.maschinentyp || "";
     el.innerHTML =

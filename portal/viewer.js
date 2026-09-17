@@ -304,3 +304,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }catch(e){ knopf.disabled = false; msg.textContent = "Konnte nicht gesendet werden: " + (e.message || e); msg.classList.add("fehler"); }
   });
 });
+
+/* „Nicht mehr aktuell" im Kopf der Dokumentansicht (GBU, BA, Mängelliste) – Mouse-over und Antippen */
+document.addEventListener("DOMContentLoaded", async () => {
+  const typ = param("typ"), mid = param("mid"), slug = String(param("p")).split("/")[0];
+  if(!mid || !slug || typeof dokVeraltetInfo !== "function" || !VERALT_TYPEN.includes(typ)) return;
+  try{
+    if(!(await token())) return;
+    const [doks, mg] = await Promise.all([
+      apiGet("/rest/v1/portal_dokumente?select=maschinen_id,kunde_slug,stand&kategorie=eq.anlagen&kunde_slug=eq." + encodeURIComponent(slug) + "&maschinen_id=eq." + encodeURIComponent(mid), false),
+      apiGet("/rest/v1/portal_maengel?select=maschinen_id,kunde_slug,status,erledigt_am,erledigt_von,uebernommen_am,ausgeblendet,label,manuell&kunde_slug=eq." + encodeURIComponent(slug) + "&maschinen_id=eq." + encodeURIComponent(mid), false)]);
+    const v = dokVeraltetInfo(doks && doks[0], mg || [], typ);
+    if(!v) return;
+    const kopf = document.getElementById("vTitel"); if(!kopf) return;
+    const b = document.createElement("button"); b.type = "button"; b.className = "veraltet-hinweis"; b.title = dokVeraltetText(v);
+    b.innerHTML = VERALT_SYMBOL + "<span>Nicht mehr aktuell</span>";
+    const panel = document.createElement("div"); panel.className = "veraltet-panel"; panel.hidden = true;
+    panel.innerHTML = "<p>" + esc(dokVeraltetText(v)) + "</p><ul>" + v.liste.map(m => "<li><b>" + esc((m.manuell && m.manuell.label) || m.label || "") + "</b><br><span>erledigt "
+      + esc(dokVeraltetDatum(String(m.erledigt_am || "").slice(0, 10))) + (m.erledigt_von ? " · " + esc(m.erledigt_von) : "") + "</span></li>").join("") + "</ul>";
+    b.addEventListener("click", () => { panel.hidden = !panel.hidden; });
+    kopf.insertAdjacentElement("afterend", b);
+    b.insertAdjacentElement("afterend", panel);
+  }catch(e){ /* ohne Hinweis weiter */ }
+});

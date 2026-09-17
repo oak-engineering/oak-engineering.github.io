@@ -51,6 +51,7 @@ async function renderUnterlagenListe(wrap, art){
   const sec = document.createElement("section"); sec.className = "sektion ul-liste-seite";
   wrap.appendChild(sec);
   let gruppen = [];
+  if(typeof MG_GELADEN !== "undefined" && !MG_GELADEN && typeof ladeMaengel === "function"){ sec.innerHTML = `<div class="ck-fuss">wird geladen …</div>`; await ladeMaengel(); }
   const oeffnen = (url, text) => `<a class="btn sek ul-btn" href="${url}" target="_blank" rel="noopener">${esc(text)}</a>`;
   const zeile = (r, inhalt, akt, extra) => `<div class="ul-zeile${extra || ""}" data-typ="${esc(r.kategorie === "ba-sammel" ? ulTyp({ maschinentyp: r.maschinentyp }) : ulTyp(r))}" data-suche="${esc([r.maschine, r.titel, r.maschinentyp].filter(Boolean).join(" ").toLowerCase())}"${r.maschinen_id ? ` data-mid="${esc(r.maschinen_id)}"` : ""}>${inhalt}<div class="ul-z-akt">${akt}</div></div>`;
   const name = r => `<div class="ul-z-name"><b>${esc(r.maschine || r.titel || "")}</b>${ulTyp(r) ? `<span>${esc(ulTyp(r))}</span>` : ""}</div>`;
@@ -61,7 +62,7 @@ async function renderUnterlagenListe(wrap, art){
     gruppen = [["", ulAnlagen().sort(ulSort).map(r => {
       const k = ki[r.maschinen_id], b = ulBereich(k, r.maschinen_id), n = ulOffeneMaengel(r.maschinen_id).length;
       return zeile(r, `<span data-band="${b.cls}" class="ul-ampel ul-${b.cls}" title="${esc(b.text)}"></span>${name(r)}`
-        + `<div class="ul-z-info">${k && k.datum ? "Begehung " + esc(ulDatum(k.datum)) : ""}${n ? `<span class="ul-mg">${n} offene Mängel</span>` : ""}</div>`,
+        + `<div class="ul-z-info">${k && k.datum ? "Begehung " + esc(ulDatum(k.datum)) : ""}${n ? `<span class="ul-mg">${n} offene Mängel</span>` : ""}${(typeof dokVeraltetInfo === "function" && dokVeraltetInfo(r, MAENGEL)) ? `<span class="ul-veraltet" title="${esc(dokVeraltetText(dokVeraltetInfo(r, MAENGEL)))}">${VERALT_SYMBOL} Unterlagen nicht aktuell</span>` : ""}</div>`,
         `<span class="ul-pfeil" aria-hidden="true">›</span>`, " ul-klick");
     })]];
   } else if(art === "gbu"){
