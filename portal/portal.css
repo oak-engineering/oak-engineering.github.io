@@ -1150,3 +1150,8 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .sk-kopf{min-width:0}
 .sk-titel{min-width:0;flex:1 1 auto;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word}
 .start-kachel svg{flex:0 0 40px}
+
+/* Seitenleiste in Gruppen (17.09.2026): Überschriften kompakt, eingeklappt als Trennlinie */
+.sl-liste .sl-kopf{margin:14px 12px 3px}
+.sl-liste .sl-klapp + .sl-eintrag{margin-top:2px}
+@media(min-width:901px){body.sl-schmal .sl-liste .sl-kopf{display:block;height:1px;margin:8px 8px;padding:0;overflow:hidden;font-size:0;background:var(--linie,#e3e8ef)}}

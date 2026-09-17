@@ -770,16 +770,19 @@ function renderSeitenleiste(){
       <button type="button" class="sl-eintrag sl-klapp" id="slKlapp" title="Seitenleiste ein- oder ausklappen"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.klapp}</svg><span>Einklappen</span></button>
       ${e("start", null, "start", "Start")}
       ${e("mehr", "todos", "todos", "To-dos")}
-      ${e("mehr", "aktuelles", "aktuelles", "Aktuelles")}
-      ${e("maengel", null, "maengel", "Mängel")}
       ${e("mehr", "kalender", "kalender", "Kalender")}
       ${START_BEREICH === "arbeitssicherheit"
-        ? e("unterlagen", "anlagen", "anlagen", "Anlagenkataster") + e("unterlagen", "gefahrstoffe", "gefahrstoffe", "Gefahrstoffkataster")
-        : e("unterlagen", null, "unterlagen", "Unterlagen")}
+        ? `<div class="sl-kopf">Anlagen &amp; Gefahrstoffe</div>` + e("unterlagen", "anlagen", "anlagen", "Anlagenkataster") + e("maengel", null, "maengel", "Mängel")
+          + e("unterlagen", "gefahrstoffe", "gefahrstoffe", "Gefahrstoffkataster")
+        : `<div class="sl-kopf">Unterlagen</div>` + e("unterlagen", null, "unterlagen", "Unterlagen") + e("maengel", null, "maengel", "Mängel")}
+      <div class="sl-kopf">Beschäftigte</div>
       ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen")}
       ${e("mehr", "nachweise", "nachweise", "Nachweise & Vorsorge")}
+      <div class="sl-kopf">Melden &amp; Fragen</div>
       ${START_BEREICH === "umwelt" ? e("mehr", "vf-umwelt", "vorfaelle", "Umweltvorfälle") : e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
       ${e("mehr", "anfragen", "anfragen", FRAGE_TITEL)}
+      <div class="sl-kopf">Informationen</div>
+      ${e("mehr", "aktuelles", "aktuelles", "Aktuelles")}
       ${e("mehr", "logbuch", "logbuch", "Logbuch")}
       ${erweitert}
     </div>
