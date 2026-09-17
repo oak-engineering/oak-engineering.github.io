@@ -68,7 +68,9 @@ function ckAnlagenZahlen(){
   const rows = sichtbar().filter(r => r.kategorie === "anlagen");
   const z = { gefahr: 0, besorgnis: 0, akzeptanz: 0, ohne: 0, offen: 0, gesamt: 0, maengel: 0 };
   rows.forEach(r => {
-    const k = ampelKlasse(r.status);
+    /* Farbe = schlimmster offener Mangel (maengel.js); vor dem Laden der Maengel wie bisher aus dem GBU-Status */
+    const b = (typeof mgAnlagenBand === "function") ? mgAnlagenBand(r.maschinen_id, r.kunde_slug) : null;
+    const k = b ? ({ gefahr: "rot", besorgnis: "orange", akzeptanz: "gruen", keine: "gruen" })[b] : ampelKlasse(r.status);
     if(k === "rot" || k === "akut") z.gefahr++;
     else if(k === "orange") z.besorgnis++;
     else if(k === "gruen") z.akzeptanz++;

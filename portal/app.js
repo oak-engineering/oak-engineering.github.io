@@ -403,7 +403,9 @@ function renderAnlagen(){
         + `data-mid="${esc(r.maschinen_id||"")}" data-slug="${esc(r.kunde_slug||"")}"${FREIGABE[fgKey(r)]?" checked":""} `
         + `title="Freigabe durch die Sicherheitsfachkraft"></td>` : "";
       return `<tr>
-      <td><span class="ampel ${ampelKlasse(r.status)}" title="${esc(ampelTitel(r.status))}"></span></td>
+      <td>${(() => { const b = (typeof mgAnlagenBand === "function") ? mgAnlagenBand(r.maschinen_id, r.kunde_slug) : null;
+        return b ? `<span class="ampel ${({ gefahr: "rot", besorgnis: "orange", akzeptanz: "gruen", keine: "gruen" })[b]}" title="${b === "keine" ? "keine offenen Mängel" : "schlimmster offener Mangel: " + b}"></span>`
+                 : `<span class="ampel ${ampelKlasse(r.status)}" title="${esc(ampelTitel(r.status))}"></span>`; })()}</td>
       <td>${esc(r.maschine)}${statusBadge(r, neuestesDatum)}</td><td>${esc(String(r.maschinentyp||"–").replace(/\s*\(mit [^)]*\)/i, ""))}</td><td>${esc(r.stand||"–")}</td>
       <td class="docs">${machDoc(r,"bda","GBU","gbu")}${machDoc(r,"ba","BA")}${machDoc(r,"maengelliste","Mängel")}${machDoc(r,"protokoll","Protokoll")}${qrLink(r)}</td>${fgCell}
     </tr>`; }).join("") : `<tr><td colspan="${ADMIN?6:5}" class="leer">keine Anlagen</td></tr>`}</tbody>`;

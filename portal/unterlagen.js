@@ -29,15 +29,15 @@ function ulAnzahl(kat){
   if(kat === "ba") return ulSammel().length + ulAnlagen().filter(r => ulHat(r, "ba")).length + ulAllg().filter(r => ulHat(r, "ba")).length;
   return null;
 }
-/* Risiko -> Bereich (1–3 Akzeptanz · 4–8 Besorgnis · 9–16 Gefahr), wie Hallenplan */
-function ulBereich(k){
-  if(!k) return { cls: "ohne", text: "nicht bewertet" };
-  if(k.betrieb === "ausser_betrieb") return { cls: "aus", text: "außer Betrieb" };
-  const w = k.aktuell;
-  if(w == null) return { cls: "ohne", text: "nicht bewertet" };
-  if(w <= 3) return { cls: "akzeptanz", text: "Risiko " + w + " · Akzeptanzbereich" };
-  if(w <= 8) return { cls: "besorgnis", text: "Risiko " + w + " · Besorgnisbereich" };
-  return { cls: "gefahr", text: "Risiko " + w + " · Gefahrbereich" };
+/* Farbe der Anlage = schlimmster offener Mangel (Nikolai 17.09.2026) – dieselbe Regel wie Cockpit und Hallenplan */
+function ulBereich(k, mid){
+  if(k && k.betrieb === "ausser_betrieb") return { cls: "aus", text: "außer Betrieb" };
+  const b = (typeof mgAnlagenBand === "function") ? mgAnlagenBand(mid, AKTIV) : null;
+  if(b === "gefahr") return { cls: "gefahr", text: "offene Mängel im Gefahrbereich" };
+  if(b === "besorgnis") return { cls: "besorgnis", text: "offene Mängel im Besorgnisbereich" };
+  if(b === "akzeptanz") return { cls: "akzeptanz", text: "offene Mängel im Akzeptanzbereich" };
+  if(b === "keine") return { cls: "akzeptanz", text: "keine offenen Mängel" };
+  return { cls: "ohne", text: "nicht bewertet" };
 }
 function ulOffeneMaengel(mid){
   if(typeof MAENGEL === "undefined") return [];
@@ -59,8 +59,8 @@ async function renderUnterlagenListe(wrap, art){
     sec.innerHTML = `<div class="ck-fuss">wird geladen …</div>`;
     const [ki] = await Promise.all([ulKurzinfoLaden(), (typeof MG_GELADEN !== "undefined" && !MG_GELADEN && typeof ladeMaengel === "function") ? ladeMaengel() : null]);
     gruppen = [["", ulAnlagen().sort(ulSort).map(r => {
-      const k = ki[r.maschinen_id], b = ulBereich(k), n = ulOffeneMaengel(r.maschinen_id).length;
-      return zeile(r, `<span class="ul-ampel ul-${b.cls}" title="${esc(b.text)}"></span>${name(r)}`
+      const k = ki[r.maschinen_id], b = ulBereich(k, r.maschinen_id), n = ulOffeneMaengel(r.maschinen_id).length;
+      return zeile(r, `<span data-band="${b.cls}" class="ul-ampel ul-${b.cls}" title="${esc(b.text)}"></span>${name(r)}`
         + `<div class="ul-z-info">${k && k.datum ? "Begehung " + esc(ulDatum(k.datum)) : ""}${n ? `<span class="ul-mg">${n} offene Mängel</span>` : ""}</div>`,
         `<span class="ul-pfeil" aria-hidden="true">›</span>`, " ul-klick");
     })]];
@@ -82,14 +82,23 @@ async function renderUnterlagenListe(wrap, art){
       <span class="uw-leise" id="ulZahl"></span></div>`
     + (gruppen.length ? gruppen.map(g => `<div class="ul-gruppe">${g[0] ? `<h2 class="ul-bereich">${esc(g[0])}</h2>` : ""}<div class="ul-zeilen">${g[1].join("")}</div></div>`).join("")
       : `<div class="ck-fuss">Noch keine Unterlagen hinterlegt.</div>`);
+  let bandFilter = "";
   const zaehlen = () => {
     const q = (sec.querySelector("#ulSuche").value || "").toLowerCase().trim(); let n = 0;
     const typ = (sec.querySelector("#ulTyp") || {}).value || "";
     sec.querySelectorAll(".ul-gruppe").forEach(g => { let sichtbarG = 0;
-      g.querySelectorAll(".ul-zeile").forEach(z => { const ok = (!q || z.dataset.suche.includes(q)) && (!typ || z.dataset.typ === typ); z.hidden = !ok; if(ok){ sichtbarG++; n++; } });
+      g.querySelectorAll(".ul-zeile").forEach(z => { const ok = (!q || z.dataset.suche.includes(q)) && (!typ || z.dataset.typ === typ) && (!bandFilter || z.dataset.band === bandFilter); z.hidden = !ok; if(ok){ sichtbarG++; n++; } });
       g.hidden = !sichtbarG; });
     sec.querySelector("#ulZahl").textContent = n + (n === 1 ? " Eintrag" : " Einträge");
   };
+  if(art === "anlagen" && typeof HASH_Q !== "undefined" && HASH_Q && HASH_Q.get("status")){ bandFilter = HASH_Q.get("status"); HASH_Q = null; }
+  if(bandFilter){
+    sec.querySelectorAll(".ul-zeile").forEach(z => { const a = z.querySelector("[data-band]"); z.dataset.band = a ? a.dataset.band : ""; });
+    const hinweis = document.createElement("div"); hinweis.className = "uw-meld";
+    hinweis.innerHTML = `Gefiltert: Anlagen mit ${esc({ gefahr: "offenen Mängeln im Gefahrbereich", besorgnis: "offenen Mängeln im Besorgnisbereich", akzeptanz: "höchstens Mängeln im Akzeptanzbereich" }[bandFilter] || bandFilter)} <button type="button" class="btn-klein">Filter aufheben</button>`;
+    hinweis.querySelector("button").addEventListener("click", () => { bandFilter = ""; hinweis.remove(); zaehlen(); });
+    sec.insertBefore(hinweis, sec.firstChild);
+  }
   sec.querySelector("#ulSuche").addEventListener("input", zaehlen);
   { const ts = sec.querySelector("#ulTyp"); if(ts) ts.addEventListener("change", zaehlen); }
   zaehlen();
@@ -99,8 +108,9 @@ async function renderUnterlagenListe(wrap, art){
 /* Pop-up je Anlage: Kurzinfo wie im Hallenplan, offene Mängel (live), Dokumente */
 async function ulKurzinfoDialog(mid){
   const r = ulAnlagen().find(x => x.maschinen_id === mid); if(!r) return;
-  const ki = await ulKurzinfoLaden(); const k = ki[mid] || {}; const b = ulBereich(ki[mid]);
+  const ki = await ulKurzinfoLaden(); const k = ki[mid] || {};
   if(typeof MG_GELADEN !== "undefined" && !MG_GELADEN && typeof ladeMaengel === "function") await ladeMaengel();
+  const b = ulBereich(ki[mid], mid);
   const offen = ulOffeneMaengel(mid);
   let dlg = document.getElementById("ulDlg");
   if(!dlg){ dlg = document.createElement("dialog"); dlg.id = "ulDlg"; dlg.className = "pw-dlg ul-dlg"; document.body.appendChild(dlg);
@@ -118,7 +128,7 @@ async function ulKurzinfoDialog(mid){
       ${k.roboter ? `<div class="ul-hinweis">Mit Linearroboter / Entnahmegerät</div>` : ""}
       <dl class="ul-dl">${feld("Hersteller", k.hersteller)}${feld("Typ", k.typ)}${feld("Baujahr", k.baujahr)}${feld("Serien-Nr.", k.seriennr)}
         ${feld("Bereich", k.bereich)}${feld("CE", k.ce)}${feld("Gefährdungen", k.gefaehrdungen)}
-        ${feld("Ausgangsrisiko", k.ausgang)}${feld("Restrisiko nach Maßnahmen", k.rest)}${feld("Begehung", k.datum ? ulDatum(k.datum) : "")}</dl>
+        ${feld("Höchstes Risiko laut GBU (vor Maßnahmen)", k.ausgang)}${feld("Restrisiko laut GBU (nach Maßnahmen)", k.rest)}${feld("Begehung", k.datum ? ulDatum(k.datum) : "")}</dl>
       <h4 class="ul-h4">Offene Mängel <span class="uw-leise">${offen.length}</span></h4>
       ${offen.length ? `<ul class="ul-mgliste">${offen.map(m => `<li class="mg-${esc(m.bewertung_manuell || m.band || "ohne")}"><span class="mg-ampel"></span><span>${esc(mgText(m))}</span></li>`).join("")}</ul>
         <button type="button" class="btn-klein ul-alle-mg">Alle Mängel dieser Maschine</button>`

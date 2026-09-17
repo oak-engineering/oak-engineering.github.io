@@ -202,7 +202,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       frame.srcdoc = mitLightbox(html, typ).replace(/<\/head>/i, (window.OAK_MARKE ? OAK_MARKE.styleBlock() : "") + "</head>");   // Kundenmarke ins Dokument
     } else if(typ==="html"){
       if(/\/(vom-betrieb|anfragen|maengel)\//.test(p)) throw new Error("Vom Betrieb hochgeladene Dateien werden nicht als Seite angezeigt.");
-      frame.srcdoc = await apiGet(storagePfad(p), true);
+      let inhalt = await apiGet(storagePfad(p), true);
+      /* Hallenplan: Farbe = schlimmster offener Mangel, live aus dem Portal (nicht der Stand beim Erzeugen) */
+      if(/\/hallenplan\//.test(p)){
+        try{
+          const slug = String(p).split("/")[0];
+          const mg = await apiGet("/rest/v1/portal_maengel?select=maschinen_id,band,bewertung_manuell,status,ausgeblendet&kunde_slug=eq." + encodeURIComponent(slug), false) || [];
+          const wert = { gefahr: 3, besorgnis: 2, akzeptanz: 1 }, je = {};
+          mg.forEach(m => { if(m.ausgeblendet || m.status === "erledigt") return;
+            je[m.maschinen_id] = je[m.maschinen_id] || { band: 0, anzahl: 0 };
+            je[m.maschinen_id].band = Math.max(je[m.maschinen_id].band, wert[m.bewertung_manuell || m.band] || 1); je[m.maschinen_id].anzahl++; });
+          const tag = "<script>window.OAK_MAENGEL=" + JSON.stringify(je).replace(/</g, "\\u003c") + ";</scr" + "ipt>";
+          inhalt = /<head[^>]*>/i.test(inhalt) ? inhalt.replace(/<head([^>]*)>/i, m => m + tag) : tag + inhalt;
+        }catch(e){ /* ohne Maengel zeigt der Plan den Stand beim Erzeugen */ }
+      }
+      frame.srcdoc = inhalt;
     } else if(typ==="pdf" || typ==="bild" || typ==="datei"){
       const roh = await (await apiFetch(storagePfad(p))).blob();
       /* Sicherheit: Typ erzwingen – PDF oder Bild wird angezeigt, alles andere nur heruntergeladen; kein Skript im Portal-Ursprung */

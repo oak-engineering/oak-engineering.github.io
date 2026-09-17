@@ -30,6 +30,16 @@ function mgListeLink(m){
   if(!r || typeof viewerUrl !== "function") return "";
   return viewerUrl("maengelliste", r.storage_path, (r.maschine || "") + " · Mängelliste", "&m=" + encodeURIComponent(r.maschine || "") + "&mid=" + encodeURIComponent(r.maschinen_id || ""));
 }
+/* Farbe einer Anlage = schlimmster OFFENER Mangel (Nikolai 17.09.2026). Keine offenen Maengel -> „keine“ (gruen).
+   Gilt ueberall gleich: Anlagenkataster, Cockpit, Browser-Tabelle, Hallenplan. */
+function mgAnlagenBand(mid, slug){
+  if(typeof MG_GELADEN === "undefined" || !MG_GELADEN) return null;
+  let rang = 0;
+  const wert = { gefahr: 3, besorgnis: 2, akzeptanz: 1 };
+  MAENGEL.forEach(m => { if(m.maschinen_id === mid && (!slug || m.kunde_slug === slug) && !m.ausgeblendet && m.status !== "erledigt")
+    rang = Math.max(rang, wert[m.bewertung_manuell || m.band] || 1); });
+  return ["keine", "akzeptanz", "besorgnis", "gefahr"][rang];
+}
 function mgIstAllgemein(m){ return /^ALLG/i.test(m.maschinen_id || "") || /tätigkeit/i.test(m.maschinentyp || ""); }
 
 async function renderMaengel(wrap){

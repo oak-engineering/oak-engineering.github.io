@@ -910,3 +910,8 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .akt-todo li{display:flex;align-items:center;gap:10px;font-size:14.5px}
 .akt-todo li b{min-width:26px;text-align:right;font-size:17px}
 .akt-todo li.akt-erledigt{color:#98a2b3}
+
+/* „Terminal beenden" gut sichtbar (Nikolai 17.09.2026) */
+.ts-leiste{opacity:1}
+.ts-leiste .ts-ende{background:#c62828;border-color:#c62828;color:#fff;font-weight:600;font-size:14px;min-height:40px;padding:6px 16px;box-shadow:0 4px 12px rgba(198,40,40,.3)}
+.ts-leiste .ts-ende:hover{background:#b71c1c}
