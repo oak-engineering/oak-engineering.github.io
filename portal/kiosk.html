@@ -228,7 +228,7 @@
            Gefaehrdungsbeurteilungen, Maengellisten und Nachweise. An einem frei zugaenglichen
            Geraet duerfen die nicht offen stehen. Volle Breite (.wide), damit sie den beiden
            Unterweisungs-Kacheln nachgeordnet bleibt - das ist der Zweck des Geraets. -->
-      <button class="ck-tile wide" type="button" id="ckPortal"><b>Kundenportal</b><span class="small muted">Unterlagen, Anlagen und Nachweise · Anmeldung erforderlich</span></button>
+      <button class="ck-tile wide" type="button" id="ckPortal"><b>EHS-Cockpit</b><span class="small muted">Unterlagen, Anlagen und Nachweise · Anmeldung erforderlich</span></button>
     </div>
     <p class="small muted" style="text-align:center;margin-top:14px">Einstellungen sowie „Nachweise &amp; Fragen" findest du im Admin-Bereich (⚙ oben rechts · Passwort).</p>
     <p class="small" id="ckKioskOff" style="text-align:center;margin-top:4px;display:none"><a href="#" id="ckKioskOffLink" class="muted">Kiosk-Autostart dieses Geräts deaktivieren</a></p>
@@ -244,7 +244,7 @@
     <input type="text" id="gateCode" placeholder="z. B. ABC-1234" autocomplete="off">
     <div class="err" id="gateErr"></div>
     <button class="btn" style="width:100%;margin-top:10px" id="gateBtn">Weiter</button>
-    <button class="btn ghost" style="width:100%;margin-top:8px" id="gateCockpit">◀ Zurück zum Cockpit</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px" id="gateCockpit">◀ Zurück zur Startseite des Terminals</button>
   </div>
 </section>
 
@@ -268,7 +268,7 @@
     <details style="margin-top:14px"><summary class="small">Datenschutzhinweis</summary>
       <p class="small muted" id="startPrivacy" style="margin-top:8px"></p></details>
         <button class="btn" style="width:100%;margin-top:18px" id="startBtn">Unterweisung starten ▶</button>
-    <button class="btn ghost" style="width:100%;margin-top:8px" id="startCockpit">◀ Zurück zum Cockpit</button>
+    <button class="btn ghost" style="width:100%;margin-top:8px" id="startCockpit">◀ Zurück zur Startseite des Terminals</button>
   </div>
 </section>
 
@@ -516,7 +516,7 @@ function applyMeta(){
   $('#startPrivacy').textContent = portalModus()
     ? (m.privacyPortal || 'Deine Angaben (Name, Rolle, absolvierte Module, bestanden ja/nein) und deine '
        +'Unterschrift werden als Nachweis der Unterweisung nach § 12 ArbSchG gespeichert. Verantwortlich '
-       +'ist dein Arbeitgeber; die Speicherung erfolgt in dessen geschütztem Bereich des Kundenportals '
+       +'ist dein Arbeitgeber; die Speicherung erfolgt in dessen geschütztem Bereich des OAK EHS-Cockpits '
        +'auf Servern in der EU. OAK engineering verarbeitet die Daten ausschließlich im Auftrag. '
        +'Ein Punktestand wird NICHT gespeichert. Auskunft und Löschung über deinen Arbeitgeber.')
     : ((m.terminal&&m.privacyTerminal)?m.privacyTerminal:(m.privacy||''));
@@ -597,8 +597,8 @@ document.querySelectorAll('.ck-tile[data-mode]').forEach(b=>{ b.onclick=async()=
 { const u=$('#admUeber'); if(u) u.onclick=()=>{ location.href='/portal/'; }; }   // aus dem Admin-Bereich (eigenes Passwort bleibt)
 // Terminal-/Extern-Modus (Kiosk): Rückkehr ins Cockpit nur nach ausdrücklicher Bestätigung (mittiges Modal)
 function askLeaveKiosk(weiter){ if(!CONTENT.meta.terminal){ weiter(); return; }
-  showModal({titel:'Zum Cockpit zurückkehren?',text:'Die Startzentrale ist für die Sicherheitsfachkraft gedacht.',
-    okText:'▶ Nein, hier bleiben',cancelText:'Ja, zum Cockpit',onCancel:weiter}); }
+  showModal({titel:'Zur Startseite des Terminals zurückkehren?',text:'Die Startzentrale ist für die Sicherheitsfachkraft gedacht.',
+    okText:'▶ Nein, hier bleiben',cancelText:'Ja, zur Startseite',onCancel:weiter}); }
 { const bk=$('#ckBack'); if(bk) bk.onclick=()=>askLeaveKiosk(goCockpit); }
 { const gc=$('#gateCockpit'); if(gc) gc.onclick=()=>askLeaveKiosk(goCockpit); }
 { const sc=$('#startCockpit'); if(sc) sc.onclick=()=>askLeaveKiosk(goCockpit); }
@@ -776,7 +776,7 @@ async function showModule(i,toLast){
       m._numPages=0; updateStatus(); return;
     }
   }
-  if(!m.pdf){ v.innerHTML='<div class="ph">Für dieses Modul ist noch kein PDF hinterlegt.<br><span class="small">(Im Kundenportal hochladen.)</span></div>'; m._numPages=0; updateStatus(); return; }
+  if(!m.pdf){ v.innerHTML='<div class="ph">Für dieses Modul ist noch kein PDF hinterlegt.<br><span class="small">(Im EHS-Cockpit hochladen.)</span></div>'; m._numPages=0; updateStatus(); return; }
   try{
     await ensurePdfJs();
     if(!m._doc){ m._doc=await pdfjsLib.getDocument({data:dataUriToU8(m.pdf)}).promise; m._numPages=m._doc.numPages; }
@@ -1154,7 +1154,7 @@ function terminalZugang(){
   try{ const t=JSON.parse(localStorage.getItem(TERMKEY)||'null'); return (t&&t.token)?t:null; }catch(e){ return null; }
 }
 function portalModus(){ return !!terminalZugang(); }
-setTimeout(()=>{ try{ if(portalModus()){ const s=document.querySelector('#ckTerm .small'); if(s) s.textContent='Mitarbeiterinnen & Mitarbeiter · Nachweis geht ins Kundenportal'; } }catch(e){} }, 300);
+setTimeout(()=>{ try{ if(portalModus()){ const s=document.querySelector('#ckTerm .small'); if(s) s.textContent='Mitarbeiterinnen & Mitarbeiter · Nachweis geht ins EHS-Cockpit'; } }catch(e){} }, 300);
 function portalCache(){
   try{ return JSON.parse(localStorage.getItem(CFGKEY)||'null'); }catch(e){ return null; }
 }
@@ -1373,7 +1373,7 @@ async function _doFinish(){
     }
     const fullOk = r.hasMain ? (r.main && (!r.hasBackup || r.backup)) : r.ok;
     if(fullOk && r.main){
-      $('#saveMsg').innerHTML=portalModus() ? '<span style="color:var(--ok);font-weight:700">✓ Abgeschlossen – der Nachweis ist im Kundenportal gespeichert.</span>'
+      $('#saveMsg').innerHTML=portalModus() ? '<span style="color:var(--ok);font-weight:700">✓ Abgeschlossen – der Nachweis ist im EHS-Cockpit gespeichert.</span>'
         : '<span style="color:var(--ok);font-weight:700">✓ Abgeschlossen und gespeichert – Haupt-Ordner'+(r.backup?' + Backup':'')+'</span>';
       setTimeout(resetForNext,1100);
     } else if(r.backup && !r.main){
@@ -1511,7 +1511,7 @@ function renderAdmin(){
   const mi=$('#mainInfo'); if(mi) mi.textContent = mainDir?('✔ '+mainDir.name):'noch nicht gewählt';
   const bi=$('#backupInfo'); if(bi) bi.textContent = backupDir?('✔ '+backupDir.name):'noch nicht gewählt';
   const ur=$('#usbRow'); if(ur){
-    if(portalModus()){ ur.innerHTML='<p class="small muted" style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px">☁ Nachweise gehen direkt in die Datenbank des Kundenportals – kein Ordner, kein PDF, keine E-Mail nötig.</p>'; }
+    if(portalModus()){ ur.innerHTML='<p class="small muted" style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px">☁ Nachweise gehen direkt in die Datenbank des EHS-Cockpits – kein Ordner, kein PDF, keine E-Mail nötig.</p>'; }
     else if(SRV){ ur.innerHTML='<p class="small muted" style="background:var(--accent);border-radius:10px;padding:10px 12px;margin-top:8px">📁 Die Nachweis-Speicherung übernimmt der <b>lokale Dienst</b> (serve.ps1) – keine Ordner-Freigabe nötig. Optionaler USB-Backup: Datei <code>terminal-config.json</code> neben serve.ps1 anlegen (Vorlage: terminal-config.beispiel.json).</p>'; }
     else ur.style.display = (typeof window.showDirectoryPicker==='function')?'':'none';
   }
@@ -1677,7 +1677,7 @@ $('#admPortalZugang').onclick=()=>{
     msg.textContent='Portal-Anbindung dieses Geräts entfernt.'; return;
   }
   localStorage.setItem(TERMKEY, JSON.stringify({token:t.trim(), kunde:CONTENT.meta.customer||''}));
-  msg.textContent='Zugang gespeichert – Nachweise gehen ab jetzt ins Kundenportal.';
+  msg.textContent='Zugang gespeichert – Nachweise gehen ab jetzt ins EHS-Cockpit.';
   portalConfigHolen().then(r=>{ if(r) msg.textContent+=' Fassung '+r.version+' geladen.'; }).catch(()=>{});
 };
 $('#admPortalLoad').onclick=async()=>{

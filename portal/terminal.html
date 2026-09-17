@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Unterweisungs-Terminal – OAK engineering</title>
-<link rel="stylesheet" href="portal.css?v=202609170910">
+<link rel="stylesheet" href="portal.css?v=202609170913">
 <style>
 /* Unterweisungs-Terminal ohne Login: Das Geraet traegt einen Token (wie melden.html),
    die Person tippt Name und Gruppe, bekommt ihre Module und arbeitet sie im Rahmen durch.
@@ -71,7 +71,7 @@ input[type=text]:focus{outline:none;border-color:var(--oak,#2D6A4F);box-shadow:0
 <div class="tk" id="tk">
   <header class="tk-kopf">
     <img class="oak" src="../assets/oak-logo.png" alt="OAK engineering">
-    <span><span class="firma" id="kFirma">Unterweisungs-Terminal</span><br><span class="titel" id="kTitel">Kundenportal · OAK engineering</span></span>
+    <span><span class="firma" id="kFirma">Unterweisungs-Terminal</span><br><span class="titel" id="kTitel">OAK EHS-Cockpit</span></span>
     <span class="rechts">
       <button class="knopf" id="kZurueck" hidden>Zur Übersicht</button>
       <button class="knopf" id="kNeu" hidden>Andere Person</button>
@@ -82,7 +82,7 @@ input[type=text]:focus{outline:none;border-color:var(--oak,#2D6A4F);box-shadow:0
 
     <section class="schirm" id="sEinrichten">
       <h1>Terminal einrichten</h1>
-      <p class="unter">Dieses Gerät ist noch nicht mit dem Kundenportal verbunden. Den Geräte-Code bekommt der Betrieb von OAK engineering.</p>
+      <p class="unter">Dieses Gerät ist noch nicht mit dem EHS-Cockpit verbunden. Den Geräte-Code bekommt der Betrieb von OAK engineering.</p>
       <label class="feld" for="eToken">Geräte-Code</label>
       <input type="text" id="eToken" autocomplete="off" spellcheck="false" placeholder="z. B. firma-term-…">
       <div class="zeile-knoepfe"><button class="knopf haupt" id="eVerbinden">Terminal verbinden</button></div>
@@ -193,7 +193,7 @@ function konfigLaden(){
     try{ K = JSON.parse(localStorage.getItem(CFGKEY)||'null'); }catch(x){ K=null; }
     if(K){ toast('Kein Netz: Angezeigt wird der letzte bekannte Stand.', 5000); return K; }
     $('eMeldung').hidden=false; $('eMeldung').className='hinweis fehler';
-    $('eMeldung').textContent='Keine Verbindung zum Kundenportal: ' + e.message;
+    $('eMeldung').textContent='Keine Verbindung zum EHS-Cockpit: ' + e.message;
     zeige('sEinrichten'); return null;
   });
 }
@@ -235,7 +235,7 @@ function startAnzeigen(){
     box.appendChild(b);
   });
   var h = $('sHinweis');
-  if(!rollen.length){ h.hidden=false; h.textContent='Für diesen Betrieb sind noch keine Gruppen angelegt (Kundenportal → Unterweisungen → Gruppen).'; }
+  if(!rollen.length){ h.hidden=false; h.textContent='Für diesen Betrieb sind noch keine Gruppen angelegt (EHS-Cockpit → Unterweisungen → Gruppen).'; }
   else if(K && !K.zuweisungen){ h.hidden=false; h.textContent='Den Gruppen sind noch keine Unterweisungen zugeordnet. Bis dahin siehst du alle freigeschalteten Module.'; }
   else h.hidden = true;
   $('sStand').textContent = (K && K.module) ? (K.module.length + ' Modul' + (K.module.length===1?'':'e') + ' freigeschaltet') : '';

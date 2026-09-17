@@ -746,6 +746,7 @@ function renderSeitenleiste(){
     </div>
     <div class="sl-fuss">
       ${/^Schichtf/i.test(window.__oakName || "") ? "" : `<button type="button" class="sl-eintrag" data-aktion-id="pwBtn"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.schloss}</svg><span>Passwort ändern</span></button>`}
+      <button type="button" class="sl-eintrag sl-install" id="slInstall" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg><span>Als App installieren</span></button>
       <button type="button" class="sl-eintrag" data-aktion-id="logoutBtn"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.tuer}</svg><span>Abmelden</span></button>
     </div>`;
   el.querySelectorAll("[data-nav]").forEach(b => b.addEventListener("click", () => {
@@ -754,6 +755,9 @@ function renderSeitenleiste(){
     const schmal = document.body.classList.toggle("sl-schmal");
     try{ localStorage.setItem("oak_portal_sl_schmal", schmal ? "1" : ""); }catch(e){}
   });
+  { const ib = el.querySelector("#slInstall");
+    if(ib){ ib.hidden = !window.__oakInstallPrompt || document.documentElement.classList.contains("installiert");
+      ib.addEventListener("click", async () => { const p = window.__oakInstallPrompt; if(!p) return; p.prompt(); try{ await p.userChoice; }catch(e){} window.__oakInstallPrompt = null; ib.hidden = true; }); } }
   el.querySelectorAll("[data-aktion-id]").forEach(b => b.addEventListener("click", () => {
     document.body.classList.remove("menue-auf"); const z = document.getElementById(b.dataset.aktionId); if(z) z.click(); }));
 }
@@ -1040,3 +1044,10 @@ if(IST_APP) document.addEventListener("click", ev => {
   const p = u.searchParams;
   window.portalDokOeffnen(u.pathname.split("/").pop() + u.search, p.get("t") || p.get("m") || a.textContent);
 }, true);
+
+/* Browser: „Als App installieren" anbieten (Chrome/Edge melden, wenn die Installation möglich ist) */
+window.addEventListener("beforeinstallprompt", ev => {
+  ev.preventDefault(); window.__oakInstallPrompt = ev;
+  const ib = document.getElementById("slInstall"); if(ib) ib.hidden = false;
+});
+window.addEventListener("appinstalled", () => { window.__oakInstallPrompt = null; const ib = document.getElementById("slInstall"); if(ib) ib.hidden = true; });

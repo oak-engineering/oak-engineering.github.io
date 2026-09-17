@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>OAK Kundenportal</title>
-<link rel="stylesheet" href="portal.css?v=202609170910">
+<title>OAK EHS-Cockpit</title>
+<link rel="stylesheet" href="portal.css?v=202609170913">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#ffffff">
 <script src="marke.js?v=2026-09-16d"></script>
@@ -13,7 +13,8 @@
 try{ if(localStorage.getItem("oak_portal_session")) document.documentElement.classList.add("hat-sitzung"); }catch(e){}
 try{ if(sessionStorage.getItem("oak_terminal_gesperrt") === "1") document.documentElement.classList.add("terminal-aktiv"); }catch(e){}
 /* Installierte App (Surface der Schichtfuehrer) = einfache Ansicht; Browser = gewohnte Ansicht mit Reitern (Nikolai 16.09.) */
-try{ if(matchMedia("(display-mode: standalone)").matches || matchMedia("(display-mode: minimal-ui)").matches || navigator.standalone === true || /[?&]app=1\b/.test(location.search)) document.documentElement.classList.add("ist-app"); }catch(e){}</script>
+document.documentElement.classList.add("ist-app");   /* seit 17.09.2026 ueberall die App-Ansicht (Seitenleiste), auch im Browser */
+try{ if(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) document.documentElement.classList.add("installiert"); }catch(e){}</script>
 </head>
 <body>
 
@@ -52,12 +53,12 @@ try{ if(matchMedia("(display-mode: standalone)").matches || matchMedia("(display
   <header class="sub-hero">
     <canvas id="gridCanvas" aria-hidden="true"></canvas>
     <div class="sub-overlay"></div>
-    <h1>Kundenportal</h1>
+    <h1>EHS-Cockpit</h1>
     <p>Ihre Dokumente – jederzeit abrufbar, nur nach Anmeldung sichtbar.</p>
   </header>
 
   <form class="login" id="loginForm" autocomplete="on">
-    <h1>Kundenportal</h1>
+    <h1>EHS-Cockpit</h1>
     <div class="doktyp">Digitaler Zugang &amp; Update-Service</div>
     <label for="email">E-Mail</label>
     <input type="email" id="email" name="email" required autocomplete="username" placeholder="name@firma.de">
@@ -82,7 +83,7 @@ try{ if(matchMedia("(display-mode: standalone)").matches || matchMedia("(display
     <div class="wrap">
       <a class="marke" href="#start" id="markeStart" title="Zur Startseite">
         <img src="../assets/oak-logo.png" class="oak-logo" alt="OAK engineering">
-        <div><div class="wort">OAK engineering</div><div class="sub">Kundenportal</div></div>
+        <div><div class="wort">OAK EHS-Cockpit</div><div class="sub">Version 1.0 · OAK engineering</div></div>
       </a>
       <div class="bereich-wahl" id="bereichWahl" role="tablist" aria-label="Bereich"></div>
       <div class="rechts">
@@ -146,8 +147,8 @@ try{ if(matchMedia("(display-mode: standalone)").matches || matchMedia("(display
 <script src="aktuelles.js?v=2026-09-17a"></script>
 <script src="logbuch.js?v=2026-09-16n3"></script>
 <script src="libs/qrcode/qrcode.min.js?v=1.4.4"></script>
-<script src="app.js?v=2026-09-17i"></script>
+<script src="app.js?v=2026-09-17j"></script>
 <script>if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }</script>
-<script src="../site.js?v=202609170910"></script>
+<script src="../site.js?v=202609170913"></script>
 </body>
 </html>

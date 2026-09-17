@@ -924,3 +924,6 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .uw-beleg-karte > div:nth-child(2){flex:1;display:flex;flex-direction:column}
 .uw-beleg-zahl{font-size:30px;font-weight:700;min-width:48px;text-align:center;color:#101828}
 .uw-beleg-fuss{margin:8px 2px 0}
+
+.sl-install{color:var(--gruen,#2D6A4F);font-weight:600}
+.sl-install[hidden]{display:none}

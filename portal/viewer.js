@@ -261,8 +261,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if(teilen) teilen.addEventListener("click", () => {
     const link = location.origin + location.pathname + location.search;
     const betreff = vDokTitel();
-    const text = "Hallo,\n\nhier das Dokument „" + betreff + "“ im Kundenportal:\n" + link
-      + "\n\nZum Öffnen ist die Anmeldung im Kundenportal nötig.\n";
+    const text = "Hallo,\n\nhier das Dokument „" + betreff + "“ im OAK EHS-Cockpit:\n" + link
+      + "\n\nZum Öffnen ist die Anmeldung im EHS-Cockpit nötig.\n";
     location.href = "mailto:?subject=" + encodeURIComponent(betreff) + "&body=" + encodeURIComponent(text);
   });
   if(!frage) return;

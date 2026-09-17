@@ -422,7 +422,7 @@ async function uwEinstellungenDialog(){
 async function uwNachweisPdf(id){
   const n = uwSichtbar().find(x => x.id === id); if(!n) return;
   const w = window.open("", "_blank");
-  if(!w){ alert("Bitte Pop-up-Fenster für das Kundenportal erlauben."); return; }
+  if(!w){ alert("Bitte Pop-up-Fenster für das EHS-Cockpit erlauben."); return; }
   w.document.write('<p style="font-family:sans-serif;padding:20px">Nachweis wird geladen …</p>');
   let voll = {};
   try{ const r = await apiGet("/rest/v1/unterweisungsnachweise?select=unterschrift,nachfrage,praxis_von,praxis_am&id=eq." + encodeURIComponent(id), false); voll = (r && r[0]) || {}; }catch(e){}
@@ -466,7 +466,7 @@ ${voll.praxis_von ? `<tr><td class="k">Praktische Unterweisung</td><td>${esc(vol
 </table>
 <div class="sig">${sig ? `<img src="${sig}" alt="Unterschrift">` : '<div style="height:110px"></div>'}<div class="linie">Unterschrift der unterwiesenen Person${sig ? " (elektronisch am Terminal geleistet)" : ""}</div></div>
 <div class="fuss">Rechtsgrundlage: § 12 Arbeitsschutzgesetz, § 4 DGUV Vorschrift 1 (Unterweisung vor Aufnahme der Tätigkeit und mindestens einmal jährlich).<br>
-Erfasst am Unterweisungs-Terminal, gespeichert im Kundenportal von OAK engineering${n.config_version ? " · Fassung " + esc(n.config_version) : ""} · Druck am ${esc(new Date().toLocaleDateString("de-DE"))}.</div>
+Erfasst am Unterweisungs-Terminal, gespeichert im OAK EHS-Cockpit${n.config_version ? " · Fassung " + esc(n.config_version) : ""} · Druck am ${esc(new Date().toLocaleDateString("de-DE"))}.</div>
 </body></html>`;
   w.document.open(); w.document.write(html); w.document.close();
 }
@@ -823,7 +823,7 @@ async function uwTeilenDialog(neu){
   try{ const q = qrcode(0, "M"); q.addData(url); q.make(); qrSvg = q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }); }catch(e){ qrSvg = ""; }
   dlg.innerHTML = `<form method="dialog">
       <h3>Unterweisung am Handy & Tablet</h3>
-      <p class="pw-hint">Link aktivieren und QR-Code scannen lassen – das Cockpit öffnet sich, ohne Login. Mehrere Beschäftigte können gleichzeitig unterweisen, alle Nachweise landen hier. Danach wieder ausschalten; um 23:59 Uhr geht er von selbst aus.</p>
+      <p class="pw-hint">Link aktivieren und QR-Code scannen lassen – das Terminal öffnet sich, ohne Login. Mehrere Beschäftigte können gleichzeitig unterweisen, alle Nachweise landen hier. Danach wieder ausschalten; um 23:59 Uhr geht er von selbst aus.</p>
       <div class="uw-teilen-qr${UW_MOBIL.an ? "" : " aus"}">${qrSvg}</div>
       <div class="uw-teilen-schalter" data-uwmobil-platz></div>
       <div class="uw-teilen-link"><input type="text" readonly id="uwTeilenUrl" value="${esc(url)}"><button type="button" class="btn sek" id="uwTeilenKopie">Link kopieren</button></div>
