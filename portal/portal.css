@@ -1119,3 +1119,28 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .vh-gruppen{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px 22px}
 .vh-gruppe h4{margin:8px 0 4px;font-size:14px}
 .vh-gruppe ul{margin:0;padding-left:18px;font-size:13.5px;line-height:1.5;color:#344054}
+
+/* Gefahrstoffkataster: SDB-Aktualität, Knöpfe, Dokumente je Stoff */
+.gs-kopf{display:flex;justify-content:space-between;align-items:center;gap:10px 16px;flex-wrap:wrap;margin-bottom:8px}
+.gs-kopf .uw-erkl{margin:0}
+.gs-dokknoepfe{display:flex;gap:8px;flex-wrap:wrap}
+.gs-dokknoepfe .akt-zahl{margin-left:4px}
+.gs-sdb{font-weight:600;border-radius:99px;padding:2px 9px;cursor:help;white-space:nowrap}
+.gs-sdb-gut{color:#475467;background:#f2f4f7;font-weight:500}
+.gs-sdb-warnung{color:#7a4a00;background:#fff4e0}
+.gs-sdb-kritisch{color:#8e1b1b;background:#fdecea}
+.gs-sdb-block{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:8px 12px;border-radius:10px;font-size:14px}
+.gs-sdb-block.gs-sdb-gut{background:#f7f9fc;font-weight:400}
+.gs-sdb-block.gs-sdb-warnung{background:#fff4e0;font-weight:500}
+.gs-sdb-block.gs-sdb-kritisch{background:#fdecea;font-weight:500}
+.gs-sdb-akt{display:flex;gap:6px;flex-wrap:wrap}
+.gs-doks{display:flex;flex-direction:column;gap:6px}
+.gs-sammel{margin:8px 0 0;line-height:1.9}
+.gs-dokliste{display:flex;flex-direction:column;gap:6px;margin:6px 0 14px}
+.gs-dok{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--linie,#e3e8ef);border-radius:10px;
+  color:#101828;text-decoration:none;font-size:14.5px}
+.gs-dok:hover{border-color:var(--gruen,#2D6A4F);background:#f7f9fc}
+.gs-dok span{color:#98a2b3;font-size:20px;line-height:1}
+.gs-feld{border:1px solid var(--linie,#e3e8ef);border-radius:10px;padding:8px 12px 2px;margin:4px 0 12px}
+.gs-feld legend{font-size:12.5px;font-weight:700;color:var(--dunkel);padding:0 4px}
+.gs-feld.gs-fokus{border-color:#e08e0b;box-shadow:0 0 0 3px #fff4e0}

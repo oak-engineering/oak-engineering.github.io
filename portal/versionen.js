@@ -16,7 +16,9 @@ const EHS_VERSIONEN = [
       "Gefährdungsbeurteilungen, Betriebsanweisungen (Sammel-BA je Maschinentyp), QR-Codes, Hallenplan, Begehungsprotokolle",
       "Kennzeichen „nicht mehr aktuell“, wenn behobene Mängel noch nicht in die Dokumente eingearbeitet sind"]],
     ["Gefahrstoffe", [
-      "Gefahrstoffkataster mit GHS-Piktogrammen, H-Sätzen, Sicherheitsdatenblatt, Betriebsanweisung und Hautschutzplänen"]],
+      "Gefahrstoffkataster mit GHS-Piktogrammen, H-Sätzen und Sicherheitsdatenblatt",
+      "Kennzeichen, wenn ein Sicherheitsdatenblatt veraltet ist oder fehlt – mit „Aktualität geprüft“ und „Neue Fassung hochladen“",
+      "Je Stoff Platz für Gefährdungsbeurteilung und Betriebsanweisung; Sammel-Betriebsanweisungen und Hautschutzpläne über eigene Knöpfe"]],
     ["Termine & Nachweise", [
       "Kalender für Prüfungen und Fristen – mit Vorlagen (Stapler, Krane, E-Prüfung, Leitern, Tore, Feuerlöscher …), Folgetermin automatisch",
       "Qualifikationsnachweise (Stapler, Kran, Ersthelfer …) mit Ablaufdatum und Beauftragung",
