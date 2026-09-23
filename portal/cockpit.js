@@ -91,6 +91,92 @@ function ckDatum(s){
   return t.length === 3 ? `${t[2]}.${t[1]}.${t[0]}` : s;
 }
 
+/* Pflichtenstand (23.09.2026): Die Startseite beantwortet zuerst EINE Frage –
+   „steht der Betrieb sauber da?" – und erst danach kommen die Einzelzahlen.
+   Jeder Punkt ist aus vorhandenen Daten ableitbar; nichts wird geschätzt.
+   Ist etwas nicht bewertbar (Daten noch nicht geladen), zählt der Punkt als offen,
+   sagt das aber im Untertext – lieber ehrlich unklar als falsch grün. */
+function ckPflichtPunkte(d){
+  const jung = (datum, tage) => {
+    if(!datum) return false;
+    const t = new Date(String(datum).slice(0, 10));
+    return !isNaN(t) && (Date.now() - t.getTime()) / 864e5 <= tage;
+  };
+  return [
+    { label: "Beurteilung der Arbeitsbedingungen je Anlage", tun: "Fehlende Anlagen beurteilen lassen",
+      ok: d.z.anlagen > 0 && d.z.ohne === 0,
+      sub: d.z.anlagen ? `${d.z.anlagen - d.z.ohne} von ${d.z.anlagen} Anlagen beurteilt` : "noch keine Anlage erfasst",
+      ziel: "unterlagen/anlagen" },
+    { label: "Keine offenen Mängel im Gefahrbereich", tun: "Mängel im Gefahrbereich abarbeiten",
+      ok: d.mgGeladen && d.mgGefahr === 0, schwer: d.mgGefahr > 0,
+      sub: !d.mgGeladen ? "Mängel werden geladen"
+         : d.mgGefahr ? `${d.mgGefahr} im Gefahrbereich · ${d.mgOffen} offen insgesamt`
+         : `${d.mgOffen} offene Mängel, keiner im Gefahrbereich`,
+      ziel: "maengel" },
+    { label: "Begehung in den letzten 12 Monaten", tun: "Begehungstermin vereinbaren",
+      ok: jung(d.letzteBeg, 365),
+      sub: d.letzteBeg ? `zuletzt ${ckDatum(d.letzteBeg)}` : "noch keine Begehung dokumentiert",
+      ziel: "unterlagen/begehungen" },
+    { label: "Unterweisungen vollständig", tun: "Unterweisungen nachholen",
+      ok: d.uwFaellig === 0 && (!d.uwBeleg || d.uwBeleg.stammOk === d.uwBeleg.stamm),
+      sub: d.uwBeleg ? `${d.uwBeleg.stammOk} von ${d.uwBeleg.stamm} Stammkräften unterwiesen`
+         : (d.uwFaellig ? `${d.uwFaellig} fällig` : "keine fällig"),
+      ziel: "mehr/unterweisungen" },
+    { label: "Vorfälle aufgearbeitet", tun: "Offene Vorfälle abschließen",
+      ok: d.vOffen === 0,
+      sub: d.vOffen ? (d.vOffen === 1 ? "1 Vorfall noch offen" : `${d.vOffen} Vorfälle noch offen`) : "keine offenen Vorfälle",
+      ziel: "mehr/vorfaelle" },
+    { label: "Betriebsanweisungen vorhanden", tun: "Betriebsanweisungen erstellen lassen",
+      ok: d.baN > 0,
+      sub: d.baN ? `${d.baN} Betriebsanweisungen hinterlegt` : "noch keine hinterlegt",
+      ziel: "unterlagen/ba-sammel" },
+    { label: "Gefahrstoffkataster hinterlegt", tun: "Gefahrstoffkataster aufbauen",
+      ok: d.gsN > 0,
+      sub: d.gsN ? `${d.gsN} Dokumente im Kataster` : "noch keine Unterlagen",
+      ziel: "unterlagen/gefahrstoffe" },
+  ];
+}
+
+/* Statusblock: grosse Zahl + Fortschritt links, die Punkte rechts.
+   Farbe traegt nur, was Handlung braucht – erfuellte Punkte bleiben ruhig. */
+function ckStatusblock(punkte){
+  const erfuellt = punkte.filter(p => p.ok).length, gesamt = punkte.length;
+  const anteil = Math.round(erfuellt / gesamt * 100);
+  const haken = `<svg class="ck-ikon" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const ruf = `<svg class="ck-ikon" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3.5v5.2M8 12.2v.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
+  const zeile = p => {
+    const stufe = p.ok ? "ok" : (p.schwer ? "schwer" : "offen");
+    const innen = `<span class="ck-chip ck-${stufe}">${p.ok ? haken : ruf}${p.ok ? "erfüllt" : "offen"}</span>
+      <span class="ck-punkt-text"><b>${esc(p.label)}</b><span>${esc(p.sub)}</span></span>`;
+    return p.ziel ? `<a class="ck-punktzeile" href="#${esc(p.ziel)}">${innen}</a>`
+                  : `<div class="ck-punktzeile">${innen}</div>`;
+  };
+  /* Bei ungerader Anzahl bleibt in der zweispaltigen Liste eine Zelle leer –
+     die wird weiss gefuellt, sonst schimmert die Rahmenfarbe als Block durch. */
+  const luecke = punkte.length % 2 ? `<div class="ck-punktzeile ck-luecke"></div>` : "";
+  return `<div class="ck-status">
+    <div class="ck-status-kopf">
+      <div class="ck-status-zahl">${erfuellt}<span>von ${gesamt}</span></div>
+      <div class="ck-status-text">
+        <h3>Stand der Pflichten</h3>
+        <p>Was bei einer Prüfung durch Behörde oder Berufsgenossenschaft zuerst gefragt wird.</p>
+        <div class="ck-fortschritt" role="img" aria-label="${anteil} Prozent erfüllt">
+          <span style="width:${anteil}%"></span></div>
+      </div>
+    </div>
+    <div class="ck-punktliste">${punkte.map(zeile).join("")}${luecke}</div>
+  </div>`;
+}
+
+/* „Jetzt dran": nur die offenen Punkte, hoechstens drei – der Rest steht in der Liste darueber. */
+function ckJetzt(punkte){
+  const offen = punkte.filter(p => !p.ok).sort((a, b) => (b.schwer ? 1 : 0) - (a.schwer ? 1 : 0)).slice(0, 3);
+  if(!offen.length) return `<div class="ck-jetzt ck-jetzt-leer">Aktuell ist nichts überfällig.</div>`;
+  return `<div class="ck-jetzt"><h3>Das ist jetzt dran</h3>
+    ${offen.map(p => `<a class="ck-jetzt-zeile${p.schwer ? " ck-schwer" : ""}" href="#${esc(p.ziel || "")}">
+      <b>${esc(p.tun || p.label)}</b><span>${esc(p.sub)}</span></a>`).join("")}</div>`;
+}
+
 function renderCockpit(wrap, bereich){
   const sec = document.createElement("section");
   sec.className = "sektion";
@@ -112,17 +198,26 @@ function renderCockpit(wrap, bereich){
     const uwF = (typeof uwFaelligZahl === "function") ? uwFaelligZahl() : 0;
     const uwRows = (typeof uwSichtbar === "function") ? uwSichtbar() : [];
     const uwLetzt = uwRows.length ? uwRows[0].created_at : "";
+    const punkte = ckPflichtPunkte({
+      z, mgGeladen, mgOffen: mg.length, mgGefahr, letzteBeg, vOffen: vOffenN,
+      uwFaellig: uwF, uwBeleg: (typeof uwBelegZahlen === "function") ? uwBelegZahlen() : null,
+      baN: sichtbar().filter(r => r.kategorie === "ba-sammel").length,
+      gsN: sichtbar().filter(r => r.kategorie === "gefahrstoffe").length,
+    });
     inhalt = `
+      ${ckStatusblock(punkte)}
+      ${ckJetzt(punkte)}
+      <h3 class="ck-zwischen">Zahlen im Einzelnen</h3>
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich") : "wird geladen", mg.length ? "kritisch" : "gut", "maengel")}
+          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich") : "wird geladen", mgGefahr ? "kritisch" : "", "maengel")}
           ${(() => { const bz = (typeof uwBelegZahlen === "function") ? uwBelegZahlen() : null;
             const sub = bz ? (bz.stammOk + " von " + bz.stamm + " Stammkräften unterwiesen" + (bz.leih ? " · Leiharbeit " + bz.leihOk + " von " + bz.leih : ""))
                            : (uwLetzt ? "letzter Nachweis " + ckDatum(uwLetzt) : "noch kein Nachweis");
             return ckTile(uwF, "Unterweisungen fällig", sub, uwF ? "warnung" : "gut", "mehr/unterweisungen"); })()}
           ${ckTile(letzterV ? ckDatum(letzterV.ereignis_am || letzterV.angelegt_am) : "keiner", "letzter Vorfall", letzterV ? (ART[letzterV.art] || "Vorfall") + " · " + vOffenN + " offen" : "bisher nichts gemeldet", vOffenN ? "warnung" : "", "mehr/vorfaelle")}
           ${ckTile(ckDatum(letzteBeg), "letzte Begehung", begehungen.length + " Begehungsprotokolle", "", "unterlagen/begehungen")}
-          ${ckTile(z.gefahr + " von " + z.anlagen, "Anlagen im Gefahrbereich", z.besorgnis + " Besorgnis · " + z.akzeptanz + " Akzeptanz", z.gefahr ? "kritisch" : "gut", "unterlagen/anlagen?status=gefahr")}
+          ${ckTile(z.gefahr + " von " + z.anlagen, "Anlagen im Gefahrbereich", z.besorgnis + " Besorgnis · " + z.akzeptanz + " Akzeptanz", "", "unterlagen/anlagen?status=gefahr")}
           ${ckTile(ckDatum(z.letzte), "Unterlagen aktualisiert", z.anlagen + " Maschinen dokumentiert", "", "unterlagen")}
         </div>
         ${ckRing([
