@@ -103,9 +103,13 @@ function ckPflichtPunkte(d){
     return !isNaN(t) && (Date.now() - t.getTime()) / 864e5 <= tage;
   };
   return [
-    { label: "Beurteilung der Arbeitsbedingungen je Anlage", tun: "Fehlende Anlagen beurteilen lassen",
+    /* Bewusst „erfasste Anlagen": Das Portal kennt nur die dokumentierten Anlagen, nicht den
+       gesamten Maschinenpark des Betriebs (Nikolai, 23.09.2026 – bei Wibo sind erst 43 bewertet).
+       Eine Aussage „alle Anlagen beurteilt" waere darum falsch. */
+    { label: "Erfasste Anlagen beurteilt", tun: "Fehlende Anlagen beurteilen lassen",
       ok: d.z.anlagen > 0 && d.z.ohne === 0,
-      sub: d.z.anlagen ? `${d.z.anlagen - d.z.ohne} von ${d.z.anlagen} Anlagen beurteilt` : "noch keine Anlage erfasst",
+      sub: d.z.anlagen ? `${d.z.anlagen - d.z.ohne} von ${d.z.anlagen} erfassten Anlagen beurteilt`
+                       : "noch keine Anlage erfasst",
       ziel: "unterlagen/anlagen" },
     { label: "Keine offenen Mängel im Gefahrbereich", tun: "Mängel im Gefahrbereich abarbeiten",
       ok: d.mgGeladen && d.mgGefahr === 0, schwer: d.mgGefahr > 0,
@@ -177,6 +181,38 @@ function ckJetzt(punkte){
       <b>${esc(p.tun || p.label)}</b><span>${esc(p.sub)}</span></a>`).join("")}</div>`;
 }
 
+/* Lage fuer den Pflichtenstand aus den geladenen Daten einsammeln. */
+function ckLage(){
+  const z = ckAnlagenZahlen();
+  const mgGeladen = (typeof MG_GELADEN !== "undefined" && MG_GELADEN);
+  const mg = mgGeladen ? mgSichtbar().filter(m => m.status !== "erledigt") : [];
+  const vf = vSichtbar().filter(v => v.domaene !== "umwelt");
+  const begehungen = sichtbar().filter(r => r.kategorie === "begehungen");
+  return {
+    z, mgGeladen, mgOffen: mg.length,
+    mgGefahr: mg.filter(m => (m.bewertung_manuell || m.band) === "gefahr").length,
+    letzteBeg: begehungen.map(r => r.stand).filter(Boolean).sort().slice(-1)[0] || "",
+    vOffen: vf.filter(v => v.status !== "erledigt").length,
+    uwFaellig: (typeof uwFaelligZahl === "function") ? uwFaelligZahl() : 0,
+    uwBeleg: (typeof uwBelegZahlen === "function") ? uwBelegZahlen() : null,
+    baN: sichtbar().filter(r => r.kategorie === "ba-sammel").length,
+    gsN: sichtbar().filter(r => r.kategorie === "gefahrstoffe").length,
+  };
+}
+
+/* Eigener Reiter „Stand der Pflichten" (Nikolai, 23.09.2026: nicht auf der Startseite,
+   die bleibt wie sie war). */
+function renderPflichten(wrap){
+  const punkte = ckPflichtPunkte(ckLage());
+  const sec = document.createElement("section");
+  sec.className = "sektion ck-blick";
+  sec.innerHTML = ckStatusblock(punkte) + ckJetzt(punkte)
+    + `<div class="ck-fuss">Die Punkte werden aus den Unterlagen dieses Portals abgeleitet.
+       Anlagen zählen nur, soweit sie hier erfasst sind – der vollständige Maschinenpark des
+       Betriebs ist im Portal nicht hinterlegt. Die Liste ersetzt keine behördliche Prüfung.</div>`;
+  wrap.appendChild(sec);
+}
+
 function renderCockpit(wrap, bereich){
   const sec = document.createElement("section");
   sec.className = "sektion";
@@ -198,26 +234,17 @@ function renderCockpit(wrap, bereich){
     const uwF = (typeof uwFaelligZahl === "function") ? uwFaelligZahl() : 0;
     const uwRows = (typeof uwSichtbar === "function") ? uwSichtbar() : [];
     const uwLetzt = uwRows.length ? uwRows[0].created_at : "";
-    const punkte = ckPflichtPunkte({
-      z, mgGeladen, mgOffen: mg.length, mgGefahr, letzteBeg, vOffen: vOffenN,
-      uwFaellig: uwF, uwBeleg: (typeof uwBelegZahlen === "function") ? uwBelegZahlen() : null,
-      baN: sichtbar().filter(r => r.kategorie === "ba-sammel").length,
-      gsN: sichtbar().filter(r => r.kategorie === "gefahrstoffe").length,
-    });
     inhalt = `
-      ${ckStatusblock(punkte)}
-      ${ckJetzt(punkte)}
-      <h3 class="ck-zwischen">Zahlen im Einzelnen</h3>
       <div class="ck-oben">
         <div class="ck-reihe">
-          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich") : "wird geladen", mgGefahr ? "kritisch" : "", "maengel")}
+          ${ckTile(mgGeladen ? mg.length : "…", "offene Mängel", mgGeladen ? (mgZaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich") : "wird geladen", mg.length ? "kritisch" : "gut", "maengel")}
           ${(() => { const bz = (typeof uwBelegZahlen === "function") ? uwBelegZahlen() : null;
             const sub = bz ? (bz.stammOk + " von " + bz.stamm + " Stammkräften unterwiesen" + (bz.leih ? " · Leiharbeit " + bz.leihOk + " von " + bz.leih : ""))
                            : (uwLetzt ? "letzter Nachweis " + ckDatum(uwLetzt) : "noch kein Nachweis");
             return ckTile(uwF, "Unterweisungen fällig", sub, uwF ? "warnung" : "gut", "mehr/unterweisungen"); })()}
           ${ckTile(letzterV ? ckDatum(letzterV.ereignis_am || letzterV.angelegt_am) : "keiner", "letzter Vorfall", letzterV ? (ART[letzterV.art] || "Vorfall") + " · " + vOffenN + " offen" : "bisher nichts gemeldet", vOffenN ? "warnung" : "", "mehr/vorfaelle")}
           ${ckTile(ckDatum(letzteBeg), "letzte Begehung", begehungen.length + " Begehungsprotokolle", "", "unterlagen/begehungen")}
-          ${ckTile(z.gefahr + " von " + z.anlagen, "Anlagen im Gefahrbereich", z.besorgnis + " Besorgnis · " + z.akzeptanz + " Akzeptanz", "", "unterlagen/anlagen?status=gefahr")}
+          ${ckTile(z.gefahr + " von " + z.anlagen, "Anlagen im Gefahrbereich", z.besorgnis + " Besorgnis · " + z.akzeptanz + " Akzeptanz", z.gefahr ? "kritisch" : "gut", "unterlagen/anlagen?status=gefahr")}
           ${ckTile(ckDatum(z.letzte), "Unterlagen aktualisiert", z.anlagen + " Maschinen dokumentiert", "", "unterlagen")}
         </div>
         ${ckRing([

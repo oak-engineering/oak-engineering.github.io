@@ -15,6 +15,7 @@ function zurApp(){ $("#loginView").classList.add("hidden"); $("#appView").classL
 const DOMAENEN = [
   { key: "arbeitssicherheit", label: "Arbeitssicherheit", subs: [
       { kat: "ck-arbeitssicherheit", label: "Überblick" },
+      { kat: "pflichten",     label: "Stand der Pflichten" },
       { kat: "hallenplan",    label: "Hallenplan" },
       { kat: "anlagen",       label: "Anlagen &amp; Maschinensicherheit" },
       { kat: "ba-sammel",     label: "Betriebsanweisungen" },
@@ -442,6 +443,7 @@ const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vor
                      terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch", aktuelles: "Aktuelles", datenschutz: "Datenschutz" };
 const UNTERLAGEN = [
   { bereich: "Arbeitssicherheit", kats: [
+      ["pflichten", "Stand der Pflichten", "Was bei einer Prüfung zuerst gefragt wird"],
       ["anlagen", "Anlagenkataster", "Alle Anlagen – Kurzinfo, offene Mängel und Dokumente"],
       ["hallenplan", "Hallenplan", "Alle Maschinen mit ihrem Risiko"],
       ["gbu", "Gefährdungsbeurteilungen", "Je Maschine und je Tätigkeit"],
@@ -567,6 +569,7 @@ function renderSektion(wrap, kat, label, zeigeHeading){
       wrap.appendChild(k); }
     renderCockpit(wrap, kat.slice(3)); return;
   }
+  if(kat === "pflichten"){ renderPflichten(wrap); return; }                        // cockpit.js: Pflichtenstand als eigener Reiter
   if(kat === "vf-arbeitssicherheit"){ vorfallMeldenKnopf(wrap, "arbeitssicherheit"); renderVorfaelle(wrap, "arbeitssicherheit"); return; }
   if(kat === "vf-umwelt"){ vorfallMeldenKnopf(wrap, "umwelt"); renderVorfaelle(wrap, "umwelt"); return; }               // vorfaelle.js
   if(kat === "energie-massnahmen"){ renderEnergie(wrap); return; }                  // energie.js
@@ -769,6 +772,7 @@ function renderSeitenleiste(){
   el.innerHTML = `<div class="sl-liste">
       <button type="button" class="sl-eintrag sl-klapp" id="slKlapp" title="Seitenleiste ein- oder ausklappen"><svg viewBox="0 0 24 24" aria-hidden="true">${NAV_SVG.klapp}</svg><span>Einklappen</span></button>
       ${e("start", null, "start", "Start")}
+      ${START_BEREICH === "arbeitssicherheit" ? e("unterlagen", "pflichten", "maengel", "Stand der Pflichten") : ""}
       ${e("mehr", "todos", "todos", "To-dos")}
       ${e("mehr", "kalender", "kalender", "Kalender")}
       ${START_BEREICH === "arbeitssicherheit"
