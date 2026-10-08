@@ -182,44 +182,44 @@ function renderUwKatalog(wrap){
   const gebucht = UW_MODULE.filter(m => uwGebucht(m.thema));
   const gesperrt = UW_MODULE.filter(m => !uwGebucht(m.thema));
 
-  const karte = (m, frei) => {
+  /* Eine Zeile je Modul (Nikolai 08.10.: Kacheln waren verbuggt, Liste gewuenscht).
+     Kopfzeile = Titel, Eckdaten, Status, Aktionen; Beschreibung und Rechtsbezug
+     klappen darunter auf, damit die Liste kurz bleibt. */
+  const zeile = (m, frei) => {
     const b = UW_BUCHUNG.find(x => x.thema === m.thema && (!uwSlug() || x.kunde_slug === uwSlug()));
+    const d = frei ? uwDokument(m.thema) : null;
+    const n = uwZusaetze(m.thema).length, g = uwGruppenVon(m.thema).length;
+    const eck = [m.dauer_min ? "ca. " + m.dauer_min + " Min." : "Dauer offen",
+                 "alle " + m.turnus_monate + " Monate",
+                 UW_STAND_LABEL[m.stand] || m.stand];
+    const mehr = !!(m.beschreibung || (m.rechtsbezug && m.rechtsbezug.length) || (frei && b && b.gebucht_am));
     return `
-    <div class="uw-modul${frei ? "" : " uw-gesperrt"}" data-thema="${esc(m.thema)}">
-      <div class="uw-modul-kopf">
-        <b>${esc(m.titel)}</b>
+    <div class="uw-kat-zeile${frei ? "" : " uw-gesperrt"}" data-thema="${esc(m.thema)}">
+      <div class="uw-kat-kopf">
+        <div class="uw-kat-titel">
+          <b>${esc(m.titel)}</b>
+          ${m.untertitel ? `<span class="uw-kat-unter">${esc(m.untertitel)}</span>` : ""}
+          <span class="uw-kat-eck">${eck.map(esc).join(" · ")}${m.praktischer_anteil
+            ? ` · <span class="uw-praxis">praktischer Anteil nötig</span>` : ""}</span>
+        </div>
         ${frei ? `<span class="uw-zettel uw-gut">freigeschaltet</span>`
                : `<span class="uw-zettel uw-schloss">${uwSchloss()} nicht gebucht</span>`}
+        <div class="uw-kat-aktion">
+          ${frei ? (d ? `<a class="btn-klein uw-kat-start" href="${viewerUrl(d.doc_typ || "html", d.storage_path, m.titel)}"
+                         target="_blank" rel="noopener">Starten</a>`
+                      : `<span class="uw-kat-hinweis">Inhalt folgt</span>`) : ""}
+          ${frei ? `<button type="button" class="btn-klein" data-detail="${esc(m.thema)}">Gruppen &amp; Inhalte${(g || n) ? ` (${g}/${n})` : ""}</button>` : ""}
+          ${uwDarfBuchen() ? `<button type="button" class="btn-klein" data-buchen="${esc(m.thema)}" data-frei="${frei ? 1 : 0}">
+              ${frei ? "Sperren" : "Freischalten"}</button>
+            <a class="btn-klein" href="editor.html?thema=${encodeURIComponent(m.thema)}" target="_blank" rel="noopener"
+               title="Grundstock-Inhalte direkt im Browser bearbeiten">Bearbeiten</a>` : ""}
+        </div>
       </div>
-      <div class="uw-modul-unter">${esc(m.untertitel || "")}</div>
-      <p class="uw-modul-text">${esc(m.beschreibung || "")}</p>
-      <div class="uw-modul-fuss">
-        <span>${m.dauer_min ? "ca. " + m.dauer_min + " Min." : "Dauer offen"}</span>
-        <span>Wiederholung alle ${m.turnus_monate} Monate</span>
-        <span>${UW_STAND_LABEL[m.stand] || m.stand}</span>
-        ${m.praktischer_anteil ? `<span class="uw-praxis">praktischer Anteil nötig</span>` : ""}
-      </div>
-      ${(m.rechtsbezug && m.rechtsbezug.length)
-        ? `<div class="uw-recht">${m.rechtsbezug.map(esc).join(" · ")}</div>` : ""}
-      ${frei && b && b.gebucht_am ? `<div class="uw-recht">freigeschaltet am ${uwsDatum(b.gebucht_am)}</div>` : ""}
-      ${(function(){
-        if(!frei) return "";
-        const d = uwDokument(m.thema);
-        return d
-          ? `<div class="uw-oeffnen"><a class="btn" href="${viewerUrl(d.doc_typ || "html", d.storage_path, m.titel)}"
-               target="_blank" rel="noopener">Unterweisung starten</a></div>`
-          : `<div class="uw-recht">Inhalt wird bereitgestellt.</div>`;
-      })()}
-      ${frei ? `<div class="uw-admin"><button type="button" class="btn-klein"
-          data-detail="${esc(m.thema)}">Gruppen &amp; eigene Inhalte
-          ${(function(){ const n = uwZusaetze(m.thema).length,
-                             g = uwGruppenVon(m.thema).length;
-              return (g || n) ? `(${g} Gruppen · ${n} Inhalte)` : ""; })()}</button></div>` : ""}
-      ${uwDarfBuchen() ? `<div class="uw-admin">
-          <button type="button" class="btn-klein" data-buchen="${esc(m.thema)}" data-frei="${frei ? 1 : 0}">
-            ${frei ? "Freischaltung zurücknehmen" : "Für diesen Kunden freischalten"}</button>
-          <a class="btn-klein" href="editor.html?thema=${encodeURIComponent(m.thema)}" target="_blank" rel="noopener"
-             title="Grundstock-Inhalte direkt im Browser bearbeiten (Stift im Modul)">Inhalte bearbeiten</a></div>` : ""}
+      ${mehr ? `<details class="uw-kat-mehr"><summary>Beschreibung &amp; Rechtsbezug</summary>
+        ${m.beschreibung ? `<p class="uw-modul-text">${esc(m.beschreibung)}</p>` : ""}
+        ${(m.rechtsbezug && m.rechtsbezug.length) ? `<div class="uw-recht">${m.rechtsbezug.map(esc).join(" · ")}</div>` : ""}
+        ${frei && b && b.gebucht_am ? `<div class="uw-recht">freigeschaltet am ${uwsDatum(b.gebucht_am)}</div>` : ""}
+      </details>` : ""}
     </div>`;
   };
 
@@ -227,9 +227,9 @@ function renderUwKatalog(wrap){
     <div class="sek-kopf"><h2>Modulkatalog</h2>
       <span class="zaehler">${gebucht.length} freigeschaltet · ${gesperrt.length} verfügbar</span></div>
     ${gebucht.length ? `<h3 class="uw-gruppe">Für diesen Betrieb freigeschaltet</h3>
-      <div class="uw-raster">${gebucht.map(m => karte(m, true)).join("")}</div>` : ""}
+      <div class="uw-kat-liste">${gebucht.map(m => zeile(m, true)).join("")}</div>` : ""}
     ${gesperrt.length ? `<h3 class="uw-gruppe">Weitere Module von OAK engineering</h3>
-      <div class="uw-raster">${gesperrt.map(m => karte(m, false)).join("")}</div>` : ""}
+      <div class="uw-kat-liste">${gesperrt.map(m => zeile(m, false)).join("")}</div>` : ""}
     <div class="ck-fuss">Der Katalog zeigt das vollständige Angebot. Fachlicher Inhalt und
       Rechtsbezug kommen von OAK engineering und werden zentral aktuell gehalten; Auswahl,
       eigene Ergänzungen und Medien liegen beim Betrieb. Zum Freischalten weiterer Module

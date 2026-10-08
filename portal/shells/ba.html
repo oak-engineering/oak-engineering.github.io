@@ -294,6 +294,13 @@ const T = (DOC.ba && DOC.ba.t)
       en:Object.assign({},T_DEFAULT.de,T_DEFAULT.en,DOC.ba.t.en||{}),
       tr:Object.assign({},T_DEFAULT.de,T_DEFAULT.tr,DOC.ba.t.tr||{}) }
   : { de:T_DEFAULT.de, en:Object.assign({},T_DEFAULT.de,T_DEFAULT.en), tr:Object.assign({},T_DEFAULT.de,T_DEFAULT.tr) };
+/* Geraete-Nachweis (01.10.2026): Einzel-BA = Protokoll der fachlichen Bewertung, verbindlich ist die zentrale BA. */
+if(DOC.meta && DOC.meta.dokumentart==="nachweis"){
+  const z=DOC.meta.gbu_zentral_titel||"";
+  T.de.l_sign="Fachliche Bewertung (Prüfer) – verbindlich ist die zentrale Betriebsanweisung"+(z?" „"+z+"“":"");
+  T.en.l_sign="Technical assessment (inspector) – the central operating instruction is binding"+(z?" (“"+z+"”)":"");
+  T.tr.l_sign="Teknik değerlendirme (denetçi) – merkezi işletme talimatı bağlayıcıdır"+(z?" („"+z+"“)":"");
+}
 
 /* Kopf/Metadaten */
 (function(){

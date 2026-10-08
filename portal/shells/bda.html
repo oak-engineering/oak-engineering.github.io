@@ -485,6 +485,20 @@ function renderReifegrad(rg){
   if(m.maschine){ document.title = "GBU/BdA – " + m.maschine;
     const h = document.querySelector(".kopf h1"); if(h) h.textContent = m.maschine; }
   if(m.untertitel){ const s = document.querySelector(".kopf .sub"); if(s) s.textContent = m.untertitel; }
+  /* Geraete-Nachweis (01.10.2026): Einzel-GBU = Protokoll der fachlichen Bewertung, Freigabe durch die
+     Geschaeftsfuehrung nur auf der zentralen GBU der Geraetegruppe. */
+  if(m.dokumentart==="nachweis"){
+    const s=document.querySelector(".sign");
+    if(s){
+      s.innerHTML='<div class="l"><canvas class="sig" data-rolle="sifa" width="360" height="84"></canvas>'
+        +'Fachliche Bewertung (Prüfer) &middot; Name, Datum'
+        +'<button type="button" class="sigclr" onclick="clearSig(&quot;sifa&quot;)">Unterschrift löschen</button></div>'
+        +'<div class="l nachweis-hinweis"></div>';
+      s.querySelector(".nachweis-hinweis").textContent="Protokoll der fachlichen Bewertung dieses Geräts – keine Freigabe "
+        +"durch die Geschäftsführung. Verbindlich ist die "+(m.gbu_zentral_titel||"zentrale GBU der Gerätegruppe")
+        +", die von der Geschäftsführung freigegeben wird.";
+    }
+  }
   renderReifegrad(m.reifegrad);
   const imgs = document.querySelectorAll(".kopf img");
   if(m.oakLogoB64 && imgs[0]) imgs[0].src = m.oakLogoB64;

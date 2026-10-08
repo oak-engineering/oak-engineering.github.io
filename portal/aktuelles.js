@@ -48,7 +48,9 @@ async function renderAktuelles(wrap){
     </article>`;
   const reihenfolge = { gilt: 1, kommt: 0, vorhaben: 2 };
   const sortiert = recht.slice().sort((a, b) => (neu(b) - neu(a)) || (reihenfolge[a.status] - reihenfolge[b.status]) || (a.sortierung - b.sortierung));
+  const stand = recht.reduce((m, r) => (r.geaendert_am && r.geaendert_am > m) ? r.geaendert_am : m, "");
   sec.innerHTML = `<h2 class="ul-bereich">Rechtliche Neuerungen</h2>
+    ${stand ? `<div class="uw-leise">Stand ${esc(aktDatum(stand))} · gepflegt von OAK engineering</div>` : ""}
     ${sortiert.length ? `<div class="akt-recht-raster">${sortiert.map(rechtKarte).join("")}</div>` : `<div class="ck-fuss">Keine Einträge.</div>`}
     <h2 class="ul-bereich" id="aktVersionen">Versionshinweise</h2>
     <div id="aktVersionenInhalt"></div>`;

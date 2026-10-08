@@ -121,6 +121,14 @@ function ckPflichtPunkte(d){
       ok: jung(d.letzteBeg, 365),
       sub: d.letzteBeg ? `zuletzt ${ckDatum(d.letzteBeg)}` : "noch keine Begehung dokumentiert",
       ziel: "unterlagen/begehungen" },
+    /* Nikolai 01.10.2026: Organisations-Check (Reifegradinstrument BGHM) jaehrlich; die Erstaufnahme
+       zaehlt nicht als Jahrescheck, sie macht ihn nur sichtbar faellig. */
+    { label: "Organisations-Check im letzten Jahr", tun: "Jährlichen Organisations-Check durchführen",
+      ok: jung(d.orgCheck, 365),
+      sub: d.orgCheck ? `zuletzt ${ckDatum(d.orgCheck)}`
+         : d.orgErst ? `Erstaufnahme ${ckDatum(d.orgErst)} liegt vor – jährlicher Check fällig`
+         : "noch nicht durchgeführt – fällig",
+      ziel: "" },
     { label: "Unterweisungen vollständig", tun: "Unterweisungen nachholen",
       ok: d.uwFaellig === 0 && (!d.uwBeleg || d.uwBeleg.stammOk === d.uwBeleg.stamm),
       sub: d.uwBeleg ? `${d.uwBeleg.stammOk} von ${d.uwBeleg.stamm} Stammkräften unterwiesen`
@@ -197,6 +205,8 @@ function ckLage(){
     uwBeleg: (typeof uwBelegZahlen === "function") ? uwBelegZahlen() : null,
     baN: sichtbar().filter(r => r.kategorie === "ba-sammel").length,
     gsN: sichtbar().filter(r => r.kategorie === "gefahrstoffe").length,
+    orgCheck: sichtbar().filter(r => r.kategorie === "org-check" && r.doc_typ !== "erstaufnahme").map(r => r.stand).filter(Boolean).sort().slice(-1)[0] || "",
+    orgErst: sichtbar().filter(r => r.kategorie === "org-check" && r.doc_typ === "erstaufnahme").map(r => r.stand).filter(Boolean).sort().slice(-1)[0] || "",
   };
 }
 

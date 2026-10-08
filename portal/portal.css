@@ -418,6 +418,26 @@ a.ck-punktzeile:hover{background:#f6faf8;}
   background:#fff;color:var(--gruen);border-radius:7px;padding:7px 13px;cursor:pointer;}
 .btn-klein:hover{background:var(--akzent);}
 .btn-klein:disabled{opacity:.5;cursor:default;}
+/* Modulkatalog als Liste: eine Zeile je Modul, Details aufklappbar */
+.uw-kat-liste{background:#fff;border:1px solid var(--rand);border-radius:10px;overflow:hidden;}
+.uw-kat-zeile{border-bottom:1px solid var(--rand);border-left:4px solid var(--hellgruen);padding:12px 16px;}
+.uw-kat-zeile:last-child{border-bottom:0;}
+.uw-kat-zeile.uw-gesperrt{border-left-color:var(--rand);background:#fafbfb;}
+.uw-kat-kopf{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.uw-kat-titel{flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.uw-kat-titel b{font-size:15px;color:var(--dunkel);}
+.uw-gesperrt .uw-kat-titel b{color:var(--grau);}
+.uw-kat-unter{font-size:12.5px;color:var(--gruen);font-weight:600;}
+.uw-kat-eck{font-size:12px;color:var(--grau);}
+.uw-kat-aktion{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.uw-kat-aktion a.btn-klein{text-decoration:none;}
+.uw-kat-start{background:var(--gruen);color:#fff;}
+.uw-kat-start:hover{background:var(--dunkel);}
+.uw-kat-hinweis{font-size:12px;color:var(--grau);font-style:italic;}
+.uw-kat-mehr{margin-top:6px;}
+.uw-kat-mehr summary{font-size:12.5px;color:var(--gruen);cursor:pointer;font-weight:600;}
+.uw-kat-mehr[open] summary{margin-bottom:6px;}
+@media (max-width:600px){ .uw-kat-aktion{width:100%;} }
 .uw-oeffnen{margin-top:8px;}
 .uw-oeffnen .btn{display:inline-block;text-decoration:none;padding:9px 16px;font-size:13.5px;}
 
