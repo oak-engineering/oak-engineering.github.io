@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Lehrgang – Ihre Antwort</title>
+<link rel="stylesheet" href="lg.css">
+</head>
+<body>
+<main>
+  <div class="lg-kopf" id="kopf">Lehrgang · anonyme Umfrage</div>
+  <div id="inhalt"><p class="lg-hinweis">Frage wird geladen …</p></div>
+  <p class="lg-hinweis">Ihre Antwort wird anonym gespeichert – ohne Namen, ohne Anmeldung, ohne Cookies.</p>
+</main>
+<script src="lg.js"></script>
+<script>
+"use strict";
+const id = lgParam("f");
+const box = document.getElementById("inhalt");
+const merkKey = "lg_abgegeben_" + id;
+
+function abgegeben(){ try { return localStorage.getItem(merkKey) === "1"; } catch(e){ return false; } }
+function merken(){ try { localStorage.setItem(merkKey, "1"); } catch(e){} }
+
+function danke(frage, nochmal){
+  box.innerHTML = '<div class="lg-karte"><h1>' + lgEsc(frage.frage) + '</h1><p class="lg-ok">Danke – Ihre Antwort ist angekommen.</p>'
+    + (nochmal ? '<button class="zweit" id="noch">Weitere Antwort geben</button> ' : '')
+    + '<a href="live.html?f=' + encodeURIComponent(id) + '"><button class="zweit">Ergebnisse ansehen</button></a></div>';
+  const b = document.getElementById("noch"); if (b) b.onclick = () => zeige(frage, true);
+}
+
+async function senden(frage, werte){
+  for (const w of werte) await lgPost("lg_antwort", { frage: id, wert: String(w).slice(0, 300) });
+}
+
+function zeige(frage, ohneSperre){
+  if (!frage){ box.innerHTML = '<div class="lg-karte"><p class="lg-fehler">Diese Umfrage gibt es nicht.</p></div>'; return; }
+  if (!frage.offen){ box.innerHTML = '<div class="lg-karte"><h1>' + lgEsc(frage.frage) + '</h1><p>Die Umfrage ist geschlossen.</p><a href="live.html?f=' + encodeURIComponent(id) + '"><button class="zweit">Ergebnisse ansehen</button></a></div>'; return; }
+  const mehrmals = frage.typ === "liste" || frage.typ === "text";
+  if (!ohneSperre && !mehrmals && abgegeben()){ danke(frage, false); return; }
+  const opt = Array.isArray(frage.optionen) ? frage.optionen : [];
+  let feld = "";
+  if (frage.typ === "zahl") feld = '<div class="lg-reihe"><input type="text" inputmode="decimal" id="wert" placeholder="Ihre Schätzung" autocomplete="off">' + (frage.einheit ? "<span>" + lgEsc(frage.einheit) + "</span>" : "") + "</div>";
+  else if (frage.typ === "auswahl") feld = opt.map(o => '<label><input type="radio" name="w" value="' + lgEsc(o) + '"> ' + lgEsc(o) + "</label>").join("");
+  else if (frage.typ === "mehrfach") feld = opt.map(o => '<label><input type="checkbox" name="w" value="' + lgEsc(o) + '"> ' + lgEsc(o) + "</label>").join("");
+  else if (frage.typ === "liste") feld = '<div class="lg-reihe"><input type="text" id="wert" placeholder="Stichwort eingeben" maxlength="120" autocomplete="off"><button class="zweit" id="plus" type="button">+</button></div><p class="lg-hinweis">Mehrere Einträge möglich – jeweils mit + hinzufügen.</p><div class="lg-chips" id="chips"></div>';
+  else feld = '<textarea id="wert" maxlength="300" placeholder="Ihre Antwort"></textarea>';
+  box.innerHTML = '<form class="lg-karte" id="form"><h1>' + lgEsc(frage.frage) + "</h1>" + feld
+    + '<p><button type="submit" id="los">Absenden</button></p><p id="meld"></p></form>';
+  const chips = [];
+  const plus = document.getElementById("plus");
+  if (plus){
+    const neu = () => { const i = document.getElementById("wert"); const v = lgNorm(i.value); if (v){ chips.push(v); i.value = ""; i.focus();
+      document.getElementById("chips").innerHTML = chips.map(c => "<span>" + lgEsc(c) + "</span>").join(""); } };
+    plus.onclick = neu;
+    document.getElementById("wert").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); neu(); } });
+  }
+  document.getElementById("form").onsubmit = async e => {
+    e.preventDefault();
+    const meld = document.getElementById("meld");
+    let werte = [];
+    if (frage.typ === "auswahl" || frage.typ === "mehrfach") werte = [...document.querySelectorAll("input[name=w]:checked")].map(i => i.value);
+    else if (frage.typ === "liste"){ const v = lgNorm(document.getElementById("wert").value); if (v) chips.push(v); werte = chips.slice(); }
+    else { const v = lgNorm(document.getElementById("wert").value); if (v) werte = [v]; }
+    if (frage.typ === "zahl" && werte.length && lgZahl(werte[0]) == null){ meld.className = "lg-fehler"; meld.textContent = "Bitte eine Zahl eingeben."; return; }
+    if (!werte.length){ meld.className = "lg-fehler"; meld.textContent = "Bitte zuerst etwas eingeben oder auswählen."; return; }
+    document.getElementById("los").disabled = true;
+    try { await senden(frage, werte); if (!mehrmals) merken(); danke(frage, mehrmals); }
+    catch(err){ meld.className = "lg-fehler"; meld.textContent = err.message; document.getElementById("los").disabled = false; }
+  };
+}
+
+(async () => {
+  if (!id){ box.innerHTML = '<div class="lg-karte"><p class="lg-fehler">Kein Umfrage-Code im Link.</p></div>'; return; }
+  try { zeige(await lgFrage(id)); }
+  catch(e){ box.innerHTML = '<div class="lg-karte"><p class="lg-fehler">Umfrage konnte nicht geladen werden. Bitte später erneut versuchen.</p></div>'; }
+})();
+</script>
+</body>
+</html>

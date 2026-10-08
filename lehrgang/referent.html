@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Lehrgang – Referentenansicht</title>
+<link rel="stylesheet" href="lg.css">
+<style>
+  main{ max-width:1100px; }
+  .tabs{ display:flex; gap:8px; margin:10px 0 4px; }
+  .tabs button{ background:#fff; color:var(--accent); border:1px solid var(--line); }
+  .tabs button.an{ background:var(--accent); color:#fff; }
+  table{ width:100%; border-collapse:collapse; background:#fff; }
+  th,td{ text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ font-size:.85rem; color:var(--muted); }
+  .klein{ font-size:.85rem; }
+  .schalter{ padding:6px 10px; font-size:.85rem; }
+  .zu{ background:#8a939b; }
+  .faq-eintrag{ display:grid; grid-template-columns:54px 1fr 1fr auto; gap:8px; align-items:start; margin:8px 0; }
+  .faq-eintrag textarea{ min-height:64px; }
+  .faq-eintrag input{ text-align:center; }
+  .gespeichert{ color:var(--ok); font-size:.85rem; }
+  #druck{ display:none; }
+  @media print{
+    body > main > *:not(#druck){ display:none !important; }
+    #druck{ display:block !important; }
+    #druck h1{ font-size:18pt; } #druck h2{ font-size:12pt; margin:14pt 0 4pt; }
+    #druck p{ margin:0 0 6pt; } #druck .fuss{ margin-top:18pt; font-size:9pt; color:#555; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="lg-kopf">Lehrgang · Referentenansicht · <span id="sitzname"></span></div>
+
+  <form class="lg-karte" id="login" style="display:none">
+    <h1>Anmelden</h1>
+    <p class="lg-hinweis">Mit dem Portal-Zugang (Admin).</p>
+    <p><input type="text" id="mail" placeholder="E-Mail" autocomplete="username"></p>
+    <p><input type="password" id="pw" placeholder="Passwort" autocomplete="current-password" style="width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:10px"></p>
+    <p><button type="submit">Anmelden</button> <span id="loginmeld" class="lg-fehler"></span></p>
+  </form>
+
+  <div id="app" style="display:none">
+    <div class="tabs"><button data-tab="umfragen" class="an">Umfragen</button><button data-tab="faq">FAQ / Notizen</button></div>
+
+    <section id="tab-umfragen">
+      <div class="lg-karte"><table><thead><tr><th>#</th><th>Frage</th><th>Typ</th><th>Antw.</th><th>Status</th><th>Links</th></tr></thead><tbody id="fragen"></tbody></table></div>
+      <div class="lg-karte" id="detail"><p class="lg-hinweis">Frage anklicken, um die Ergebnisse zu sehen.</p></div>
+    </section>
+
+    <section id="tab-faq" style="display:none">
+      <div class="lg-karte">
+        <h1>FAQ während des Kurses</h1>
+        <p class="lg-hinweis">Fragen sofort notieren, Antwort jetzt oder später ergänzen. Speichert automatisch. Nr. bestimmt die Reihenfolge im PDF.</p>
+        <div class="lg-reihe"><input type="text" id="neufrage" placeholder="Neue Frage notieren … (Enter)"><button id="neu" type="button">Hinzufügen</button></div>
+        <div id="faqliste"></div>
+        <p><button class="zweit" id="drucken" type="button">FAQ als PDF drucken</button></p>
+      </div>
+    </section>
+
+    <div id="druck"></div>
+  </div>
+</main>
+<script src="../portal/auth.js"></script>
+<script src="lg.js"></script>
+<script>
+"use strict";
+const sitzung = lgParam("s");
+let fragen = [], aktiv = null, faq = [];
+
+async function start(){
+  if (!sitzung){ document.querySelector("main").innerHTML += '<p class="lg-fehler">Link ohne Sitzung (?s=…).</p>'; return; }
+  const s = await lgGet("lg_sitzung?code=eq." + encodeURIComponent(sitzung) + "&select=*");
+  document.getElementById("sitzname").textContent = s[0] ? s[0].titel : sitzung;
+  if (!(await token())){ zeigeLogin(); return; }
+  try { await apiGet("/rest/v1/lg_faq?select=id&limit=1"); }
+  catch(e){ zeigeLogin(); return; }
+  document.getElementById("app").style.display = "";
+  await ladeFragen(); await ladeFaq();
+  setInterval(() => { ladeFragen(); if (aktiv) zeigeDetail(aktiv); }, 4000);
+}
+function zeigeLogin(){
+  const f = document.getElementById("login"); f.style.display = "";
+  f.onsubmit = async e => { e.preventDefault();
+    try { await login(document.getElementById("mail").value.trim(), document.getElementById("pw").value); location.reload(); }
+    catch(err){ document.getElementById("loginmeld").textContent = err.message; } };
+}
+
+/* Umfragen */
+async function ladeFragen(){
+  fragen = await lgGet("lg_frage?sitzung=eq." + encodeURIComponent(sitzung) + "&select=*&order=nr.asc");
+  const anz = {};
+  if (fragen.length){
+    const a = await lgGet("lg_antwort?select=frage&frage=in.(" + fragen.map(f => '"' + f.id + '"').join(",") + ")&limit=5000");
+    a.forEach(x => anz[x.frage] = (anz[x.frage] || 0) + 1);
+  }
+  document.getElementById("fragen").innerHTML = fragen.map(f =>
+    '<tr data-id="' + lgEsc(f.id) + '"><td>' + f.nr + '</td><td><a href="#" class="oeffnen">' + lgEsc(f.frage) + '</a></td><td class="klein">' + f.typ
+    + '</td><td>' + (anz[f.id] || 0) + '</td><td><button class="schalter ' + (f.offen ? "" : "zu") + '" data-schalt="' + lgEsc(f.id) + '">' + (f.offen ? "offen" : "geschlossen")
+    + '</button></td><td class="klein"><a href="live.html?f=' + encodeURIComponent(f.id) + '" target="_blank">Beamer</a> · <a href="index.html?f=' + encodeURIComponent(f.id) + '" target="_blank">Teilnehmer</a></td></tr>').join("");
+  document.querySelectorAll(".oeffnen").forEach(a => a.onclick = e => { e.preventDefault(); aktiv = a.closest("tr").dataset.id; zeigeDetail(aktiv); });
+  document.querySelectorAll("[data-schalt]").forEach(b => b.onclick = async () => {
+    const f = fragen.find(x => x.id === b.dataset.schalt);
+    await apiSend("PATCH", "/rest/v1/lg_frage?id=eq." + encodeURIComponent(f.id), { offen: !f.offen }, "return=minimal"); ladeFragen(); });
+}
+async function zeigeDetail(id){
+  const f = fragen.find(x => x.id === id); if (!f) return;
+  const a = await lgAntworten(id);
+  document.getElementById("detail").innerHTML = "<h1>" + lgEsc(f.frage) + "</h1>" + lgErgebnisHTML(f, a, true)
+    + '<p class="nicht-drucken"><button class="zweit schalter" id="leeren">Antworten dieser Frage löschen (Testdaten)</button></p>';
+  document.getElementById("leeren").onclick = async () => {
+    if (!confirm("Alle Antworten zu dieser Frage löschen?")) return;
+    await apiSend("DELETE", "/rest/v1/lg_antwort?frage=eq." + encodeURIComponent(id), null, "return=minimal"); zeigeDetail(id); ladeFragen(); };
+}
+
+/* FAQ */
+async function ladeFaq(){
+  faq = await apiGet("/rest/v1/lg_faq?sitzung=eq." + encodeURIComponent(sitzung) + "&select=*&order=reihenfolge.asc,id.asc");
+  document.getElementById("faqliste").innerHTML = faq.map(e =>
+    '<div class="faq-eintrag" data-id="' + e.id + '"><input type="number" value="' + e.reihenfolge + '" data-feld="reihenfolge" title="Nr.">'
+    + '<textarea data-feld="frage" placeholder="Frage">' + lgEsc(e.frage) + '</textarea>'
+    + '<textarea data-feld="antwort" placeholder="Antwort (Stichpunkte genügen)">' + lgEsc(e.antwort || "") + '</textarea>'
+    + '<div><button class="zweit schalter" data-weg="' + e.id + '">Löschen</button><div class="gespeichert"></div></div></div>').join("");
+  document.querySelectorAll(".faq-eintrag [data-feld]").forEach(el => {
+    let t; el.oninput = () => { clearTimeout(t); t = setTimeout(() => speichern(el), 700); };
+  });
+  document.querySelectorAll("[data-weg]").forEach(b => b.onclick = async () => {
+    if (!confirm("Eintrag löschen?")) return;
+    await apiSend("DELETE", "/rest/v1/lg_faq?id=eq." + b.dataset.weg, null, "return=minimal"); ladeFaq(); });
+}
+async function speichern(el){
+  const zeile = el.closest(".faq-eintrag"); const daten = {}; daten[el.dataset.feld] = el.dataset.feld === "reihenfolge" ? parseInt(el.value || "0", 10) : el.value;
+  daten.geaendert = new Date().toISOString();
+  await apiSend("PATCH", "/rest/v1/lg_faq?id=eq." + zeile.dataset.id, daten, "return=minimal");
+  zeile.querySelector(".gespeichert").textContent = "gespeichert";
+}
+async function neu(){
+  const i = document.getElementById("neufrage"); const t = i.value.trim(); if (!t) return;
+  const nr = faq.length ? Math.max(...faq.map(e => e.reihenfolge)) + 1 : 1;
+  await apiSend("POST", "/rest/v1/lg_faq", { sitzung, frage: t, antwort: "", reihenfolge: nr }, "return=minimal");
+  i.value = ""; ladeFaq();
+}
+function drucken(){
+  const titel = document.getElementById("sitzname").textContent;
+  document.getElementById("druck").innerHTML = "<h1>Fragen und Antworten aus dem Lehrgang</h1><p>" + lgEsc(titel) + "</p>"
+    + faq.filter(e => e.frage.trim()).map((e, i) => "<h2>" + (i + 1) + ". " + lgEsc(e.frage) + "</h2><p>" + lgEsc(e.antwort || "– wird nachgereicht –").replace(/\n/g, "<br>") + "</p>").join("")
+    + '<p class="fuss">Stand ' + new Date().toLocaleDateString("de-DE") + ". Die Antworten geben den Rechtsstand zum Zeitpunkt des Lehrgangs wieder und ersetzen keine Rechtsberatung im Einzelfall.</p>";
+  window.print();
+}
+
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("an", x === b));
+  document.getElementById("tab-umfragen").style.display = b.dataset.tab === "umfragen" ? "" : "none";
+  document.getElementById("tab-faq").style.display = b.dataset.tab === "faq" ? "" : "none";
+});
+document.getElementById("neu").onclick = neu;
+document.getElementById("neufrage").addEventListener("keydown", e => { if (e.key === "Enter"){ e.preventDefault(); neu(); } });
+document.getElementById("drucken").onclick = drucken;
+start();
+</script>
+</body>
+</html>

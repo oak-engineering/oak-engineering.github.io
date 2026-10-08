@@ -1,0 +1,48 @@
+/* Lehrgang-Umfragen – neutrales Layout (ohne Markenauftritt) */
+:root{ --ink:#1f2a33; --muted:#5f6b75; --line:#d9dee3; --bg:#f5f7f9; --accent:#2f5d7c; --accent-light:#e3edf4; --ok:#2e7d4f; }
+*{ box-sizing:border-box; }
+body{ margin:0; font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:var(--bg); line-height:1.45; }
+main{ max-width:760px; margin:0 auto; padding:20px 16px 48px; }
+h1{ font-size:1.35rem; margin:0 0 6px; }
+.lg-kopf{ font-size:.82rem; color:var(--muted); margin-bottom:14px; }
+.lg-karte{ background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; margin:14px 0; }
+label{ display:block; padding:10px 12px; border:1px solid var(--line); border-radius:10px; margin:8px 0; cursor:pointer; background:#fff; }
+label:has(input:checked){ border-color:var(--accent); background:var(--accent-light); }
+input[type=text],input[type=number],textarea{ width:100%; font:inherit; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+textarea{ min-height:110px; resize:vertical; }
+button{ font:inherit; font-weight:600; padding:12px 18px; border:0; border-radius:10px; background:var(--accent); color:#fff; cursor:pointer; }
+button.zweit{ background:#fff; color:var(--accent); border:1px solid var(--accent); }
+button:disabled{ opacity:.5; cursor:default; }
+.lg-reihe{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.lg-reihe input{ flex:1; min-width:160px; }
+.lg-hinweis{ color:var(--muted); font-size:.9rem; }
+.lg-ok{ color:var(--ok); font-weight:600; }
+.lg-fehler{ color:#a33; font-weight:600; }
+.lg-chips span{ display:inline-block; background:var(--accent-light); border-radius:999px; padding:4px 10px; margin:3px; font-size:.9rem; }
+/* Ergebnisse */
+.lg-anzahl{ color:var(--muted); margin:4px 0 12px; }
+.lg-leer{ color:var(--muted); }
+.lg-kennz{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+.lg-kennz div{ flex:1; min-width:120px; background:var(--accent-light); border-radius:10px; padding:12px; text-align:center; }
+.lg-kennz b{ display:block; font-size:1.5em; color:var(--accent); }
+.lg-kennz span{ font-size:.85rem; color:var(--muted); }
+.lg-hist{ display:flex; align-items:flex-end; gap:6px; height:200px; padding-top:18px; }
+.lg-h{ flex:1; height:100%; display:flex; flex-direction:column; justify-content:flex-end; position:relative; text-align:center; }
+.lg-h i{ display:block; background:var(--accent); border-radius:6px 6px 0 0; min-height:2px; }
+.lg-h span{ font-size:.7rem; color:var(--muted); margin-top:4px; }
+.lg-h em{ position:absolute; top:-2px; left:0; right:0; font-style:normal; font-size:.8rem; }
+.lg-balken .lg-b{ display:grid; grid-template-columns:minmax(120px,40%) 1fr 40px; gap:10px; align-items:center; margin:8px 0; }
+.lg-bb{ background:#eef1f4; border-radius:6px; height:22px; overflow:hidden; }
+.lg-bb i{ display:block; height:100%; background:var(--accent); }
+.lg-bz{ text-align:right; font-weight:600; }
+.lg-wolke{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:baseline; }
+.lg-wolke span{ color:var(--accent); font-weight:600; }
+.lg-wolke small{ color:var(--muted); font-weight:400; font-size:.7em; }
+.lg-loesung{ margin-top:16px; padding:12px; border-radius:10px; background:#fff6e0; border:1px solid #f0d58a; }
+/* Beamer-Ansicht */
+body.live main{ max-width:1200px; }
+body.live h1{ font-size:2.2rem; }
+body.live .lg-wolke{ font-size:1.6rem; }
+body.live .lg-kennz b{ font-size:2.4em; }
+body.live .lg-hist{ height:300px; }
+@media print{ body{ background:#fff; } .nicht-drucken{ display:none !important; } .lg-karte{ border:0; padding:0; } }

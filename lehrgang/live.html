@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Lehrgang – Ergebnisse</title>
+<link rel="stylesheet" href="lg.css">
+</head>
+<body class="live">
+<main>
+  <div class="lg-kopf">Lehrgang · Ergebnisse live (aktualisiert alle 3 Sekunden)</div>
+  <h1 id="titel">…</h1>
+  <div class="lg-karte" id="erg"></div>
+  <p class="nicht-drucken"><button class="zweit" id="aufl">Auflösung zeigen</button></p>
+</main>
+<script src="lg.js"></script>
+<script>
+"use strict";
+const id = lgParam("f");
+let frage = null, aufloesen = false;
+async function laden(){
+  try {
+    if (!frage){ frage = await lgFrage(id); document.getElementById("titel").textContent = frage ? frage.frage : "Umfrage nicht gefunden";
+      if (!frage || !frage.loesung) document.getElementById("aufl").style.display = "none"; }
+    if (!frage) return;
+    document.getElementById("erg").innerHTML = lgErgebnisHTML(frage, await lgAntworten(id), aufloesen);
+  } catch(e){ /* nächster Versuch beim nächsten Takt */ }
+}
+document.getElementById("aufl").onclick = () => { aufloesen = !aufloesen; document.getElementById("aufl").textContent = aufloesen ? "Auflösung ausblenden" : "Auflösung zeigen"; laden(); };
+laden(); setInterval(laden, 3000);
+</script>
+</body>
+</html>
