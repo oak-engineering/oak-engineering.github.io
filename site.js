@@ -244,6 +244,10 @@ document.addEventListener('click', e => {
   }
 
   const imPortal = /\/portal\//.test(location.pathname);
+  /* Unterseiten (z. B. /tools/) liegen eine Ebene tiefer: relative Ziele der Leiste
+     sonst ins Leere (tools/index.html). */
+  const BASIS = /\/tools\//.test(location.pathname) ? '../' : '';
+  const zielUrl = h => (!h || /^([a-z]+:|#|\/|\.\.\/)/i.test(h)) ? h : BASIS + h;
   const datei = location.pathname.split('/').pop() || 'index.html';
   const LEISTUNGSSEITEN = ['arbeitssicherheit.html','umweltschutz.html','auditierung.html','ki-digitalisierung.html','schulungen.html'];
 
@@ -280,7 +284,7 @@ document.addEventListener('click', e => {
     ziele.forEach(z => {
       const k = document.createElement(z.href ? 'a' : 'button');
       k.className = 'tab-i';
-      if(z.href){ k.href = z.href; } else { k.type = 'button'; k.dataset.blatt = z.id; }
+      if(z.href){ k.href = zielUrl(z.href); } else { k.type = 'button'; k.dataset.blatt = z.id; }
       k.dataset.ziel = z.href || z.id;
       const t = document.createElement('span');
       t.textContent = z.label;
@@ -350,7 +354,7 @@ document.addEventListener('click', e => {
     eintraege.forEach(e => {
       if(e.kopf){ const k = document.createElement('h2'); k.textContent = e.kopf; k.className = 'tb-kopf2'; blatt.appendChild(k); return; }
       const a = document.createElement('a');
-      a.href = e.href || '#';
+      a.href = zielUrl(e.href) || '#';
       if(e.domZiel) a.dataset.domZiel = e.domZiel;
       if(e.portal) a.dataset.portal = e.portal;          // '#domaene/reiter' im Portal
       if(e.aktion) a.dataset.aktion = e.aktion;          // Knopf-Id im Portal (Passwort, Abmelden)
