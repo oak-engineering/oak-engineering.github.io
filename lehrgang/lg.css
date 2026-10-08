@@ -18,6 +18,9 @@ button:disabled{ opacity:.5; cursor:default; }
 .lg-hinweis{ color:var(--muted); font-size:.9rem; }
 .lg-ok{ color:var(--ok); font-weight:600; }
 .lg-fehler{ color:#a33; font-weight:600; }
+.lg-vorschlaege{ display:flex; flex-wrap:wrap; gap:8px; margin:6px 0 4px; }
+.lg-vorschlaege .lg-vk{ background:#fff; color:var(--accent); border:1px solid var(--accent); font-weight:500; padding:10px 14px; }
+.lg-vorschlaege .lg-vk.an{ background:var(--accent); color:#fff; }
 .lg-chips span{ display:inline-block; background:var(--accent-light); border-radius:999px; padding:4px 10px; margin:3px; font-size:.9rem; }
 /* Ergebnisse */
 .lg-anzahl{ color:var(--muted); margin:4px 0 12px; }

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Lehrgang – Ihre Antwort</title>
-<link rel="stylesheet" href="lg.css">
+<link rel="stylesheet" href="lg.css?v=2">
 </head>
 <body>
 <main>
@@ -13,7 +13,7 @@
   <div id="inhalt"><p class="lg-hinweis">Frage wird geladen …</p></div>
   <p class="lg-hinweis">Ihre Antwort wird anonym gespeichert – ohne Namen, ohne Anmeldung, ohne Cookies.</p>
 </main>
-<script src="lg.js"></script>
+<script src="lg.js?v=2"></script>
 <script>
 "use strict";
 const id = lgParam("f");
@@ -46,9 +46,30 @@ function zeige(frage, ohneSperre){
   else if (frage.typ === "mehrfach") feld = opt.map(o => '<label><input type="checkbox" name="w" value="' + lgEsc(o) + '"> ' + lgEsc(o) + "</label>").join("");
   else if (frage.typ === "liste") feld = '<div class="lg-reihe"><input type="text" id="wert" placeholder="Stichwort eingeben" maxlength="120" autocomplete="off"><button class="zweit" id="plus" type="button">+</button></div><p class="lg-hinweis">Mehrere Einträge möglich – jeweils mit + hinzufügen.</p><div class="lg-chips" id="chips"></div>';
   else feld = '<textarea id="wert" maxlength="300" placeholder="Ihre Antwort"></textarea>';
-  box.innerHTML = '<form class="lg-karte" id="form"><h1>' + lgEsc(frage.frage) + "</h1>" + feld
+  const vorschl = Array.isArray(frage.vorschlaege) ? frage.vorschlaege : [];
+  const knoepfe = vorschl.length && ["liste", "text", "zahl"].includes(frage.typ)
+    ? '<div class="lg-vorschlaege">' + vorschl.map(v => '<button type="button" class="lg-vk" data-v="' + lgEsc(v) + '">'
+        + lgEsc(v) + (frage.typ === "zahl" && frage.einheit ? " " + lgEsc(frage.einheit) : "") + "</button>").join("")
+      + '</div><p class="lg-hinweis">' + (frage.typ === "zahl" ? "Antippen oder eigene Zahl eingeben." : frage.typ === "liste" ? "Antippen (mehrere möglich) – oder unten eigene Begriffe ergänzen." : "Thema antippen und/oder eigene Frage schreiben.") + "</p>"
+    : "";
+  box.innerHTML = '<form class="lg-karte" id="form"><h1>' + lgEsc(frage.frage) + "</h1>" + knoepfe + feld
     + '<p><button type="submit" id="los">Absenden</button></p><p id="meld"></p></form>';
   const chips = [];
+  let praefix = "";
+  document.querySelectorAll(".lg-vk").forEach(b => b.onclick = () => {
+    const v = b.dataset.v, feldEl = document.getElementById("wert");
+    if (frage.typ === "zahl"){ document.querySelectorAll(".lg-vk").forEach(x => x.classList.remove("an")); b.classList.add("an"); feldEl.value = v; }
+    else if (frage.typ === "liste"){ const i = chips.indexOf(v); if (i >= 0){ chips.splice(i, 1); b.classList.remove("an"); } else { chips.push(v); b.classList.add("an"); }
+      document.getElementById("chips").innerHTML = chips.map(c => "<span>" + lgEsc(c) + "</span>").join(""); }
+    else {
+      // Thema voranstellen, eigenen Text dahinter behalten
+      const eigen = feldEl.value.startsWith(praefix) ? feldEl.value.slice(praefix.length) : feldEl.value;
+      b.classList.toggle("an");
+      const gewaehlt = [...document.querySelectorAll(".lg-vk.an")].map(x => x.dataset.v);
+      praefix = gewaehlt.length ? "[" + gewaehlt.join("; ") + "] " : "";
+      feldEl.value = praefix + eigen; feldEl.focus();
+    }
+  });
   const plus = document.getElementById("plus");
   if (plus){
     const neu = () => { const i = document.getElementById("wert"); const v = lgNorm(i.value); if (v){ chips.push(v); i.value = ""; i.focus();
