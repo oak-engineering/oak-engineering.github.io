@@ -256,6 +256,14 @@ function renderCockpit(wrap, bereich){
           ${ckTile(ckDatum(letzteBeg), "letzte Begehung", begehungen.length + " Begehungsprotokolle", "", "unterlagen/begehungen")}
           ${ckTile(z.gefahr + " von " + z.anlagen, "Anlagen im Gefahrbereich", z.besorgnis + " Besorgnis · " + z.akzeptanz + " Akzeptanz", z.gefahr ? "kritisch" : "gut", "unterlagen/anlagen?status=gefahr")}
           ${ckTile(ckDatum(z.letzte), "Unterlagen aktualisiert", z.anlagen + " Maschinen dokumentiert", "", "unterlagen")}
+          ${(() => { /* Sicherheitsdatenblaetter (Nikolai 12.10.2026): aktuell · angefordert · offen – Regel wie im Kataster (gsSdbStand) */
+            if(typeof gsLaden !== "function" || typeof gsSdbStand !== "function") return "";
+            if(GS_GELADEN_FUER !== AKTIV){ gsLaden().then(() => { if(typeof renderSektionen === "function") renderSektionen(); }); return ckTile("…", "Sicherheitsdatenblätter aktuell", "wird geladen", "", "unterlagen/gefahrstoffe"); }
+            const st = GS_ROWS.filter(g => g.aktiv).map(gsSdbStand);
+            if(!st.length) return "";
+            const ok = st.filter(s => s.klasse === "gut").length, anf = st.filter(s => s.angefordert).length, offen = st.length - ok - anf;
+            return ckTile(ok + " von " + st.length, "Sicherheitsdatenblätter aktuell",
+              (anf ? anf + " angefordert · " : "") + (offen ? offen + " offen" : "keine offen"), offen ? "warnung" : (anf ? "" : "gut"), "unterlagen/gefahrstoffe"); })()}
         </div>
         ${ckRing([
           { name: "Gefahrbereich", wert: z.gefahr, klasse: "kritisch" },
