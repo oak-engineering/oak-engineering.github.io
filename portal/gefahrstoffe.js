@@ -91,7 +91,8 @@ function gsLuecken(g){ return [g.gbu_pfad ? "" : "GBU", g.ba_pfad ? "" : "BA"].f
 /* Verwendung (Nikolai 12.10.2026): in Verwendung · Verwendung klären · nicht mehr verwendet.
    „aktiv" (bool) leitet die Datenbank daraus ab; alte Zeilen ohne Status zaehlen nach „aktiv". */
 const GS_VERWENDUNG = { aktiv: "In Verwendung", offen: "Verwendung klären", inaktiv: "Nicht mehr verwendet" };
-function gsVerwendung(g){ return g.verwendung_status || (g.aktiv ? "aktiv" : "inaktiv"); }
+function gsVerwendung(g){   // nur bekannte Werte (DB hat zusaetzlich einen CHECK) – landet ungeescaped in einem Attribut
+  return Object.prototype.hasOwnProperty.call(GS_VERWENDUNG, g.verwendung_status) ? g.verwendung_status : (g.aktiv ? "aktiv" : "inaktiv"); }
 
 async function renderGefahrstoffe(wrap){
   const sec = document.createElement("section"); sec.className = "sektion ul-liste-seite gs-seite";
