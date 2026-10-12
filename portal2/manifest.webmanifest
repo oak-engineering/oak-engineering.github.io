@@ -1,0 +1,16 @@
+{
+  "name": "OAK Arbeitsschutz",
+  "short_name": "Arbeitsschutz",
+  "description": "OAK Arbeitsschutz: Betrieb vor Ort, Organisation und Steuerung des Arbeitsschutzes – Mängel, Unterlagen, Unterweisungen, Ziele",
+  "start_url": "/portal2/index.html#start",
+  "scope": "/portal2/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1f4e79",
+  "lang": "de",
+  "icons": [
+    { "src": "../portal/icons/portal-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "../portal/icons/portal-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] }
+}
