@@ -1,8 +1,14 @@
 /* OAK Arbeitsschutz-App – bewusst schlicht: Listenzeile + Popup, Ampel mit Zahl/Text, Admin-Knoepfe bernstein. */
-:root{--blau:#1f4e79;--blau2:#e8f0f8;--gruen:#2e9e5b;--gruen2:#e6f5ec;--gelb:#e8a800;--gelb2:#fff6dd;--rot:#d64545;--rot2:#fdeeee;
+:root{--blau:#2D6A4F;--blau2:#D8F3DC;--oak-dunkel:#1B4332;--oak-hell:#52B788;--gruen:#2e9e5b;--gruen2:#e6f5ec;--gelb:#e8a800;--gelb2:#fff6dd;--rot:#d64545;--rot2:#fdeeee;
   --grau:#6b7785;--linie:#d6dee8;--bg:#f4f7fa;--text:#1d2733;--bern:#b7791f;--bern2:#fff4e0}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600 700;font-display:swap;src:url(../assets/fonts/cormorant-garamond-600-normal.woff2) format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300 500;font-display:swap;src:url(../assets/fonts/cormorant-garamond-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Jost';font-style:normal;font-weight:300;font-display:swap;src:url(../assets/fonts/jost-300-normal.woff2) format('woff2')}
+@font-face{font-family:'Jost';font-style:normal;font-weight:400;font-display:swap;src:url(../assets/fonts/jost-400-normal.woff2) format('woff2')}
+@font-face{font-family:'Jost';font-style:normal;font-weight:500;font-display:swap;src:url(../assets/fonts/jost-500-normal.woff2) format('woff2')}
+@font-face{font-family:'Jost';font-style:normal;font-weight:600;font-display:swap;src:url(../assets/fonts/jost-600-normal.woff2) format('woff2')}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;font-size:15px}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:15px}
 button{font-family:inherit}
 [hidden]{display:none!important}
 .btn{background:var(--blau);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer}
@@ -112,3 +118,14 @@ table.tab td{border-bottom:1px solid var(--linie);padding:8px 6px;vertical-align
 .mz:first-child{border-top:0}.mz.mz-kopf{padding:0;border:0;font-weight:600}
 .mz .chip{white-space:normal}
 table.tab td:nth-child(3){min-width:130px}
+
+/* OAK-CI (12.10.2026): Überschriften Cormorant Garamond, Linien-Icons im Menü wie im Kundenportal */
+h1.seite,.karte h2,.marke,.login h1,.dlg-kopf h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;letter-spacing:.2px}
+h1.seite{font-size:28px}.karte h2{font-size:20px}.marke{font-size:22px}
+.seitenleiste a svg,.blatt a svg{width:20px;height:20px;flex:0 0 20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* Handy (12.10.2026): Inhalt darf schmaler werden als breite Reiter/Kacheln – sonst lief die Seite seitlich über */
+main{min-width:0;overflow-wrap:break-word}
+@media(max-width:820px){#haupt table{display:block;max-width:100%;overflow-x:auto}}
+@media(max-width:820px){.reiter{flex-wrap:wrap;overflow-x:visible}.kacheln{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+  .kachel .zahl{font-size:22px}h1.seite{font-size:24px}.tabwrap{overflow-x:auto}}
+.form label{min-width:0}.form select,.form input,.form textarea{max-width:100%;min-width:0}

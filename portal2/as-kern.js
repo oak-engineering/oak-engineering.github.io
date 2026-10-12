@@ -378,6 +378,36 @@ function asPfad(){
   ];
 }
 
+/* Linien-Icons je Seite (Zeichen aus dem Kundenportal, ergänzt um die App-Seiten) – keine Emoji/Schriftzeichen */
+const AS_ICON = {
+  start: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/>',
+  cockpit: '<circle cx="12" cy="13" r="8"/><path d="M12 13l4-4M7 13h1M16 13h1M12 8v1"/>',
+  pflichten: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="m7.5 12.5 3 3 6-7"/>',
+  organisation: '<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/>',
+  nachweise: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2.2"/><path d="M5.8 16.2a3.4 3.4 0 0 1 6.4 0M14.5 10h4M14.5 13.5h3"/>',
+  check: '<path d="M9 4h6a1 1 0 0 1 1 1v1H8V5a1 1 0 0 1 1-1z"/><path d="M8 5H6a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2"/><path d="m8.5 13 2.5 2.5 4.5-5"/>',
+  bda: '<path d="M12 3.5 2.8 20h18.4L12 3.5z"/><path d="M12 10v4.2M12 17.4h.01"/>',
+  anlagen: '<path d="M3 21V10.5l5.5 3.5V10.5l5.5 3.5V7l7 4v10z"/><path d="M7 17.5h2M11.5 17.5h2M16 17.5h2"/>',
+  maengel: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5z"/>',
+  gefahrstoffe: '<path d="M9 3h6M10 3v6.5L4.6 18.8A1.5 1.5 0 0 0 5.9 21h12.2a1.5 1.5 0 0 0 1.3-2.2L14 9.5V3"/><path d="M7.2 14.5h9.6"/>',
+  hallenplan: '<rect x="3" y="4" width="18" height="16" rx="1"/><path d="M3 10h7v10M14 4v6h7M14 14h7"/>',
+  vorfaelle: '<path d="M12 3.5 2.8 20h18.4L12 3.5z"/><path d="M12 10v4.2M12 17.4h.01"/>',
+  vorort: '<path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0C18.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.3"/>',
+  massnahmen: '<path d="M10 6h10M10 12h10M10 18h10"/><path d="m3.5 6 1.5 1.5L7.5 5M3.5 12l1.5 1.5 2.5-2.5M3.5 18l1.5 1.5 2.5-2.5"/>',
+  unterweisungen: '<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/>',
+  mitzeichnung: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+  steuerung: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
+  kalender: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M8 14h3v3H8z"/>',
+  fragen: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m21 7-9 6-9-6"/>',
+  aktuelles: '<path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2z"/><path d="M19 9h1.5V18a1.5 1.5 0 0 1-3 0"/><path d="M7.5 9h8M7.5 12.5h8M7.5 16h5"/>',
+  prozesse: '<rect x="3" y="4" width="6" height="5" rx="1"/><rect x="15" y="4" width="6" height="5" rx="1"/><rect x="9" y="15" width="6" height="5" rx="1"/><path d="M9 6.5h6M6 9v3.5h6V15M18 9v3.5h-6"/>',
+  unterlagen: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/>',
+  energie: '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
+  bericht: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7.5h6M9 11h6"/>',
+  datenschutz: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+};
+function asIcon(k, s){ return AS_ICON[k] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${AS_ICON[k]}</svg>` : `<i>${s.icon || ""}</i>`; }
+
 /* ---------------- Navigation ---------------- */
 function asGehe(ziel){ location.hash = "#" + ziel; }
 function asHashLesen(){
@@ -389,7 +419,7 @@ function asHashLesen(){
 }
 function asNav(){
   const liste = Object.entries(AS_SEITEN).filter(([, s]) => AS.fachkraft || !s.nurFachkraft).sort((a, b) => a[1].sort - b[1].sort);
-  const html = liste.map(([k, s]) => `<a href="#${k}" class="${AS.seite === k ? "an" : ""}"><i>${s.icon}</i>${esc(s.titel)}</a>`).join("");
+  const html = liste.map(([k, s]) => `<a href="#${k}" class="${AS.seite === k ? "an" : ""}">${asIcon(k, s)}${esc(s.titel)}</a>`).join("");
   document.getElementById("nav").innerHTML = html;
   document.getElementById("blatt").innerHTML = html;
   document.getElementById("menueTitel").textContent = (AS_SEITEN[AS.seite] || {}).titel || "Bereiche";

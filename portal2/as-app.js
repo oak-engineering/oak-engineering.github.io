@@ -17,7 +17,7 @@ function asMarkeAnwenden(){
   setz("--blau", m.farbe); setz("--blau2", m.akzent);
   let meta = document.querySelector('meta[name="theme-color"]');
   if(!meta){ meta = document.createElement("meta"); meta.name = "theme-color"; document.head.appendChild(meta); }
-  meta.content = m.farbe || "#1f4e79";
+  meta.content = m.farbe || "#2D6A4F";
   const marke = document.querySelector(".kopf .marke"); if(!marke) return;
   let img = document.getElementById("asKundeLogo");
   if(m.logo){
@@ -39,6 +39,13 @@ function asNameFragen(danach){
       AS.ich = w.name; document.getElementById("ichName").textContent = w.name + " · " + AS.kontoName; if(danach) danach(); } }] });
 }
 function asNameSetzen(){
+  // Prüfansicht für OAK: ?als=betrieb zeigt die Oberfläche eines Betriebskontos (nur Anzeige – die Datenrechte bleiben die des Admins)
+  if(AS.admin && /[?&]als=betrieb\b/.test(location.search) && !AS.alsBetrieb){
+    AS.alsBetrieb = true; AS.admin = false; AS.fachkraft = false;
+    const b = document.createElement("div"); b.className = "nodruck";
+    b.style.cssText = "position:fixed;bottom:70px;right:14px;z-index:40;background:#b7791f;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px";
+    b.textContent = "Prüfansicht: so sieht es ein Betriebskonto"; document.body.appendChild(b);
+  }
   if(AS.kontoName === undefined) AS.kontoName = AS.ich;
   asPasswortKnopf();
   if(!asGemeinsamerZugang()) return;
