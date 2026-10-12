@@ -113,7 +113,7 @@ async function renderGefahrstoffe(wrap){
       <span class="gs-signal gs-${g.signalwort === "Gefahr" ? "gefahr" : g.signalwort === "Achtung" ? "achtung" : "ohne"}">${esc(g.signalwort || "–")}</span>
       <span class="gs-piktos">${gsPiktoHtml(g.h_saetze)}</span>
       <div class="ul-z-name"><b>${esc(g.bezeichnung)}</b><span>${esc([g.hersteller, (g.bereiche || []).join(", ")].filter(Boolean).join(" · "))}</span></div>
-      <div class="ul-z-info">${gsVerwendung(g) === "offen" ? `<span class="gs-klaeren" title="Mit dem Betrieb klären, ob der Stoff noch verwendet wird">Verwendung klären</span>` : ""}<span class="gs-sdb gs-sdb-${st.klasse}" title="${esc(st.text)}">${esc(st.kurz)}</span>
+      <div class="ul-z-info"><span class="gs-verw gs-verw-${gsVerwendung(g)}">${GS_VERWENDUNG[gsVerwendung(g)]}</span><span class="gs-sdb gs-sdb-${st.klasse}" title="${esc(st.text)}">${esc(st.kurz)}</span>
         ${l.length ? `<span class="gs-luecke" title="Stoffbezogene Gefährdungsbeurteilung (EMKG) und Betriebsanweisung">${esc(l.join(" + "))} fehlt</span>` : ""}</div>
       <span class="ul-pfeil" aria-hidden="true">›</span></div>`; };
   sec.innerHTML = `<div class="gs-kopf">
@@ -125,19 +125,20 @@ async function renderGefahrstoffe(wrap){
         ${gsDarfPflegen() ? `<button type="button" class="btn sek" id="gsNeu">Stoff aufnehmen</button>` : ""}</div></div>
     <div class="mg-filter ul-filter"><input type="search" class="uw-suche" id="gsSuche" placeholder="Suchen (Name, Hersteller, H-Satz …)" autocomplete="off">
       ${bereiche.length > 1 ? `<select class="uw-fassung" id="gsBereich"><option value="">Alle Bereiche</option>${bereiche.map(b => `<option>${esc(b)}</option>`).join("")}</select>` : ""}
+      <select class="uw-fassung" id="gsVerwF"><option value="">In Verwendung + klären</option><option value="aktiv">In Verwendung</option><option value="offen">Verwendung klären</option><option value="inaktiv">Nicht mehr verwendet</option><option value="alle">Alle Stoffe</option></select>
       <select class="uw-fassung" id="gsSignal"><option value="">Alle Einstufungen</option><option>Gefahr</option><option>Achtung</option></select>
-      <select class="uw-fassung" id="gsStand"><option value="">Alle Unterlagen</option><option value="sdb">SDB veraltet oder fehlt</option><option value="gbu">GBU fehlt</option><option value="ba">BA fehlt</option><option value="klaeren">Verwendung klären</option></select>
+      <select class="uw-fassung" id="gsStand"><option value="">Alle Unterlagen</option><option value="sdb">SDB veraltet oder fehlt</option><option value="gbu">GBU fehlt</option><option value="ba">BA fehlt</option></select>
       <span class="uw-leise" id="gsZahl"></span></div>
-    ${aktiv.length ? `<div class="ul-zeilen" id="gsListe">${aktiv.map(zeile).join("")}</div>` : `<div class="leer">Noch kein Gefahrstoffverzeichnis hinterlegt.</div>`}
-    ${alt.length ? `<details class="kal-gruppe"><summary><h2 class="ul-bereich">Nicht mehr verwendet <span class="akt-zahl">${alt.length}</span></h2></summary><div class="ul-zeilen">${alt.map(zeile).join("")}</div></details>` : ""}`;
+    ${(aktiv.length || alt.length) ? `<div class="ul-zeilen" id="gsListe">${aktiv.concat(alt).map(zeile).join("")}</div>` : `<div class="leer">Noch kein Gefahrstoffverzeichnis hinterlegt.</div>`}`;
   const filtern = () => {
     const q = (sec.querySelector("#gsSuche").value || "").toLowerCase().trim(), b = (sec.querySelector("#gsBereich") || {}).value || "",
-          s = sec.querySelector("#gsSignal").value, u = sec.querySelector("#gsStand").value; let n = 0;
+          s = sec.querySelector("#gsSignal").value, u = sec.querySelector("#gsStand").value, vf = sec.querySelector("#gsVerwF").value; let n = 0;
     sec.querySelectorAll("#gsListe .ul-zeile").forEach(z => { const ok = (!q || z.dataset.suche.includes(q)) && (!b || z.dataset.bereiche.split("|").includes(b))
-      && (!s || z.dataset.signal === s) && (!u || (u === "sdb" ? z.dataset.sdb !== "gut" : u === "gbu" ? !z.dataset.gbu : u === "klaeren" ? z.dataset.verw === "offen" : !z.dataset.ba)); z.hidden = !ok; if(ok) n++; });
+      && (vf === "alle" || (vf ? z.dataset.verw === vf : z.dataset.verw !== "inaktiv"))
+      && (!s || z.dataset.signal === s) && (!u || (u === "sdb" ? z.dataset.sdb !== "gut" : u === "gbu" ? !z.dataset.gbu : !z.dataset.ba)); z.hidden = !ok; if(ok) n++; });
     sec.querySelector("#gsZahl").textContent = n + (n === 1 ? " Stoff" : " Stoffe");
   };
-  ["#gsSuche", "#gsBereich", "#gsSignal", "#gsStand"].forEach(id => { const el = sec.querySelector(id); if(el) el.addEventListener(id === "#gsSuche" ? "input" : "change", filtern); });
+  ["#gsSuche", "#gsBereich", "#gsVerwF", "#gsSignal", "#gsStand"].forEach(id => { const el = sec.querySelector(id); if(el) el.addEventListener(id === "#gsSuche" ? "input" : "change", filtern); });
   filtern();
   const neu = async () => { GS_GELADEN_FUER = null; if(typeof renderSektionen === "function") renderSektionen(); };
   sec.querySelectorAll(".ul-klick").forEach(z => z.addEventListener("click", () => gsKurzinfo(GS_ROWS.find(g => g.id === z.dataset.id), neu)));

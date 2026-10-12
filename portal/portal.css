@@ -1189,11 +1189,17 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .gs-dokknoepfe{display:flex;gap:8px;flex-wrap:wrap}
 .gs-dokknoepfe .akt-zahl{margin-left:4px}
 .gs-sdb{font-weight:600;border-radius:99px;padding:2px 9px;cursor:help;white-space:nowrap}
-.gs-sdb-gut{color:#475467;background:#f2f4f7;font-weight:500}
+.gs-sdb-gut{color:#1B4332;background:#D8F3DC;font-weight:500}
+/* Verwendung je Stoff (Nikolai 12.10.2026) – immer sichtbar */
+.gs-verw{font-weight:600;border-radius:99px;padding:2px 9px;white-space:nowrap;margin-right:6px;font-size:.92em}
+.gs-verw-aktiv{color:#1B4332;background:#D8F3DC}
+.gs-verw-offen{color:#9a6708;background:#fdf4e6;border:1px solid #e8c98c}
+.gs-verw-inaktiv{color:#667085;background:#f2f4f7;text-decoration:line-through}
+.ul-zeile[data-verw="inaktiv"] .ul-z-name{opacity:.6}
 .gs-sdb-warnung{color:#7a4a00;background:#fff4e0}
 .gs-sdb-kritisch{color:#8e1b1b;background:#fdecea}
 .gs-sdb-block{display:flex;justify-content:space-between;align-items:center;gap:8px 12px;flex-wrap:wrap;padding:8px 12px;border-radius:10px;font-size:14px}
-.gs-sdb-block.gs-sdb-gut{background:#f7f9fc;font-weight:400}
+.gs-sdb-block.gs-sdb-gut{background:#eef8f1;font-weight:400}
 .gs-sdb-block.gs-sdb-warnung{background:#fff4e0;font-weight:500}
 .gs-sdb-block.gs-sdb-kritisch{background:#fdecea;font-weight:500}
 .gs-sdb-akt{display:flex;gap:6px;flex-wrap:wrap}
