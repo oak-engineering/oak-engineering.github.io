@@ -112,7 +112,7 @@
   .fuss .fussz{margin-top:3px;}
   .fuss .fussz:first-child{margin-top:0;}
   #pikPicker .ft{padding:9px 15px;border-top:1px solid #ddd;font-size:12px;color:#666;display:flex;gap:8px;align-items:center;}
-  @page{ margin:12mm; }
+  @page{ size:A4; margin:12mm; }
   @media print{
     body{background:#fff;padding:0;font-size:10.5px;line-height:1.3;} .blatt{box-shadow:none;max-width:100%;}
     .bar,.pikto .edit,.pikto .del,.add-slot,.sigtools button,.vorlage-hinweis,#ce-pop{display:none;}
@@ -135,6 +135,47 @@
     .pikto{width:44px;margin:4px auto;} .pikto img{width:44px;height:44px;}
     canvas.sig{height:52px;}
     .fuss{font-size:9px;padding:5px 12px;}
+  }
+  /* ===== Gefahrstoff-Variante (meta.art "gefahrstoff", Gliederung TRGS 555 Nr. 3.2) =====
+     Greift NUR ueber body.gs – die Maschinen-BA bleibt unberuehrt. Rote Kennfarbe nur hier;
+     OAK-Logo/-Schrift bleiben (fest verdrahtet, nicht ueber die Variablen). */
+  body.gs{--navy:#8E1B1B;--blau:#C62828;--hell:#fdecea;}
+  body.gs .bar .langs button{border-color:#e7a3a3;}
+  body.gs .bar .savehint{color:#f5c6c6;}
+  body.gs .bar .hint{color:#f0b4b4;}
+  body.gs td.pspalte{background:#fffafa;}
+  body.gs .pikto:hover img{box-shadow:0 0 0 2px rgba(198,40,40,.25);}
+  .gs-rg{font-size:11px;color:var(--grau);margin-top:2px;letter-spacing:.2px;}
+  .gs-bez{display:flex;gap:16px;align-items:center;justify-content:space-between;}
+  .gs-prod{flex:1 1 auto;}
+  .gs-prod ul{margin:0;padding-left:18px;}
+  .gs-prod li{margin:3px 0;}
+  .gs-prod .hst{color:var(--grau);font-weight:400;}
+  .gs-ghs{flex:0 0 auto;display:flex;align-items:center;gap:10px;}
+  .gs-ghsrow{display:flex;gap:2px;}
+  .gs-ghsrow img{width:66px;height:66px;object-fit:contain;display:block;}
+  .gs-sw{display:inline-block;font-weight:700;font-size:15px;letter-spacing:1px;text-transform:uppercase;color:#fff;background:var(--blau);padding:3px 12px;border-radius:3px;white-space:nowrap;}
+  .gs-sw.leer{background:#fff;color:var(--grau);border:1px dashed #c9a3a3;text-transform:none;letter-spacing:0;font-weight:400;font-size:12px;}
+  body.gs .pikto.ghs img{border:none;border-radius:0;background:transparent;}
+  .gs-swzeile{margin:0 0 4px;}
+  .gs-notruf{margin-top:5px;font-weight:600;}
+  .gs-notruf input{font:inherit;color:var(--navy);border:none;border-bottom:1px solid #d8b9b9;background:transparent;}
+  .gs-notruf input:focus{outline:1px solid var(--blau);background:#fff;}
+  @media print{
+    body.gs .gs-ghsrow img{width:50px;height:50px;}
+    body.gs .gs-sw{font-size:12px;padding:2px 9px;}
+    .gs-sw,.gs-ghsrow img{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    .gs-notruf{margin-top:3px;} .gs-notruf input{border-bottom:none;}
+    body.gs .gs-prod li{margin:1.5px 0;}
+    /* Kopf kompakter, damit der laengere Gefahrstoff-Titel nicht umbricht (1 Seite A4) */
+    body.gs .kopf .kl,body.gs .kopf .kr{width:185px;flex:0 0 185px;}
+    body.gs .oak-marke{gap:6px;} body.gs .oak-marke img{height:40px;} body.gs .oak-wort{font-size:16px;}
+    body.gs .kopf img.kundenlogo{height:60px;max-width:175px;}
+    body.gs .kopf .km .doktyp{white-space:nowrap;}
+    body.gs .kopf .km h1{font-size:13px;}
+    body.gs .gs-rg{font-size:9px;margin-top:1px;}
+    body.gs .vorlage-hinweis{padding:2px;font-size:10px;}
+    body.gs canvas.sig{height:42px;} body.gs .fuss{padding:4px 12px;} body.gs .pikto{margin:3px auto;}
   }
 </style>
 </head>
@@ -165,7 +206,7 @@
     &nbsp;·&nbsp; <span data-t="l_type"></span> <input data-f="type" value="" placeholder="Maschinentyp" size="26">
     &nbsp;·&nbsp; <span data-t="l_loc"></span> <input data-f="standort" placeholder="—" size="16">
   </div>
-  <table class="ba">
+  <table class="ba" id="ba-masch">
     <tr class="balken"><td colspan="3"><span>1. </span><span data-t="sec_scope"></span></td></tr>
     <tr><td class="pspalte" data-pcol="scope-links"></td><td class="txt"><div data-t="scope_text"></div></td><td class="pspalte" data-pcol="scope-rechts"></td></tr>
 
@@ -196,6 +237,43 @@
       </div>
     </td></tr>
   </table>
+  <!-- Gefahrstoff-Variante: wird nur bei meta.art "gefahrstoff" statt #ba-masch eingesetzt.
+       7 Abschnitte nach TRGS 555 Nr. 3.2.1 (Quelle: references/rechtskataster/_quellen/TRGS-555.md). -->
+  <template id="ba-gs-tpl"><table class="ba" id="ba-gs">
+    <tr class="balken"><td colspan="3"><span>1. </span><span data-t="sec_gs_bereich"></span></td></tr>
+    <tr><td class="pspalte" data-pcol="bereich-links"></td><td class="txt"><div data-t="scope_text"></div></td><td class="pspalte" data-pcol="bereich-rechts"></td></tr>
+
+    <tr class="balken"><td colspan="3"><span>2. </span><span data-t="sec_gs_stoff"></span></td></tr>
+    <tr><td class="pspalte" data-pcol="stoff-links"></td><td class="txt"><div id="gs-bez"></div><div data-t="stoff_hinweis"></div></td><td class="pspalte" data-pcol="stoff-rechts"></td></tr>
+
+    <tr class="balken"><td colspan="3"><span>3. </span><span data-t="sec_hazards"></span></td></tr>
+    <tr><td class="pspalte" data-pcol="gefahren-links"></td><td class="txt"><ul data-t="gefahren"></ul></td><td class="pspalte" data-pcol="gefahren-rechts"></td></tr>
+
+    <tr class="balken"><td colspan="3"><span>4. </span><span data-t="sec_measures"></span></td></tr>
+    <tr><td class="pspalte" data-pcol="schutz-links"></td><td class="txt"><ul data-t="schutz"></ul>
+        <div style="font-weight:600;margin-top:4px;" data-t="psa_title"></div><div data-t="psa_note"></div></td>
+        <td class="pspalte" data-pcol="schutz-rechts"></td></tr>
+
+    <tr class="balken"><td colspan="3"><span>5. </span><span data-t="sec_gs_notfall"></span></td></tr>
+    <tr><td class="pspalte" data-pcol="gefahrfall-links"></td><td class="txt"><ul data-t="gefahrfall"></ul></td><td class="pspalte" data-pcol="gefahrfall-rechts"></td></tr>
+
+    <tr class="balken"><td colspan="3"><span>6. </span><span data-t="sec_first"></span></td></tr>
+    <tr><td class="pspalte" data-pcol="ersthilfe-links"></td><td class="txt"><ul data-t="first_list"></ul>
+        <div class="gs-notruf"><span data-tl="l_notruf"></span> <input data-f="notruf" size="9" placeholder="112">
+        &nbsp;·&nbsp; <span data-tl="l_ersthelfer"></span> <input data-f="ersthelfer" size="34" placeholder="—"></div></td>
+        <td class="pspalte" data-pcol="ersthilfe-rechts"></td></tr>
+
+    <tr class="balken"><td colspan="3"><span>7. </span><span data-t="sec_gs_entsorgung"></span></td></tr>
+    <tr><td class="pspalte" data-pcol="entsorgung-links"></td><td class="txt"><ul data-t="entsorgung"></ul></td><td class="pspalte" data-pcol="entsorgung-rechts"></td></tr>
+
+    <tr class="sigrow"><td colspan="3">
+      <div class="sigbox">
+        <div class="col"><canvas class="sig" data-rolle="unternehmer" width="300" height="70"></canvas>
+          <div class="siglbl"><span data-t="l_sign"></span></div>
+          <div class="sigtools"><input data-f="signame" placeholder="Name" size="16"><input type="date" data-f="sigdate"><button type="button" onclick="clearSig('unternehmer')" data-t="sig_clear"></button></div></div>
+      </div>
+    </td></tr>
+  </table></template>
   <div class="fuss">
     <div class="fussz" id="ba-mgl"><b data-t="l_mitgeltend"></b> <span id="ba-mgl-list"></span></div>
     <div class="fussz"><b data-t="l_unterw"></b> <span data-t="unterweisung"></span></div>
@@ -294,6 +372,156 @@ const T = (DOC.ba && DOC.ba.t)
       en:Object.assign({},T_DEFAULT.de,T_DEFAULT.en,DOC.ba.t.en||{}),
       tr:Object.assign({},T_DEFAULT.de,T_DEFAULT.tr,DOC.ba.t.tr||{}) }
   : { de:T_DEFAULT.de, en:Object.assign({},T_DEFAULT.de,T_DEFAULT.en), tr:Object.assign({},T_DEFAULT.de,T_DEFAULT.tr) };
+/* ===== Gefahrstoff-Variante (08.10.2026) – nur mit meta.art "gefahrstoff" =====
+   Gliederung und Pflichtinhalte nach TRGS 555 Nr. 3.2.1-3.2.8 (Ausgabe 02/2017), Rechtsgrundlage § 14 Abs. 1
+   GefStoffV; Quelle: references/rechtskataster/_quellen/TRGS-555.md. Ohne meta.art bleibt alles wie die
+   Maschinen-BA. Stoffangaben (Produkte, Signalwort, GHS) kommen aus doc-data.stoff = Daten aus dem SDB.
+   Platzhalter in [eckigen Klammern] nennen die TRGS-Fundstelle bzw. den SDB-Abschnitt (TRGS 555 Anhang). */
+const GS = !!(DOC.meta && DOC.meta.art==="gefahrstoff");
+const T_GS = {
+ de:{
+  doktyp:"Betriebsanweisung", gs_rg:"gemäß § 14 GefStoffV · TRGS 555",
+  g_technisch:"Technisch:", g_organisatorisch:"Organisatorisch:", g_brand:"Brand:", g_freisetzung:"Freisetzung:", g_umwelt:"Umwelt:",
+  g_einatmen:"Einatmen:", g_haut:"Hautkontakt:", g_augen:"Augenkontakt:", g_verschlucken:"Verschlucken:", g_arzt:"Arzt:",
+  l_herkunft:"Maßnahmen aus der Gefährdungsbeurteilung:", l_stand_gbu:"Stand",
+  l_type:"Arbeitsbereich:", l_loc:"Tätigkeit:", l_sign:"Arbeitgeber/Geschäftsleitung",
+  sec_gs_bereich:"Arbeitsbereich, Arbeitsplatz, Tätigkeit", sec_gs_stoff:"Gefahrstoffbezeichnung",
+  sec_hazards:"Gefahren für Mensch und Umwelt", sec_measures:"Schutzmaßnahmen und Verhaltensregeln",
+  sec_gs_notfall:"Verhalten im Gefahrfall", sec_first:"Erste Hilfe", sec_gs_entsorgung:"Sachgerechte Entsorgung",
+  scope_text:"[Betrieb, Arbeitsbereich, Arbeitsplatz und Tätigkeit benennen – TRGS 555 Nr. 3.2.2]",
+  stoff_hinweis:"",
+  gefahren:"<li>[Gefahren aus der Gefährdungsbeurteilung; H- und EUH-Sätze im Wortlaut oder sinnvoll umschrieben – TRGS 555 Nr. 3.2.4, SDB Abschnitt 2]</li>",
+  schutz:"<li><b>Technisch:</b> [Maßnahmen gegen Exposition und Ereignisse, z. B. explosionsfähige Atmosphäre]</li><li><b>Organisatorisch:</b> […]</li><li><b>Hygiene und Arbeitskleidung:</b> […]</li>",
+  psa_title:"Persönliche Schutzausrüstung (Art, Typ, Benutzung):",
+  psa_note:"[PSA konkret benennen – TRGS 555 Nr. 3.2.5, SDB Abschnitt 8]",
+  gefahrfall:"<li>[Geeignete und ungeeignete Löschmittel – SDB Abschnitt 5]</li><li>[Aufsaug-, Binde-, Neutralisationsmittel – SDB Abschnitt 6]</li><li>[Zusätzliche Schutzmaßnahmen und PSA; Maßnahmen gegen Umweltgefährdungen – TRGS 555 Nr. 3.2.6]</li>",
+  first_list:"<li><b>Einatmen:</b> […]</li><li><b>Haut- und Augenkontakt:</b> […]</li><li><b>Verschlucken:</b> […]</li><li><b>Verbrennungen und Erfrierungen:</b> […]</li>",
+  entsorgung:"<li>[PSA, Entsorgungsbehälter und Sammelstellen, Aufsaugmittel, Reinigung – TRGS 555 Nr. 3.2.8, SDB Abschnitt 13]</li>",
+  l_notruf:"Notruf:", l_ersthelfer:"Ersthelfer:", l_enthaelt:"enthält:",
+  sw_gefahr:"Gefahr", sw_achtung:"Achtung", ph_signalwort:"[Signalwort lt. SDB 2.2]",
+  ph_produkt:"[Handelsname(n) – TRGS 555 Nr. 3.2.3]",
+  l_sdb:"Mitgeltende Sicherheitsdatenblätter:", l_sdb_ausgabe:"Ausgabe",
+  unterweisung:"Beschäftigte sind anhand dieser Betriebsanweisung vor Aufnahme der Tätigkeit und danach mindestens einmal jährlich mündlich, arbeitsplatz- und tätigkeitsbezogen zu unterweisen (§ 14 Abs. 2 GefStoffV, TRGS 555 Nr. 5.1).",
+  footer:"Gliederung nach TRGS 555 Nr. 3.2. Gefahrenpiktogramme nach Verordnung (EG) Nr. 1272/2008 (CLP), Sicherheitszeichen nach ASR A1.3 / ISO 7010. · OAK engineering.",
+  muster_hinweis:"MUSTER – Stoffangaben sind Platzhalter, nicht aus dem Sicherheitsdatenblatt. Vor Verwendung aus dem SDB übernehmen."
+ },
+ en:{
+  doktyp:"Operating instruction", gs_rg:"per § 14 GefStoffV · TRGS 555",
+  g_technisch:"Technical:", g_organisatorisch:"Organisational:", g_brand:"Fire:", g_freisetzung:"Release:", g_umwelt:"Environment:",
+  g_einatmen:"Inhalation:", g_haut:"Skin contact:", g_augen:"Eye contact:", g_verschlucken:"Ingestion:", g_arzt:"Doctor:",
+  l_herkunft:"Measures from the risk assessment:", l_stand_gbu:"as of",
+  l_type:"Work area:", l_loc:"Activity:", l_sign:"Employer / management",
+  sec_gs_bereich:"Work area, workplace, activity", sec_gs_stoff:"Hazardous substance identification",
+  sec_gs_notfall:"What to do in an emergency", sec_gs_entsorgung:"Proper disposal",
+  scope_text:"[State company, work area, workplace and activity]",
+  gefahren:"<li>[Hazards from the risk assessment; H and EUH statements – SDS section 2]</li>",
+  schutz:"<li><b>Technical:</b> […]</li><li><b>Organisational:</b> […]</li><li><b>Hygiene and work clothing:</b> […]</li>",
+  psa_title:"Personal protective equipment (type, model, use):", psa_note:"[Specify PPE – SDS section 8]",
+  gefahrfall:"<li>[Suitable and unsuitable extinguishing media – SDS section 5]</li><li>[Absorbents, binders, neutralisers – SDS section 6]</li><li>[Additional measures and PPE; environmental measures]</li>",
+  first_list:"<li><b>Inhalation:</b> […]</li><li><b>Skin and eye contact:</b> […]</li><li><b>Ingestion:</b> […]</li><li><b>Burns and frostbite:</b> […]</li>",
+  entsorgung:"<li>[PPE, waste containers and collection points, absorbents, cleaning – SDS section 13]</li>",
+  l_notruf:"Emergency call:", l_ersthelfer:"First aider:", l_enthaelt:"contains:",
+  sw_gefahr:"Danger", sw_achtung:"Warning", ph_signalwort:"[Signal word per SDS 2.2]", ph_produkt:"[Trade name(s)]",
+  l_sdb:"Applicable safety data sheets:", l_sdb_ausgabe:"issued",
+  unterweisung:"Employees must be instructed orally, specific to workplace and activity, on the basis of this operating instruction before starting work and at least once a year thereafter (§ 14(2) GefStoffV, TRGS 555 No. 5.1).",
+  footer:"Structure per TRGS 555 No. 3.2. Hazard pictograms per Regulation (EC) No 1272/2008 (CLP), safety signs per ASR A1.3 / ISO 7010. · OAK engineering."
+ },
+ tr:{
+  doktyp:"İş talimatı", gs_rg:"GefStoffV § 14 · TRGS 555 uyarınca",
+  g_technisch:"Teknik:", g_organisatorisch:"Organizasyonel:", g_brand:"Yangın:", g_freisetzung:"Sızıntı:", g_umwelt:"Çevre:",
+  g_einatmen:"Soluma:", g_haut:"Cilt teması:", g_augen:"Göz teması:", g_verschlucken:"Yutma:", g_arzt:"Doktor:",
+  l_herkunft:"Risk değerlendirmesinden önlemler:", l_stand_gbu:"durum",
+  l_type:"Çalışma alanı:", l_loc:"Faaliyet:", l_sign:"İşveren / yönetim",
+  sec_gs_bereich:"Çalışma alanı, iş yeri, faaliyet", sec_gs_stoff:"Tehlikeli maddenin tanımı",
+  sec_gs_notfall:"Tehlike durumunda davranış", sec_gs_entsorgung:"Usulüne uygun bertaraf",
+  scope_text:"[İşletme, çalışma alanı, iş yeri ve faaliyet]",
+  gefahren:"<li>[Risk değerlendirmesinden tehlikeler; H ve EUH ifadeleri – GBF bölüm 2]</li>",
+  schutz:"<li><b>Teknik:</b> […]</li><li><b>Organizasyonel:</b> […]</li><li><b>Hijyen ve iş kıyafeti:</b> […]</li>",
+  psa_title:"Kişisel koruyucu donanım (tür, tip, kullanım):", psa_note:"[KKD'yi belirtin – GBF bölüm 8]",
+  gefahrfall:"<li>[Uygun ve uygun olmayan söndürücüler – GBF bölüm 5]</li><li>[Emici, bağlayıcı, nötrleştirici maddeler – GBF bölüm 6]</li><li>[Ek önlemler ve KKD; çevre önlemleri]</li>",
+  first_list:"<li><b>Soluma:</b> […]</li><li><b>Cilt ve göz teması:</b> […]</li><li><b>Yutma:</b> […]</li><li><b>Yanık ve donma:</b> […]</li>",
+  entsorgung:"<li>[KKD, atık kapları ve toplama yerleri, emici maddeler, temizlik – GBF bölüm 13]</li>",
+  l_notruf:"Acil çağrı:", l_ersthelfer:"İlk yardımcı:", l_enthaelt:"içerir:",
+  sw_gefahr:"Tehlike", sw_achtung:"Dikkat", ph_signalwort:"[GBF 2.2'ye göre uyarı kelimesi]", ph_produkt:"[Ticari ad(lar)]",
+  l_sdb:"Geçerli güvenlik bilgi formları (GBF):", l_sdb_ausgabe:"yayım",
+  unterweisung:"Çalışanlar, bu iş talimatına dayanarak işe başlamadan önce ve sonrasında en az yılda bir kez, iş yerine ve faaliyete özgü olarak sözlü eğitim almalıdır (GefStoffV § 14 (2), TRGS 555 No. 5.1).",
+  footer:"TRGS 555 No. 3.2'ye göre yapı. Tehlike piktogramları (AT) 1272/2008 (CLP), güvenlik işaretleri ASR A1.3 / ISO 7010'a göre. · OAK engineering."
+ }
+};
+function gsEsc(s){ return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+/* Statische Beschriftungen der Variante (data-tl): nicht editierbar, nur uebersetzt. */
+function gsLang(lang){ document.querySelectorAll("[data-tl]").forEach(el=>{ const v=T[lang][el.dataset.tl]; if(v!=null) el.innerHTML=v; }); }
+if(GS){
+  ["de","en","tr"].forEach(l=>{
+    T[l]=Object.assign({}, T_DEFAULT.de, T_GS.de, l!=="de"?T_DEFAULT[l]:{}, l!=="de"?T_GS[l]:{},
+                       (DOC.ba && DOC.ba.t && DOC.ba.t[l]) || {});
+  });
+  document.body.classList.add("gs");
+  /* Strukturierte Listen (ba.gs) – aus SDB + GBU (EMKG) befuellbar. Punkt = String (alle Sprachen)
+     oder {de,en,tr,herkunft}; dadurch sind die Sprachen indexgleich. Herkunft erscheint nur klein
+     in der Fusszeile, nicht im Text. Fehlt ein Abschnitt in ba.gs, gelten ba.t bzw. die Platzhalter. */
+  const L=(DOC.ba && DOC.ba.gs) || null;
+  if(L){
+    const herk=[];
+    const tx=(it,l)=>{ if(it==null) return ""; if(typeof it==="string") return gsEsc(it);
+      if(it.herkunft && herk.indexOf(it.herkunft)<0) herk.push(it.herkunft); return gsEsc(it[l]||it.de||""); };
+    const satz=(arr,l)=>(arr||[]).map(it=>tx(it,l)).filter(Boolean);
+    const grp=(l,key,arr)=>{ const s=satz(arr,l); return s.length ? '<li><b>'+T[l][key]+'</b> '+s.join(" ")+'</li>' : ""; };
+    ["de","en","tr"].forEach(l=>{
+      const S=L.schutz, G=L.gefahrfall, E=L.ersthilfe;
+      if(S){ T[l].schutz=grp(l,"g_technisch",S.technisch)+grp(l,"g_organisatorisch",S.organisatorisch);
+             const p=satz(S.persoenlich,l); if(p.length) T[l].psa_note=p.join(" "); }
+      if(G){ T[l].gefahrfall=grp(l,"g_brand",G.brand)+grp(l,"g_freisetzung",G.freisetzung)+grp(l,"g_umwelt",G.umwelt); }
+      if(E){ T[l].first_list=grp(l,"g_einatmen",E.einatmen)+grp(l,"g_haut",E.haut)+grp(l,"g_augen",E.augen)
+               +grp(l,"g_verschlucken",E.verschlucken)+grp(l,"g_arzt",E.arzt); }
+      if(L.entsorgung){ T[l].entsorgung=satz(L.entsorgung,l).map(x=>'<li>'+x+'</li>').join(""); }
+    });
+    ["de","en","tr"].forEach(l=>{
+      const gl=L.grundlage==null?"":tx(L.grundlage,l);
+      const teile=[gl, L.stand?T[l].l_stand_gbu+" "+gsEsc(L.stand):""].filter(Boolean).join(", ");
+      T[l].gs_herkunft=(teile||herk.length) ? '<b>'+T[l].l_herkunft+'</b> '+teile+(herk.length?(teile?" · ":"")+herk.map(gsEsc).join(" · "):"") : "";
+    });
+  }
+  const alt=document.getElementById("ba-masch"), tpl=document.getElementById("ba-gs-tpl");
+  if(alt && tpl) alt.replaceWith(tpl.content.cloneNode(true));
+  const m=DOC.meta, s=DOC.stoff||{}, prod=s.produkte||[];
+  /* GHS-Rauten wie alle Piktogramme in die Spalten von Abschnitt 2 (links zuerst, dann rechts) */
+  DOC.ba=DOC.ba||{}; DOC.ba.piktogramme=DOC.ba.piktogramme||{};
+  if(!DOC.ba.piktogramme.stoff){ const g=(s.ghs||[]).filter(c=>PIKTOLIB[c]), h=Math.ceil(g.length/2);
+    DOC.ba.piktogramme.stoff={links:g.slice(0,h), rechts:g.slice(h)}; }
+  /* Kopf: Rechtsgrundlage unter dem Dokumenttyp, Titel = Gefahrstoff/Gruppe */
+  const km=document.querySelector(".kopf .km");
+  if(km && !km.querySelector(".gs-rg")){ const rg=document.createElement("div"); rg.className="gs-rg"; rg.dataset.tl="gs_rg"; km.appendChild(rg); }
+  const titel=m.titel||s.bezeichnung||(prod[0]&&prod[0].name)||"";
+  if(titel){ document.getElementById("ba-titel").textContent=titel; document.title="BA – "+titel; }
+  /* Feste Kopffelder: Nr. · Stand · Arbeitsbereich · Taetigkeit (TRGS 555 Nr. 3.2.2) */
+  const fT=document.querySelector('[data-f="type"]'), fS=document.querySelector('[data-f="standort"]');
+  if(fT){ fT.placeholder="Arbeitsbereich / Arbeitsplatz"; fT.size=24; if(!fT.value && m.arbeitsbereich) fT.value=m.arbeitsbereich; }
+  if(fS){ fS.placeholder="Tätigkeit"; fS.size=30; if(!fS.value && m.taetigkeit) fS.value=m.taetigkeit; }
+  const fN=document.querySelector('[data-f="notruf"]'), fE=document.querySelector('[data-f="ersthelfer"]');
+  if(fN && !fN.value) fN.value=m.notruf||"112";
+  if(fE && !fE.value && m.ersthelfer) fE.value=m.ersthelfer;
+  /* Abschnitt 2: Handelsnamen (+ Hersteller, gefahrbestimmende Komponente), GHS-Rauten, Signalwort */
+  const box=document.getElementById("gs-bez");
+  if(box){
+    const li=prod.map(p=>'<li><b>'+gsEsc(p.name)+'</b>'+(p.hersteller?' <span class="hst">– '+gsEsc(p.hersteller)+'</span>':'')
+      +(p.enthaelt?'<br><span class="hst"><span data-tl="l_enthaelt"></span> '+gsEsc(p.enthaelt)+'</span>':'')+'</li>').join("");
+    const sw=String(s.signalwort||"").trim().toLowerCase();
+    const swKey= sw==="gefahr"||sw==="danger" ? "sw_gefahr" : sw==="achtung"||sw==="warning" ? "sw_achtung" : "";
+    box.innerHTML='<div class="gs-swzeile">'+(swKey?'<span class="gs-sw" data-tl="'+swKey+'"></span>':'<span class="gs-sw leer" data-tl="ph_signalwort"></span>')+'</div>'
+      +'<div class="gs-prod"><ul>'+(li||'<li data-tl="ph_produkt"></li>')+'</ul></div>';
+  }
+  /* Fusszeile: SDB-Stand je Produkt als mitgeltend */
+  const sdb=prod.filter(p=>p.sdb_stand).map(p=>gsEsc(p.name)+' ('+gsEsc(p.sdb_hersteller||p.hersteller||"")
+    +', <span data-tl="l_sdb_ausgabe"></span> '+gsEsc(p.sdb_stand)+')');
+  const mgl=document.getElementById("ba-mgl");
+  if(mgl && sdb.length){ const d=document.createElement("div"); d.className="fussz"; d.id="gs-sdb";
+    d.innerHTML='<b data-tl="l_sdb"></b> '+sdb.join(" · "); mgl.parentNode.insertBefore(d, mgl.nextSibling); }
+  if(mgl && L){ const d=document.createElement("div"); d.className="fussz"; d.id="gs-herkunft"; d.dataset.tl="gs_herkunft";
+    const vor=document.getElementById("gs-sdb")||mgl; vor.parentNode.insertBefore(d, vor.nextSibling); }
+  if(m.muster){ const b=document.getElementById("vorlage-hinweis"); if(b){ b.dataset.tl="muster_hinweis"; b.style.display="block"; } }
+}
+
 /* Geraete-Nachweis (01.10.2026): Einzel-BA = Protokoll der fachlichen Bewertung, verbindlich ist die zentrale BA. */
 if(DOC.meta && DOC.meta.dokumentart==="nachweis"){
   const z=DOC.meta.gbu_zentral_titel||"";
@@ -332,6 +560,7 @@ function setLang(lang){
     if(Array.isArray(v)) v=v.map(x=>'<li>'+x+'</li>').join('');
     if(v!=null) el.innerHTML=v; });
   document.querySelectorAll('.bar .langs button').forEach(b=>b.classList.toggle('active',b.dataset.lang===lang));
+  if(GS) gsLang(lang);
   store.lang=lang; persist(true);
 }
 
@@ -341,7 +570,7 @@ function pikSrc(codeOrSrc){ return (PIKTOLIB[codeOrSrc]&&PIKTOLIB[codeOrSrc].b64
 /* Exakte Bezeichnung des Piktogramms (aus piktogramm-namen.json → PIKTOLIB[code].name). */
 function pikName(codeOrSrc){ return (PIKTOLIB[codeOrSrc]&&PIKTOLIB[codeOrSrc].name) || ""; }
 function makePik(codeOrSrc, sec){
-  const d=document.createElement('div'); d.className='pikto';
+  const d=document.createElement('div'); d.className='pikto'+(GS&&KAT_VON[codeOrSrc]==='ghs'?' ghs':'');
   d.innerHTML='<span class="edit" title="tauschen">&#9998;</span><span class="del" title="entfernen">&times;</span>'+
     '<img src="'+pikSrc(codeOrSrc)+'" alt="Piktogramm">';
   const img=d.querySelector('img');
@@ -395,7 +624,7 @@ function openPikPicker(img, sec){
   kats.forEach(k=>{ const b=document.createElement('button'); b.textContent=KAT_LABEL[k]||k; b.onclick=()=>showKat(k); tabs.appendChild(b); });
   document.getElementById('pikPicker').style.display='flex';
   const base=(sec||'').split('-')[0];
-  const wunsch = base==='schutz'?'gebot':base==='ersthilfe'?'rettung':'warn';
+  const wunsch = base==='schutz'?'gebot':base==='ersthilfe'?'rettung':base==='gefahrfall'?'brand':base==='stoff'?'ghs':'warn';
   if(kats.length) showKat(kats.includes(wunsch)?wunsch:kats[0]);
 }
 function showKat(k){ _curKat=k; const g=document.getElementById('pikGrid'); g.innerHTML='';

@@ -80,6 +80,9 @@ function gsSdbStand(g){
   const grenze = new Date(); grenze.setFullYear(grenze.getFullYear() - GS_SDB_JAHRE);
   const alt = String(bezug) < grenze.toISOString().slice(0, 10);
   const stand = (g.sdb_ausgabe ? "Fassung " + ehsDatum(g.sdb_ausgabe) : "Fassung ohne Datum") + (g.sdb_geprueft_am ? " · geprüft " + ehsDatum(g.sdb_geprueft_am) + (g.sdb_geprueft_von ? " (" + g.sdb_geprueft_von + ")" : "") : "");
+  if(alt && g.sdb_angefordert_am)   // veraltet, aber die neue Fassung ist schon beim Lieferanten angefordert
+    return { klasse: "warnung", kurz: "SDB angefordert", angefordert: true,
+             text: "Aktuelle Fassung am " + ehsDatum(g.sdb_angefordert_am) + " angefordert" + (g.sdb_angefordert_bei ? " (" + g.sdb_angefordert_bei + ")" : "") + " – vorliegend: " + stand + "." };
   return alt
     ? { klasse: "warnung", kurz: "SDB veraltet", text: "Sicherheitsdatenblatt älter als " + GS_SDB_JAHRE + " Jahre (" + stand + ") – beim Lieferanten die aktuelle Fassung anfordern." }
     : { klasse: "gut", kurz: "SDB " + ehsDatum(g.sdb_ausgabe), text: stand };
@@ -95,7 +98,9 @@ async function renderGefahrstoffe(wrap){
   const docs = gsDokumente();
   const bas = docs.filter(d => /^Betriebsanweisung/.test(d.titel)), hs = docs.filter(d => /^Hautschutz/i.test(d.titel)), sonst = docs.filter(d => !bas.includes(d) && !hs.includes(d));
   const bereiche = [...new Set(aktiv.flatMap(g => g.bereiche || []))].sort((a, b) => a.localeCompare(b, "de"));
-  const sdbProblem = aktiv.filter(g => gsSdbStand(g).klasse !== "gut").length;
+  const sdbStaende = aktiv.map(gsSdbStand);
+  const sdbAktuell = sdbStaende.filter(s => s.klasse === "gut").length, sdbAngefordert = sdbStaende.filter(s => s.angefordert).length;
+  const sdbProblem = aktiv.length - sdbAktuell - sdbAngefordert;
   const zeile = g => { const st = gsSdbStand(g), l = gsLuecken(g);
     return `<div class="ul-zeile ul-klick" data-id="${esc(g.id)}" data-suche="${esc([g.bezeichnung, g.hersteller, g.verwendung, g.artikelnummer, (g.h_saetze || []).join(" ")].filter(Boolean).join(" ").toLowerCase())}"
       data-bereiche="${esc((g.bereiche || []).join("|"))}" data-signal="${esc(g.signalwort || "")}" data-sdb="${st.klasse}" data-gbu="${g.gbu_pfad ? "1" : ""}" data-ba="${g.ba_pfad ? "1" : ""}">
@@ -106,7 +111,7 @@ async function renderGefahrstoffe(wrap){
         ${l.length ? `<span class="gs-luecke" title="Stoffbezogene Gefährdungsbeurteilung (EMKG) und Betriebsanweisung">${esc(l.join(" + "))} fehlt</span>` : ""}</div>
       <span class="ul-pfeil" aria-hidden="true">›</span></div>`; };
   sec.innerHTML = `<div class="gs-kopf">
-      <p class="uw-erkl">Verzeichnis der verwendeten Gefahrstoffe (§ 6 GefStoffV) · ${aktiv.length} Stoffe${sdbProblem ? ` · <b>${sdbProblem} Sicherheitsdatenblätter prüfen</b>` : ""}</p>
+      <p class="uw-erkl">Verzeichnis der verwendeten Gefahrstoffe (§ 6 GefStoffV) · ${aktiv.length} Stoffe · ${sdbAktuell} SDB aktuell${sdbAngefordert ? ` · ${sdbAngefordert} beim Lieferanten angefordert` : ""}${sdbProblem ? ` · <b>${sdbProblem} Sicherheitsdatenblätter prüfen</b>` : ""}</p>
       <div class="gs-dokknoepfe">
         ${bas.length ? `<button type="button" class="btn sek" id="gsBa">Betriebsanweisungen <span class="akt-zahl">${bas.length}</span></button>` : ""}
         ${hs.length ? `<button type="button" class="btn sek" id="gsHs">Hautschutzpläne <span class="akt-zahl">${hs.length}</span></button>` : ""}
@@ -241,7 +246,7 @@ function gsDialog(g, danach, fokus){
         lagerort: dlg.querySelector("#gsLager").value.trim() || null, sdb_ausgabe: dlg.querySelector("#gsAusgabe").value || null,
         ba_pfade: [...dlg.querySelectorAll(".gs-ba-wahl input:checked")].map(x => x.value), hinweis: dlg.querySelector("#gsHinweis").value.trim() || null,
         aktiv: alt ? !alt.checked : true, quelle: "portal", geaendert_von: window.__oakName || "", geaendert_am: new Date().toISOString() };
-      if(sdb){ daten.sdb_pfad = await hoch(sdb, "sdb"); daten.sdb_geprueft_am = null; daten.sdb_geprueft_von = null; }
+      if(sdb){ daten.sdb_pfad = await hoch(sdb, "sdb"); daten.sdb_geprueft_am = null; daten.sdb_geprueft_von = null; daten.sdb_angefordert_am = null; daten.sdb_angefordert_bei = null; }
       if(gbu) daten.gbu_pfad = await hoch(gbu, "gbu");
       if(baStoff) daten.ba_pfad = await hoch(baStoff, "ba-stoff");
       if(g) await apiSend("PATCH", "/rest/v1/portal_gefahrstoff?id=eq." + encodeURIComponent(g.id), daten, "return=minimal");
