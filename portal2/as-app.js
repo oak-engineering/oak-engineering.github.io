@@ -40,6 +40,7 @@ function asNameFragen(danach){
 }
 function asNameSetzen(){
   if(AS.kontoName === undefined) AS.kontoName = AS.ich;
+  asPasswortKnopf();
   if(!asGemeinsamerZugang()) return;
   let n = ""; try{ n = localStorage.getItem(AS_NAME_KEY) || ""; }catch(e){}
   if(n){ AS.ich = n; const el = document.getElementById("ichName"); if(el) el.textContent = n + " · " + AS.kontoName; }
@@ -162,3 +163,49 @@ function asUnterleiste(){
   u.insertBefore(knopf("Start", "start"), u.firstChild);
 }
 document.addEventListener("DOMContentLoaded", asUnterleiste);
+
+/* ---------------- Betriebskonten: Management-Werkzeuge der Fachkraft ausblenden (wie V1 „Erweiterte Funktionen“) ---------------- */
+["check", "prozesse", "bericht"].forEach(k => { if(AS_SEITEN[k]) AS_SEITEN[k].nurFachkraft = true; });
+
+/* ---------------- Passwort ändern (nicht beim gemeinsamen Schichtführer-Zugang, wie V1) ---------------- */
+function asPasswortKnopf(){
+  const ich = document.querySelector(".kopf .ich"); if(!ich || document.getElementById("asPw") || /^Schichtf/i.test(AS.kontoName || AS.ich || "")) return;
+  const b = document.createElement("button"); b.className = "link"; b.id = "asPw"; b.textContent = "Passwort"; b.style.marginRight = "10px";
+  ich.insertBefore(b, document.getElementById("abmelden"));
+  b.onclick = () => asDialog({ titel: "Passwort ändern", inhalt: `<div class="form">${asFeld("Neues Passwort (mindestens 8 Zeichen)", "p1", "", "password", "voll")}${asFeld("Wiederholen", "p2", "", "password", "voll")}</div>`,
+    knoepfe: [{ t: "Speichern", fn: async d => { const w = asWerte(d);
+      if(!w.p1 || w.p1.length < 8){ asMeldung("Mindestens 8 Zeichen."); return false; }
+      if(w.p1 !== w.p2){ asMeldung("Die Eingaben stimmen nicht überein."); return false; }
+      try{ await passwortAendern(w.p1); asMeldung("Passwort geändert – gilt ab sofort."); }
+      catch(e){ asMeldung(e && e.message === "AUTH" ? "Sitzung abgelaufen – bitte neu anmelden." : "Fehlgeschlagen: " + ((e && e.message) || e)); return false; } } }] });
+}
+
+/* ---------------- Neue Version online? (wie V1: Vergleich der Stylesheet-Fassung in index.html, nichts lädt ungefragt neu) ---------------- */
+(function(){
+  const stil = document.querySelector('link[href*="as.css"]'), meins = stil ? stil.getAttribute("href") : "";
+  let gezeigt = false;
+  async function pruefen(){
+    if(!meins || gezeigt) return;
+    try{ const t = await (await fetch("index.html?stand=" + Date.now(), { cache: "no-store" })).text();
+      const m = t.match(/href="(as\.css\?v=[^"]+)"/);
+      if(m && m[1] !== meins){ gezeigt = true;
+        const b = document.createElement("div"); b.className = "nodruck";
+        b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:60;background:#e8a800;color:#1d2733;padding:8px 14px;display:flex;gap:12px;align-items:center;justify-content:center";
+        b.innerHTML = `<b>Eine neue Version der App ist online.</b> <button class="btn klein">Aktualisieren</button>`;
+        b.querySelector("button").onclick = () => location.reload(); document.body.appendChild(b); } }catch(e){}
+  }
+  setInterval(pruefen, 30000);
+  document.addEventListener("visibilitychange", () => { if(!document.hidden) pruefen(); });
+})();
+
+/* ---------------- Kiosk-Betrieb (?kiosk=1): Gerät steht offen in der Halle – nach 5 Minuten ohne Bedienung abmelden (wie V1) ---------------- */
+(function(){
+  const KEY = "oak_portal_kiosk";
+  try{ if(new URLSearchParams(location.search).get("kiosk") === "1") sessionStorage.setItem(KEY, "1"); }catch(e){}
+  let kiosk = false; try{ kiosk = sessionStorage.getItem(KEY) === "1"; }catch(e){}
+  if(!kiosk) return;
+  let uhr = null;
+  const neu = () => { clearTimeout(uhr); uhr = setTimeout(() => { clearSession(); location.reload(); }, 5 * 60000); };
+  ["click", "keydown", "pointerdown", "wheel", "touchstart"].forEach(ev => document.addEventListener(ev, neu, { passive: true }));
+  neu();
+})();

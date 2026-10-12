@@ -152,7 +152,7 @@ function asSvCss(){
 async function asSvLaden(){
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const hole = p => apiGet(p).then(r => Array.isArray(r) ? r : []).catch(() => []);
-  const [termine, nachweise, vorsorge, uw, vorfaelle, quitt, anfragen, beitraege] = await Promise.all([
+  const [termine, nachweise, vorsorge, uw, vorfaelle, quitt, anfragen, beitraege, uwNw, einarb] = await Promise.all([
     hole("/rest/v1/portal_termin?select=*&archiviert=is.false" + k + "&order=faellig_am.asc&limit=2000"),
     hole("/rest/v1/portal_nachweis?select=*&archiviert=is.false" + k + "&order=person_name.asc"),
     hole("/rest/v1/portal_vorsorge?select=*" + k + "&order=person_name.asc"),
@@ -160,8 +160,11 @@ async function asSvLaden(){
     hole("/rest/v1/portal_vorfaelle?select=id,kunde_slug,art,domaene,ereignis_am,ort,status,sofortmassnahme,langzeitmassnahme,ausgewertet_am" + k),
     hole("/rest/v1/portal_aufgabe_quittung?select=*" + k + "&order=quittiert_am.desc&limit=1000"),
     hole("/rest/v1/portal_anfrage?select=*" + k + "&order=letzte_aktivitaet.desc.nullslast,created_at.desc&limit=300"),
-    hole("/rest/v1/portal_anfrage_beitrag?select=*" + k + "&order=created_at.asc&limit=3000")]);
-  Object.assign(AS_SV, { kunde: AS.kunde, termine, nachweise, vorsorge, uw, vorfaelle, quitt, anfragen, beitraege });
+    hole("/rest/v1/portal_anfrage_beitrag?select=*" + k + "&order=created_at.asc&limit=3000"),
+    // für „praktische Einarbeitung bestätigen“ (wie V1: Terminal-Nachweise der letzten 60 Tage ohne Bestätigung)
+    hole("/rest/v1/unterweisungsnachweise?select=id,mitarbeiter_name,funktion,created_at" + k + "&order=created_at.desc&limit=2000"),
+    hole("/rest/v1/portal_einarbeitung?select=person_name,am&archiviert=is.false" + k)]);
+  Object.assign(AS_SV, { kunde: AS.kunde, termine, nachweise, vorsorge, uw, vorfaelle, quitt, anfragen, beitraege, uwNw, einarb });
 }
 async function asSvQuittLaden(){
   AS_SV.quitt = await apiGet("/rest/v1/portal_aufgabe_quittung?select=*&kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&order=quittiert_am.desc&limit=1000")
@@ -271,6 +274,16 @@ function asSvAufgaben(){
     titel: uwP.length + (uwP.length === 1 ? " Beschäftigte/r ohne gültige Unterweisung" : " Beschäftigte ohne gültige Unterweisung"),
     sub: "am Terminal nachholen · " + uwP.slice(0, 5).map(p => p.name).join(", ") + (uwP.length > 5 ? " …" : ""),
     aktionen: [["Terminal starten", () => asGehe("vorort/terminal")]] });
+  /* 5. praktische Einarbeitung: jüngster Terminal-Nachweis je Person der letzten 60 Tage ohne Bestätigung (Schlüssel wie V1) */
+  { const norm = s => String(s || "").trim().toLowerCase(), juengst = new Map();
+    (AS_SV.uwNw || []).forEach(n => { const kk = norm(n.mitarbeiter_name); if(kk && !juengst.has(kk)) juengst.set(kk, n); });
+    const bestaetigt = new Set((AS_SV.einarb || []).map(e => norm(e.person_name)));
+    juengst.forEach((nw, kk) => {
+      if(bestaetigt.has(kk) || (Date.now() - new Date(nw.created_at).getTime()) > 60 * 864e5) return;
+      l.push({ schluessel: "einarbeitung:" + nw.id, stufe: "info", quittierbar: true, titel: "Praktische Einarbeitung bestätigen: " + nw.mitarbeiter_name,
+        sub: "am Terminal unterwiesen am " + asDat(nw.created_at) + (nw.funktion ? " · " + nw.funktion : ""),
+        aktionen: [["Einarbeitung bestätigen", () => typeof asUwEinarbDialog === "function" ? asUwEinarbDialog(nw.mitarbeiter_name, nw.funktion) : asGehe("unterweisungen")]] });
+    }); }
   /* 6. Vorfälle ohne Auswertung */
   AS_SV.vorfaelle.filter(v => v.status !== "neu" && v.status !== "erledigt" && v.domaene !== "umwelt"
     && !(v.ausgewertet_am || v.sofortmassnahme || v.langzeitmassnahme)).forEach(v => l.push({

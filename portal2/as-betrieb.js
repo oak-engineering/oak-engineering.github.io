@@ -140,7 +140,7 @@ AS_SEITEN.maengel = { titel: "Mängel", icon: "!", sort: 4.4, async render(main)
   const vMid = new Map(asAnlagen().map(d => [d.maschinen_id, d]));
   main.innerHTML = `<h1 class="seite">Mängel</h1><p class="unter">Gleiche Mängelliste wie im Kundenportal. Erledigt melden mit Foto oder Text; „wirksam“ bestätigt die Fachkraft unter Maßnahmen.</p>
     <div class="kacheln">${["gefahr", "besorgnis", "akzeptanz"].map(b => `<div class="kachel k-${AS_BAND_FARBE[b]}" data-band="${b}"><div class="lbl">${AS_BAND_TEXT[b]}</div><div class="zahl">${zahl(b)}</div><div class="hinweis">offen${st.band === b ? " · Filter aktiv" : ""}</div></div>`).join("")}</div>
-    <div class="karte"><h2>${sicht.length} Mängel <button class="btn klein" id="mgNeu">+ Mangel melden</button></h2>
+    <div class="karte"><h2>${sicht.length} Mängel <span><button class="btn klein" id="mgNeu">+ Mangel melden</button>${AS.admin ? ` <button class="btn adm klein" id="mgCsv">Zusammenstellung (CSV)</button>` : ""}</span></h2>
       <div class="form" style="margin-bottom:10px">${asAuswahl("Status", "status", st.status, [["offen", "offen"], ["erledigt", "erledigt"], ["alle", "alle"]].concat(AS.admin ? [["uebernehmen", "erledigt, noch nicht übernommen"]] : []))}
         ${asAuswahl("Anlage", "anlage", st.anlage, [["", "alle Anlagen"]].concat(anlagen))}</div>
       ${Object.entries(gruppen).sort((a, b) => (AS_MG_RANG[a[0]] ?? 9) - (AS_MG_RANG[b[0]] ?? 9)).map(([th, l]) => `<h3 style="font-size:14px;color:var(--blau);margin:16px 0 6px">${esc(AS_MG_THEMA[th] || th)} · ${l.length}</h3>
@@ -153,8 +153,40 @@ AS_SEITEN.maengel = { titel: "Mängel", icon: "!", sort: 4.4, async render(main)
   main.querySelectorAll("[data-f]").forEach(s => s.onchange = () => { st[s.dataset.f] = s.value; AS_SEITEN.maengel.render(main); });
   document.getElementById("mgNeu").onclick = () => asMangelNeu();
   if(AS.mgNeuSofort){ AS.mgNeuSofort = false; asMangelNeu(); }
+  const csvK = document.getElementById("mgCsv"); if(csvK) csvK.onclick = () => asMgZusammenstellung(sicht);
   main.querySelectorAll("[data-mg]").forEach(z => z.onclick = () => asMangelDialog(alle.find(m => m.id === z.dataset.mg), vMid));
 }};
+
+/* ---- Zusammenstellung für die rechtliche Prüfung (nur Admin) – gleiche Einteilung wie im Kundenportal (maengel.js)
+   und tools/maengel_zusammenstellung.py: A Beschaffenheit · B Zustand/Verschleiß · C Betreiberpflicht. Vorschlag nach Stichworten, kein Gutachten. */
+const AS_KAUF_C = /gefährdungsbeurteilung|betriebsanweisung \(ba\)|\bgbu\b|\bba fehlt|prüf(ung|status|plakette|frist)|ungeprüft|dguv v(orschrift)? ?3|leiter|tritt|podest|aufstieg|befüll|gefahrstoff|kanister|ordnung|sauberkeit|feuerlöscher|verkehrsweg|stolper|hinweisschild|lesbar|stuhl|ergonom|arbeitsplatz|platzverhältnis|augenschutz|psa\b|unterweis|innerhalb der schutzumzäunung|fremdgerät|etikettier|abgestellt|lagerung|lagern|materialsäcke|hebe/i;
+const AS_KAUF_A = /schutzz|umzäunung|umhausung|schutzabdeckung|abdeckung|schutzhaube|schutzeinrichtung|verriegel|not-?halt|not-?aus|\bce\b|ce-|konformität|typenschild|betriebsanleitung|anleitung|ungeschützt|ungesichert|einzug|eingreif|hineingreif|untergreif|durchgreif|durchgang|überfahren|bewegungsbereich|standsicher|schneidwerk|zugänglich/i;
+function asMgGruppeKauf(m){
+  const label = asMgFeld(m, "label") || "", thema = asMgFeld(m, "thema") || "";
+  if(/^ALLG/i.test(m.maschinen_id || "")) return "C";
+  if(AS_KAUF_C.test(label) && !/schutzz|umzäunung|schutzabdeckung|schutzhaube/i.test(label)) return "C";
+  if(thema === "schutzzaun" || AS_KAUF_A.test(label)) return "A";
+  if(thema === "pruefung" || thema === "leiter_aufstieg") return "C";
+  return "B";
+}
+function asMgZusammenstellung(liste){
+  const ki = AS_B.kurz || {};
+  const gName = { A: "A Beschaffenheit der Anlage (kaufrechtlich prüfen)", B: "B Zustand/Verschleiß (Übergabe klären)", C: "C Betreiberpflicht (kein Mangel der Kaufsache)" };
+  const masch = m => m.maschine || m.maschinen_id || "";
+  const zeilen = liste.map(m => ({ m, g: asMgGruppeKauf(m), k: ki[m.maschinen_id] || {} }))
+    .sort((x, y) => x.g.localeCompare(y.g) || masch(x.m).localeCompare(masch(y.m), "de", { numeric: true }));
+  const zelle = v => '"' + String(v == null ? "" : v).replace(/"/g, '""').replace(/\r?\n/g, " ") + '"';
+  const tag = s => s ? new Date(String(s).slice(0, 10) + "T12:00:00").toLocaleDateString("de-DE") : "";
+  const kopf = ["Gruppe", "Maschine", "Hersteller", "Typ", "Baujahr", "Serien-Nr.", "Mangel", "Norm / Rechtsgrundlage", "festgestellt am", "Richtkosten (€ netto)", "Status", "Einstufung"];
+  const csv = [kopf.map(zelle).join(";")].concat(zeilen.map(({ m, g, k }) => [gName[g], masch(m), k.hersteller, k.typ, k.baujahr, k.seriennr, asMgFeld(m, "label"),
+    m.rechtsquelle, tag(m.gemeldet_am || k.datum), m.kosten != null ? String(m.kosten).replace(".", ",") : "",
+    m.status === "erledigt" ? "erledigt " + asDat(m.erledigt_am) : "offen",
+    ({ gefahr: "Gefahrbereich", besorgnis: "Besorgnisbereich", akzeptanz: "Akzeptanzbereich" })[m.bewertung_manuell || m.band] || ""].map(zelle).join(";"))).join("\r\n");
+  const el = document.createElement("a");
+  el.href = URL.createObjectURL(new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" }));
+  el.download = "Maengel-Zusammenstellung-" + (AS.kunde || "betrieb") + "-" + new Date().toISOString().slice(0, 10) + ".csv";
+  document.body.appendChild(el); el.click(); el.remove();
+}
 
 function asMangelDialog(m, vMid){
   const d = vMid.get(m.maschinen_id), kn = [];
@@ -232,6 +264,15 @@ AS_SEITEN.hallenplan = { titel: "Hallenplan", icon: "⌗", sort: 4.6, async rend
     ${pl.length > 1 ? `<div class="reiter">${pl.map(d => `<button class="${d === akt ? "an" : ""}" onclick="asGehe('hallenplan/${d.id}')">${esc(d.titel || "Plan")}</button>`).join("")}</div>` : ""}
     ${akt ? `<iframe src="../portal/${esc(asViewerUrl(akt.doc_typ || "html", akt.storage_path, akt.titel || "Hallenplan"))}" style="width:100%;height:calc(100vh - 200px);min-height:520px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`
       : `<div class="karte"><div class="leer">Für diesen Betrieb ist noch kein Hallenplan hinterlegt.</div></div>`}`;
+}};
+
+/* ======================= Gefahrstoffe ======================= */
+/* Das Gefahrstoffkataster wird im Kundenportal laufend weiterentwickelt (SDB-Status, Verwendung, EMKG) –
+   hier eingebettet, damit beide Apps immer denselben Stand zeigen (eine Quelle: portal_gefahrstoff*). */
+AS_SEITEN.gefahrstoffe = { titel: "Gefahrstoffe", icon: "◬", sort: 4.65, render(main){
+  main.innerHTML = `<h1 class="seite">Gefahrstoffe</h1><p class="unter">Gefahrstoffkataster mit Sicherheitsdatenblättern, Betriebsanweisungen und Gefährdungsbeurteilung – dieselbe Seite wie im Kundenportal.</p>
+    ${AS.admin ? `<p class="hinweis nodruck">Als OAK: Im eingebetteten Kundenportal oben den Betrieb wählen, falls nicht ${esc(AS.org ? AS.org.name : AS.kunde)} angezeigt wird.</p>` : ""}
+    <iframe src="../portal/index.html#unterlagen/gefahrstoffe" style="width:100%;height:calc(100vh - 210px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
 }};
 
 /* ======================= Vor Ort: prüfen, melden, Terminal ======================= */

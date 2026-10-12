@@ -127,7 +127,9 @@ function asMeldungen(box){
       ${!neu ? asFeld("Rückmeldung an den Melder", "rueckmeldung", m.rueckmeldung, "textarea", "voll") : ""}</div>
       ${m.art === "unfall" ? `<p class="hinweis">Bei mehr als 3 Tagen Arbeitsunfähigkeit: Unfallanzeige an die BG (§ 193 SGB VII).</p>` : ""}`, knoepfe: kn }); };
   document.getElementById("meNeu").onclick = () => dlg(null);
-  box.querySelectorAll("[data-m]").forEach(z => z.onclick = () => dlg(asNach("as_meldung", z.dataset.m)));
+  box.querySelectorAll("[data-m]").forEach(z => z.onclick = () => { const m = asNach("as_meldung", z.dataset.m);
+    // Vorfälle aus dem Kundenportal: Status und Rückmeldung pflegt OAK; der Betrieb wertet auf der Vorfall-Seite aus
+    if(m && m._v1 && !AS.admin && AS_SEITEN.vorfaelle){ asGehe("vorfaelle"); return; } dlg(m); });
 }
 
 /* ---------- Thema des Monats ---------- */

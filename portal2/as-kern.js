@@ -384,11 +384,11 @@ function asHashLesen(){
   const std = AS.fachkraft || !AS_SEITEN.start ? "cockpit" : "start";   // Betrieb (Schichtführer) startet mit der Startseite
   const h = decodeURIComponent(location.hash.replace(/^#/, "")) || std;
   const [s, r] = h.split("/");
-  AS.seite = AS_SEITEN[s] ? s : std;
+  AS.seite = AS_SEITEN[s] && (AS.fachkraft || !AS_SEITEN[s].nurFachkraft) ? s : std;
   if(r) AS.reiter[AS.seite] = r;
 }
 function asNav(){
-  const liste = Object.entries(AS_SEITEN).sort((a, b) => a[1].sort - b[1].sort);
+  const liste = Object.entries(AS_SEITEN).filter(([, s]) => AS.fachkraft || !s.nurFachkraft).sort((a, b) => a[1].sort - b[1].sort);
   const html = liste.map(([k, s]) => `<a href="#${k}" class="${AS.seite === k ? "an" : ""}"><i>${s.icon}</i>${esc(s.titel)}</a>`).join("");
   document.getElementById("nav").innerHTML = html;
   document.getElementById("blatt").innerHTML = html;
