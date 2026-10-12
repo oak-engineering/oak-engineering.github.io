@@ -88,6 +88,10 @@ function gsSdbStand(g){
     : { klasse: "gut", kurz: "SDB " + ehsDatum(g.sdb_ausgabe), text: stand };
 }
 function gsLuecken(g){ return [g.gbu_pfad ? "" : "GBU", g.ba_pfad ? "" : "BA"].filter(Boolean); }
+/* Verwendung (Nikolai 12.10.2026): in Verwendung · Verwendung klären · nicht mehr verwendet.
+   „aktiv" (bool) leitet die Datenbank daraus ab; alte Zeilen ohne Status zaehlen nach „aktiv". */
+const GS_VERWENDUNG = { aktiv: "In Verwendung", offen: "Verwendung klären", inaktiv: "Nicht mehr verwendet" };
+function gsVerwendung(g){ return g.verwendung_status || (g.aktiv ? "aktiv" : "inaktiv"); }
 
 async function renderGefahrstoffe(wrap){
   const sec = document.createElement("section"); sec.className = "sektion ul-liste-seite gs-seite";
@@ -101,17 +105,18 @@ async function renderGefahrstoffe(wrap){
   const sdbStaende = aktiv.map(gsSdbStand);
   const sdbAktuell = sdbStaende.filter(s => s.klasse === "gut").length, sdbAngefordert = sdbStaende.filter(s => s.angefordert).length;
   const sdbProblem = aktiv.length - sdbAktuell - sdbAngefordert;
+  const klaeren = aktiv.filter(g => gsVerwendung(g) === "offen").length;
   const zeile = g => { const st = gsSdbStand(g), l = gsLuecken(g);
     return `<div class="ul-zeile ul-klick" data-id="${esc(g.id)}" data-suche="${esc([g.bezeichnung, g.hersteller, g.verwendung, g.artikelnummer, (g.h_saetze || []).join(" ")].filter(Boolean).join(" ").toLowerCase())}"
-      data-bereiche="${esc((g.bereiche || []).join("|"))}" data-signal="${esc(g.signalwort || "")}" data-sdb="${st.klasse}" data-gbu="${g.gbu_pfad ? "1" : ""}" data-ba="${g.ba_pfad ? "1" : ""}">
+      data-bereiche="${esc((g.bereiche || []).join("|"))}" data-signal="${esc(g.signalwort || "")}" data-sdb="${st.klasse}" data-gbu="${g.gbu_pfad ? "1" : ""}" data-ba="${g.ba_pfad ? "1" : ""}" data-verw="${gsVerwendung(g)}">
       <span class="gs-signal gs-${g.signalwort === "Gefahr" ? "gefahr" : g.signalwort === "Achtung" ? "achtung" : "ohne"}">${esc(g.signalwort || "–")}</span>
       <span class="gs-piktos">${gsPiktoHtml(g.h_saetze)}</span>
       <div class="ul-z-name"><b>${esc(g.bezeichnung)}</b><span>${esc([g.hersteller, (g.bereiche || []).join(", ")].filter(Boolean).join(" · "))}</span></div>
-      <div class="ul-z-info"><span class="gs-sdb gs-sdb-${st.klasse}" title="${esc(st.text)}">${esc(st.kurz)}</span>
+      <div class="ul-z-info">${gsVerwendung(g) === "offen" ? `<span class="gs-klaeren" title="Mit dem Betrieb klären, ob der Stoff noch verwendet wird">Verwendung klären</span>` : ""}<span class="gs-sdb gs-sdb-${st.klasse}" title="${esc(st.text)}">${esc(st.kurz)}</span>
         ${l.length ? `<span class="gs-luecke" title="Stoffbezogene Gefährdungsbeurteilung (EMKG) und Betriebsanweisung">${esc(l.join(" + "))} fehlt</span>` : ""}</div>
       <span class="ul-pfeil" aria-hidden="true">›</span></div>`; };
   sec.innerHTML = `<div class="gs-kopf">
-      <p class="uw-erkl">Verzeichnis der verwendeten Gefahrstoffe (§ 6 GefStoffV) · ${aktiv.length} Stoffe · ${sdbAktuell} SDB aktuell${sdbAngefordert ? ` · ${sdbAngefordert} beim Lieferanten angefordert` : ""}${sdbProblem ? ` · <b>${sdbProblem} Sicherheitsdatenblätter prüfen</b>` : ""}</p>
+      <p class="uw-erkl">Verzeichnis der verwendeten Gefahrstoffe (§ 6 GefStoffV) · ${aktiv.length} Stoffe · ${sdbAktuell} SDB aktuell${sdbAngefordert ? ` · ${sdbAngefordert} beim Lieferanten angefordert` : ""}${sdbProblem ? ` · <b>${sdbProblem} Sicherheitsdatenblätter prüfen</b>` : ""}${klaeren ? ` · <b>${klaeren} Verwendung klären</b>` : ""}</p>
       <div class="gs-dokknoepfe">
         ${bas.length ? `<button type="button" class="btn sek" id="gsBa">Betriebsanweisungen <span class="akt-zahl">${bas.length}</span></button>` : ""}
         ${hs.length ? `<button type="button" class="btn sek" id="gsHs">Hautschutzpläne <span class="akt-zahl">${hs.length}</span></button>` : ""}
@@ -120,7 +125,7 @@ async function renderGefahrstoffe(wrap){
     <div class="mg-filter ul-filter"><input type="search" class="uw-suche" id="gsSuche" placeholder="Suchen (Name, Hersteller, H-Satz …)" autocomplete="off">
       ${bereiche.length > 1 ? `<select class="uw-fassung" id="gsBereich"><option value="">Alle Bereiche</option>${bereiche.map(b => `<option>${esc(b)}</option>`).join("")}</select>` : ""}
       <select class="uw-fassung" id="gsSignal"><option value="">Alle Einstufungen</option><option>Gefahr</option><option>Achtung</option></select>
-      <select class="uw-fassung" id="gsStand"><option value="">Alle Unterlagen</option><option value="sdb">SDB veraltet oder fehlt</option><option value="gbu">GBU fehlt</option><option value="ba">BA fehlt</option></select>
+      <select class="uw-fassung" id="gsStand"><option value="">Alle Unterlagen</option><option value="sdb">SDB veraltet oder fehlt</option><option value="gbu">GBU fehlt</option><option value="ba">BA fehlt</option><option value="klaeren">Verwendung klären</option></select>
       <span class="uw-leise" id="gsZahl"></span></div>
     ${aktiv.length ? `<div class="ul-zeilen" id="gsListe">${aktiv.map(zeile).join("")}</div>` : `<div class="leer">Noch kein Gefahrstoffverzeichnis hinterlegt.</div>`}
     ${alt.length ? `<details class="kal-gruppe"><summary><h2 class="ul-bereich">Nicht mehr verwendet <span class="akt-zahl">${alt.length}</span></h2></summary><div class="ul-zeilen">${alt.map(zeile).join("")}</div></details>` : ""}`;
@@ -128,7 +133,7 @@ async function renderGefahrstoffe(wrap){
     const q = (sec.querySelector("#gsSuche").value || "").toLowerCase().trim(), b = (sec.querySelector("#gsBereich") || {}).value || "",
           s = sec.querySelector("#gsSignal").value, u = sec.querySelector("#gsStand").value; let n = 0;
     sec.querySelectorAll("#gsListe .ul-zeile").forEach(z => { const ok = (!q || z.dataset.suche.includes(q)) && (!b || z.dataset.bereiche.split("|").includes(b))
-      && (!s || z.dataset.signal === s) && (!u || (u === "sdb" ? z.dataset.sdb !== "gut" : u === "gbu" ? !z.dataset.gbu : !z.dataset.ba)); z.hidden = !ok; if(ok) n++; });
+      && (!s || z.dataset.signal === s) && (!u || (u === "sdb" ? z.dataset.sdb !== "gut" : u === "gbu" ? !z.dataset.gbu : u === "klaeren" ? z.dataset.verw === "offen" : !z.dataset.ba)); z.hidden = !ok; if(ok) n++; });
     sec.querySelector("#gsZahl").textContent = n + (n === 1 ? " Stoff" : " Stoffe");
   };
   ["#gsSuche", "#gsBereich", "#gsSignal", "#gsStand"].forEach(id => { const el = sec.querySelector(id); if(el) el.addEventListener(id === "#gsSuche" ? "input" : "change", filtern); });
@@ -164,7 +169,8 @@ function gsKurzinfo(g, neu){
         <button type="button" class="dok-zu ul-dlg-zu" aria-label="Schließen">✕</button></div>
       ${gsPiktogramme(g.h_saetze).length ? `<div class="gs-piktos-gross">${gsPiktogramme(g.h_saetze).map(k => `<figure><img src="ghs/ghs${k.slice(3)}.png" alt="${esc(k)}"><figcaption>${esc(k)}<br>${esc(GS_GHS_NAME[k])}</figcaption></figure>`).join("")}</div>` : ""}
       ${g.signalwort ? `<div class="ul-risiko ${g.signalwort === "Gefahr" ? "ul-gefahr" : "ul-besorgnis"}">Signalwort: ${esc(g.signalwort)}</div>` : ""}
-      ${!g.aktiv ? `<div class="ul-hinweis">Wird nicht mehr verwendet.</div>` : ""}
+      ${gsVerwendung(g) === "inaktiv" ? `<div class="ul-hinweis">Wird nicht mehr verwendet.</div>` : ""}
+      ${gsVerwendung(g) === "offen" ? `<div class="ul-hinweis">Verwendung klären: Wird der Stoff noch eingesetzt?${g.hinweis ? " " + esc(g.hinweis) : ""}</div>` : ""}
       <dl class="ul-dl">${feld("Bereiche", (g.bereiche || []).join(", "))}${feld("Verwendung", g.verwendung)}${feld("Menge", g.menge)}${feld("Lagerort", g.lagerort)}</dl>
       <h4 class="ul-h4">Sicherheitsdatenblatt</h4>
       <div class="gs-sdb-block gs-sdb-${st.klasse}"><span>${esc(st.text)}</span>
@@ -221,7 +227,7 @@ function gsDialog(g, danach, fokus){
         <label>Betriebsanweisung (PDF) ${g && g.ba_pfad ? "– vorhanden" : ""}<input type="file" id="gsBaStoff" accept=".pdf"></label></fieldset>
       ${bas.length ? `<fieldset class="gs-feld gs-ba-wahl"><legend>Sammel-Betriebsanweisungen (bis zur stoffbezogenen BA)</legend>${bas.map(d => `<label class="ehs-check"><input type="checkbox" value="${esc(d.storage_path)}"${gewaehlt.has(d.storage_path) ? " checked" : ""}> ${esc(String(d.titel).replace(/^Betriebsanweisung\s*–\s*/, ""))}</label>`).join("")}</fieldset>` : ""}
       <label>Hinweis<input type="text" id="gsHinweis" maxlength="300" value="${esc(w("hinweis"))}"></label>
-      ${g ? `<label class="ehs-check"><input type="checkbox" id="gsAlt"${g.aktiv ? "" : " checked"}> wird nicht mehr verwendet</label>` : ""}
+      <label>Verwendung<select id="gsVerwStatus">${Object.entries(GS_VERWENDUNG).map(([k, t]) => `<option value="${k}"${k === (g ? gsVerwendung(g) : "aktiv") ? " selected" : ""}>${t}</option>`).join("")}</select></label>
       <p class="pw-msg" id="gsMsg"></p>
       <div class="pw-akt"><button type="button" class="btn sek" id="gsAbbruch">Abbrechen</button><button type="submit" class="btn">Speichern</button></div>
     </form>`;
@@ -238,14 +244,16 @@ function gsDialog(g, danach, fokus){
     try{
       msg.textContent = "Wird gespeichert …";
       const hoch = async (f, ordner) => ehsHochladen(f, AKTIV + "/gefahrstoffe/" + ordner + "/" + Date.now() + "-" + ehsDateiName(f));
-      const h = [...new Set((dlg.querySelector("#gsH").value.toUpperCase().match(/H\d{3}[A-Z]{0,2}/g) || []))].sort();
-      const alt = dlg.querySelector("#gsAlt");
+      /* EUH-Saetze zuerst erkennen – sonst wird aus „EUH066" ein „H066"; Kleinbuchstaben (H360Df) bleiben erhalten */
+      const h = [...new Set((dlg.querySelector("#gsH").value.match(/EUH\d{3}A?|H\d{3}[A-Za-z]{0,2}/gi) || [])
+        .map(x => /^euh/i.test(x) ? x.toUpperCase() : "H" + x.slice(1)))].sort();
+      const verwStatus = dlg.querySelector("#gsVerwStatus").value;
       const daten = { bezeichnung: name, hersteller: dlg.querySelector("#gsHerst").value.trim() || null, signalwort: dlg.querySelector("#gsSig").value || null,
         h_saetze: h, bereiche: dlg.querySelector("#gsBer").value.split(",").map(s => s.trim()).filter(Boolean),
         verwendung: dlg.querySelector("#gsVerw").value.trim() || null, menge: dlg.querySelector("#gsMenge").value.trim() || null,
         lagerort: dlg.querySelector("#gsLager").value.trim() || null, sdb_ausgabe: dlg.querySelector("#gsAusgabe").value || null,
         ba_pfade: [...dlg.querySelectorAll(".gs-ba-wahl input:checked")].map(x => x.value), hinweis: dlg.querySelector("#gsHinweis").value.trim() || null,
-        aktiv: alt ? !alt.checked : true, quelle: "portal", geaendert_von: window.__oakName || "", geaendert_am: new Date().toISOString() };
+        verwendung_status: verwStatus, aktiv: verwStatus !== "inaktiv", quelle: "portal", geaendert_von: window.__oakName || "", geaendert_am: new Date().toISOString() };
       if(sdb){ daten.sdb_pfad = await hoch(sdb, "sdb"); daten.sdb_geprueft_am = null; daten.sdb_geprueft_von = null; daten.sdb_angefordert_am = null; daten.sdb_angefordert_bei = null; }
       if(gbu) daten.gbu_pfad = await hoch(gbu, "gbu");
       if(baStoff) daten.ba_pfad = await hoch(baStoff, "ba-stoff");
