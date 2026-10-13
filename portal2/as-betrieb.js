@@ -271,8 +271,7 @@ AS_SEITEN.hallenplan = { titel: "Hallenplan", icon: "⌗", sort: 4.6, async rend
    hier eingebettet, damit beide Apps immer denselben Stand zeigen (eine Quelle: portal_gefahrstoff*). */
 AS_SEITEN.gefahrstoffe = { titel: "Gefahrstoffe", icon: "◬", sort: 4.65, render(main){
   main.innerHTML = `<h1 class="seite">Gefahrstoffe</h1><p class="unter">Gefahrstoffkataster mit Sicherheitsdatenblättern, Betriebsanweisungen und Gefährdungsbeurteilung – dieselbe Seite wie im Kundenportal.</p>
-    ${AS.admin ? `<p class="hinweis nodruck">Als OAK: Im eingebetteten Kundenportal oben den Betrieb wählen, falls nicht ${esc(AS.org ? AS.org.name : AS.kunde)} angezeigt wird.</p>` : ""}
-    <iframe src="../portal/index.html#unterlagen/gefahrstoffe" style="width:100%;height:calc(100vh - 210px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
+    <iframe src="../portal/index.html?eingebettet=1&k=${encodeURIComponent(AS.kunde)}#unterlagen/gefahrstoffe" style="width:100%;height:calc(100vh - 210px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
 }};
 
 /* ======================= Vor Ort: prüfen, melden, Terminal ======================= */

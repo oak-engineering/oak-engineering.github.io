@@ -1,6 +1,6 @@
 /* OAK Arbeitsschutz-App – Unterlagen: alle Dokumente des Betriebs (portal_dokumente) zum Ansehen im Programm.
    Anlagen-Dokumente stehen unter „Anlagen“. Bereiche, die (noch) im Kundenportal gepflegt werden, sind verlinkt.
-   Gefahrstoffe haben eine eigene Seite (as-gefahrstoffe.js). */
+   Gefahrstoffe: eigene Seite in as-betrieb.js (bettet das Kataster aus dem Kundenportal ein). */
 "use strict";
 
 const AS_UL_KAT = [
