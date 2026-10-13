@@ -432,6 +432,9 @@ function docZeile(r){
 
 let AKTIVE_DOM = null, AKTIVE_SUB = null;
 let PORTAL_BEREIT = false;
+/* ?eingebettet=1 – Seite steckt in einer anderen App (V2): kein eigener Rahmen; &k=<slug> waehlt fuer Admins den Betrieb */
+const PORTAL_EINBETTUNG = (() => { try{ const q = new URLSearchParams(location.search);
+  return q.get("eingebettet") === "1" ? { k: q.get("k") || "" } : null; }catch(e){ return null; } })();
 /* ---- Seiten der App (16.09.2026) ------------------------------------------------------------
    EINE Navigation fuer alle Rollen, auch Admin (keine Reiterleisten mehr):
      start · maengel · unterlagen[/kategorie] · mehr/<unterseite>
@@ -922,6 +925,7 @@ async function ladePortal(){
        Anlegen kunde_slug: null und die Zeile wird von RLS abgewiesen. */
     AKTIV = ADMIN ? ([...new Set(ALLE.map(r => r.kunde_slug))][0] || null)
                   : (MITGLIED && MITGLIED.kunde_slug) || null;
+    if(ADMIN && PORTAL_EINBETTUNG && PORTAL_EINBETTUNG.k) AKTIV = PORTAL_EINBETTUNG.k;
     AKTIVE_DOM = null; AKTIVE_SUB = null;
     if(!hashLesen()) AKTIVE_DOM = "start";   // ohne Adresse: die Startseite mit den vier Knoepfen
     setKundeName();
@@ -960,6 +964,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("#logoutBtn").addEventListener("click", ()=>{ clearSession(); ALLE=[]; zurLogin(); });
   $("#markeStart").addEventListener("click", ev => { ev.preventDefault(); if(PORTAL_BEREIT) portalGehe("start"); });
   try{ if(localStorage.getItem("oak_portal_sl_schmal") === "1") document.body.classList.add("sl-schmal"); }catch(e){}
+  if(PORTAL_EINBETTUNG) document.body.classList.add("eingebettet");
   /* Handy: Seitenleiste schliesst bei Tipp daneben */
   document.addEventListener("click", ev => {
     if(document.body.classList.contains("menue-auf") && !ev.target.closest("#seitenleiste") && !ev.target.closest(".tab-i"))

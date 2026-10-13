@@ -1224,3 +1224,11 @@ html:not(.ist-app) .bereich-wahl{display:none}
 .sl-liste .sl-kopf{margin:14px 12px 3px}
 .sl-liste .sl-klapp + .sl-eintrag{margin-top:2px}
 @media(min-width:901px){body.sl-schmal .sl-liste .sl-kopf{display:block;height:1px;margin:8px 8px;padding:0;overflow:hidden;font-size:0;background:var(--linie,#e3e8ef)}}
+
+/* Eingebettet (?eingebettet=1, z. B. Gefahrstoffseite in der Arbeitsschutz-App V2): nur der Inhalt,
+   ohne Portal-Kopf, Seitenleiste, Reiter und Fuss – die umgebende App liefert den Rahmen */
+body.eingebettet .kopf,body.eingebettet #seitenleiste,body.eingebettet #katTabs,body.eingebettet #subTabs,
+body.eingebettet .fuss,body.eingebettet .tabbar-fest,body.eingebettet .tb-blatt{display:none!important}
+body.eingebettet .app-rahmen{display:block}
+body.eingebettet main.wrap{max-width:none;padding:12px 14px}
+body.eingebettet{padding-bottom:0!important;background:#fff}
