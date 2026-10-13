@@ -62,6 +62,7 @@ async function gsLaden(erzwingen){
   try{ GS_ROWS = await apiGet("/rest/v1/portal_gefahrstoff?select=*" + (AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "") + "&order=bezeichnung.asc", false) || []; }
   catch(e){ GS_ROWS = []; }
   GS_GELADEN_FUER = AKTIV;
+  if(typeof gseLaden === "function") await gseLaden(true);
   return GS_ROWS;
 }
 function gsDarfPflegen(){ return !!(typeof ADMIN !== "undefined" && ADMIN) || !!window.__oakFachkraft; }
@@ -87,7 +88,9 @@ function gsSdbStand(g){
     ? { klasse: "warnung", kurz: "SDB veraltet", text: "Sicherheitsdatenblatt älter als " + GS_SDB_JAHRE + " Jahre (" + stand + ") – beim Lieferanten die aktuelle Fassung anfordern." }
     : { klasse: "gut", kurz: "SDB " + ehsDatum(g.sdb_ausgabe), text: stand };
 }
-function gsLuecken(g){ return [g.gbu_pfad ? "" : "GBU", g.ba_pfad ? "" : "BA"].filter(Boolean); }
+/* GBU gilt als vorhanden: hochgeladenes PDF oder mind. eine freigegebene EMKG-Taetigkeit (gefahrstoffe-emkg.js) */
+function gsGbuDa(g){ return !!g.gbu_pfad || (typeof gseStand === "function" && gseStand(g) === "frei"); }
+function gsLuecken(g){ return [gsGbuDa(g) ? "" : "GBU", g.ba_pfad ? "" : "BA"].filter(Boolean); }
 /* Verwendung (Nikolai 12.10.2026): in Verwendung · Verwendung klären · nicht mehr verwendet.
    „aktiv" (bool) leitet die Datenbank daraus ab; alte Zeilen ohne Status zaehlen nach „aktiv". */
 const GS_VERWENDUNG = { aktiv: "In Verwendung", offen: "Verwendung klären", inaktiv: "Nicht mehr verwendet" };
@@ -109,11 +112,12 @@ async function renderGefahrstoffe(wrap){
   const klaeren = aktiv.filter(g => gsVerwendung(g) === "offen").length;
   const zeile = g => { const st = gsSdbStand(g), l = gsLuecken(g);
     return `<div class="ul-zeile ul-klick" data-id="${esc(g.id)}" data-suche="${esc([g.bezeichnung, g.hersteller, g.verwendung, g.artikelnummer, (g.h_saetze || []).join(" ")].filter(Boolean).join(" ").toLowerCase())}"
-      data-bereiche="${esc((g.bereiche || []).join("|"))}" data-signal="${esc(g.signalwort || "")}" data-sdb="${st.klasse}" data-gbu="${g.gbu_pfad ? "1" : ""}" data-ba="${g.ba_pfad ? "1" : ""}" data-verw="${gsVerwendung(g)}">
+      data-bereiche="${esc((g.bereiche || []).join("|"))}" data-signal="${esc(g.signalwort || "")}" data-sdb="${st.klasse}" data-gbu="${gsGbuDa(g) ? "1" : ""}" data-ba="${g.ba_pfad ? "1" : ""}" data-verw="${gsVerwendung(g)}">
       <span class="gs-signal gs-${g.signalwort === "Gefahr" ? "gefahr" : g.signalwort === "Achtung" ? "achtung" : "ohne"}">${esc(g.signalwort || "–")}</span>
       <span class="gs-piktos">${gsPiktoHtml(g.h_saetze)}</span>
       <div class="ul-z-name"><b>${esc(g.bezeichnung)}</b><span>${esc([g.hersteller, (g.bereiche || []).join(", ")].filter(Boolean).join(" · "))}</span></div>
       <div class="ul-z-info"><span class="gs-verw gs-verw-${gsVerwendung(g)}">${GS_VERWENDUNG[gsVerwendung(g)]}</span><span class="gs-sdb gs-sdb-${st.klasse}" title="${esc(st.text)}">${esc(st.kurz)}</span>
+        ${typeof gseStand === "function" && gseStand(g) === "entwurf" ? `<span class="gse-st gse-st-entwurf" title="EMKG-Beurteilung als Entwurf erfasst">GBU Entwurf</span>` : ""}
         ${l.length ? `<span class="gs-luecke" title="Stoffbezogene Gefährdungsbeurteilung (EMKG) und Betriebsanweisung">${esc(l.join(" + "))} fehlt</span>` : ""}</div>
       <span class="ul-pfeil" aria-hidden="true">›</span></div>`; };
   sec.innerHTML = `<div class="gs-kopf">
@@ -181,7 +185,7 @@ function gsKurzinfo(g, neu){
           ${pflege ? `<button type="button" class="btn-klein" id="gsNeueFassung">Neue Fassung hochladen</button>` : ""}</span></div>
       <h4 class="ul-h4">Gefährdungsbeurteilung und Betriebsanweisung</h4>
       <div class="gs-doks">
-        <div>${g.gbu_pfad ? gsOeffnen(g.gbu_pfad, "Gefährdungsbeurteilung") : `<span class="gs-luecke">Gefährdungsbeurteilung (EMKG) fehlt</span>`}</div>
+        <div>${typeof gseBlock === "function" ? gseBlock(g, pflege) : ""}${g.gbu_pfad ? gsOeffnen(g.gbu_pfad, "Gefährdungsbeurteilung (PDF)") : (typeof gseBlock === "function" ? "" : `<span class="gs-luecke">Gefährdungsbeurteilung (EMKG) fehlt</span>`)}</div>
         <div>${g.ba_pfad ? gsOeffnen(g.ba_pfad, "Betriebsanweisung") : `<span class="gs-luecke">Stoffbezogene Betriebsanweisung fehlt</span>`}</div>
       </div>
       ${!g.ba_pfad && sammel ? `<p class="uw-leise gs-sammel">Bis dahin gelten die Sammel-Betriebsanweisungen: ${sammel}</p>` : ""}
@@ -192,6 +196,7 @@ function gsKurzinfo(g, neu){
   dlg.querySelector(".ul-dlg-zu").addEventListener("click", () => dlg.close());
   dlg.querySelectorAll('a[target="_blank"]').forEach(a => a.addEventListener("click", () => dlg.close()));
   const ae = dlg.querySelector("#gsAendern"); if(ae) ae.addEventListener("click", () => { dlg.close(); gsDialog(g, neu); });
+  if(typeof gseBlockVerdrahten === "function") gseBlockVerdrahten(dlg, g, neu);
   const nf = dlg.querySelector("#gsNeueFassung"); if(nf) nf.addEventListener("click", () => { dlg.close(); gsDialog(g, neu, "sdb"); });
   const gp = dlg.querySelector("#gsGeprueft");
   if(gp) gp.addEventListener("click", async () => {
@@ -260,7 +265,12 @@ function gsDialog(g, danach, fokus){
       if(gbu) daten.gbu_pfad = await hoch(gbu, "gbu");
       if(baStoff) daten.ba_pfad = await hoch(baStoff, "ba-stoff");
       if(g) await apiSend("PATCH", "/rest/v1/portal_gefahrstoff?id=eq." + encodeURIComponent(g.id), daten, "return=minimal");
-      else await apiSend("POST", "/rest/v1/portal_gefahrstoff", Object.assign({ kunde_slug: AKTIV }, daten), "return=minimal");
+      else{
+        /* neuer Stoff: gleich die EMKG-Erhebung der ersten Taetigkeit anbieten (Nikolai 13.10.2026) */
+        const neuG = await apiSend("POST", "/rest/v1/portal_gefahrstoff", Object.assign({ kunde_slug: AKTIV }, daten), "return=representation");
+        dlg.close();
+        if(neuG && neuG[0] && typeof gseDialog === "function"){ gseDialog(neuG[0], null, danach); return; }
+      }
       dlg.close(); if(danach) danach();
     }catch(e){ msg.textContent = "Konnte nicht gespeichert werden: " + (e.message || e); msg.className = "pw-msg fehler"; }
   });

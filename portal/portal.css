@@ -1232,3 +1232,28 @@ body.eingebettet .fuss,body.eingebettet .tabbar-fest,body.eingebettet .tb-blatt,
 body.eingebettet .app-rahmen{display:block}
 body.eingebettet main.wrap{max-width:none;padding:12px 14px}
 body.eingebettet{padding-bottom:0!important;background:#fff}
+
+/* Gefahrstoffe – EMKG-Erhebung je Taetigkeit (gefahrstoffe-emkg.js) */
+.gse-block{display:flex;flex-direction:column;gap:8px}
+.gse-tz{border:1px solid var(--linie,#dde5df);border-radius:10px;padding:8px 10px;background:#fbfdfb}
+.gse-tz-k{all:unset;cursor:pointer;display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%}
+.gse-tz-k:hover b{text-decoration:underline}
+.gse-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.gse-chip{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;background:#eef1ef;color:#3b4a40;white-space:nowrap}
+.gse-chip.gse-s0{background:#eef1ef;color:#6b7a70}
+.gse-chip.gse-s1{background:#D8F3DC;color:#1B4332}
+.gse-chip.gse-s2{background:#FFF1C9;color:#7A5300}
+.gse-chip.gse-s3,.gse-chip.gse-s4{background:#FCE1DE;color:#8E1B1B}
+.gse-chip.gse-offen{background:#fff;color:#7a7a7a;border:1px dashed #b9c4bc}
+.gse-st{font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.gse-st-frei{background:#D8F3DC;color:#1B4332}
+.gse-st-entwurf{background:#FFF1C9;color:#7A5300}
+.gse-dlg{max-width:760px}
+.gse-menge{display:flex;gap:6px}.gse-menge input{flex:1;min-width:0}.gse-menge select{width:auto}
+.gse-reihe{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;margin-top:6px}
+.gse-erg{margin-top:10px}
+.gse-mod{border-top:1px solid var(--linie,#e3e9e5);padding:8px 0}
+.gse-mod-k{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.gse-slf,.gse-hw{margin:6px 0 0 18px;padding:0;font-size:13px}
+.gse-slf li,.gse-hw li{margin:2px 0}
+.gse-sdb summary{cursor:pointer;font-weight:600}
