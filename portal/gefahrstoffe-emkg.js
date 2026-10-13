@@ -54,7 +54,7 @@ function gseBlock(g, pflege){
     ${pflege ? `<div><button type="button" class="btn-klein" id="gseNeu">Tätigkeit erfassen (EMKG)</button></div>` : ""}</div>`;
 }
 function gseChip(titel, m){
-  const s = m ? m.stufe : null, k = s === null || s === undefined ? "offen" : "s" + s;
+  const roh = m ? m.stufe : null, s = Number.isInteger(roh) && roh >= 0 && roh <= 4 ? roh : null, k = s === null ? "offen" : "s" + s;
   return `<span class="gse-chip gse-${k}" title="${esc(titel + ": " + (s === null || s === undefined ? "nicht berechenbar – Angaben fehlen" : GSE_STUFE[s]))}">${esc(titel)} ${s === null || s === undefined ? "?" : s === 0 ? "–" : s}</span>`;
 }
 function gseBlockVerdrahten(dlg, g, neu){

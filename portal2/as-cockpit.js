@@ -36,6 +36,8 @@ AS_SEITEN.cockpit = { titel: "Übersicht", icon: "◉", sort: 1, render(main){
       ${kachel("bda", Object.values(psy).includes("rot") ? "rot" : Object.values(psy).includes("gelb") ? "gelb" : Object.keys(psy).length ? "gruen" : "grau",
         Object.keys(psy).length ? Object.values(psy).filter(v => v !== "gruen").length : "–", "Psychische Belastung: auffällige Bereiche",
         AS_KAT.psyche_bereiche.map(b => asPunkt(psy[b] ? { gruen: "gruen", gelb: "gelb", rot: "rot" }[psy[b]] : "grau") + esc(b.split(" /")[0])).join(" "))}
+      ${(() => { const p = asPfObjekte(), s = p.map(asPfStand), rot = s.filter(x => x.farbe === "rot").length, nie = s.filter(x => x.k === "nie").length;
+        return kachel("pruefungen", !p.length ? "grau" : rot ? "rot" : nie || s.some(x => x.k === "bald") ? "gelb" : "gruen", p.length ? kz.pruefungen_aktuell + " %" : "–", "Prüfungen fristgerecht", p.length ? rot + " überfällig/nicht i. O. · " + nie + " ungeprüft" : "Prüfkataster noch leer"); })()}
       ${kachel("steuerung/asa", kz.asa_jahr >= 4 ? "gruen" : "gelb", kz.asa_jahr + " / 4", "ASA-Sitzungen " + new Date().getFullYear(), "")}
       ${kachel("mitzeichnung", asT("as_mitzeichnung").some(x => x.status !== "entschieden") ? "gelb" : "gruen", asT("as_mitzeichnung").filter(x => x.status !== "entschieden").length, "Offene Mitzeichnungen", "")}
       ${kachel("steuerung/ziele", "blau", asT("as_ziel").filter(z => z.status === "aktiv").length, "Aktive Ziele", asT("as_ziel").filter(z => z.status === "aktiv" && asZielStand(z).erreicht).length + " erreicht")}

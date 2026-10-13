@@ -231,6 +231,7 @@ function asSvEintraege(){
   asT("as_ziel").filter(z => z.status === "aktiv" && z.termin).forEach(z => l.push({
     quelle: "ziel", id: z.id, datum: String(z.termin).slice(0, 10), art: "ziel", titel: "Ziel erreichen: " + (z.titel || ""),
     sub: z.verantwortlich ? "verantwortlich: " + z.verantwortlich : "", ziel: "steuerung/ziele", roh: z }));
+  if(typeof asPfKalender === "function") asPfKalender().forEach(e => l.push(e));
   return l.filter(e => asSvTage(e.datum) != null).sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
 }
 

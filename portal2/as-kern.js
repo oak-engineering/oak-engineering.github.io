@@ -7,7 +7,7 @@ const AS = { kunde: null, kunden: [], org: null, admin: false, fachkraft: false,
   db: {}, seite: "cockpit", reiter: {} };
 const AS_TABELLEN = ["as_einheit", "as_beauftragter", "as_einsatz", "as_orgcheck", "as_arbeitssystem", "as_taetigkeit",
   "as_gefaehrdung", "as_massnahme", "as_mitzeichnung", "as_asa", "as_ziel", "as_psyche", "as_meldung", "as_thema",
-  "as_kultur", "as_prozess"];
+  "as_kultur", "as_prozess", "as_pruefobjekt", "as_pruefung"];
 const AS_SEITEN = {};            // von den Modulen befuellt: { titel, icon, sort, render(main) }
 const AS_KUNDENPROZESSE = AS_PROZESSE.prozesse;
 
@@ -324,6 +324,8 @@ function asKennzahlen(){
     reifegrad_mittel: rg.length ? Math.round(rg.reduce((a, b) => a + b, 0) / rg.length * 10) / 10 : 0,
     prozesse_freigegeben: asProz(asT("as_prozess").filter(p => p.freigegeben_am).length, kp),
     organisation_nachweise: asProz(AS_NACHWEISE.filter(n => asOrgDaten()[n[0]]).length, AS_NACHWEISE.length),
+    pruefungen_ueberfaellig: typeof asPfKennzahlen === "function" ? asPfKennzahlen().ueberfaellig : 0,
+    pruefungen_aktuell: typeof asPfKennzahlen === "function" ? asPfKennzahlen().aktuell : 0,
     kultur_rot: (() => { const k = asKurzCheckLetzter(); return k ? Object.values(k.antworten.felder || {}).filter(v => v === "rot").length : 0; })(),
   };
 }
