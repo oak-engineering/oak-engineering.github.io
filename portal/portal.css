@@ -1228,7 +1228,7 @@ html:not(.ist-app) .bereich-wahl{display:none}
 /* Eingebettet (?eingebettet=1, z. B. Gefahrstoffseite in der Arbeitsschutz-App V2): nur der Inhalt,
    ohne Portal-Kopf, Seitenleiste, Reiter und Fuss – die umgebende App liefert den Rahmen */
 body.eingebettet .kopf,body.eingebettet #seitenleiste,body.eingebettet #katTabs,body.eingebettet #subTabs,
-body.eingebettet .fuss,body.eingebettet .tabbar-fest,body.eingebettet .tb-blatt{display:none!important}
+body.eingebettet .fuss,body.eingebettet .tabbar-fest,body.eingebettet .tb-blatt,body.eingebettet .zurueck{display:none!important}
 body.eingebettet .app-rahmen{display:block}
 body.eingebettet main.wrap{max-width:none;padding:12px 14px}
 body.eingebettet{padding-bottom:0!important;background:#fff}
