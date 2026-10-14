@@ -21,7 +21,7 @@ function dokVeraltetInfo(row, maengel, typ){
 function dokVeraltetDatum(s){ const t = String(s || "").split("-"); return t.length === 3 ? t[2] + "." + t[1] + "." + t[0] : ""; }
 function dokVeraltetText(v){
   return "Nicht mehr aktuell: " + (v.anzahl === 1 ? "1 Mangel wurde" : v.anzahl + " Mängel wurden") + " seit " + dokVeraltetDatum(v.seit)
-    + " als behoben gemeldet und " + (v.anzahl === 1 ? "ist" : "sind") + " hier noch nicht eingearbeitet. Die Überarbeitung übernimmt OAK engineering.";
+    + " als behoben gemeldet und " + (v.anzahl === 1 ? "ist" : "sind") + " hier noch nicht eingearbeitet. Die Überprüfung steht als Aufgabe unter „To-dos“.";
 }
 /* kleines Symbol für Knöpfe/Links (Text im title = Mouse-over) */
 function dokVeraltetSymbol(v){

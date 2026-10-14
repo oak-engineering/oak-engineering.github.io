@@ -12,6 +12,24 @@
 "use strict";
 
 let AUF_QUITT = [];
+/* Unterlagen zur Überprüfung (portal_pruefauftrag, Trigger in der DB – Plan intern/portal-eigenstaendig.md Schritt 1).
+   Erledigen darf die Fachkraft des Betriebs oder OAK (RPC portal_pruefauftrag_erledigen). */
+let AUF_PA = [];
+const AUF_PA_TYP = { anlage_unterlagen: ["Unterlagen der Anlage prüfen", "unterlagen/anlagen"], bda_system: ["Beurteilung nachbewerten", "unterlagen/anlagen"],
+  gs_gbu: ["Gefahrstoff-Beurteilung prüfen", "unterlagen/gefahrstoffe"], gs_ba: ["Gefahrstoff-Betriebsanweisung prüfen", "unterlagen/gefahrstoffe"],
+  unterweisung: ["Beschäftigte neu unterweisen", "mehr/unterweisungen"] };
+async function aufPaLaden(){
+  try{ AUF_PA = await apiGet("/rest/v1/portal_pruefauftrag?select=*&erledigt_am=is.null" + (AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "") + "&order=faellig_am.asc", false) || []; }
+  catch(e){ AUF_PA = []; }
+}
+async function aufPaErledigen(a, ergebnis, danach){
+  const was = ergebnis === "unveraendert" ? "Geprüft – keine Änderung nötig" : (a.objekt_typ === "unterweisung" ? "Unterweisung durchgeführt" : "Unterlage aktualisiert");
+  const notiz = prompt(was + "\n" + (a.objekt_titel || "") + "\n\nNotiz (optional):", "");
+  if(notiz === null) return;
+  try{ await apiSend("POST", "/rest/v1/rpc/portal_pruefauftrag_erledigen", { p_id: a.id, p_ergebnis: ergebnis, p_notiz: notiz.trim() || null }); }
+  catch(e){ alert("Konnte nicht gespeichert werden: " + (e.message || e)); return; }
+  await aufPaLaden(); if(danach) danach();
+}
 
 async function aufQuittungenLaden(){
   try{ AUF_QUITT = await apiGet("/rest/v1/portal_aufgabe_quittung?select=*" + (AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "")
@@ -91,6 +109,15 @@ function aufAufgaben(){
     if(ueb) l.push({ schluessel: "oak-uebernehmen", stufe: "info", titel: ueb + " erledigte Mängel in GBU, BA und Mängelliste übernehmen", sub: "nur für OAK sichtbar", aktionen: [["ansehen", zu("uebernehmen")]] });
     if(bew) l.push({ schluessel: "oak-bewerten", stufe: "info", titel: bew + " vom Betrieb gemeldete Mängel bewerten", sub: "nur für OAK sichtbar", aktionen: [["ansehen", zu("offen")]] });
   }
+  /* 10. Unterlagen zur Überprüfung */
+  const fk = istAdmin || !!window.__oakFachkraft;
+  AUF_PA.forEach(a => { const [t, ziel] = AUF_PA_TYP[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = (a.anlaesse || []).map(x => x.text).filter(Boolean);
+    const akt = [["Öffnen", () => { location.hash = "#" + ziel; }]];
+    if(fk){ akt.push(["Geprüft – unverändert", () => aufPaErledigen(a, "unveraendert", AUF_NEU)]);
+            akt.push([a.objekt_typ === "unterweisung" ? "Unterwiesen" : "Aktualisiert", () => aufPaErledigen(a, "aktualisiert", AUF_NEU)]); }
+    l.push({ schluessel: "pa:" + a.id, stufe: ehsTage(a.faellig_am) < 0 ? "kritisch" : "warnung", titel: t + ": " + (a.objekt_titel || a.objekt_id),
+      sub: txt.slice(0, 2).join(" · ") + (txt.length > 2 ? " · und " + (txt.length - 2) + " weitere" : "") + (fk ? "" : " – erledigt die Fachkraft"),
+      frist: ehsTage(a.faellig_am), aktionen: akt }); });
   const rang = { kritisch: 0, warnung: 1, info: 2 };
   return l.filter(a => !(a.quittierbar && aufQuittiert(a.schluessel)))
     .sort((a, b) => (rang[a.stufe] - rang[b.stufe]) || ((a.frist ?? 999) - (b.frist ?? 999)));
@@ -100,7 +127,7 @@ async function aufLaden(){
   await Promise.all([
     typeof kalLaden === "function" ? kalLaden(true) : null, typeof nwLaden === "function" ? nwLaden(true) : null, aufQuittungenLaden(),
     typeof ladeAnfragen === "function" ? ladeAnfragen() : null,
-    typeof uwEinarbeitungLaden === "function" ? uwEinarbeitungLaden() : null].map(p => Promise.resolve(p).catch(() => null)));
+    typeof uwEinarbeitungLaden === "function" ? uwEinarbeitungLaden() : null, aufPaLaden()].map(p => Promise.resolve(p).catch(() => null)));
 }
 
 /* Startseite: ein schlanker Hinweis */
@@ -125,7 +152,8 @@ async function renderTodos(wrap){
   const zeichnen = () => {
     const liste = aufAufgaben();
     const kuerzlich = AUF_QUITT.filter(q => (!AKTIV || q.kunde_slug === AKTIV) && ehsTage(String(q.quittiert_am).slice(0, 10)) >= -7);
-    box.innerHTML = `<p class="uw-erkl">Aufgaben entstehen aus Kalender, Nachweisen, Vorsorge, Unterweisungen, Vorfällen und dem Forum.
+    box.innerHTML = `<p class="uw-erkl">Aufgaben entstehen aus Kalender, Nachweisen, Vorsorge, Unterweisungen, Vorfällen, dem Forum und aus Änderungen,
+        nach denen Unterlagen überprüft werden müssen.
         Erledigen Sie sie direkt hier – Hinweise ohne eigene Handlung quittieren Sie.</p>
       ${liste.length ? `<div class="auf-liste">${liste.map((a, i) => `<div class="auf-karte auf-${a.stufe}">
           <div class="auf-text"><b>${esc(a.titel)}</b>${a.sub ? `<span>${esc(a.sub)}</span>` : ""}</div>
@@ -139,8 +167,10 @@ async function renderTodos(wrap){
     box.querySelectorAll("[data-auf]").forEach(b => b.addEventListener("click", () => liste[+b.dataset.auf].aktionen[+b.dataset.akt][1]()));
     box.querySelectorAll("[data-quitt]").forEach(b => b.addEventListener("click", () => aufQuittierenDialog(liste[+b.dataset.quitt], zeichnen)));
   };
+  AUF_NEU = zeichnen;
   zeichnen();
 }
+let AUF_NEU = null;
 
 function aufQuittierenDialog(a, danach){
   const dlg = ehsDialog("aufDlg");

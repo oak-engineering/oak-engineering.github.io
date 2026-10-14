@@ -5,7 +5,7 @@
    Rechenlogik: emkg-kern.js (window.EMKG), Regeln: references/gefahrstoffe/emkg-regelwerk.md.
    Wer/wann setzt der Server (Trigger portal_gefahrstoff_gbu_geaendert), nie der Client. */
 
-let GSE_ROWS = [], GSE_FUER = null;
+let GSE_ROWS = [], GSE_FUER = null, GSE_PA = [];
 
 const GSE_MODULE = [["einatmen", "Einatmen"], ["haut", "Haut"], ["augen", "Augen"], ["brand", "Brand und Explosion"], ["lagern", "Lagern"]];
 const GSE_STUFE = { 0: "entfällt", 1: "Stufe 1 – Grundmaßnahmen", 2: "Stufe 2 – erweiterte Maßnahmen", 3: "Stufe 3 – geschlossenes System / besondere Maßnahmen", 4: "Stufe 4 – Beratung erforderlich" };
@@ -20,12 +20,20 @@ const GSE_ART = {
 
 async function gseLaden(erzwingen){
   if(!erzwingen && GSE_FUER === AKTIV) return GSE_ROWS;
-  try{ GSE_ROWS = await apiGet("/rest/v1/portal_gefahrstoff_gbu?select=*" + (AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "") + "&order=erstellt_am.asc", false) || []; }
+  const k = AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "";
+  try{ GSE_ROWS = await apiGet("/rest/v1/portal_gefahrstoff_gbu?select=*" + k + "&order=erstellt_am.asc", false) || []; }
   catch(e){ GSE_ROWS = []; }
+  /* offene Überprüfungen (neues SDB / geänderte H-Sätze → Trigger in der DB) */
+  try{ GSE_PA = await apiGet("/rest/v1/portal_pruefauftrag?select=id,objekt_typ,objekt_id,anlaesse,faellig_am&erledigt_am=is.null&objekt_typ=in.(gs_gbu,gs_ba)" + k, false) || []; }
+  catch(e){ GSE_PA = []; }
   GSE_FUER = AKTIV;
   return GSE_ROWS;
 }
 function gseFuer(g){ return GSE_ROWS.filter(r => r.gefahrstoff_id === g.id && r.status !== "ueberholt"); }
+function gsePa(typ, id){ return GSE_PA.find(p => p.objekt_typ === typ && p.objekt_id === String(id)) || null; }
+/* Überprüfung fällig für den Stoff (eine seiner Beurteilungen oder seine BA) */
+function gsePruefen(g){ return !!gsePa("gs_ba", g.id) || gseFuer(g).some(x => gsePa("gs_gbu", x.id)); }
+function gsePaHinweis(p){ return p ? `<span class="gse-st gse-st-pruefen" title="${esc((p.anlaesse || []).map(a => a.text).join(" · "))}">prüfen bis ${esc(ehsDatum(p.faellig_am))}</span>` : ""; }
 /* Stand der GBU je Stoff fuer die Liste: frei = mind. eine freigegebene Taetigkeit, entwurf = nur Entwuerfe */
 function gseStand(g){ const r = gseFuer(g); return r.some(x => x.status === "freigegeben") ? "frei" : (r.length ? "entwurf" : ""); }
 
@@ -48,7 +56,7 @@ function gseBlock(g, pflege){
   const r = gseFuer(g);
   const zeile = x => { const e = x.ergebnis && x.ergebnis.module || {};
     return `<div class="gse-tz"><button type="button" class="gse-tz-k" data-gbu="${esc(x.id)}"><b>${esc(x.taetigkeit)}</b>${x.arbeitsbereich ? ` · ${esc(x.arbeitsbereich)}` : ""}
-      <span class="gse-st gse-st-${x.status === "freigegeben" ? "frei" : "entwurf"}">${x.status === "freigegeben" ? "freigegeben" + (x.freigegeben_von ? " – " + esc(x.freigegeben_von) : "") : "Entwurf"}</span></button>
+      <span class="gse-st gse-st-${x.status === "freigegeben" ? "frei" : "entwurf"}">${x.status === "freigegeben" ? "freigegeben" + (x.freigegeben_von ? " – " + esc(x.freigegeben_von) : "") : "Entwurf"}</span>${gsePaHinweis(gsePa("gs_gbu", x.id))}</button>
       <div class="gse-chips">${GSE_MODULE.map(([k, t]) => gseChip(t, e[k])).join("")}</div></div>`; };
   return `<div class="gse-block">${r.length ? r.map(zeile).join("") : `<span class="gs-luecke">Noch keine Tätigkeit nach EMKG erfasst</span>`}
     ${pflege ? `<div><button type="button" class="btn-klein" id="gseNeu">Tätigkeit erfassen (EMKG)</button></div>` : ""}</div>`;
@@ -73,6 +81,7 @@ function gseDialog(g, gbu, danach){
   const mg = e.menge || {};
   dlg.innerHTML = `<form method="dialog">
     <h3>Gefährdungsbeurteilung nach EMKG</h3>
+    ${gbu && gsePa("gs_gbu", gbu.id) ? `<div class="ul-hinweis"><b>Überprüfung fällig:</b> ${esc((gsePa("gs_gbu", gbu.id).anlaesse || []).map(a => a.text).join(" · "))} – Angaben prüfen und neu freigeben.</div>` : ""}
     <p class="pw-hint"><b>${esc(g.bezeichnung)}</b>${g.hersteller ? " · " + esc(g.hersteller) : ""} · ${esc((g.h_saetze || []).join(" ") || "keine H-Sätze")}
       – je Tätigkeit eine Beurteilung. Die Maßnahmen ergeben sich aus den Angaben und werden laufend unten angezeigt.</p>
     <fieldset class="gs-feld"><legend>Tätigkeit</legend>

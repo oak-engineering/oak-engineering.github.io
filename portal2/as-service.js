@@ -177,6 +177,7 @@ async function asSvLaden(){
     hole("/rest/v1/unterweisungsnachweise?select=id,mitarbeiter_name,funktion,created_at" + k + "&order=created_at.desc&limit=2000"),
     hole("/rest/v1/portal_einarbeitung?select=person_name,am&archiviert=is.false" + k)]);
   Object.assign(AS_SV, { kunde: AS.kunde, termine, nachweise, vorsorge, uw, vorfaelle, quitt, anfragen, beitraege, uwNw, einarb });
+  await asSvPaLaden();
 }
 async function asSvQuittLaden(){
   AS_SV.quitt = await apiGet("/rest/v1/portal_aufgabe_quittung?select=*&kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&order=quittiert_am.desc&limit=1000")
@@ -292,6 +293,7 @@ function asSvEintraege(){
     quelle: "ziel", id: z.id, datum: String(z.termin).slice(0, 10), art: "ziel", titel: "Ziel erreichen: " + (z.titel || ""),
     sub: z.verantwortlich ? "verantwortlich: " + z.verantwortlich : "", ziel: "steuerung/ziele", roh: z }));
   if(typeof asPfKalender === "function") asPfKalender().forEach(e => l.push(e));
+  asSvPaKalender().forEach(e => l.push(e));
   return l.filter(e => asSvTage(e.datum) != null).sort((a, b) => String(a.datum).localeCompare(String(b.datum)));
 }
 
@@ -397,9 +399,78 @@ function asSvAufgaben(){
     schluessel: "v2-ziel:" + z.id, stufe: "warnung", quittierbar: true, titel: "Zieltermin abgelaufen: " + (z.titel || ""),
     sub: "bis " + asDat(z.termin) + (z.verantwortlich ? " · verantwortlich: " + z.verantwortlich : "") + " – Ergebnis bewerten oder Ziel anpassen",
     frist: asSvTage(z.termin), aktionen: [["Ziel öffnen", () => asGehe("steuerung/ziele")]] }));
+  /* 13. Unterlagen zur Überprüfung (Trigger in der DB, portal_pruefauftrag) + Regelfristen der Beurteilungen */
+  asSvPaAufgaben().forEach(a => l.push(a));
   const rang = { kritisch: 0, warnung: 1, info: 2 };
   return l.filter(a => !(a.quittierbar && asSvQuittiert(a.schluessel)))
     .sort((a, b) => (rang[a.stufe] - rang[b.stufe]) || ((a.frist ?? 999) - (b.frist ?? 999)));
+}
+
+/* ---------------- Unterlagen überprüfen (Plan intern/portal-eigenstaendig.md, Schritt 1) ----------------
+   Prüfaufträge legt die Datenbank selbst an (pruefauftrag_2026-10-14.sql): Maßnahme erledigt, neues SDB/H-Sätze,
+   Anlagen-Unterlagen aktualisiert → neu unterweisen. Erledigt werden sie automatisch (neuer Stand/Freigabe) oder hier
+   von der Fachkraft des Betriebs. Dazu die Regelfristen (naechste_pruefung) der Beurteilungen. */
+const AS_SV_PA = {
+  anlage_unterlagen: ["Unterlagen der Anlage prüfen", "anlagen"],
+  bda_system: ["Beurteilung nachbewerten", "bda"],
+  gs_gbu: ["Gefahrstoff-Beurteilung prüfen", "gefahrstoffe"],
+  gs_ba: ["Gefahrstoff-Betriebsanweisung prüfen", "gefahrstoffe"],
+  unterweisung: ["Beschäftigte neu unterweisen", "unterweisungen"] };
+async function asSvPaLaden(){
+  const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
+  const hole = p => apiGet(p).then(r => Array.isArray(r) ? r : []).catch(() => []);
+  const [pa, gbu] = await Promise.all([
+    hole("/rest/v1/portal_pruefauftrag?select=*&erledigt_am=is.null" + k + "&order=faellig_am.asc"),
+    hole("/rest/v1/portal_gefahrstoff_gbu?select=id,taetigkeit,gefahrstoff_id,naechste_pruefung,status&status=eq.freigegeben&naechste_pruefung=not.is.null" + k)]);
+  AS_SV.pa = pa; AS_SV.gbuFrist = gbu;
+}
+function asSvPaText(a){ return (a.anlaesse || []).map(x => x.text).filter(Boolean); }
+function asSvPaAufgaben(){
+  const l = [], fk = !!(AS.fachkraft || AS.admin);
+  (AS_SV.pa || []).forEach(a => { const [t, ziel] = AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = asSvPaText(a);
+    const akt = [["Öffnen", () => asGehe(ziel)]];
+    if(fk){
+      akt.push(["Geprüft – unverändert", () => asSvPaErledigen(a, "unveraendert")]);
+      akt.push([a.objekt_typ === "unterweisung" ? "Unterwiesen" : "Aktualisiert", () => asSvPaErledigen(a, "aktualisiert")]);
+    }
+    l.push({ schluessel: "pa:" + a.id, stufe: asSvTage(a.faellig_am) < 0 ? "kritisch" : "warnung", titel: t + ": " + (a.objekt_titel || a.objekt_id),
+      sub: txt.slice(0, 2).join(" · ") + (txt.length > 2 ? " · und " + (txt.length - 2) + " weitere" : "") + (fk ? "" : " – erledigt die Fachkraft"),
+      frist: asSvTage(a.faellig_am), aktionen: akt }); });
+  const bald = d => { const t = asSvTage(d); return t != null && t <= 30; };
+  asT("as_arbeitssystem").filter(s => s.naechste_pruefung && bald(s.naechste_pruefung)).forEach(s => l.push({
+    schluessel: "bda-frist:" + s.id + ":" + s.naechste_pruefung, stufe: asSvTage(s.naechste_pruefung) < 0 ? "kritisch" : "warnung",
+    titel: "Beurteilung regelmäßig überprüfen: " + (s.name || ""), sub: "nächste Überprüfung " + asDat(s.naechste_pruefung) + " – prüfen und neu freigeben",
+    frist: asSvTage(s.naechste_pruefung), aktionen: [["Öffnen", () => asGehe("bda")]] }));
+  (AS_SV.gbuFrist || []).filter(g => bald(g.naechste_pruefung)).forEach(g => l.push({
+    schluessel: "gbu-frist:" + g.id + ":" + g.naechste_pruefung, stufe: asSvTage(g.naechste_pruefung) < 0 ? "kritisch" : "warnung",
+    titel: "Gefahrstoff-Beurteilung regelmäßig überprüfen: " + (g.taetigkeit || ""), sub: "nächste Überprüfung " + asDat(g.naechste_pruefung),
+    frist: asSvTage(g.naechste_pruefung), aktionen: [["Öffnen", () => asGehe("gefahrstoffe")]] }));
+  return l;
+}
+function asSvPaKalender(){
+  const l = [];
+  (AS_SV.pa || []).forEach(a => l.push({ quelle: "pruefauftrag", id: a.id, datum: a.faellig_am, art: "pruefung",
+    titel: ((AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen"])[0]) + ": " + (a.objekt_titel || ""), sub: asSvPaText(a)[0] || "",
+    ziel: (AS_SV_PA[a.objekt_typ] || [0, "unterlagen"])[1], roh: a }));
+  asT("as_arbeitssystem").filter(s => s.naechste_pruefung).forEach(s => l.push({ quelle: "bda-frist", id: s.id, datum: s.naechste_pruefung,
+    art: "pruefung", titel: "Beurteilung überprüfen: " + (s.name || ""), sub: "Regelfrist nach Freigabe", ziel: "bda", roh: s }));
+  (AS_SV.gbuFrist || []).forEach(g => l.push({ quelle: "gbu-frist", id: g.id, datum: g.naechste_pruefung, art: "pruefung",
+    titel: "Gefahrstoff-Beurteilung überprüfen: " + (g.taetigkeit || ""), sub: "Regelfrist nach Freigabe", ziel: "gefahrstoffe", roh: g }));
+  return l;
+}
+function asSvPaErledigen(a, ergebnis){
+  const t = (AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen"])[0];
+  asDialog({ titel: ergebnis === "unveraendert" ? "Geprüft – keine Änderung nötig" : (a.objekt_typ === "unterweisung" ? "Unterweisung durchgeführt" : "Unterlage aktualisiert"),
+    inhalt: `<p><b>${esc(t)}: ${esc(a.objekt_titel || "")}</b></p>
+      <ul class="hinweis">${asSvPaText(a).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <div class="form"><label class="voll">Notiz (optional)<textarea data-f="notiz" maxlength="1000" placeholder="${ergebnis === "unveraendert" ? "z. B. Maßnahme ändert die Bewertung nicht" : "z. B. BA um neue Schutzhaube ergänzt"}"></textarea></label></div>
+      <p class="hinweis">${a.objekt_typ === "anlage_unterlagen" && ergebnis === "aktualisiert" ? "Danach entsteht automatisch die Aufgabe, die Beschäftigten an dieser Anlage neu zu unterweisen. " : ""}Name und Zeit stehen im Logbuch.</p>`,
+    knoepfe: [{ t: "Bestätigen", fn: async d => {
+      const w = asWerte(d);
+      try{ await apiSend("POST", "/rest/v1/rpc/portal_pruefauftrag_erledigen", { p_id: a.id, p_ergebnis: ergebnis, p_notiz: w.notiz || null }); }
+      catch(e){ asMeldung("Konnte nicht gespeichert werden: " + asSvFehler(e)); return false; }
+      await asSvPaLaden(); asMeldung("Erledigt"); asZeige();
+    } }, { t: "Abbrechen", klasse: "sek", fn: () => true }] });
 }
 
 /* ======================= Kalender & To-dos ======================= */
@@ -418,7 +489,8 @@ function asSvTodos(box){
   const kuerzlich = AS_SV.quitt.filter(q => { const t = asSvTage(String(q.quittiert_am || "").slice(0, 10)); return t != null && t >= -7; });
   const farbe = { kritisch: "rot", warnung: "gelb", info: "blau" };
   box.innerHTML = `<div class="karte"><h2>${liste.length ? liste.length + (liste.length === 1 ? " offene Aufgabe" : " offene Aufgaben") : "Keine offenen Aufgaben"}</h2>
-      <p class="hinweis">Aufgaben entstehen aus Kalender, Nachweisen, Vorsorge, Unterweisungen, Vorfällen, Maßnahmen, ASA, Zielen und dem Forum.
+      <p class="hinweis">Aufgaben entstehen aus Kalender, Nachweisen, Vorsorge, Unterweisungen, Vorfällen, Maßnahmen, ASA, Zielen, dem Forum
+        und aus Änderungen, nach denen Unterlagen überprüft werden müssen.
         Erledigen Sie sie direkt hier – Hinweise ohne eigene Handlung quittieren Sie.</p>
       ${liste.length ? liste.map((a, i) => `<div class="sv-auf ${farbe[a.stufe]}">
           <div><b>${esc(a.titel)}</b>${a.sub ? `<small>${esc(a.sub)}</small>` : ""}${a.unterlagen ? asSvUnterlagenHtml(a.unterlagen) : ""}</div>

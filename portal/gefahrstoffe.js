@@ -117,6 +117,7 @@ async function renderGefahrstoffe(wrap){
       <span class="gs-piktos">${gsPiktoHtml(g.h_saetze)}</span>
       <div class="ul-z-name"><b>${esc(g.bezeichnung)}</b><span>${esc([g.hersteller, (g.bereiche || []).join(", ")].filter(Boolean).join(" · "))}</span></div>
       <div class="ul-z-info"><span class="gs-verw gs-verw-${gsVerwendung(g)}">${GS_VERWENDUNG[gsVerwendung(g)]}</span><span class="gs-sdb gs-sdb-${st.klasse}" title="${esc(st.text)}">${esc(st.kurz)}</span>
+        ${typeof gsePruefen === "function" && gsePruefen(g) ? `<span class="gse-st gse-st-pruefen" title="Neues Sicherheitsdatenblatt oder geänderte Einstufung – Beurteilung/BA prüfen">Überprüfung fällig</span>` : ""}
         ${typeof gseStand === "function" && gseStand(g) === "entwurf" ? `<span class="gse-st gse-st-entwurf" title="EMKG-Beurteilung als Entwurf erfasst">GBU Entwurf</span>` : ""}
         ${l.length ? `<span class="gs-luecke" title="Stoffbezogene Gefährdungsbeurteilung (EMKG) und Betriebsanweisung">${esc(l.join(" + "))} fehlt</span>` : ""}</div>
       <span class="ul-pfeil" aria-hidden="true">›</span></div>`; };
