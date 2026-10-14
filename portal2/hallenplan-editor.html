@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hallenplan – </title>
+<style>
+ :root{--pri:#2D6A4F;--dun:#1B4332;--akz:#D8F3DC}
+ *{box-sizing:border-box}
+ body{margin:0;font-family:Jost,'Segoe UI',sans-serif;background:#F4F6F5;color:#1B2A24}
+ header{background:var(--dun);color:#fff;padding:15px 22px;display:flex;align-items:center;
+   gap:14px;flex-wrap:wrap}
+ header h1{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:600}
+ header p{margin:3px 0 0;font-size:12.5px;opacity:.85}
+ .wrap{max-width:1300px;margin:0 auto;padding:16px 22px 60px}
+ .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+ .lg,.tb{display:flex;align-items:center;gap:7px;font:inherit;font-size:12.5px;background:#fff;
+   border:1px solid #D3DAD7;border-radius:20px;padding:6px 12px;cursor:pointer}
+ .lg[aria-pressed="true"],.tb[aria-pressed="true"]{border-color:var(--pri);
+   box-shadow:0 0 0 2px var(--akz)}
+ .sw{width:13px;height:13px;border-radius:3px;border:1.5px solid #888;display:inline-block}
+ .quote{margin-left:auto;font-size:12.5px;background:#fff;border:1px solid #D3DAD7;
+   border-radius:20px;padding:6px 13px}
+ .quote b{color:var(--pri);font-size:15px} .quote .rt{color:#C62828}
+ .karte{background:#fff;border:1px solid #E1E6E3;border-radius:10px;padding:12px;
+   overflow-x:auto}
+ .warnbar{background:#FFF3E0;border:1px solid #FFCC80;border-radius:9px;padding:9px 13px;
+   margin:0 0 10px;font-size:12.5px;color:#7A4A00}
+ .warnbar b{font-weight:600} .warnbar ul{margin:5px 0 0;padding-left:18px}
+ #buehne{position:relative;margin:0 auto}
+ /* Die Unterlage zeigt genau die Hallen-Box (SVG 40..840 / 30..2551) – sie muss dorthin
+    gelegt werden, nicht über die ganze Fläche, sonst liegt alles versetzt. */
+ #foto{position:absolute;pointer-events:none;display:none}
+ svg{width:100%;height:auto;display:block;position:relative}
+ body.edit svg{touch-action:none}
+ .m{cursor:pointer} .m:hover>rect:first-of-type{stroke-width:3.5}
+ .m.aus{opacity:.12}
+ .sel>rect:first-of-type,rect.sel,.sel>circle{stroke:#C2185B!important;stroke-width:3.5!important}
+ .sel2>rect:first-of-type{stroke:#7B1FA2!important;stroke-width:3.5!important}
+ #ed{display:none;gap:8px;flex-wrap:wrap;align-items:center;margin:9px 0 0;padding:10px 12px;
+   background:#FFF8E7;border:1px solid #E8D9A8;border-radius:9px;font-size:12.5px}
+ body.edit #ed{display:flex}
+ #ed .hint{color:#6B5B2A;flex-basis:100%;line-height:1.55}
+ #ed select,#ed button,#ed input[type=range]{font:inherit;font-size:12.5px;padding:5px 9px;
+   border-radius:7px;border:1px solid #D3DAD7;background:#fff;cursor:pointer}
+ .prim{background:var(--pri)!important;color:#fff!important;border-color:var(--pri)!important}
+ .stand{font-size:12px;color:#6B7671;padding:5px 2px}
+ .stand.offen{color:#B3384A;font-weight:600}
+ #ed .neu{background:#F1F6F3}
+ #pop{position:fixed;right:18px;top:80px;width:335px;max-height:78vh;overflow:auto;z-index:40;
+   background:#fff;border:1px solid #D3DAD7;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.16);
+   padding:15px 17px;display:none}
+ #pop h3{margin:0 0 3px;font-size:17px;font-family:'Cormorant Garamond',Georgia,serif}
+ #pop .zu{position:absolute;right:9px;top:7px;border:0;background:none;font-size:19px;
+   cursor:pointer;color:#6B7671;line-height:1}
+ #pop dl{margin:9px 0 0;display:grid;grid-template-columns:auto 1fr;gap:3px 9px;font-size:12.5px}
+ #pop dt{color:#6B7671} #pop dd{margin:0}
+ #pop .risk{display:inline-block;padding:3px 11px;border-radius:14px;font-weight:700;
+   font-size:12.5px;margin:8px 0 2px;border:1.5px solid}
+ #pop a.dok{display:block;margin-top:6px;padding:8px 11px;border:1px solid #D3DAD7;
+   border-radius:8px;text-decoration:none;color:var(--dun);font-size:12.5px;background:#FBFCFB}
+ #pop a.dok:hover{border-color:var(--pri);background:var(--akz)}
+ #pop .warn{margin-top:9px;padding:8px 11px;border-radius:8px;background:#FFF3E0;
+   border:1px solid #FFCC80;font-size:12px;color:#7A4A00}
+ .info{display:flex;gap:24px;flex-wrap:wrap;margin-top:11px;font-size:12.5px;color:#4A5A54}
+ .info ul{margin:5px 0 0;padding-left:0;list-style:none}
+ .info li{margin:3px 0;display:flex;align-items:center;gap:7px}
+ .pnr{width:17px;height:17px;border-radius:50%;color:#fff;font-size:10px;font-weight:700;
+   display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+ .rb{display:inline-flex;width:15px;height:15px;border:1px solid #455A64;border-radius:3px;
+   align-items:center;justify-content:center;font-size:9px;font-weight:700}
+ footer{font-size:11.5px;color:#6B7671;margin-top:13px;line-height:1.6}
+ @media print{.bar,#ed,header,#pop{display:none!important} body{background:#fff}
+   .karte{border:0;overflow:visible}}
+</style></head><body>
+<header>
+  <div><h1>Hallenplan &amp; Risikoübersicht</h1>
+  <p id="hpUnter"></p></div>
+  <button class="tb" id="btEdit" style="margin-left:auto" aria-pressed="false">✏️ Bearbeiten</button>
+</header>
+<div class="wrap">
+  
+  <div class="bar" id="legende"></div>
+  <div id="ed">
+    <select id="slug"><option value="">— Bewertung zuordnen —</option></select>
+    <button id="btName">Umbenennen (N)</button>
+    <button id="btDreh">Text drehen (T)</button>
+    <button id="btDup">Duplizieren (D)</button>
+    <button id="btTausch">⇄ tauschen</button>
+    <button id="btDel">Löschen (Entf)</button>
+    <button id="btUndo">↶ Undo (Strg+Z)</button>
+    <button id="btSave" class="prim">💾 Speichern</button>
+    <span id="stand" class="stand">gespeichert</span>
+    <span style="flex-basis:100%;height:0"></span>
+    <b>Neu:</b>
+    <button class="neu" data-neu="maschinen">+ Maschine</button>
+    <button class="neu" data-neu="waende">+ Wand</button>
+    <button class="neu" data-neu="flaechen">+ Fläche</button>
+    <button class="neu" data-neu="wege">+ Weg</button>
+    <button class="neu" data-neu="saeulen">+ Säule</button>
+    <button class="neu" data-neu="punkte">+ Marker</button>
+    <span id="setzhinweis" style="font-size:12.5px;color:#B3384A;font-weight:600"></span>
+    <span style="width:14px"></span>
+    <label class="tb" style="padding:5px 11px"><input type="checkbox" id="gitterAn"> Raster</label>
+    <label class="tb" style="padding:5px 11px"><input type="checkbox" id="fangAn" checked> Fang 10&nbsp;px</label>
+    <button id="btLinks">⇤ linksbündig</button>
+    <button id="btBreite">⇔ gleiche Breite</button>
+    <span class="hint">Alles ist direkt anklickbar – Maschinen, Wände, Flächen, Wege, Säulen, Marker.
+      Ziehen mit der Maus oder Pfeiltasten (Shift = 10&nbsp;px), Größe mit
+      <b>Alt + Pfeiltasten</b> oder am Griff unten rechts. Bei aktivem Fang rastet alles auf
+      10&nbsp;px – <b>Alt</b> beim Ziehen schaltet ihn kurz aus.
+      <b>Zweites Element</b> mit <b>Shift+Klick</b> wählen: für ⇄ tauschen, linksbündig und
+      gleiche Breite. Die Farbe kommt aus der Bewertung – über „Bewertung zuordnen“ verknüpfst du
+      das Kästchen mit der Anlage aus dem Kataster.
+      <b>„Bearbeiten“ ausschalten speichert automatisch.</b></span>
+  </div>
+  <div class="karte"><div id="buehne">
+    <img id="foto" alt="">
+    <svg id="plan" xmlns="http://www.w3.org/2000/svg"
+         font-family="Jost, Segoe UI, sans-serif"></svg>
+  </div></div>
+  <div class="info">
+    <div><b>Linearroboter</b><ul>
+      <li><span class="rb" style="background:#455A64;color:#fff">R</span> überfährt die Maschine
+        <span style="color:#6B7671">(Gefährdung Nr. 9 der Beurteilung)</span></li></ul></div>
+    <div><b>Ergänzungen / Marker</b><ul id="markerliste"></ul></div>
+  </div>
+  <footer>
+    Grundlage: Maschinen-Aufstellungsplan des Betriebs (Foto, <b>Teilbereich</b>), nachgezeichnet als
+    Vektorplan. Kein Flucht- und Rettungsplan nach ASR A1.3 – der Plan ordnet
+    Gefährdungsbeurteilungen und Betriebsanweisungen den Arbeitsmitteln zu
+    (§ 3 BetrSichV, § 5 ArbSchG). Farbe = <b>aktuelles Risiko</b> (Nohl, W×S): Ausgangsrisiko,
+    solange die Maßnahme offen ist, sonst das Restrisiko. Weiß = noch nicht bewertet.
+  </footer>
+</div>
+<div id="pop"><button class="zu" title="schließen">×</button><div id="popin"></div></div>
+<script>
+const OAK_HP=window.OAK_HP||{};
+const LAY=OAK_HP.lay||{kunde:'',stand:'',breite:880,hoehe:1200,maschinen:[],flaechen:[],waende:[],wege:[],saeulen:[],punkte:[],texte:[]};
+['maschinen','flaechen','waende','wege','saeulen','punkte','texte'].forEach(k=>{ if(!Array.isArray(LAY[k])) LAY[k]=[]; });
+const RISIKO=OAK_HP.risiko||{};
+const BEREICHE=[{"k": "gruen", "max": 3, "kurz": "Akzeptanzbereich", "lang": "1–3 Akzeptanzbereich", "f": "#C8E6C9", "r": "#2E7D32", "s": "#12211B"}, {"k": "gelb", "max": 8, "kurz": "Besorgnisbereich", "lang": "4–8 Besorgnisbereich", "f": "#FFE7A6", "r": "#EF6C00", "s": "#12211B"}, {"k": "rot", "max": 16, "kurz": "Gefahrbereich", "lang": "9–16 Gefahrbereich", "f": "#F2B8B2", "r": "#C62828", "s": "#12211B"}];
+const NICHT={"k": "nicht", "kurz": "nicht bewertet", "lang": "nicht bewertet", "f": "#FFFFFF", "r": "#6B7671", "s": "#12211B"}, INFRA={"k": "infra", "kurz": "keine Maschine", "lang": "keine Maschine", "f": "#CFD5D2", "r": "#9AA5A0", "s": "#3A4742"}, AUSSER={"k": "aus", "kurz": "außer Betrieb", "lang": "außer Betrieb", "f": "#ECEFF1", "r": "#78909C", "s": "#546E7A"};
+const FOTO=OAK_HP.foto||'';
+const ZIEL="portal";
+const NS='http://www.w3.org/2000/svg';
+const MARKER='#2E7BC4';   // alle Marker-Punkte einheitlich blau
+const svg=document.getElementById('plan'), buehne=document.getElementById('buehne');
+const foto=document.getElementById('foto'), pop=document.getElementById('pop');
+let sel=null, sel2=null, undoStack=[], handle=null, zoom=100;
+
+function bereich(w){
+  if(w===null||w===undefined) return NICHT;
+  for(const b of BEREICHE) if(w<=b.max) return b;
+  return BEREICHE[BEREICHE.length-1];
+}
+function daten(m){
+  if(m.art==='infra') return {b:INFRA, wert:null, r:null, rob:false};
+  const r=m.slug?RISIKO[m.slug]:null;
+  if(r&&r.betrieb==='ausser_betrieb') return {b:AUSSER, wert:null, r, rob:!!r.roboter, aus:true};   // stillgelegt: grau, gestrichelt
+  /* Im Portal: Farbe = schlimmster offener Mangel (live vom Viewer eingespielt, Nikolai 17.09.2026) */
+  if(r&&window.OAK_MAENGEL){
+    const mid=r.meta&&r.meta.maschinenId, x=window.OAK_MAENGEL[mid];
+    const rang=x?x.band:0, stellv=[2,2,6,12][rang];
+    const b=bereich(stellv);
+    return {b:Object.assign({},b,{kurz:rang?(x.anzahl+' offene Mängel · '+b.kurz):'keine offenen Mängel'}), wert:null, r, rob:!!r.roboter, mg:x};
+  }
+  const wert=r?r.aktuell:null;
+  return {b:bereich(wert), wert, r, rob:!!(r&&r.roboter)};   // Roboter kommt aus der Bewertung
+}
+function el(tag,attr,txt){
+  const n=document.createElementNS(NS,tag);
+  for(const k in attr) n.setAttribute(k,attr[k]);
+  if(txt!==undefined) n.textContent=txt;
+  return n;
+}
+
+function render(){
+  const W=LAY.breite, H=LAY.hoehe, FZ=110;      // FZ = Fußzeile (Titel/Stand/Legende)
+  svg.setAttribute('viewBox',`0 0 ${W} ${H+FZ}`);
+  /* Ohne width/height fehlt dem SVG die intrinsische Groesse – der Browser schneidet
+     die Seite dann unten ab (Befund Nikolai 13.08.2026). */
+  svg.setAttribute('width', W); svg.setAttribute('height', H+FZ);
+  buehne.style.width=zoom+'%';
+  while(svg.firstChild) svg.removeChild(svg.firstChild);
+  const defs=el('defs');
+  defs.innerHTML='<marker id="pf" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" '+
+    'markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="#455A64"/></marker>';
+  svg.appendChild(defs);
+  if(!FOTO||!foto.dataset.an) svg.appendChild(el('rect',{x:0,y:0,width:W,height:H,fill:'#FBFCFB'}));
+  gitter(W,H+FZ);
+  fusszeile(W,H,FZ);
+
+  (LAY.wege||[]).forEach((a,i)=>svg.appendChild(el('rect',
+    {class:'e',['data-t']:'wege',['data-i']:i,x:a[0],y:a[1],width:a[2],height:a[3],
+      fill:'#D8F3DC'})));
+  (LAY.flaechen||[]).forEach((a,i)=>svg.appendChild(el('rect',
+    {class:'e',['data-t']:'flaechen',['data-i']:i,x:a[0],y:a[1],width:a[2],height:a[3],rx:3,
+      fill:'#E4E7E6'})));
+  (LAY.waende||[]).forEach((a,i)=>svg.appendChild(el('rect',
+    {class:'e',['data-t']:'waende',['data-i']:i,x:a[0],y:a[1],width:a[2],height:a[3],
+      fill:'#37474F'})));
+  (LAY.saeulen||[]).forEach((a,i)=>svg.appendChild(el('rect',
+    {class:'e',['data-t']:'saeulen',['data-i']:i,x:a[0],y:a[1],width:11,height:11,
+      fill:'#A8B2AD'})));
+
+  const z={};
+  (LAY.maschinen||[]).forEach((m,i)=>{
+    const d=daten(m), fs=m.fs||(m.w>=90?13:11);
+    z[d.b.k]=(z[d.b.k]||0)+1;
+    const g=el('g',{class:'m e',['data-t']:'maschinen',['data-i']:i,['data-b']:d.b.k,tabindex:0});
+    const rahmen=el('rect',{x:m.x,y:m.y,width:m.w,height:m.h,rx:2,fill:d.b.f,stroke:d.b.r,
+      'stroke-width':1.8});
+    if(d.aus) rahmen.setAttribute('stroke-dasharray','5 3');
+    g.appendChild(rahmen);
+    const cx=m.x+m.w/2, cy=m.y+m.h/2-(d.wert!==null&&!m.rot?5:0);
+    const t=el('text',{x:cx,y:m.rot?m.y+m.h/2:cy,'font-size':fs,'font-weight':600,
+      'text-anchor':'middle','dominant-baseline':'central',fill:d.b.s},m.name);
+    if(m.rot) t.setAttribute('transform',`rotate(-90 ${cx} ${m.y+m.h/2})`);
+    g.appendChild(t);
+    if(d.wert!==null&&!m.rot)
+      g.appendChild(el('text',{x:cx,y:cy+fs-1,'font-size':fs-2,'font-weight':700,
+        'text-anchor':'middle','dominant-baseline':'central',
+        fill:d.b.k==='akut'?'#fff':d.b.r},d.wert));
+    if(d.rob){
+      const bx=m.x+m.w-13, by=m.y+m.h-13;
+      g.appendChild(el('rect',{x:bx,y:by,width:12,height:12,rx:2,fill:'#455A64',
+        stroke:'#455A64','stroke-width':1}));
+      g.appendChild(el('text',{x:bx+6,y:by+6,'font-size':9,'font-weight':700,
+        'text-anchor':'middle','dominant-baseline':'central',fill:'#fff'},'R'));
+    }
+    svg.appendChild(g);
+  });
+
+  (LAY.punkte||[]).forEach((p,i)=>{
+    const farbe=MARKER;      // alle Marker gleichfarbig – Risiko steht in den Maschinen
+    const g=el('g',{class:'e p',['data-t']:'punkte',['data-i']:i});
+    g.appendChild(el('circle',{cx:p.x,cy:p.y,r:p.r||11,fill:farbe,stroke:'#fff','stroke-width':1.5}));
+    g.appendChild(el('text',{x:p.x,y:p.y,'font-size':11,'font-weight':700,'text-anchor':'middle',
+      'dominant-baseline':'central',fill:'#fff'},p.nr||''));
+    g.appendChild(el('title',{},p.name));
+    svg.appendChild(g);
+  });
+
+  (LAY.texte||[]).forEach(t=>{
+    const n=el('text',{x:t.x,y:t.y,'font-size':t.fs||24,'font-weight':700,fill:'#5A6963',
+      'letter-spacing':1.5,'text-anchor':'middle'},t.text);
+    if(t.rot) n.setAttribute('transform',`rotate(-90 ${t.x} ${t.y})`);
+    svg.appendChild(n);
+  });
+
+  if(sel){ const n=knoten(sel.t,sel.i); if(n){n.classList.add('sel'); griff(n);} }
+  if(sel2){ const n=knoten(sel2.t,sel2.i); if(n) n.classList.add('sel2'); }
+  legende(z);
+  markerliste();
+  filterAnwenden();
+}
+/* Fußzeile: gehört ins SVG, damit sie auch im exportierten Bild steht (Begehungstool).
+   Legende steht in einer EIGENEN Zeile unter dem Titel – nebeneinander überdeckte es sich. */
+function fusszeile(W,H,FZ){
+  const y=H+14;
+  svg.appendChild(el('line',{x1:40,y1:y-2,x2:W-40,y2:y-2,stroke:'#D3DAD7','stroke-width':1.5}));
+  svg.appendChild(el('text',{x:40,y:y+20,'font-size':17,'font-weight':700,fill:'#1B4332'},
+    LAY.kunde+' – Hallenplan & Risikoübersicht'));
+  svg.appendChild(el('text',{x:40,y:y+40,'font-size':13,fill:'#5A6963'},
+    'Stand '+LAY.stand+' · OAK engineering · Farbe = aktuelles Risiko (Nohl W×S) · weiß = nicht bewertet'));
+  let x=40;
+  BEREICHE.forEach(b=>{
+    svg.appendChild(el('rect',{x:x,y:y+56,width:15,height:15,rx:3,fill:b.f,stroke:b.r,
+      'stroke-width':1.5}));
+    svg.appendChild(el('text',{x:x+21,y:y+68,'font-size':12,fill:'#37474F'},b.lang));
+    x += b.lang.length*6.4+42;
+  });
+}
+function knoten(t,i){ return svg.querySelector(`.e[data-t="${t}"][data-i="${i}"]`); }
+function griff(n){
+  const a=LAY[sel.t][sel.i];
+  if(!document.body.classList.contains('edit')) return;
+  if(Array.isArray(a)&&a.length<4) return;          // Saeule: nur verschieben
+  let x, y;
+  if(Array.isArray(a)){ x=a[0]+a[2]; y=a[1]+a[3]; }
+  else if(a.w!==undefined){ x=a.x+a.w; y=a.y+a.h; }
+  else { x=a.x+(a.r||11); y=a.y+(a.r||11); }      // Marker: Griff am Kreisrand
+  svg.appendChild(el('rect',{class:'griff',x:x-6,y:y-6,width:12,height:12,fill:'#C2185B',
+    stroke:'#fff','stroke-width':1.5,style:'cursor:nwse-resize'}));
+}
+function legende(z){
+  const bar=document.getElementById('legende');
+  const alt=[...bar.querySelectorAll('.lg[aria-pressed="true"]')].map(b=>b.dataset.f);
+  bar.innerHTML='';
+  const eintrag=(b,n,immer)=>{
+    if(!n && !immer) return;             // Ampelstufen immer, Sonderfälle nur wenn belegt
+    const btn=document.createElement('button');
+    btn.className='lg'; btn.dataset.f=b.k;
+    btn.setAttribute('aria-pressed', alt.includes(b.k));
+    btn.innerHTML=`<span class="sw" style="background:${b.f};border-color:${b.r}"></span>`+
+      `${b.lang} <b>${n||0}</b>`;
+    btn.onclick=()=>{btn.setAttribute('aria-pressed',btn.getAttribute('aria-pressed')!=='true');
+      filterAnwenden();};
+    bar.appendChild(btn);
+  };
+  BEREICHE.forEach(b=>eintrag(b,z[b.k],true));   // Ampel: drei Stufen, immer sichtbar
+  eintrag(AUSSER,z.aus); eintrag(NICHT,z.nicht); eintrag(INFRA,z.infra);
+  const bew=BEREICHE.reduce((s,b)=>s+(z[b.k]||0),0), ges=bew+(z.nicht||0);
+  const dring=(z.rot||0)+(z.akut||0);
+  const s=document.createElement('span'); s.className='quote';
+  s.innerHTML=`bewertet <b>${bew}</b> von ${ges} (${ges?Math.round(bew/ges*100):0}&nbsp;%) ·`+
+    ` im Gefahrbereich <b class="rt">${dring}</b>`;
+  bar.appendChild(s);
+  const zb=document.createElement('span');
+  zb.style.cssText='display:flex;gap:6px;margin-left:8px;align-items:center';
+  if(FOTO){
+    const l=document.createElement('label');
+    l.className='tb'; l.style.gap='6px';
+    l.innerHTML='<input type="checkbox" id="fotoAn"> Foto';
+    zb.appendChild(l);
+    const r=document.createElement('input');
+    r.type='range'; r.min=10; r.max=100; r.value=foto.style.opacity? foto.style.opacity*100:45;
+    r.style.width='80px'; r.title='Deckkraft der Unterlage';
+    r.oninput=()=>foto.style.opacity=r.value/100;
+    zb.appendChild(r);
+    setTimeout(()=>{
+      const c=document.getElementById('fotoAn');
+      c.checked=!!foto.dataset.an;
+      c.onchange=()=>{
+        if(c.checked){
+          foto.src=FOTO; foto.style.display='block';
+          const W=LAY.breite, H=LAY.hoehe+76;      // Fußzeile mitrechnen
+          const b=LAY.unterlage||[40,30,800,2521]; // Hallen-Box im SVG
+          foto.style.left=(b[0]/W*100)+'%'; foto.style.top=(b[1]/H*100)+'%';
+          foto.style.width=(b[2]/W*100)+'%'; foto.style.height=(b[3]/H*100)+'%';
+          foto.style.opacity=r.value/100; foto.dataset.an='1';}
+        else {foto.style.display='none'; delete foto.dataset.an;}
+        render();
+      };
+    },0);
+  }
+  bar.appendChild(zb);
+}
+function filterAnwenden(){
+  const a=[...document.querySelectorAll('.lg[aria-pressed="true"]')].map(x=>x.dataset.f);
+  svg.querySelectorAll('.m').forEach(m=>
+    m.classList.toggle('aus', a.length>0 && !a.includes(m.dataset.b)));
+}
+function markerliste(){
+  const ul=document.getElementById('markerliste'); ul.innerHTML='';
+  (LAY.punkte||[]).forEach(p=>{
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="pnr" style="background:${MARKER}">${p.nr||''}</span> ${p.name}`;
+    ul.appendChild(li);
+  });
+}
+
+/* ---------- Popup ---------- */
+function zeigePopup(m){
+  const d=daten(m), r=d.r, meta=r?r.meta:null;
+  let h=`<h3>${m.name}</h3>`;
+  h+=`<div class="risk" style="background:${d.b.f};border-color:${d.b.r};color:${d.b.s}">`+
+     (d.wert!==null?`Risiko ${d.wert} · ${d.b.kurz}`:d.b.kurz)+`</div>`;
+  if(meta){
+    h+='<dl>';
+    const zeile=(k,v)=>{ if(v) h+=`<dt>${k}</dt><dd>${v}</dd>`; };
+    zeile('ID',meta.maschinenId); zeile('Hersteller',meta.hersteller); zeile('Typ',meta.typ);
+    zeile('Baujahr',meta.baujahr); zeile('Serien-Nr.',meta.seriennr); zeile('Bereich',meta.bereich);
+    zeile('CE',meta.ce||'nicht belegt → BetrSichV Anh. 1');
+    zeile('Gefährdungen',r.hazards); zeile('Mängel',r.maengel);
+    zeile('Ausgangsrisiko',r.ausgang); zeile('Restrisiko n. Maßnahme',r.rest);
+    zeile('Begehung',meta.datum);
+    h+='</dl>';
+  }
+  if(d.aus) h+='<div class="warn"><b>Außer Betrieb</b>'+(r&&r.betrieb_hinweis?' – '+r.betrieb_hinweis:'')+
+    '. Die Bewertung gilt wieder, sobald die Anlage in Betrieb genommen wird.</div>';
+  if(d.rob) h+='<div class="warn">Linearroboter / Entnahmegerät überfährt die Maschine '+
+    '(Gefährdung Nr. 9 der Beurteilung)</div>';
+  if(m.info) h+=`<div class="warn">${m.info}</div>`;
+  if(r&&r.docs.length){
+    h+='<div style="margin-top:11px;font-weight:600;font-size:12.5px">Dokumente</div>';
+    r.docs.forEach(dk=>h+=`<a class="dok" href="${dk.url}" target="_blank" data-titel="${((r.meta&&r.meta.maschine)||'').replace(/"/g,'')}">${dk.titel}</a>`);
+  } else if(m.slug){
+    h+='<div class="warn">Bewertung vorhanden, aber <b>keine Dokumente erzeugt</b> '+
+       '(nur doc-data). BdA/BA/Mängelliste nachziehen.</div>';
+  } else if(m.art!=='infra'){
+    h+='<div class="warn">Noch nicht bewertet – keine Gefährdungsbeurteilung vorhanden.</div>';
+  }
+  document.getElementById('popin').innerHTML=h;
+  pop.style.display='block';
+}
+pop.querySelector('.zu').onclick=()=>pop.style.display='none';
+/* Im Portal laeuft der Plan in einer Sandbox ohne Popups: Link an den Viewer melden (oeffnet Tab/Fenster) */
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a.dok');
+  if(!a||window.parent===window)return;e.preventDefault();
+  parent.postMessage({oak:'dokument-oeffnen',url:a.href,titel:a.dataset.titel||a.textContent},'*');});
+
+/* ---------- Editor ---------- */
+/* ---------- Speicher-Sicherheit: nichts geht verloren ---------- */
+const SICHER_KEY='oak_hallenplan_'+(LAY.kunde||'').replace(/\W+/g,'_');
+let offen=false;                       // ungespeicherte Aenderungen?
+function standAnzeigen(txt, warn){
+  const s=document.getElementById('stand'); if(!s) return;
+  s.textContent=txt; s.classList.toggle('offen', !!warn);
+}
+function markiereGeaendert(){
+  offen=true; standAnzeigen('● ungespeichert', true);
+  try{ localStorage.setItem(SICHER_KEY, JSON.stringify({zeit:new Date().toISOString(), lay:LAY})); }
+  catch(e){}
+}
+addEventListener('beforeunload', ev=>{
+  if(!offen) return;
+  ev.preventDefault(); ev.returnValue='';    // Browser fragt nach
+});
+/* Wiederherstellung nach versehentlichem Schliessen */
+(function(){
+  try{
+    const roh=localStorage.getItem(SICHER_KEY); if(!roh) return;
+    const s=JSON.parse(roh);
+    if(JSON.stringify(s.lay)===JSON.stringify(LAY)) return;   // identisch -> nichts zu tun
+    const t=new Date(s.zeit).toLocaleString('de-DE');
+    if(confirm('Es gibt ungespeicherte Änderungen vom '+t+'.\nWiederherstellen?')){
+      Object.keys(s.lay).forEach(k=>LAY[k]=s.lay[k]);
+      offen=true; standAnzeigen('● wiederhergestellt, ungespeichert', true);
+    } else localStorage.removeItem(SICHER_KEY);
+  }catch(e){}
+})();
+
+const btEdit=document.getElementById('btEdit');
+btEdit.onclick=async()=>{
+  const an=btEdit.getAttribute('aria-pressed')!=='true';
+  if(!an && offen) await speichern();     // Ausschalten speichert (Klick = Nutzergeste)
+  btEdit.setAttribute('aria-pressed',an);
+  document.body.classList.toggle('edit',an);
+  if(!an){sel=null;sel2=null;} else pop.style.display='none';
+  render();
+};
+const selSlug=document.getElementById('slug');
+Object.keys(RISIKO).sort().forEach(s=>{
+  const o=document.createElement('option');
+  o.value=s; o.textContent=s+'  ('+(RISIKO[s].meta.maschine||'')+')';
+  selSlug.appendChild(o);
+});
+function sicher(){
+  undoStack.push(JSON.stringify({m:LAY.maschinen,w:LAY.waende,f:LAY.flaechen,
+    g:LAY.wege,s:LAY.saeulen,p:LAY.punkte}));
+  if(undoStack.length>80) undoStack.shift();
+  markiereGeaendert();
+}
+function aktiv(){ return sel?LAY[sel.t][sel.i]:null; }
+function pos(a){ return Array.isArray(a)?{x:a[0],y:a[1]}:{x:a.x,y:a.y}; }
+function setPos(a,x,y){ if(Array.isArray(a)){a[0]=x;a[1]=y;} else {a.x=x;a.y=y;} }
+function setGr(a,dw,dh){
+  if(Array.isArray(a)){ if(a.length>2){a[2]=Math.max(4,a[2]+dw);a[3]=Math.max(4,a[3]+dh);} }
+  else if(a.r!==undefined&&a.w===undefined){ a.r=Math.max(4,a.r+dw); }
+  else { a.w=Math.max(12,a.w+dw); a.h=Math.max(12,a.h+dh); }
+}
+
+let drag=null;
+svg.addEventListener('pointerdown',ev=>{
+  const g=ev.target.closest('.m');
+  if(!document.body.classList.contains('edit')){
+    if(g) zeigePopup(LAY.maschinen[+g.dataset.i]);
+    return;
+  }
+  if(setzTyp){                       // Setz-Modus: hier soll das neue Element hin
+    ev.preventDefault();
+    const p=zeig(ev);
+    anlegenAn(setzTyp, p.x, p.y);
+    return;
+  }
+  if(ev.target.classList.contains('griff')&&sel){
+    ev.preventDefault(); drag={modus:'gr'}; svg.setPointerCapture(ev.pointerId); return;
+  }
+  const el2=ev.target.closest('.e'); if(!el2) return;   // alle Ebenen direkt anklickbar
+  ev.preventDefault();
+  if(ev.shiftKey&&el2.dataset.t==='maschinen'){
+    sel2={t:'maschinen',i:+el2.dataset.i}; render(); return;
+  }
+  sicher();
+  sel={t:el2.dataset.t,i:+el2.dataset.i}; sel2=null;
+  if(sel.t==='maschinen') selSlug.value=LAY.maschinen[sel.i].slug||'';
+  const p=zeig(ev), o=pos(aktiv());
+  drag={modus:'pos',dx:p.x-o.x,dy:p.y-o.y};
+  try{svg.setPointerCapture(ev.pointerId);}catch(e){}
+  render();
+});
+function zeig(ev){
+  const pt=svg.createSVGPoint(); pt.x=ev.clientX; pt.y=ev.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+svg.addEventListener('pointermove',ev=>{
+  if(!drag||!sel) return;
+  /* Fang standardmaessig auf 10 px; Alt schaltet ihn beim Ziehen kurz aus. */
+  const fang=document.getElementById('fangAn')?.checked && !ev.altKey;
+  const p=zeig(ev), a=aktiv(), r=fang?10:1;
+  if(drag.modus==='pos') setPos(a,Math.round((p.x-drag.dx)/r)*r,Math.round((p.y-drag.dy)/r)*r);
+  else {
+    const o=pos(a);
+    if(Array.isArray(a)){ a[2]=Math.max(4,Math.round(p.x-o.x)); a[3]=Math.max(4,Math.round(p.y-o.y)); }
+    else if(a.w!==undefined){ a.w=Math.max(12,Math.round(p.x-o.x)); a.h=Math.max(12,Math.round(p.y-o.y)); }
+    else a.r=Math.max(4,Math.round(Math.hypot(p.x-o.x,p.y-o.y)));
+  }
+  render();
+});
+svg.addEventListener('pointerup',()=>drag=null);
+
+addEventListener('keydown',ev=>{
+  if(ev.key==='Escape'){ pop.style.display='none'; if(typeof setzTyp!=='undefined'&&setzTyp) setzModus(null); }
+  if(!document.body.classList.contains('edit')) return;
+  if(['SELECT','INPUT','TEXTAREA'].includes(ev.target.tagName)) return;
+  if(ev.ctrlKey&&ev.key.toLowerCase()==='z'){ undo(); return; }
+  if(!sel) return;
+  const s=ev.shiftKey?10:1;
+  const map={ArrowLeft:[-s,0],ArrowRight:[s,0],ArrowUp:[0,-s],ArrowDown:[0,s]};
+  if(map[ev.key]){
+    ev.preventDefault(); sicher();
+    const a=aktiv();
+    if(ev.altKey) setGr(a,map[ev.key][0],map[ev.key][1]);
+    else { const o=pos(a); setPos(a,o.x+map[ev.key][0],o.y+map[ev.key][1]); }
+    render();
+  }
+  if(ev.key==='Delete') loeschen();
+  const k=ev.key.toLowerCase();
+  if(k==='n') umbenennen();
+  if(k==='d') duplizieren(); if(k==='t') drehen();
+});
+function umbenennen(){
+  if(!sel||!['maschinen','punkte'].includes(sel.t)) return;
+  const a=aktiv(), n=prompt(sel.t==='punkte'?'Marker-Text:':'Bezeichnung:', a.name||'');
+  if(n===null||n==='') return;
+  sicher(); a.name=n;
+  if(sel.t==='punkte'){
+    const nr=prompt('Nummer:', a.nr||'');
+    if(nr!==null&&nr!=='') a.nr=nr.trim();
+  }
+  render();
+}
+function drehen(){
+  if(!sel||sel.t!=='maschinen') return; sicher();
+  const a=aktiv(); if(a.rot) delete a.rot; else a.rot=true; render();
+}
+function loeschen(){
+  if(!sel) return; sicher();
+  LAY[sel.t].splice(sel.i,1); sel=null; sel2=null; render();
+}
+function duplizieren(){
+  if(!sel) return; sicher();
+  const a=aktiv();
+  const k=Array.isArray(a)?a.slice():JSON.parse(JSON.stringify(a));
+  if(Array.isArray(k)){k[0]+=14;k[1]+=14;} else {k.x+=14;k.y+=14;}
+  LAY[sel.t].push(k); sel={t:sel.t,i:LAY[sel.t].length-1}; render();
+}
+function tauschen(){
+  if(!sel||!sel2||sel.t!=='maschinen'||sel2.t!=='maschinen'){
+    alert('Zwei Maschinen wählen: erste anklicken, zweite mit Shift+Klick.'); return;
+  }
+  sicher();
+  const a=LAY.maschinen[sel.i], b=LAY.maschinen[sel2.i];
+  [a.x,b.x]=[b.x,a.x]; [a.y,b.y]=[b.y,a.y];
+  [a.w,b.w]=[b.w,a.w]; [a.h,b.h]=[b.h,a.h];
+  const ar=a.rot, br=b.rot;
+  if(br) a.rot=true; else delete a.rot;
+  if(ar) b.rot=true; else delete b.rot;
+  render();
+}
+selSlug.onchange=()=>{
+  if(!sel||sel.t!=='maschinen') return; sicher();
+  const a=aktiv();
+  if(selSlug.value) a.slug=selSlug.value; else delete a.slug;
+  render();
+};
+/* Neues Element je Ebene – erscheint mittig im sichtbaren Ausschnitt und ist sofort gewaehlt. */
+function sichtMitte(){
+  const r=svg.getBoundingClientRect();
+  const oy=Math.max(0, (innerHeight/2 - r.top)) / r.height;
+  return {x:Math.round(LAY.breite*0.42), y:Math.round((LAY.hoehe+76)*Math.min(0.95,Math.max(0.03,oy)))};
+}
+/* Setz-Modus: Knopf waehlt die Art, der naechste Klick IN den Plan setzt das Element genau dort.
+   (Vorgabe Nikolai 13.08.2026: "muss eine Presse manuell eintragen koennen".) */
+let setzTyp=null;
+function setzModus(t){
+  setzTyp=t;
+  document.querySelectorAll('.neu').forEach(x=>x.classList.toggle('prim', x.dataset.neu===t));
+  svg.style.cursor = t ? 'crosshair' : '';
+  const h=document.getElementById('setzhinweis');
+  if(h) h.textContent = t ? '→ jetzt in den Plan klicken, wo es hin soll (Esc bricht ab)' : '';
+}
+function anlegenAn(t,x,y){
+  sicher();
+  if(t==='maschinen') LAY.maschinen.push({name:'NEU',x:Math.round(x-60),y:Math.round(y-22),w:120,h:44});
+  else if(t==='saeulen') LAY.saeulen.push([Math.round(x-5),Math.round(y-5)]);
+  else if(t==='punkte'){
+    const nr=Math.max(0,...LAY.punkte.map(q=>+q.nr||0))+1;
+    LAY.punkte.push({nr, name:'Marker '+nr, x:Math.round(x), y:Math.round(y), r:11});
+  }
+  else if(t==='waende') LAY.waende.push([Math.round(x-100),Math.round(y-5),200,11]);
+  else if(t==='flaechen') LAY.flaechen.push([Math.round(x-90),Math.round(y-60),180,120]);
+  else if(t==='wege') LAY.wege.push([Math.round(x-100),Math.round(y-16),200,32]);
+  sel={t, i:LAY[t].length-1}; sel2=null;
+  setzModus(null); render();
+  if(t==='maschinen') umbenennen();     // gleich benennen, z. B. "Presse 3"
+}
+document.querySelectorAll('.neu').forEach(b=>{
+  b.onclick=()=>setzModus(setzTyp===b.dataset.neu ? null : b.dataset.neu);
+});
+/* Ausrichten: zweites Element mit Shift+Klick waehlen */
+function zweiNoetig(){
+  if(sel&&sel2) return true;
+  alert('Zwei Elemente wählen: erstes anklicken, zweites mit Shift+Klick.'); return false;
+}
+document.getElementById('btLinks').onclick=()=>{
+  if(!zweiNoetig()) return; sicher();
+  const a=LAY[sel.t][sel.i], b=LAY[sel2.t][sel2.i];
+  const x=Array.isArray(a)?a[0]:a.x;
+  if(Array.isArray(b)) b[0]=x; else b.x=x;
+  render();
+};
+document.getElementById('btBreite').onclick=()=>{
+  if(!zweiNoetig()) return; sicher();
+  const a=LAY[sel.t][sel.i], b=LAY[sel2.t][sel2.i];
+  const w=Array.isArray(a)?a[2]:a.w, h=Array.isArray(a)?a[3]:a.h;
+  if(Array.isArray(b)){ if(w) b[2]=w; if(h) b[3]=h; } else { b.w=w; b.h=h; }
+  render();
+};
+/* Raster */
+document.getElementById('gitterAn').onchange=render;
+function gitter(W,H){
+  if(!document.getElementById('gitterAn')?.checked) return;
+  const g=el('g',{class:'gitter'});
+  for(let x=0;x<=W;x+=10)
+    g.appendChild(el('line',{x1:x,y1:0,x2:x,y2:H,stroke:x%50?'#E8EDEA':'#D6DEDA','stroke-width':x%50?0.5:0.9}));
+  for(let y=0;y<=H;y+=10)
+    g.appendChild(el('line',{x1:0,y1:y,x2:W,y2:y,stroke:y%50?'#E8EDEA':'#D6DEDA','stroke-width':y%50?0.5:0.9}));
+  svg.appendChild(g);
+}
+document.getElementById('btName').onclick=umbenennen;
+document.getElementById('btDreh').onclick=drehen;
+document.getElementById('btDel').onclick=loeschen;
+document.getElementById('btDup').onclick=duplizieren;
+document.getElementById('btTausch').onclick=tauschen;
+document.getElementById('btUndo').onclick=undo;
+function undo(){
+  if(!undoStack.length) return;
+  const s=JSON.parse(undoStack.pop());
+  LAY.maschinen=s.m; LAY.waende=s.w; LAY.flaechen=s.f; LAY.wege=s.g;
+  LAY.saeulen=s.s; LAY.punkte=s.p;
+  sel=null; sel2=null; render();
+}
+async function speichern(){
+  standAnzeigen('wird gespeichert …');
+  const id=Math.random().toString(36).slice(2);
+  const r=await new Promise(res=>{
+    const f=e=>{const d=e.data||{}; if(e.source===parent&&d.oak==='hallenplan-gespeichert'&&d.id===id){removeEventListener('message',f);res(d);}};
+    addEventListener('message',f);
+    parent.postMessage({oak:'hallenplan-speichern',id,lay:LAY},'*');
+    setTimeout(()=>{removeEventListener('message',f);res({ok:false,fehler:'keine Antwort vom Cockpit'});},20000);
+  });
+  if(!r.ok){ standAnzeigen('nicht gespeichert: '+(r.fehler||'Fehler'), true); return false; }
+  offen=false; try{ localStorage.removeItem(SICHER_KEY); }catch(e){}
+  standAnzeigen('gespeichert '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}));
+  return true;
+}
+document.getElementById('btSave').onclick=speichern;
+document.getElementById('hpUnter').textContent=(LAY.kunde||'')+(LAY.stand?' · Stand '+LAY.stand:'');
+if(!OAK_HP.darf) btEdit.style.display='none';
+render();
+/* Lokale Fassung ist das Arbeitswerkzeug -> Bearbeiten sofort an (im Portal aus). */
+if(ZIEL!=='portal') btEdit.click();
+</script></body></html>

@@ -329,15 +329,92 @@ function asMangelNeu(){
 }
 
 /* ======================= Hallenplan ======================= */
+/* Seit Plan Schritt 7 (14.10.2026) liegt das Layout in portal_hallenplan und wird hier bearbeitet (Fachkraft, GF, OAK).
+   Der Editor (portal2/hallenplan-editor.html, erzeugt mit tools/hallenplan.py --ziel app) laeuft in einer Sandbox ohne
+   Zugriff aufs Cockpit; Daten rein per window.OAK_HP, Speichern per postMessage. Ohne DB-Plan: altes Dokument. */
+const AS_HP = { vorlage: null, plaene: null, kunde: null };
 AS_SEITEN.hallenplan = { titel: "Hallenplan", icon: "⌗", sort: 4.6, async render(main){
   await asBetriebLaden();
-  const pl = (AS_B.docs || []).filter(d => d.kategorie === "hallenplan" && d.doc_typ !== "svg");
-  const akt = pl.find(d => d.id === AS.reiter.hallenplan) || pl[0];
-  main.innerHTML = `<h1 class="seite">Hallenplan</h1><p class="unter">Farbe je Maschine = schlimmster offener Mangel (live). Klick auf eine Maschine öffnet ihre Dokumente.</p>
-    ${pl.length > 1 ? `<div class="reiter">${pl.map(d => `<button class="${d === akt ? "an" : ""}" onclick="asGehe('hallenplan/${d.id}')">${esc(d.titel || "Plan")}</button>`).join("")}</div>` : ""}
-    ${akt ? `<iframe src="../portal/${esc(asViewerUrl(akt.doc_typ || "html", akt.storage_path, akt.titel || "Hallenplan"))}" style="width:100%;height:calc(100vh - 200px);min-height:520px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`
-      : `<div class="karte"><div class="leer">Für diesen Betrieb ist noch kein Hallenplan hinterlegt.</div></div>`}`;
+  if(AS_HP.kunde !== AS.kunde){ AS_HP.plaene = await apiGet("/rest/v1/portal_hallenplan?select=id,titel,layout,unterlage_pfad,geaendert_am,geaendert_von&order=sort,titel&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => null); AS_HP.kunde = AS.kunde; }
+  const plaene = AS_HP.plaene || [], darf = !!(AS.fachkraft || AS.gf);
+  const alt = (AS_B.docs || []).filter(d => d.kategorie === "hallenplan" && d.doc_typ !== "svg");
+  const kopf = `<h1 class="seite">Hallenplan</h1><p class="unter">Farbe je Maschine = schlimmster offener Mangel (live). Klick auf eine Maschine öffnet ihre Dokumente.${darf && plaene.length ? " Mit „Bearbeiten“ ändern Sie Aufstellung, Wege und Flächen – gespeichert wird direkt im Cockpit." : ""}</p>`;
+  if(!plaene.length){
+    const akt = alt.find(d => d.id === AS.reiter.hallenplan) || alt[0];
+    main.innerHTML = kopf + (alt.length > 1 ? `<div class="reiter">${alt.map(d => `<button class="${d === akt ? "an" : ""}" onclick="asGehe('hallenplan/${d.id}')">${esc(d.titel || "Plan")}</button>`).join("")}</div>` : "")
+      + (akt ? `<iframe src="../portal/${esc(asViewerUrl(akt.doc_typ || "html", akt.storage_path, akt.titel || "Hallenplan"))}" style="width:100%;height:calc(100vh - 200px);min-height:520px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`
+        : `<div class="karte"><div class="leer">Für diesen Betrieb ist noch kein Hallenplan hinterlegt.</div></div>`)
+      + (darf ? `<p style="margin-top:12px"><button class="btn" id="hpNeu">+ Hallenplan anlegen</button> <span class="hinweis">leerer Plan, Maschinen danach aus dem Kataster zuordnen</span></p>` : "");
+    const nb = document.getElementById("hpNeu"); if(nb) nb.onclick = () => asHpNeu(main);
+    return;
+  }
+  const akt = plaene.find(x => x.id === AS.reiter.hallenplan) || plaene[0];
+  main.innerHTML = kopf + `<div class="reiter">${plaene.map(x => `<button class="${x === akt ? "an" : ""}" onclick="asGehe('hallenplan/${x.id}')">${esc(x.titel)}</button>`).join("")}
+      ${darf ? `<button onclick="asHpNeuDialog()" title="weiteren Plan anlegen (z. B. zweite Halle)">+ Plan</button>` : ""}</div>
+    <iframe id="hpRahmen" sandbox="allow-scripts allow-modals allow-downloads" style="width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>
+    <p class="hinweis">Zuletzt geändert ${esc(asDat(String(akt.geaendert_am || "").slice(0, 10)))}${akt.geaendert_von ? " von " + esc(akt.geaendert_von) : ""}.</p>`;
+  if(!AS_HP.vorlage){ try{ AS_HP.vorlage = await (await fetch("hallenplan-editor.html?v=2026-10-14a")).text(); }catch(e){ AS_HP.vorlage = ""; } }
+  if(!AS_HP.vorlage){ document.getElementById("hpRahmen").outerHTML = `<div class="karte"><div class="leer">Editor konnte nicht geladen werden.</div></div>`; return; }
+  /* Bewertungen aus dem Kataster (Schluessel maschinen_id) + offene Maengel live */
+  const risiko = {};
+  (AS_B.docs || []).filter(d => d.kategorie === "anlagen" && d.maschinen_id).forEach(d => { const st = d.status || {};
+    risiko[d.maschinen_id] = { aktuell: st.gesamt ? (st.maxRisiko || null) : null, maengel: st.maengel || 0, hazards: st.gesamt || 0, roboter: false, betrieb: "", betrieb_hinweis: "",
+      meta: { maschine: d.maschine || d.titel || d.maschinen_id, maschinenId: d.maschinen_id, typ: d.maschinentyp || "", ce: "siehe Anlagenakte" },
+      docs: [{ typ: "bda", titel: "Zu den Dokumenten", url: "https://www.oak-engineering.de/portal/maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id) }] }; });
+  const mg = await apiGet("/rest/v1/portal_maengel?select=maschinen_id,band,bewertung_manuell,status,ausgeblendet&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []);
+  const wert = { gefahr: 3, besorgnis: 2, akzeptanz: 1 }, je = {};
+  (mg || []).forEach(m => { if(m.ausgeblendet || m.status === "erledigt") return; const x = je[m.maschinen_id] = je[m.maschinen_id] || { band: 0, anzahl: 0 };
+    x.band = Math.max(x.band, wert[m.bewertung_manuell || m.band] || 1); x.anzahl++; });
+  const lay = JSON.parse(JSON.stringify(akt.layout || {}));
+  lay.kunde = lay.kunde || (AS.kundeV1 && AS.kundeV1.name) || AS.kunde;
+  (lay.maschinen || []).forEach(m => { if(m.mid && !m.slug) m.slug = m.mid; });   // Editor arbeitet mit „slug“ = Schluessel in RISIKO
+  const foto = akt.unterlage_pfad ? await asSigniert(akt.unterlage_pfad) : "";
+  const daten = JSON.stringify({ lay, risiko, foto: foto || "", darf }).replace(/</g, "\\u003c");
+  const tag = `<script>window.OAK_HP=${daten};window.OAK_MAENGEL=${JSON.stringify(je).replace(/</g, "\\u003c")};</scr` + `ipt>`;
+  const rahmen = document.getElementById("hpRahmen");
+  rahmen.srcdoc = AS_HP.vorlage.replace(/<head([^>]*)>/i, m => m + tag);
+  asHpHoeren(akt);
 }};
+let asHpHoerer = null;
+function asHpHoeren(plan){
+  if(asHpHoerer) window.removeEventListener("message", asHpHoerer);
+  asHpHoerer = async ev => {
+    const f = document.getElementById("hpRahmen");
+    if(!f || ev.source !== f.contentWindow) return;
+    const d = ev.data || {};
+    if(d.oak === "dokument-oeffnen"){
+      let u; try{ u = new URL(String(d.url || "")); }catch(e){ return; }
+      if(/(^|\.)oak-engineering\.de$/.test(u.hostname) && u.pathname === "/portal/maschine.html") asDokOeffnen("maschine.html" + u.search, String(d.titel || "Anlage"));
+      return;
+    }
+    if(d.oak !== "hallenplan-speichern") return;
+    const antwort = (ok, fehler) => f.contentWindow.postMessage({ oak: "hallenplan-gespeichert", id: d.id, ok, fehler }, "*");
+    if(!(AS.fachkraft || AS.gf)) return antwort(false, "keine Berechtigung");
+    const lay = d.lay;
+    if(!lay || typeof lay !== "object" || !Array.isArray(lay.maschinen)) return antwort(false, "ungültiges Layout");
+    const sauber = JSON.parse(JSON.stringify(lay));
+    (sauber.maschinen || []).forEach(m => { if(m.slug){ m.mid = m.slug; delete m.slug; } });   // in der DB: mid
+    sauber.stand = asHeute();
+    try{
+      await apiSend("PATCH", "/rest/v1/portal_hallenplan?id=eq." + encodeURIComponent(plan.id), { layout: sauber }, "return=minimal");
+      plan.layout = sauber; plan.geaendert_am = new Date().toISOString(); plan.geaendert_von = AS.ich;
+      antwort(true);
+    }catch(e){ antwort(false, e.message || String(e)); }
+  };
+  window.addEventListener("message", asHpHoerer);
+}
+async function asHpNeu(main, titel){
+  const leer = { kunde: (AS.kundeV1 && AS.kundeV1.name) || AS.kunde, stand: asHeute(), breite: 880, hoehe: 1200,
+    maschinen: [], flaechen: [], waende: [], wege: [], saeulen: [], punkte: [], texte: [] };
+  try{ await apiSend("POST", "/rest/v1/portal_hallenplan", { kunde_slug: AS.kunde, titel: titel || "Hallenplan", layout: leer }, "return=minimal"); }
+  catch(e){ asMeldung("Konnte nicht angelegt werden: " + (e.message || e)); return; }
+  AS_HP.kunde = null; asMeldung("Hallenplan angelegt – „Bearbeiten“ einschalten und Maschinen setzen");
+  AS_SEITEN.hallenplan.render(main || document.getElementById("haupt"));
+}
+function asHpNeuDialog(){
+  asDialog({ titel: "Weiteren Hallenplan anlegen", inhalt: `<div class="form">${asFeld("Bezeichnung (z. B. „Halle 2“ oder „Lager“)", "titel", "", "text", "voll")}</div>`,
+    knoepfe: [{ t: "Anlegen", fn: async dl => { const w = asWerte(dl); if(!w.titel){ asMeldung("Bitte benennen"); return false; } await asHpNeu(null, w.titel); } }] });
+}
 
 /* ======================= Gefahrstoffe ======================= */
 /* Das Gefahrstoffkataster wird im Kundenportal laufend weiterentwickelt (SDB-Status, Verwendung, EMKG) –
