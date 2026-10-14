@@ -16,7 +16,7 @@ const AS_NACHWEISE = [
 /* ======================= Organisation ======================= */
 AS_SEITEN.organisation = { titel: "Organisation", icon: "▦", sort: 2, render(main){
   const r = asReiter("organisation", [["grund", "Grunddaten & Nachweise"], ["struktur", "Struktur"], ["organigramm", "Organigramm"],
-    ["beauftragte", "Beauftragte"], ["einsatz", "Einsatzzeiten"]].concat(AS.gf || AS.fachkraft ? [["zugaenge", "Zugänge"]] : []), "grund");
+    ["beauftragte", "Beauftragte"], ["einsatz", "Einsatzzeiten"]].concat(AS.gf || AS.fachkraft ? [["zugaenge", "Zugänge & Geräte"]] : []), "grund");
   main.innerHTML = `<h1 class="seite">Organisation</h1><p class="unter">Wer ist wofür zuständig – Grundlage für alles Weitere.</p>${r.html}<div id="orgInhalt"></div>`;
   const box = document.getElementById("orgInhalt");
   ({ grund: asOrgGrund, struktur: asOrgStruktur, organigramm: asOrgOrganigramm, beauftragte: asOrgBeauftragte, einsatz: asOrgEinsatz, zugaenge: asOrgZugaenge })[r.akt](box);
@@ -273,7 +273,11 @@ function asZgPasswort(){   // Vorschlag: 14 Zeichen, gut lesbar (ohne 0/O/l/1)
   const z = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789", a = new Uint32Array(14); crypto.getRandomValues(a);
   return Array.from(a, x => z[x % z.length]).join("");
 }
-async function asOrgZugaenge(box){
+function asOrgZugaenge(box){
+  box.innerHTML = `<div id="zgKonten"></div><div id="zgGeraete" style="margin-top:14px"></div>`;
+  asOrgKonten(document.getElementById("zgKonten")); asOrgGeraete(document.getElementById("zgGeraete"));
+}
+async function asOrgKonten(box){
   box.innerHTML = `<div class="karte"><div class="leer">Zugänge werden geladen …</div></div>`;
   let d;
   try{ d = await asZgAufruf({ aktion: "liste" }); }
@@ -303,7 +307,7 @@ async function asOrgZugaenge(box){
     if(weg && !confirm((z.name || z.email) + " sperren? Die Person kann sich danach nicht mehr anmelden.")) return;
     try{ await asZgAufruf({ aktion: weg ? "sperren" : "entsperren", user_id: z.user_id }); }
     catch(e){ asMeldung(e.message || String(e)); return; }
-    asMeldung(weg ? "Zugang gesperrt" : "Zugang entsperrt"); asOrgZugaenge(box);
+    asMeldung(weg ? "Zugang gesperrt" : "Zugang entsperrt"); asOrgKonten(box);
   });
 }
 function asZgNeu(box, darf){
@@ -319,6 +323,117 @@ function asZgNeu(box, darf){
       const w = asWerte(dl);
       try{ await asZgAufruf({ aktion: "anlegen", name: w.name || "", email: w.email || "", rolle: w.rolle || "kunde", gf: !!w.gf, passwort: w.pw || "" }); }
       catch(e){ asMeldung(e.message || String(e)); return false; }
-      asMeldung("Zugang angelegt"); asOrgZugaenge(box);
+      asMeldung("Zugang angelegt"); asOrgKonten(box);
     } }] });
+}
+
+/* ---------------- Geräte & Codes (Plan Schritt 6): Melde-Code + Aushang, Terminal-Geräte ----------------
+   RPCs portal_melde_token_erneuern / terminal_geraet_anlegen / terminal_geraet_sperren prüfen GF/Fachkraft serverseitig. */
+async function asOrgGeraete(box){
+  if(!AS.gf && !AS.fachkraft){ box.innerHTML = ""; return; }
+  const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
+  const [mt, tt] = await Promise.all([
+    apiGet("/rest/v1/portal_melde_token?select=token&aktiv=is.true" + k).catch(() => []),
+    apiGet("/rest/v1/portal_terminal_token?select=token,bezeichnung,aktiv,gesperrt,angelegt_am&order=angelegt_am" + k).catch(() => [])]);
+  const melde = ((mt || [])[0] || {}).token || "";
+  const geraete = (tt || []).filter(t => !/geteilt|handy/i.test(t.bezeichnung || ""));
+  const aktiv = geraete.filter(t => !t.gesperrt), weg = geraete.length - aktiv.length;
+  box.innerHTML = `<div class="karte"><h2>Melde-Code & Aushang „Vorfall melden“</h2>
+      <p class="hinweis">Beschäftigte melden über den QR-Code am Aushang – ohne Login. Wer ohne QR meldet, tippt den Code ein.</p>
+      ${melde ? `<p>Aktueller Code: <b style="font-family:Consolas,monospace;font-size:17px;letter-spacing:.03em">${esc(melde)}</b></p>` : `<div class="leer">Noch kein Melde-Code – bitte „Code erzeugen“.</div>`}
+      <p style="display:flex;gap:8px;flex-wrap:wrap">${melde ? `<button class="btn klein" id="gerAushang">Aushang drucken</button>` : ""}
+        <button class="btn sek klein" id="gerMeldeNeu">${melde ? "Code erneuern" : "Code erzeugen"}</button></p>
+      <p class="hinweis">Code erneuern, wenn der alte missbraucht wird. Danach gilt der alte QR-Aushang nicht mehr – bitte sofort neu drucken und aushängen.</p></div>
+    <div class="karte" style="margin-top:14px"><h2>Unterweisungs-Terminals <button class="btn klein" id="gerNeu">+ Gerät einrichten</button></h2>
+      <p class="hinweis">Jedes feste Gerät (Tablet, Surface im Pausenraum) bekommt einen eigenen Link. Geht ein Gerät verloren, sperren Sie nur dieses.
+        Den Link für Handys der Beschäftigten schalten Sie unter Unterweisungen → „Handy & Tablet“.</p>
+      <div class="zeilen">${aktiv.map(t => `<div class="z" style="cursor:default"><div><b>${esc(t.bezeichnung || "Terminal")}</b>
+          <small>eingerichtet ${esc(asDat(String(t.angelegt_am || "").slice(0, 10)))}${t.aktiv ? "" : " · ausgeschaltet"}</small></div>
+          <div style="display:flex;gap:6px"><button class="btn sek klein" data-gl="${esc(t.token)}">Link & QR</button>
+            <button class="btn sek klein" data-gs="${esc(t.token)}">Sperren</button></div></div>`).join("") || `<div class="leer">Noch kein Gerät eingerichtet.</div>`}</div>
+      ${weg ? `<p class="hinweis">${weg} gesperrte${weg === 1 ? "s Gerät" : " Geräte"} ausgeblendet.</p>` : ""}</div>`;
+  const ab = box.querySelector("#gerAushang"); if(ab) ab.onclick = () => asAushangVorfall(melde);
+  box.querySelector("#gerMeldeNeu").onclick = async () => {
+    if(melde && !confirm("Neuen Melde-Code erzeugen? Der aushängende QR-Code und der alte Code funktionieren danach nicht mehr.")) return;
+    try{ await apiSend("POST", "/rest/v1/rpc/portal_melde_token_erneuern", { p_slug: AS.kunde }); }
+    catch(e){ asMeldung(e.message || String(e)); return; }
+    if(typeof AS_VF === "object") AS_VF.kunde = null;   // Vorfälle-Seite lädt den Code neu
+    asMeldung("Neuer Melde-Code – bitte den Aushang neu drucken"); asOrgGeraete(box);
+  };
+  box.querySelector("#gerNeu").onclick = () => asDialog({ titel: "Terminal-Gerät einrichten",
+    inhalt: `<div class="form">${asFeld("Bezeichnung (z. B. „Tablet Pausenraum“)", "bez", "", "text", "voll")}</div>`,
+    knoepfe: [{ t: "Einrichten", fn: async dl => { const w = asWerte(dl); let tok;
+      try{ tok = await apiSend("POST", "/rest/v1/rpc/terminal_geraet_anlegen", { p_slug: AS.kunde, p_bezeichnung: w.bez || "" }); }
+      catch(e){ asMeldung(e.message || String(e)); return false; }
+      asOrgGeraete(box); setTimeout(() => asGeraetLink(tok, w.bez), 0); } }] });
+  box.querySelectorAll("[data-gl]").forEach(b => b.onclick = () => asGeraetLink(b.dataset.gl, (aktiv.find(t => t.token === b.dataset.gl) || {}).bezeichnung));
+  box.querySelectorAll("[data-gs]").forEach(b => b.onclick = async () => {
+    const t = aktiv.find(x => x.token === b.dataset.gs) || {};
+    if(!confirm((t.bezeichnung || "Gerät") + " sperren? Das Gerät kann danach nicht mehr unterweisen. Für ein Ersatzgerät richten Sie ein neues ein.")) return;
+    try{ await apiSend("POST", "/rest/v1/rpc/terminal_geraet_sperren", { p_slug: AS.kunde, p_token: b.dataset.gs }); }
+    catch(e){ asMeldung(e.message || String(e)); return; }
+    asMeldung("Gerät gesperrt"); asOrgGeraete(box);
+  });
+}
+async function asQrSvg(url){
+  try{ if(typeof asUwQrLib === "function" && await asUwQrLib()){ const q = qrcode(0, "M"); q.addData(url); q.make(); return q.createSvgTag({ cellSize: 8, margin: 4, scalable: true }); } }catch(e){}
+  return "";
+}
+async function asGeraetLink(tok, bez){
+  const url = new URL("../portal/kiosk.html", location.href).href + "#t=" + encodeURIComponent(tok);
+  const svg = await asQrSvg(url);
+  const dlg = asDialog({ titel: "Gerät einrichten · " + (bez || "Terminal"), inhalt: `
+    <p class="hinweis">Am Gerät den QR-Code scannen oder den Link im Browser öffnen und als Lesezeichen bzw. „Zum Startbildschirm“ speichern.
+      Der Link ist der Schlüssel des Geräts – nicht weitergeben.</p>
+    <div style="max-width:240px;margin:10px auto">${svg || '<p class="hinweis">QR-Code nicht verfügbar – bitte den Link kopieren.</p>'}</div>
+    <div class="form"><label class="voll">Link<input type="text" readonly id="gerUrl" value="${esc(url)}"></label></div>
+    <p><button class="btn sek klein" id="gerKopie">Link kopieren</button> <span class="hinweis" id="gerMsg"></span></p>` });
+  dlg.querySelector("#gerKopie").onclick = async () => { const f = dlg.querySelector("#gerUrl"); f.select();
+    try{ await navigator.clipboard.writeText(url); }catch(e){ try{ document.execCommand("copy"); }catch(e2){} }
+    dlg.querySelector("#gerMsg").textContent = "kopiert"; };
+}
+/* Aushang „Vorfall melden“ im Browser bauen und drucken (Layout wie tools/vorfall_aushang.py, Kundenmarke aus portal_kunde) */
+async function asAushangVorfall(tok){
+  if(!tok){ asMeldung("Kein Melde-Code vorhanden"); return; }
+  const link = "https://www.oak-engineering.de/portal/melden.html?t=" + encodeURIComponent(tok);
+  const qr = await asQrSvg(link);
+  if(!qr){ asMeldung("QR-Code konnte nicht erzeugt werden"); return; }
+  const m = Object.assign({ farbe: "#2D6A4F", farbe_tief: "#1B4332", akzent: "#D8F3DC" }, (AS.kundeV1 && AS.kundeV1.marke) || {});
+  const fb = (c, std) => /^#[0-9a-f]{3,8}$/i.test(c || "") ? c : std;
+  const F = fb(m.farbe, "#2D6A4F"), FT = fb(m.farbe_tief, "#1B4332"), FA = fb(m.akzent, "#D8F3DC");
+  const kunde = (AS.kundeV1 && AS.kundeV1.name) || AS.kunde;
+  const logo = m.logo && /^[\w\-./]+$/.test(m.logo) && !m.logo.includes("..") ? new URL("../portal/" + m.logo, location.href).href : "";
+  const html = `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Aushang – Vorfall melden (${esc(kunde)})</title><style>
+@page{size:A4;margin:0}*{box-sizing:border-box}html,body{margin:0;background:#fff}
+body{font-family:'Segoe UI',Jost,Arial,sans-serif;color:#1d2939;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.blatt{width:210mm;height:297mm;padding:16mm 18mm 14mm;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+.kopf{width:100%;display:flex;align-items:center;justify-content:space-between;border-bottom:4px solid ${F};padding-bottom:5mm}
+.kopf img{height:18mm;width:auto;display:block}.kopf .ohne-logo{font-size:26px;font-weight:700;color:${FT}}
+.kopf .bereich{font-size:15px;font-weight:600;color:${F};letter-spacing:.04em;text-transform:uppercase}
+h1{font-size:64px;line-height:1;font-weight:800;color:${FT};margin:16mm 0 4mm;text-align:center}
+.unter{font-size:22px;color:${F};font-weight:600;text-align:center}
+.qr{width:112mm;margin:11mm 0 4mm;padding:4mm;border:3px solid ${F};border-radius:8mm;background:#fff}
+.qr svg{width:100%;height:auto;display:block;shape-rendering:crispEdges}
+.scan{font-size:24px;font-weight:700;color:${FT};text-align:center}
+.code{margin-top:3mm;font-size:15px;color:#475467;text-align:center}.code b{font-family:Consolas,monospace;letter-spacing:.04em;color:#1d2939}
+.punkte{display:flex;gap:4mm;margin-top:6mm}
+.punkte span{font-size:17px;font-weight:600;color:${FT};background:${FA};border-radius:99px;padding:2.2mm 6mm}
+.notruf{margin-top:auto;width:100%;background:#fdecea;border-left:8px solid #c0392b;border-radius:4mm;padding:5mm 7mm;font-size:21px;color:#7b1d14;text-align:center}
+.fuss{width:100%;display:flex;justify-content:flex-end;margin-top:5mm;font-size:11.5px;color:#667085}
+</style></head><body><div class="blatt">
+<div class="kopf">${logo ? `<img src="${esc(logo)}" alt="${esc(kunde)}">` : `<span class="ohne-logo">${esc(kunde)}</span>`}<span class="bereich">Arbeitssicherheit</span></div>
+<h1>Vorfall melden</h1><div class="unter">Unfall · Beinahe-Unfall · unsicherer Zustand · Umwelt</div>
+<div class="qr">${qr}</div><div class="scan">Mit der Handykamera scannen</div>
+<div class="code">ohne Kamera: oak-engineering.de/portal/melden.html · Code <b>${esc(tok)}</b></div>
+<div class="punkte"><span>ohne Login</span><span>Name freiwillig</span><span>mit Foto</span></div>
+<div class="notruf">Jemand verletzt? <b>Zuerst Notruf 112</b>, dann Schichtführer.</div>
+<div class="fuss"><span>betreut durch OAK engineering · Stand ${esc(asDat(asHeute()))}</span></div>
+</div></body></html>`;
+  let f = document.getElementById("asAushangRahmen"); if(f) f.remove();
+  f = document.createElement("iframe"); f.id = "asAushangRahmen"; f.title = "Aushang";
+  f.style.cssText = "position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0";
+  f.onload = () => { const img = f.contentDocument.querySelector("img");
+    const los = () => { try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ asMeldung("Drucken nicht möglich"); } };
+    if(img && !img.complete){ img.onload = img.onerror = los; } else los(); };
+  f.srcdoc = html; document.body.appendChild(f);
 }

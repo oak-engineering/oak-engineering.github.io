@@ -112,7 +112,7 @@ AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render
     && (!q || [v.beschreibung, v.ort, v.anlage, v.stoff, asVfMelder(v)].join(" ").toLowerCase().includes(q)));
 
   const aushang = AS_VF.aushang;
-  const aushangKnopf = aushang ? (aushang.doc_typ === "pdf"
+  const aushangKnopf = AS_VF.token ? `<button class="btn sek klein" id="vfAushang">Aushang drucken</button>` : aushang ? (aushang.doc_typ === "pdf"
       ? `<button class="btn sek klein" id="vfAushang">Aushang drucken</button>`
       : `<button class="btn sek klein" id="vfAushang">Aushang mit QR-Code öffnen</button>`) : "";
   const info = umwelt
@@ -202,6 +202,8 @@ function asVfMeldenOeffnen(umwelt){
 
 /* ---------------- Aushang (PDF drucken, sonst anzeigen) ---------------- */
 async function asVfAushang(knopf){
+  // mit Melde-Code: Aushang immer aktuell im Browser bauen (as-organisation.js), sonst das hinterlegte Dokument
+  if(AS_VF.token && typeof asAushangVorfall === "function"){ asAushangVorfall(AS_VF.token); return; }
   const d = AS_VF.aushang; if(!d) return;
   if(d.doc_typ !== "pdf"){ asDokOeffnen(asViewerUrl(d.doc_typ, d.storage_path, d.titel), d.titel || "Aushang"); return; }
   const text = knopf.textContent; knopf.disabled = true; knopf.textContent = "wird geladen …";
