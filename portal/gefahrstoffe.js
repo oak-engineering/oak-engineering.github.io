@@ -178,7 +178,7 @@ function gsKurzinfo(g, neu){
       ${g.signalwort ? `<div class="ul-risiko ${g.signalwort === "Gefahr" ? "ul-gefahr" : "ul-besorgnis"}">Signalwort: ${esc(g.signalwort)}</div>` : ""}
       ${gsVerwendung(g) === "inaktiv" ? `<div class="ul-hinweis">Wird nicht mehr verwendet.</div>` : ""}
       ${gsVerwendung(g) === "offen" ? `<div class="ul-hinweis">Verwendung klären: Wird der Stoff noch eingesetzt?${g.hinweis ? " " + esc(g.hinweis) : ""}</div>` : ""}
-      <dl class="ul-dl">${feld("Bereiche", (g.bereiche || []).join(", "))}${feld("Verwendung", g.verwendung)}${feld("Menge", g.menge)}${feld("Lagerort", g.lagerort)}</dl>
+      <dl class="ul-dl">${feld("Bereiche", (g.bereiche || []).join(", "))}${feld("Verwendung", g.verwendung)}${feld("Gebinde", g.gebinde)}${feld("Menge", g.menge)}${feld("Lagerort", g.lagerort)}</dl>
       <h4 class="ul-h4">Sicherheitsdatenblatt</h4>
       <div class="gs-sdb-block gs-sdb-${st.klasse}"><span>${esc(st.text)}</span>
         <span class="gs-sdb-akt">${g.sdb_pfad ? gsOeffnen(g.sdb_pfad, "Öffnen", "btn-klein") : ""}
@@ -229,8 +229,9 @@ function gsDialog(g, danach, fokus){
       <label>H-Sätze (mit Leerzeichen getrennt)<input type="text" id="gsH" value="${esc((g ? g.h_saetze || [] : []).join(" "))}" placeholder="H225 H319"></label>
       <label>Bereiche (mit Komma getrennt)<input type="text" id="gsBer" value="${esc((g ? g.bereiche || [] : []).join(", "))}" placeholder="Produktion, Instandhaltung"></label>
       <label>Verwendung<input type="text" id="gsVerw" maxlength="300" value="${esc(w("verwendung"))}"></label>
-      <div class="ehs-zwei"><label>Menge pro Jahr<input type="text" id="gsMenge" maxlength="100" value="${esc(w("menge"))}"></label>
-        <label>Lagerort<input type="text" id="gsLager" maxlength="200" value="${esc(w("lagerort"))}"></label></div>
+      <div class="ehs-zwei"><label>Gebinde <span class="uw-leise">(z. B. 500 ml Spraydose, 25 l Kanister)</span><input type="text" id="gsGebinde" maxlength="120" value="${esc(w("gebinde"))}"></label>
+        <label>Menge pro Jahr<input type="text" id="gsMenge" maxlength="100" value="${esc(w("menge"))}"></label></div>
+      <label>Lagerort<input type="text" id="gsLager" maxlength="200" value="${esc(w("lagerort"))}"></label>
       <fieldset class="gs-feld" id="gsSdbFeld"><legend>Sicherheitsdatenblatt</legend>
         <label>PDF ${g && g.sdb_pfad ? "– vorhanden, neue Datei ersetzt es" : ""}<input type="file" id="gsSdb" accept=".pdf"></label>
         <label>Überarbeitungsdatum (steht auf Seite 1)<input type="date" id="gsAusgabe" value="${esc(w("sdb_ausgabe"))}" max="${ehsHeute()}"></label></fieldset>
@@ -265,7 +266,7 @@ function gsDialog(g, danach, fokus){
       const verwStatus = dlg.querySelector("#gsVerwStatus").value;
       const daten = { bezeichnung: name, hersteller: dlg.querySelector("#gsHerst").value.trim() || null, signalwort: dlg.querySelector("#gsSig").value || null,
         h_saetze: h, bereiche: dlg.querySelector("#gsBer").value.split(",").map(s => s.trim()).filter(Boolean),
-        verwendung: dlg.querySelector("#gsVerw").value.trim() || null, menge: dlg.querySelector("#gsMenge").value.trim() || null,
+        verwendung: dlg.querySelector("#gsVerw").value.trim() || null, menge: dlg.querySelector("#gsMenge").value.trim() || null, gebinde: dlg.querySelector("#gsGebinde").value.trim() || null,
         lagerort: dlg.querySelector("#gsLager").value.trim() || null, sdb_ausgabe: dlg.querySelector("#gsAusgabe").value || null,
         ba_pfade: [...dlg.querySelectorAll(".gs-ba-wahl input:checked")].map(x => x.value), hinweis: dlg.querySelector("#gsHinweis").value.trim() || null, ba_gruppe: dlg.querySelector("#gsGruppe").value.trim() || null,
         verwendung_status: verwStatus, aktiv: verwStatus !== "inaktiv", quelle: "portal", geaendert_von: window.__oakName || "", geaendert_am: new Date().toISOString() };
