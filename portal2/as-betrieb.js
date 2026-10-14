@@ -37,6 +37,7 @@ function asAnlagen(){
     .sort((a, b) => String(a.maschine || a.titel || "").localeCompare(String(b.maschine || b.titel || ""), "de", { numeric: true }));
 }
 function asViewerUrl(typ, pfad, titel, extra){
+  if(/^(docx?|xlsx?|pptx?|odt|ods|csv|zip)$/i.test(typ || "")) typ = "datei";   // Office-Dateien: Download statt Anzeige
   return "viewer.html?typ=" + encodeURIComponent(typ || "") + "&p=" + encodeURIComponent(pfad || "") + "&t=" + encodeURIComponent(titel || "") + (extra || "");
 }
 function asAnlageDokUrl(d, typ, label){

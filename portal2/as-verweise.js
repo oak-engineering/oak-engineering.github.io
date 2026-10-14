@@ -13,6 +13,8 @@ const AS_V1 = [];   // alle Bereiche des Kundenportals gibt es inzwischen auch h
 AS_SEITEN.unterlagen = { titel: "Unterlagen", icon: "▤", sort: 8, async render(main){
   main.innerHTML = `<h1 class="seite">Unterlagen</h1><p class="unter">Alle Dokumente des Betriebs – gleiche Ablage wie im Kundenportal.</p><div class="leer">wird geladen …</div>`;
   await asBetriebLaden();
+  const termine = await apiGet("/rest/v1/portal_termin?select=id,titel,faellig_am,unterlagen&archiviert=is.false&erledigt_am=is.null&kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&order=faellig_am.asc").catch(() => []);
+  const fuerTermine = id => (termine || []).filter(t => (t.unterlagen || []).includes(id));
   const docs = (AS_B.docs || []).filter(d => d.kategorie !== "anlagen");
   const kats = AS_UL_KAT.map(([k, t]) => [k, t, docs.filter(d => d.kategorie === k)]).filter(x => x[2].length);
   const sonst = docs.filter(d => !AS_UL_KAT.some(([k]) => k === d.kategorie));
@@ -21,7 +23,10 @@ AS_SEITEN.unterlagen = { titel: "Unterlagen", icon: "▤", sort: 8, async render
     const knoepfe = d.kategorie === "allg-gbu"
       ? AS_DOKTYPEN.filter(([t]) => (d.typen || []).includes(t)).map(([t, l]) => `<button class="btn sek klein" data-dok="${esc(asAnlageDokUrl(d, t, l))}" data-titel="${esc(titel + " · " + l)}">${esc(l)}</button>`).join(" ")
       : `<button class="btn sek klein" data-dok="${esc(d.url || asViewerUrl(d.doc_typ || "pdf", d.storage_path, titel))}" data-titel="${esc(titel)}">öffnen</button>`;
-    return `<div class="z"><div><b>${esc(titel)}</b><small>${d.stand ? "Stand " + asDat(d.stand) : "aktualisiert " + asDat(d.updated_at)}</small></div><div>${knoepfe}</div></div>`; };
+    const tl = fuerTermine(d.id), entwurf = /^\s*entwurf/i.test(titel);
+    return `<div class="z"><div><b>${esc(titel.replace(/^\s*ENTWURF( zur Freigabe)?\s*[–-]\s*/i, ""))}</b><small>${entwurf ? "Entwurf zur Freigabe · " : ""}${d.stand ? "Stand " + asDat(d.stand) : "aktualisiert " + asDat(d.updated_at)}</small>
+      ${tl.length ? `<div class="reihe" style="gap:6px;flex-wrap:wrap;margin-top:4px">${tl.map(t => `<a class="chip c-blau" href="#kalender/kalender" title="im Kalender ansehen" style="white-space:normal;max-width:100%;text-align:left;text-decoration:none">für Termin ${esc(asDat(t.faellig_am))}: ${esc(t.titel.length > 60 ? t.titel.slice(0, 58) + "…" : t.titel)}</a>`).join("")}</div>` : ""}</div>
+      <div>${entwurf ? asChip("Entwurf", "gelb") + " " : ""}${knoepfe}</div></div>`; };
   main.innerHTML = `<h1 class="seite">Unterlagen</h1><p class="unter">Alle Dokumente des Betriebs – gleiche Ablage wie im Kundenportal. Dokumente je Anlage stehen unter „Anlagen“.</p>
     ${kats.map(([, t, l]) => `<div class="karte"><h2>${esc(t)} <span class="hinweis">${l.length}</span></h2><div class="zeilen">${l.map(zeile).join("")}</div></div>`).join("") || `<div class="karte"><div class="leer">Noch keine Dokumente.</div></div>`}
     ${AS_V1.length ? `<div class="karte"><h2>Weitere Bereiche im Kundenportal</h2><div class="zeilen">${AS_V1.map(([t, ziel, h]) => `<div class="z"><div><b>${esc(t)}</b><small>${esc(h)}</small></div>

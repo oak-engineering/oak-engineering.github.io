@@ -124,6 +124,18 @@ function asSvCss(){
 .sv-leiste select,.sv-leiste input{width:auto;max-width:260px}
 .sv-pill{background:#fff;color:var(--blau);border:1px solid var(--linie);border-radius:16px;padding:4px 12px;font-size:13px;cursor:pointer}
 .sv-pill.an{background:var(--blau);color:#fff;border-color:var(--blau)}
+.sv-ul{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.sv-uldok{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--linie);border-radius:8px;padding:4px 10px;font:inherit;font-size:13px;color:var(--blau);cursor:pointer;max-width:100%;text-align:left}
+.sv-uldok:hover{border-color:var(--blau)}.sv-uldok svg{width:15px;height:15px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8}
+.sv-uldok em{font-style:normal;font-size:11px;font-weight:600;background:var(--gelb2);color:#8a6200;border-radius:6px;padding:1px 6px}
+.sv-ulbox{border:1px solid var(--linie);border-radius:10px;padding:10px 12px;background:#fafcfe}
+.sv-ulkopf{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.sv-ulbox input[type=search]{width:100%;margin-bottom:6px}
+.sv-ulwahl{max-height:230px;overflow:auto;border-top:1px solid var(--linie);padding-top:4px}
+.sv-ulgr small{display:block;font-weight:600;color:var(--blau);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.03em;font-size:11px}
+.sv-ulwahl label{display:flex!important;flex-direction:row!important;align-items:center;gap:8px;font-weight:400;padding:3px 2px;margin:0}
+.sv-ulwahl label input{width:auto;margin:0}.sv-ulwahl label span:first-of-type{flex:1}
+@media(max-width:640px){#svInhalt .zeilen .z{grid-template-columns:1fr}#svInhalt .zeilen .z>div:last-child{text-align:left!important}.sv-uldok{font-size:12px}}
 .sv-raster{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
 .sv-wt{font-size:12px;color:var(--grau);text-align:center;font-weight:600;padding:2px 0}
 .sv-tag{background:#fff;border:1px solid var(--linie);border-radius:8px;min-height:86px;padding:4px;font-size:12px;overflow:hidden}
@@ -208,6 +220,54 @@ function asSvZiel(ziel){
   asGehe(ziel);
 }
 
+/* ---------------- Unterlagen zum Termin ----------------
+   portal_termin.unterlagen = IDs aus portal_dokumente (gleiche Ablage wie V1). Ein Termin verweist auf die Dokumente,
+   die dafür gebraucht werden (z. B. ASA → Präsentation, Freigabe → Entwürfe). Funktioniert ohne OAK: der Betrieb wählt
+   die Unterlagen im Termin-Dialog selbst aus. */
+function asSvDok(id){ return ((typeof AS_B !== "undefined" && AS_B.docs) || []).find(d => d.id === id) || null; }
+function asSvDokTitel(d){ return d.titel || (d.maschine ? d.maschine + " – Unterlagen der Anlage" : "Dokument"); }
+function asSvDokUrl(d){
+  if(d.url) return d.url;
+  if((d.kategorie === "anlagen" || d.kategorie === "allg-gbu") && (d.typen || []).length){
+    const t = AS_DOKTYPEN.find(x => (d.typen || []).includes(x[0])) || AS_DOKTYPEN[0]; return asAnlageDokUrl(d, t[0], t[1]); }
+  return asViewerUrl(d.doc_typ || "pdf", d.storage_path, asSvDokTitel(d));
+}
+function asSvEntwurf(d){ return /^\s*entwurf/i.test(d.titel || ""); }
+function asSvTerminDoks(t){ return ((t && t.unterlagen) || []).map(asSvDok).filter(Boolean); }
+function asSvUnterlagenHtml(t){
+  const l = asSvTerminDoks(t); if(!l.length) return "";
+  return `<div class="sv-ul">${l.map(d => `<button type="button" class="sv-uldok${asSvEntwurf(d) ? " entwurf" : ""}" data-svdok="${esc(d.id)}" title="öffnen">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></svg>${esc(asSvDokTitel(d).replace(/^\s*ENTWURF( zur Freigabe)?\s*[–-]\s*/i, ""))}${asSvEntwurf(d) ? "<em>Entwurf</em>" : ""}</button>`).join("")}</div>`;
+}
+function asSvUnterlagenBinden(box, dlg){
+  box.querySelectorAll("[data-svdok]").forEach(b => b.onclick = ev => { ev.stopPropagation(); const d = asSvDok(b.dataset.svdok); if(!d) return;
+    if(dlg && dlg.open) dlg.close(); asDokOeffnen(asSvDokUrl(d), asSvDokTitel(d)); });
+}
+function asSvUnterlagenWahl(gewaehlt){
+  const KAT = (typeof AS_UL_KAT !== "undefined" ? AS_UL_KAT : []).concat([["anlagen", "Anlagen"], ["sonstige", "Weitere Unterlagen"]]);
+  const katName = k => (KAT.find(x => x[0] === k) || [k, "Weitere Unterlagen"])[1];
+  const gruppen = {};
+  ((typeof AS_B !== "undefined" && AS_B.docs) || []).forEach(d => { const k = katName(d.kategorie); (gruppen[k] = gruppen[k] || []).push(d); });
+  const zahl = gewaehlt.length;
+  return `<div class="voll sv-ulbox"><div class="sv-ulkopf"><b>Erforderliche Unterlagen</b><span class="hinweis" id="svUlZahl">${zahl ? zahl + " ausgewählt" : "keine ausgewählt"}</span></div>
+    <input type="search" id="svUlSuche" placeholder="Unterlage suchen (Titel, Anlage, Bereich) …">
+    <div class="sv-ulwahl">${Object.entries(gruppen).map(([k, l]) => `<div class="sv-ulgr"><small>${esc(k)}</small>${l.map(d =>
+      `<label data-such="${esc((asSvDokTitel(d) + " " + k + " " + (d.maschinen_id || "")).toLowerCase())}"><input type="checkbox" data-ul="${esc(d.id)}"${gewaehlt.includes(d.id) ? " checked" : ""}>
+        <span>${esc(asSvDokTitel(d))}</span>${asSvEntwurf(d) ? '<span class="chip c-gelb">Entwurf</span>' : ""}</label>`).join("")}</div>`).join("")
+      || '<div class="hinweis">Noch keine Dokumente in der Ablage.</div>'}</div>
+    <p class="hinweis">Die Unterlagen erscheinen beim Termin im Kalender und lassen sich dort direkt öffnen.</p></div>`;
+}
+function asSvUnterlagenWahlBinden(dl){
+  const such = dl.querySelector("#svUlSuche"); if(!such) return;
+  const zaehlen = () => { const n = dl.querySelectorAll("[data-ul]:checked").length; dl.querySelector("#svUlZahl").textContent = n ? n + " ausgewählt" : "keine ausgewählt"; };
+  such.oninput = () => { const q = such.value.trim().toLowerCase();
+    dl.querySelectorAll(".sv-ulwahl label").forEach(l => l.style.display = !q || l.dataset.such.includes(q) || l.querySelector("input").checked ? "" : "none");
+    dl.querySelectorAll(".sv-ulgr").forEach(g => g.style.display = [...g.querySelectorAll("label")].some(l => l.style.display !== "none") ? "" : "none"); };
+  dl.querySelectorAll("[data-ul]").forEach(c => c.onchange = zaehlen);
+}
+/* Termin naht, eine verknüpfte Unterlage ist noch Entwurf */
+function asSvEntwurfOffen(t){ const tage = asSvTage(t.faellig_am); return tage != null && tage <= 14 && asSvTerminDoks(t).some(asSvEntwurf); }
+
 /* ---------------- Kalender-Einträge ---------------- */
 function asSvEintraege(){
   const l = [];
@@ -245,7 +305,10 @@ function asSvAufgaben(){
     const tage = asSvTage(t.faellig_am); if(tage == null || tage > 14) return;
     l.push({ schluessel: "termin:" + t.id, stufe: tage < 0 ? "kritisch" : "warnung", titel: t.titel + (t.objekt ? " · " + t.objekt : ""),
       sub: (AS_SV_ART[t.art] || "Termin") + " · fällig " + asDat(t.faellig_am) + (t.zustaendig ? " · zuständig: " + t.zustaendig : ""), frist: tage,
-      aktionen: [["Erledigt", () => asSvErledigenDialog(t)]] });
+      aktionen: [["Erledigt", () => asSvErledigenDialog(t)]], unterlagen: t });
+    if(asSvEntwurfOffen(t)) asSvTerminDoks(t).filter(asSvEntwurf).forEach(d => l.push({ schluessel: "entwurf:" + t.id + ":" + d.id, stufe: "warnung", quittierbar: true,
+      titel: "Unterlage noch Entwurf: " + asSvDokTitel(d).replace(/^\s*ENTWURF( zur Freigabe)?\s*[–-]\s*/i, ""), sub: "gebraucht für „" + t.titel + "“ am " + asDat(t.faellig_am) + " – Freigabe einholen", frist: tage,
+      aktionen: [["Unterlage öffnen", () => asDokOeffnen(asSvDokUrl(d), asSvDokTitel(d))], ["Termin", () => asSvErledigenDialog(t, true)]] }));
   });
   /* 2. Nachweise */
   AS_SV.nachweise.filter(n => !n.archiviert).forEach(n => {
@@ -344,7 +407,7 @@ AS_SEITEN.kalender = { titel: "Kalender & To-dos", icon: "◫", sort: 7.2, async
   asSvCss();
   const r = asReiter("kalender", [["todos", "To-dos"], ["kalender", "Kalender"]], "todos");
   main.innerHTML = `<h1 class="seite">Kalender & To-dos</h1><p class="unter">Prüfungen, Fristen und Aufgaben – entstehen aus den Daten, erledigt wird am Ort der Aufgabe.</p>${r.html}<div id="svInhalt"><div class="leer">wird geladen …</div></div>`;
-  try{ await asSvLaden(); }
+  try{ await Promise.all([asSvLaden(), typeof asBetriebLaden === "function" ? asBetriebLaden().catch(() => null) : null]); }
   catch(e){ const b = document.getElementById("svInhalt"); if(b) b.innerHTML = `<div class="leer">Konnte nicht geladen werden: ${esc(asSvFehler(e))}</div>`; return; }
   const box = document.getElementById("svInhalt"); if(!box) return;
   if(r.akt === "kalender") asSvKalender(box); else asSvTodos(box);
@@ -358,7 +421,7 @@ function asSvTodos(box){
       <p class="hinweis">Aufgaben entstehen aus Kalender, Nachweisen, Vorsorge, Unterweisungen, Vorfällen, Maßnahmen, ASA, Zielen und dem Forum.
         Erledigen Sie sie direkt hier – Hinweise ohne eigene Handlung quittieren Sie.</p>
       ${liste.length ? liste.map((a, i) => `<div class="sv-auf ${farbe[a.stufe]}">
-          <div><b>${esc(a.titel)}</b>${a.sub ? `<small>${esc(a.sub)}</small>` : ""}</div>
+          <div><b>${esc(a.titel)}</b>${a.sub ? `<small>${esc(a.sub)}</small>` : ""}${a.unterlagen ? asSvUnterlagenHtml(a.unterlagen) : ""}</div>
           <div>${a.frist != null ? asChip(asSvFristText(a.frist), a.frist < 0 ? "rot" : "gelb") : ""}
             <div class="sv-akt">${a.aktionen.map((x, j) => `<button class="btn ${j === 0 ? "sek " : ""}klein" data-auf="${i}" data-akt="${j}">${esc(x[0])}</button>`).join("")}
               ${a.quittierbar ? `<button class="btn sek klein" data-quitt="${i}" title="Zur Kenntnis genommen – verschwindet aus der Liste, bleibt im Logbuch">${esc(a.quittText || "Quittieren")}</button>` : ""}</div></div>
@@ -367,6 +430,7 @@ function asSvTodos(box){
       `<div class="z" style="cursor:default"><div><b>${esc(q.titel || q.schluessel)}</b><small>${esc(q.quittiert_von || "")} · ${esc(asSvDatZeit(q.quittiert_am))}${q.notiz ? " – " + esc(q.notiz) : ""}</small></div></div>`).join("")}</div></div>` : ""}`;
   box.querySelectorAll("[data-auf]").forEach(b => b.onclick = () => { try{ liste[+b.dataset.auf].aktionen[+b.dataset.akt][1](); }catch(e){ asMeldung("Fehler: " + asSvFehler(e)); } });
   box.querySelectorAll("[data-quitt]").forEach(b => b.onclick = () => asSvQuittierenDialog(liste[+b.dataset.quitt]));
+  asSvUnterlagenBinden(box);
 }
 
 function asSvQuittierenDialog(a){
@@ -411,8 +475,8 @@ function asSvEintragOeffnen(e){
 function asSvZeile(e, i){
   const tage = asSvTage(e.datum), farbe = asSvFarbe(tage, 30);
   return `<div class="z" data-e="${i}"><div><b>${asPunkt(farbe)}${esc(asDat(e.datum))} · ${esc(e.titel)}</b>
-      <small>${esc(AS_SV_ART[e.art] || e.art || "")}${e.sub ? " · " + esc(e.sub) : ""}${e.quelle === "termin" ? "" : " · ansehen"}</small></div>
-    ${asChip(asSvFristText(tage), farbe === "gruen" ? "grau" : farbe)}</div>`;
+      <small>${esc(AS_SV_ART[e.art] || e.art || "")}${e.sub ? " · " + esc(e.sub) : ""}${e.quelle === "termin" ? "" : " · ansehen"}</small>${e.quelle === "termin" ? asSvUnterlagenHtml(e.roh) : ""}</div>
+    <div style="text-align:right">${asChip(asSvFristText(tage), farbe === "gruen" ? "grau" : farbe)}${e.quelle === "termin" && asSvEntwurfOffen(e.roh) ? "<br>" + asChip("Entwurf – Freigabe offen", "gelb") : ""}</div></div>`;
 }
 function asSvListe(box, alle){
   const ueber = alle.filter(e => asSvTage(e.datum) < 0), bald = alle.filter(e => { const t = asSvTage(e.datum); return t >= 0 && t <= 30; }),
@@ -428,6 +492,7 @@ function asSvListe(box, alle){
           <small>erledigt von ${esc(t.erledigt_von || "")}${t.erledigt_notiz ? " – " + esc(t.erledigt_notiz) : ""} · war fällig ${esc(asDat(t.faellig_am))}</small></div>
           <div>${asChip("erledigt", "gruen")}${AS.admin ? ` <button class="btn adm klein" data-zurueck="${esc(t.id)}">rückgängig</button>` : ""}</div></div>`).join("")}</div></details>` : "");
   box.querySelectorAll("[data-e]").forEach(z => z.onclick = () => asSvEintragOeffnen(alle[+z.dataset.e]));
+  asSvUnterlagenBinden(box);
   box.querySelectorAll("[data-zurueck]").forEach(b => b.onclick = async ev => {
     ev.stopPropagation();
     const t = AS_SV.termine.find(x => x.id === b.dataset.zurueck); if(!t || !confirm("Erledigung zurücknehmen? Ein automatisch angelegter Folgetermin wird entfernt.")) return;
@@ -449,7 +514,8 @@ function asSvMonat(box, alle, aussen){
     const d = new Date(start); d.setDate(start.getDate() + i); const k = asSvIso(d);
     const tag = alle.filter(e => String(e.datum).slice(0, 10) === k);
     zellen += `<div class="sv-tag${d.getMonth() !== mon ? " fremd" : ""}${k === heute ? " heute" : ""}"><span class="sv-nr">${d.getDate()}</span>
-      ${tag.slice(0, 3).map(e => `<button class="sv-e ${asSvFarbe(asSvTage(e.datum), 30)}" data-e="${alle.indexOf(e)}" title="${esc(e.titel)}">${esc(e.titel)}</button>`).join("")}
+      ${tag.slice(0, 3).map(e => { const n = e.quelle === "termin" ? asSvTerminDoks(e.roh).length : 0;
+        return `<button class="sv-e ${asSvFarbe(asSvTage(e.datum), 30)}" data-e="${alle.indexOf(e)}" title="${esc(e.titel)}${n ? " · " + n + (n === 1 ? " Unterlage" : " Unterlagen") : ""}">${esc(e.titel)}${n ? " ·" + n + "▤" : ""}</button>`; }).join("")}
       ${tag.length > 3 ? `<span class="hinweis">+${tag.length - 3} weitere</span>` : ""}</div>`;
   }
   const ueber = alle.filter(e => asSvTage(e.datum) < 0);
@@ -481,6 +547,7 @@ function asSvTerminDialog(t, vorlage){
     const wer = asSvNameLesen(w); if(!wer){ asMeldung("Bitte Ihren Namen eintragen."); return false; }
     const daten = { titel: w.titel.slice(0, 200), art: w.art || "pruefung", faellig_am: w.faellig_am, intervall_monate: parseInt(w.intervall_monate, 10) || null,
       objekt: w.objekt || null, zustaendig: w.zustaendig || null, grundlage: w.grundlage || null, notiz: w.notiz || null,
+      unterlagen: [...d.querySelectorAll("[data-ul]:checked")].map(x => x.dataset.ul),
       geaendert_von: wer, geaendert_am: new Date().toISOString() };
     try{
       if(t) await apiSend("PATCH", "/rest/v1/portal_termin?id=eq." + encodeURIComponent(t.id), daten, "return=minimal");
@@ -508,7 +575,9 @@ function asSvTerminDialog(t, vorlage){
       <label class="voll">Zuständig<input type="text" data-f="zustaendig" maxlength="120" value="${esc(wert("zustaendig", ""))}" placeholder="z. B. Instandhaltung, Fa. Muster (Prüfer)"></label>
       <label class="voll">Grundlage<input type="text" data-f="grundlage" maxlength="300" value="${esc(wert("grundlage", v[3]))}"></label>
       <label class="voll">Notiz<textarea data-f="notiz" maxlength="2000">${esc(wert("notiz", ""))}</textarea></label>
+      ${asSvUnterlagenWahl(t ? (t.unterlagen || []) : [])}
       ${asSvNameFeld()}</div>`, knoepfe: kn });
+  asSvUnterlagenWahlBinden(document.getElementById("dlg"));
 }
 function asSvErledigenDialog(t, mitAendern){
   if(!t) return;
@@ -525,6 +594,7 @@ function asSvErledigenDialog(t, mitAendern){
   kn.push({ t: "Abbrechen", klasse: "sek", fn: () => true });
   const d = asDialog({ titel: "Termin erledigt", inhalt: `<p><b>${esc(t.titel)}</b>${t.objekt ? " · " + esc(t.objekt) : ""}<br>
       <span class="hinweis">fällig ${esc(asDat(t.faellig_am))}${t.grundlage ? "<br>" + esc(t.grundlage) : ""}</span></p>
+    ${asSvTerminDoks(t).length ? `<div class="sv-ulbox" style="margin-bottom:10px"><div class="sv-ulkopf"><b>Erforderliche Unterlagen</b>${asSvEntwurfOffen(t) ? asChip("Entwurf – Freigabe offen", "gelb") : ""}</div>${asSvUnterlagenHtml(t)}</div>` : ""}
     <div class="form">${asSvNameFeld("Wer hat es erledigt?")}
       <label>Erledigt am<input type="date" data-f="datum" value="${heute}" max="${heute}"></label>
       <label class="voll">Bemerkung (z. B. Prüfer, Ergebnis, Plakette)<textarea data-f="notiz" maxlength="2000"></textarea></label></div>
@@ -532,6 +602,7 @@ function asSvErledigenDialog(t, mitAendern){
   const naechst = () => { const el = d.querySelector('[data-f="datum"]'), ziel = d.querySelector("#svNaechst"); if(!el || !ziel) return;
     ziel.textContent = t.intervall_monate && /^\d{4}-\d{2}-\d{2}$/.test(el.value) ? "Der nächste Termin wird automatisch für den " + asDat(asSvPlusMonate(el.value, t.intervall_monate)) + " angelegt." : ""; };
   const el = d.querySelector('[data-f="datum"]'); if(el) el.onchange = naechst; naechst();
+  asSvUnterlagenBinden(d, d);
 }
 function asSvVorlagenDialog(){
   const d = asDialog({ titel: "Termin aus Vorlage", breit: true, inhalt: `<p class="hinweis">Übliche Prüfungen und Fristen mit Fundstelle. Die verbindliche Frist legt der Betrieb in seiner Gefährdungsbeurteilung fest.</p>
