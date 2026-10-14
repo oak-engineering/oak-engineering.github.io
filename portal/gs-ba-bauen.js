@@ -62,7 +62,9 @@
   /* stoff = Zeile portal_gefahrstoff, gbus = Zeilen portal_gefahrstoff_gbu (freigegebene bevorzugt) */
   function doc(stoff, gbus, kat, opt){
     opt = opt || {};
-    const hs = norm(stoff.h_saetze), frei = (gbus || []).filter(x => x.status === "freigegeben");
+    /* Reihenfolge wie auf dem Etikett: H-Sätze aufsteigend, danach EUH-Sätze */
+    const hs = norm(stoff.h_saetze).sort((a, b) => (a.startsWith("EUH") - b.startsWith("EUH")) || a.localeCompare(b, "de", { numeric: true })),
+      frei = (gbus || []).filter(x => x.status === "freigegeben");
     const basis = frei.length ? frei : (gbus || []).filter(x => x.status === "entwurf");
     /* Schutzleitfäden aller Module aller Tätigkeiten, ohne Doppelungen, Reihenfolge wie im Ergebnis */
     const slf = [];
