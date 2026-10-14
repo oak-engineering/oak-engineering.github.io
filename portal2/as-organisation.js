@@ -16,10 +16,10 @@ const AS_NACHWEISE = [
 /* ======================= Organisation ======================= */
 AS_SEITEN.organisation = { titel: "Organisation", icon: "▦", sort: 2, render(main){
   const r = asReiter("organisation", [["grund", "Grunddaten & Nachweise"], ["struktur", "Struktur"], ["organigramm", "Organigramm"],
-    ["beauftragte", "Beauftragte"], ["einsatz", "Einsatzzeiten"]], "grund");
+    ["beauftragte", "Beauftragte"], ["einsatz", "Einsatzzeiten"]].concat(AS.gf || AS.fachkraft ? [["zugaenge", "Zugänge"]] : []), "grund");
   main.innerHTML = `<h1 class="seite">Organisation</h1><p class="unter">Wer ist wofür zuständig – Grundlage für alles Weitere.</p>${r.html}<div id="orgInhalt"></div>`;
   const box = document.getElementById("orgInhalt");
-  ({ grund: asOrgGrund, struktur: asOrgStruktur, organigramm: asOrgOrganigramm, beauftragte: asOrgBeauftragte, einsatz: asOrgEinsatz })[r.akt](box);
+  ({ grund: asOrgGrund, struktur: asOrgStruktur, organigramm: asOrgOrganigramm, beauftragte: asOrgBeauftragte, einsatz: asOrgEinsatz, zugaenge: asOrgZugaenge })[r.akt](box);
 }};
 
 function asOrgGrund(box){
@@ -254,4 +254,71 @@ function asCheckErgebnis(c, nur){
       <div><b>${esc(x.q.massnahme)}</b><div class="hinweis">${x.q.id} · ${esc(x.q.text)}${(c.antworten[x.q.id] || {}).b ? " – " + esc(c.antworten[x.q.id].b) : ""}</div></div></div>`).join(""); });
   if(!L.length) h += `<div class="leer">Keine Lücken.</div>`;
   return h + `</div>`;
+}
+
+/* ---------------- Zugänge (Plan intern/portal-eigenstaendig.md, Schritt 6) ----------------
+   Der Betrieb verwaltet seine Konten selbst (Edge Function zugang-anlegen prüft alle Rechte serverseitig):
+   Geschäftsführung = alles im eigenen Betrieb, Fachkraft = einfache Konten anlegen und Passwörter neu setzen. */
+const AS_ZG_ROLLE = { kunde: "Betrieb (lesen, melden, erledigen)", fachkraft: "Fachkraft (beurteilen, pflegen, quittieren)" };
+async function asZgAufruf(daten){
+  const t = await token();
+  const r = await fetch(CFG.url + "/functions/v1/zugang-anlegen", { method: "POST",
+    headers: { "Content-Type": "application/json", apikey: CFG.anon, Authorization: "Bearer " + t },
+    body: JSON.stringify(Object.assign({ kunde_slug: AS.kunde }, daten)) });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok || !j.ok) throw new Error(j.fehler || ("Fehler " + r.status));
+  return j;
+}
+function asZgPasswort(){   // Vorschlag: 14 Zeichen, gut lesbar (ohne 0/O/l/1)
+  const z = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789", a = new Uint32Array(14); crypto.getRandomValues(a);
+  return Array.from(a, x => z[x % z.length]).join("");
+}
+async function asOrgZugaenge(box){
+  box.innerHTML = `<div class="karte"><div class="leer">Zugänge werden geladen …</div></div>`;
+  let d;
+  try{ d = await asZgAufruf({ aktion: "liste" }); }
+  catch(e){ box.innerHTML = `<div class="karte"><div class="leer">Konnte nicht geladen werden: ${esc(e.message || e)}</div></div>`; return; }
+  const liste = d.zugaenge || [], darf = d.darf || {};
+  box.innerHTML = `<div class="karte"><h2>Zugänge zum EHS-Cockpit <button class="btn klein" id="zgNeu">+ Zugang anlegen</button></h2>
+      <p class="hinweis">Jede Person bekommt einen eigenen Zugang – so ist im Logbuch nachvollziehbar, wer was eingetragen hat.
+        ${darf.sperren ? "Als Geschäftsführung können Sie alle Zugänge Ihres Betriebs verwalten." : "Als Fachkraft können Sie Zugänge mit der Rolle „Betrieb“ anlegen und deren Passwort neu setzen."}</p>
+      <div class="zeilen">${liste.map((z, i) => `<div class="z" style="cursor:default"><div><b>${esc(z.name || z.email)}</b>
+          <small>${esc(z.email)} · ${esc(z.gf ? "Geschäftsführung" : (AS_ZG_ROLLE[z.rolle] || z.rolle))}${z.gesperrt || z.status === "gesperrt" ? " · <b>gesperrt</b>" : ""}
+          · ${z.zuletzt ? "zuletzt angemeldet " + esc(asDat(String(z.zuletzt).slice(0, 10))) : "noch nie angemeldet"}</small></div>
+          <div class="sv-akt" style="display:flex;gap:6px">${(darf.sperren || (z.rolle === "kunde" && !z.gf)) ? `<button class="btn sek klein" data-pw="${i}">Passwort neu</button>` : ""}
+            ${darf.sperren && z.user_id !== AS.uid ? `<button class="btn sek klein" data-sp="${i}">${z.gesperrt || z.status === "gesperrt" ? "Entsperren" : "Sperren"}</button>` : ""}</div></div>`).join("")
+        || `<div class="leer">Noch keine Zugänge.</div>`}</div></div>`;
+  box.querySelector("#zgNeu").onclick = () => asZgNeu(box, darf);
+  box.querySelectorAll("[data-pw]").forEach(b => b.onclick = () => {
+    const z = liste[+b.dataset.pw], pw = asZgPasswort();
+    asDialog({ titel: "Neues Passwort für " + (z.name || z.email), inhalt: `<div class="form">${asFeld("Neues Passwort (mindestens 10 Zeichen)", "pw", pw, "text", "voll")}</div>
+        <p class="hinweis">Geben Sie das Passwort der Person persönlich weiter; sie kann es danach unter „Passwort“ selbst ändern.</p>`,
+      knoepfe: [{ t: "Setzen", fn: async dl => { const w = asWerte(dl);
+        try{ await asZgAufruf({ aktion: "passwort", user_id: z.user_id, passwort: w.pw || "" }); }
+        catch(e){ asMeldung(e.message || String(e)); return false; }
+        asMeldung("Passwort gesetzt"); } }] });
+  });
+  box.querySelectorAll("[data-sp]").forEach(b => b.onclick = async () => {
+    const z = liste[+b.dataset.sp], weg = !(z.gesperrt || z.status === "gesperrt");
+    if(weg && !confirm((z.name || z.email) + " sperren? Die Person kann sich danach nicht mehr anmelden.")) return;
+    try{ await asZgAufruf({ aktion: weg ? "sperren" : "entsperren", user_id: z.user_id }); }
+    catch(e){ asMeldung(e.message || String(e)); return; }
+    asMeldung(weg ? "Zugang gesperrt" : "Zugang entsperrt"); asOrgZugaenge(box);
+  });
+}
+function asZgNeu(box, darf){
+  const pw = asZgPasswort();
+  asDialog({ titel: "Zugang anlegen", inhalt: `<div class="form">
+      ${asFeld("Name", "name", "", "text", "voll")}${asFeld("E-Mail-Adresse (Anmeldename)", "email", "", "email", "voll")}
+      ${darf.anlegen_fachkraft ? asAuswahl("Rolle", "rolle", "kunde", Object.entries(AS_ZG_ROLLE)) : ""}
+      ${darf.anlegen_fachkraft ? asFeld("Geschäftsführung (gibt Beurteilungen frei, verwaltet Zugänge)", "gf", false, "checkbox", "voll") : ""}
+      ${asFeld("Erstes Passwort (mindestens 10 Zeichen)", "pw", pw, "text", "voll")}</div>
+      <p class="hinweis">Geben Sie Anmeldename und Passwort der Person persönlich weiter. Sie meldet sich unter
+        www.oak-engineering.de/portal2/ an und kann das Passwort dort ändern.</p>`,
+    knoepfe: [{ t: "Anlegen", fn: async dl => {
+      const w = asWerte(dl);
+      try{ await asZgAufruf({ aktion: "anlegen", name: w.name || "", email: w.email || "", rolle: w.rolle || "kunde", gf: !!w.gf, passwort: w.pw || "" }); }
+      catch(e){ asMeldung(e.message || String(e)); return false; }
+      asMeldung("Zugang angelegt"); asOrgZugaenge(box);
+    } }] });
 }
