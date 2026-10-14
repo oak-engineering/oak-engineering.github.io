@@ -42,6 +42,8 @@ function asVfBereich(bereich){
 }
 function asVfAusgewertet(v){ return !!(v.ausgewertet_am || v.sofortmassnahme || v.langzeitmassnahme); }
 function asVfMelder(v){ return AS.admin ? (AS_VF.melder[v.id] || v.melder || "") : ""; }
+/* Wer prüft neue Meldungen? OAK (Standard) oder – je Betrieb einstellbar – die Fachkraft (Plan Portal eigenständig, Schritt 5) */
+function asVfVerwalter(){ return !!(AS.admin || (AS.fachkraft && AS_VF.betrieb)); }
 function asVfFehlertext(e){ const t = String((e && e.message) || e || "unbekannter Fehler");
   return /nur die auswertung/i.test(t) ? "Diese Angabe darf nur OAK engineering ändern. Der Betrieb trägt die Auswertung nach." : t; }
 function asVfMassnahmen(v){ return asT("as_massnahme").filter(m => m.quelle === "meldung" && m.quelle_id === v.id); }
@@ -57,6 +59,7 @@ async function asVfLaden(neu){
     apiGet("/rest/v1/portal_melde_token?select=token,kunde_slug&aktiv=is.true" + k).catch(() => []),
     apiGet("/rest/v1/portal_dokumente?select=storage_path,doc_typ,titel,kategorie&kategorie=eq.vorfall-aushang" + k).catch(() => [])]);
   AS_VF.liste = rows || [];
+  AS_VF.betrieb = await apiSend("POST", "/rest/v1/rpc/portal_vorfall_betrieb", { p_slug: AS.kunde }).catch(() => false) === true;
   AS_VF.token = ((tok || [])[0] || {}).token || "";
   const d = docs || [];
   AS_VF.aushang = d.find(r => r.doc_typ === "pdf") || d[0] || null;
@@ -123,16 +126,19 @@ AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render
 
   main.innerHTML = kopf + `
     <div class="karte nodruck"><h2>${umwelt ? "Umweltvorfall melden" : "Vorfall melden"}</h2>
-      <p>Unfall, Beinahe-Unfall, unsicherer Zustand oder Umweltvorfall – mit Foto. Die Meldung geht an OAK engineering.</p>
+      <p>Unfall, Beinahe-Unfall, unsicherer Zustand oder Umweltvorfall – mit Foto. Die Meldung geht an ${AS_VF.betrieb ? "die Fachkraft für Arbeitssicherheit im Betrieb (und zur Kenntnis an OAK engineering)" : "OAK engineering"}.</p>
       <div class="reihe" style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" id="vfMelden">${umwelt ? "Umweltvorfall melden" : "Vorfall melden"}</button>
-        ${AS.admin ? `<button class="btn adm" id="vfNeu">+ Vorfall erfassen</button>` : ""}${aushangKnopf}</div></div>
+        ${asVfVerwalter() ? `<button class="btn ${AS.admin ? "adm" : ""}" id="vfNeu">+ Vorfall erfassen</button>` : ""}${aushangKnopf}</div>
+      ${AS.gf ? `<p class="hinweis" style="margin-top:10px">Neue Meldungen prüft und gibt frei:
+        <select id="vfFreigabe"><option value="oak" ${AS_VF.betrieb ? "" : "selected"}>OAK engineering</option><option value="betrieb" ${AS_VF.betrieb ? "selected" : ""}>die Fachkraft im Betrieb</option></select>
+        <span class="hinweis">– bei „Fachkraft“ erhalten die Empfänger der E-Mail-Erinnerungen jede neue Meldung (ohne Namen der Meldenden).</span></p>` : ""}</div>
     ${AS_VF.fehler ? `<div class="karte"><div class="leer">Vorfälle konnten nicht geladen werden: ${esc(AS_VF.fehler)}</div></div>` : ""}
     <div class="kacheln">
       ${kachel("grau", "Meldungen", alle.length, umwelt ? "Umweltvorfälle" : "Unfälle & Beinahe-Unfälle", "")}
       ${kachel(offen ? "gelb" : "gruen", "Offen", offen, st.status === "offen" ? "Filter aktiv – erneut tippen zum Aufheben" : "noch nicht erledigt", "offen")}
       ${kachel(auswOffen ? "rot" : "gruen", "Auswertung offen", auswOffen, st.auswertung ? "Filter aktiv – erneut tippen zum Aufheben" : "Ursache und Maßnahmen fehlen", "auswertung")}
-      ${AS.admin ? kachel(neuZahl ? "gelb" : "gruen", "Neu eingegangen", neuZahl, st.status === "neu" ? "Filter aktiv – erneut tippen zum Aufheben" : "für den Betrieb noch nicht sichtbar", "neu") : ""}
+      ${asVfVerwalter() ? kachel(neuZahl ? "gelb" : "gruen", "Neu eingegangen", neuZahl, st.status === "neu" ? "Filter aktiv – erneut tippen zum Aufheben" : "noch freizugeben", "neu") : ""}
     </div>
     <div class="karte">
       <h2>${umwelt ? "Umweltvorfälle" : "Unfälle &amp; Beinahe-Unfälle"} <span class="hinweis">${alle.length} ${alle.length === 1 ? "Meldung" : "Meldungen"}${offen ? " · " + offen + " offen" : ""}</span></h2>
@@ -140,7 +146,7 @@ AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render
       <div class="form nodruck" style="margin:8px 0 12px">
         <label>Suchen<input id="vfSuche" placeholder="Beschreibung, Ort, Anlage${AS.admin ? ", Melder" : ""}" value="${esc(st.q)}"></label>
         <label>Art<select id="vfArt"><option value="">alle</option>${arten.map(([k, a]) => `<option value="${k}" ${st.art === k ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select></label>
-        <label>Status<select id="vfStatus"><option value="">alle</option>${Object.entries(AS_VF_STATUS).filter(([k]) => AS.admin || k !== "neu").map(([k, l]) => `<option value="${k}" ${st.status === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+        <label>Status<select id="vfStatus"><option value="">alle</option>${Object.entries(AS_VF_STATUS).filter(([k]) => asVfVerwalter() || k !== "neu").map(([k, l]) => `<option value="${k}" ${st.status === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
         <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="vfAusw" ${st.auswertung ? "checked" : ""}> nur „Auswertung offen“</label>
       </div>
       <div class="zeilen">${sicht.map(asVfZeile).join("") || (alle.length
@@ -164,6 +170,12 @@ AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render
   document.getElementById("vfMelden").onclick = () => asVfMeldenOeffnen(umwelt);
   const nb = document.getElementById("vfNeu"); if(nb) nb.onclick = () => asVfErfassen(umwelt);
   const ab = document.getElementById("vfAushang"); if(ab) ab.onclick = () => asVfAushang(ab);
+  const fg = document.getElementById("vfFreigabe");
+  if(fg) fg.onchange = async () => {
+    try{ await apiSend("POST", "/rest/v1/rpc/portal_vorfall_freigabe_setzen", { p_slug: AS.kunde, p_wer: fg.value }); }
+    catch(e){ asMeldung("Konnte nicht umgestellt werden: " + asVfFehlertext(e)); return; }
+    await asVfNeu(fg.value === "betrieb" ? "Neue Meldungen prüft jetzt die Fachkraft im Betrieb" : "Neue Meldungen prüft OAK engineering");
+  };
 }};
 
 function asVfZeile(v){
@@ -242,8 +254,8 @@ function asVfDetail(id){
   const a = AS_VF_ART[v.art] || AS_VF_ART.unsicher;
   const mn = asVfMassnahmen(v);
   const einheiten = asT("as_einheit");
-  const verwaltung = AS.admin ? `
-    <h3 style="margin:16px 0 6px">Bearbeitung durch OAK</h3>
+  const verwaltung = asVfVerwalter() ? `
+    <h3 style="margin:16px 0 6px">Bearbeitung${AS.admin ? " durch OAK" : ""}</h3>
     <div class="form">
       ${asAuswahl("Status", "status", v.status || "offen", Object.entries(AS_VF_STATUS))}
       ${asAuswahl("Bereich", "domaene", v.domaene || "arbeitssicherheit", Object.entries(AS_VF_DOMAENE))}
@@ -261,7 +273,12 @@ function asVfDetail(id){
     { t: asVfAusgewertet(v) || v.ursache || v.ausfalltage != null ? "Auswertung ändern" : "Auswerten", klasse: "sek", fn: () => { asVfAuswerten(v); return false; } },
     { t: "Maßnahme ableiten", klasse: "sek", fn: () => { asVfMassnahme(v); return false; } },
   ];
-  if(AS.admin) knoepfe.push({ t: "Speichern", klasse: "adm", fn: async d => {
+  if(v.status === "neu" && asVfVerwalter()) knoepfe.push({ t: "Freigeben", fn: async () => {
+    try{ await asVfSpeichern(v.id, { status: "offen" }); }
+    catch(e){ asMeldung("Konnte nicht freigegeben werden: " + asVfFehlertext(e)); return false; }
+    await asVfNeu("Meldung freigegeben");
+  }});
+  if(asVfVerwalter()) knoepfe.push({ t: "Speichern", klasse: AS.admin ? "adm" : "", fn: async d => {
     const w = asWerte(d);
     const felder = { status: w.status || "offen", domaene: w.domaene || "arbeitssicherheit", bearbeitung: w.bearbeitung, rueckmeldung: w.rueckmeldung };
     if("as_einheit_id" in w) felder.as_einheit_id = w.as_einheit_id || null;
@@ -328,7 +345,7 @@ function asVfAuswerten(v){
 
 /* ---------------- Erfassung durch OAK (mündlich oder telefonisch gemeldet) ---------------- */
 function asVfErfassen(umwelt){
-  if(!AS.admin) return;
+  if(!asVfVerwalter()) return;
   const einheiten = asT("as_einheit");
   const d = asDialog({ titel: "Vorfall erfassen", breit: true, inhalt: `<div class="form">
       ${asAuswahl("Art", "art", umwelt ? "umwelt" : "unfall", Object.entries(AS_VF_ART).map(([k, a]) => [k, a.label]))}
@@ -342,11 +359,11 @@ function asVfErfassen(umwelt){
       <div class="voll vfUmwelt form" style="padding:0">
         ${asFeld("Stoff", "stoff", "")}${asFeld("Menge", "menge", "")}
         <label class="voll">Gelangt nach<input type="text" data-f="wohin" placeholder="z. B. Boden, Kanalisation, Auffangwanne"></label></div>
-      <label>Gemeldet von<input type="text" data-f="melder" placeholder="leer = anonym"></label>
+      ${AS.admin ? `<label>Gemeldet von<input type="text" data-f="melder" placeholder="leer = anonym"></label>` : ""}
       ${asFeld("Person verletzt", "verletzte", false, "checkbox")}
       ${asFeld("Erste Hilfe geleistet", "erste_hilfe", false, "checkbox")}
     </div>`,
-    knoepfe: [{ t: "Speichern", klasse: "adm", fn: async dlg => {
+    knoepfe: [{ t: "Speichern", klasse: AS.admin ? "adm" : "", fn: async dlg => {
       const w = asWerte(dlg);
       if(!w.beschreibung || w.beschreibung.length < 5){ asMeldung("Bitte kurz beschreiben, was passiert ist."); return false; }
       const art = AS_VF_ART[w.art] ? w.art : "unsicher";
