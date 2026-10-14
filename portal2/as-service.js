@@ -811,28 +811,128 @@ function asSvFrageDialog(box){
 AS_SEITEN.aktuelles = { titel: "Aktuelles", icon: "◇", sort: 7.6, async render(main){
   asSvCss();
   const r = asReiter("aktuelles", [["recht", "Rechtliche Neuerungen"], ["versionen", "Versionshinweise"]], "recht");
-  main.innerHTML = `<h1 class="seite">Aktuelles</h1><p class="unter">Rein informativ – rechtliche Neuerungen und was im Programm neu ist.</p>${r.html}<div id="svInhalt"><div class="leer">wird geladen …</div></div>`;
+  main.innerHTML = `<h1 class="seite">Aktuelles</h1><p class="unter">Rechtliche Neuerungen zur Kenntnisnahme und was im Programm neu ist.</p>${r.html}<div id="svInhalt"><div class="leer">wird geladen …</div></div>`;
   const box = () => document.getElementById("svInhalt");
   if(r.akt === "versionen"){ await asSvVersionen(); if(box()) asSvVersionenZeigen(box()); return; }
   if(!AS_SV.recht) AS_SV.recht = await apiGet("/rest/v1/portal_rechtsinfo?select=*&order=sortierung.asc,erfasst_am.desc").catch(() => null);
+  if(AS_SV.rqKunde !== AS.kunde){ AS_SV.rq = await apiGet("/rest/v1/portal_rechtsinfo_quittung?select=*&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []) || []; AS_SV.rqKunde = AS.kunde; }
   if(!box()) return;
   if(!Array.isArray(AS_SV.recht)){ AS_SV.recht = null; box().innerHTML = `<div class="karte"><div class="leer">Rechtliche Neuerungen konnten nicht geladen werden.</div></div>`; return; }
-  const recht = AS_SV.recht.filter(x => !x.kunde_slug || x.kunde_slug === AS.kunde);
+  asSvRechtZeigen(box());
+}};
+const AS_RI_THEMEN = [["anlagen", "Anlagen & Maschinen"], ["bda", "Gefährdungsbeurteilung"], ["gefahrstoffe", "Gefahrstoffe"], ["unterweisung", "Unterweisung"],
+  ["organisation", "Organisation & Beauftragte"], ["pruefungen", "Prüfungen"], ["umwelt", "Umwelt"]];
+function asSvRechtZeigen(el){
+  const recht = AS_SV.recht.filter(x => AS.admin || (x.sichtbar !== false && (!x.kunde_slug || x.kunde_slug === AS.kunde)));
   const neu = x => new Date(x.erfasst_am) >= new Date(Date.now() - 14 * 86400000);
   const reihenfolge = { gilt: 1, kommt: 0, vorhaben: 2 };
   const sortiert = recht.slice().sort((a, b) => (neu(b) - neu(a)) || ((reihenfolge[a.status] ?? 3) - (reihenfolge[b.status] ?? 3)) || ((a.sortierung || 0) - (b.sortierung || 0)));
   const stand = recht.reduce((m, x) => (x.geaendert_am && x.geaendert_am > m) ? x.geaendert_am : m, "");
   const farbe = { gilt: "gruen", kommt: "gelb", vorhaben: "grau" };
-  box().innerHTML = `<div class="karte"><h2>Rechtliche Neuerungen</h2>
-    ${stand ? `<p class="hinweis">Stand ${esc(asDat(stand))} · gepflegt von OAK engineering</p>` : ""}
-    ${sortiert.length ? sortiert.map(x => `<div class="sv-recht">
+  const quitt = id => (AS_SV.rq || []).find(q => q.rechtsinfo_id === id);
+  const darf = !!(AS.gf || AS.fachkraft);
+  const offen = recht.filter(x => x.sichtbar !== false && x.status !== "vorhaben" && !quitt(x.id)).length;
+  const thema = t => (AS_RI_THEMEN.find(z => z[0] === t) || [t, t])[1];
+  el.innerHTML = `<div class="karte"><h2>Rechtliche Neuerungen ${AS.admin ? `<button class="btn adm klein" id="riNeu">+ Eintrag</button>` : ""}</h2>
+    ${stand ? `<p class="hinweis">Stand ${esc(asDat(stand))} · gepflegt von OAK engineering${darf && offen ? ` · <b>${offen} noch nicht zur Kenntnis genommen</b>` : ""}</p>` : ""}
+    ${darf ? `<p class="hinweis">Mit „Zur Kenntnis nehmen“ halten Sie fest, dass Sie die Neuerung geprüft haben. Betrifft sie Ihren Betrieb, wählen Sie die Unterlagen aus – dafür entstehen Prüfaufträge.</p>` : ""}
+    ${sortiert.length ? sortiert.map(x => { const q = quitt(x.id);
+      return `<div class="sv-recht"${x.sichtbar === false ? ' style="opacity:.5"' : ""}>
         <div>${asChip((AS_SV_RECHT_STATUS[x.status] || x.status || "") + (x.datum ? " " + asDat(x.datum) : ""), farbe[x.status] || "grau")}
-          ${neu(x) ? asChip("neu", "blau") : ""}${x.bereich === "umwelt" ? " " + asChip("Umwelt", "grau") : ""}</div>
+          ${neu(x) ? asChip("neu", "blau") : ""}${x.bereich === "umwelt" ? " " + asChip("Umwelt", "grau") : ""}
+          ${(x.betrifft || []).map(t => " " + asChip(thema(t), "grau")).join("")}${x.sichtbar === false ? " " + asChip("ausgeblendet", "grau") : ""}
+          ${AS.admin && x.kunde_slug ? " " + asChip("nur " + x.kunde_slug, "gelb") : ""}</div>
         <h3>${esc(x.titel)}</h3>
         <p>${esc(x.kurz)}</p>
         ${x.fuer_betrieb ? `<p><b>Was heißt das für uns?</b> ${esc(x.fuer_betrieb)}</p>` : ""}
-        ${x.quelle ? `<div class="hinweis">${esc(x.quelle)}</div>` : ""}</div>`).join("") : `<div class="leer">Keine Einträge.</div>`}</div>`;
-}};
+        ${x.quelle ? `<div class="hinweis">${esc(x.quelle)}</div>` : ""}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
+          ${q ? asChip("zur Kenntnis genommen " + asDat(String(q.quittiert_am).slice(0, 10)) + (q.quittiert_von ? " · " + q.quittiert_von : "") + (q.betrifft_uns ? " · betrifft uns (" + q.pruefauftraege + " Prüfaufträge)" : ""), q.betrifft_uns ? "gelb" : "gruen") : ""}
+          ${darf && x.sichtbar !== false ? `<button class="btn ${q ? "sek" : ""} klein" data-riq="${esc(x.id)}">${q ? "Erneut bewerten" : "Zur Kenntnis nehmen"}</button>` : ""}
+          ${AS.admin ? `<button class="btn adm klein" data-rie="${esc(x.id)}">Bearbeiten</button>` : ""}</div></div>`; }).join("") : `<div class="leer">Keine Einträge.</div>`}</div>`;
+  el.querySelectorAll("[data-riq]").forEach(b => b.onclick = () => asSvRechtQuittieren(AS_SV.recht.find(x => x.id === b.dataset.riq), el));
+  el.querySelectorAll("[data-rie]").forEach(b => b.onclick = () => asSvRechtBearbeiten(AS_SV.recht.find(x => x.id === b.dataset.rie), el));
+  const nb = el.querySelector("#riNeu"); if(nb) nb.onclick = () => asSvRechtBearbeiten(null, el);
+}
+/* Kenntnisnahme durch GF/Fachkraft; „betrifft uns“ -> Prüfaufträge für die gewählten Unterlagen (RPC portal_rechtsinfo_quittieren) */
+async function asSvRechtQuittieren(x, el){
+  if(!x) return;
+  await asBetriebLaden();
+  const th = new Set(x.betrifft || []), alle = !th.size;
+  const gruppen = [];
+  if(alle || th.has("anlagen") || th.has("bda") || th.has("pruefungen"))
+    gruppen.push(["Anlagen (Unterlagen der Anlage)", asAnlagen().map(d => ({ typ: "anlage_unterlagen", id: d.maschinen_id, titel: d.maschine || d.titel || d.maschinen_id }))]);
+  if(alle || th.has("bda") || th.has("organisation"))
+    gruppen.push(["Arbeitssysteme (Beurteilung)", asT("as_arbeitssystem").map(s => ({ typ: "bda_system", id: s.id, titel: s.name }))]);
+  if(alle || th.has("gefahrstoffe")){
+    const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
+    const [gb, gs] = await Promise.all([apiGet("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit" + k).catch(() => []),
+      apiGet("/rest/v1/portal_gefahrstoff?select=id,bezeichnung" + k).catch(() => [])]);
+    const nm = Object.fromEntries((gs || []).map(g => [g.id, g.bezeichnung]));
+    gruppen.push(["Gefahrstoff-Beurteilungen", (gb || []).map(g => ({ typ: "gs_gbu", id: g.id, titel: (nm[g.gefahrstoff_id] || "Gefahrstoff") + " – " + (g.taetigkeit || "") }))]);
+  }
+  const liste = gruppen.flatMap(g => g[1]).filter(o => o.id);
+  let n = 0;
+  const html = gruppen.filter(g => g[1].length).map(([t, os]) => `<div style="margin-top:10px"><b>${esc(t)}</b>
+      <label style="font-size:13px;margin-left:8px"><input type="checkbox" data-alle="${esc(t)}"> alle</label>
+      <div style="max-height:180px;overflow:auto;border:1px solid var(--linie);border-radius:8px;padding:6px 10px;margin-top:4px">
+      ${os.filter(o => o.id).map(o => `<label style="display:flex;gap:8px;align-items:center;font-size:13.5px;padding:2px 0"><input type="checkbox" data-o="${n++}" data-g="${esc(t)}"> ${esc(o.titel)}</label>`).join("")}</div></div>`).join("");
+  const dlg = asDialog({ titel: "Zur Kenntnis nehmen", breit: true, inhalt: `<p><b>${esc(x.titel)}</b></p>
+      <div class="form"><label class="voll" style="flex-direction:row;gap:8px;align-items:center"><input type="radio" name="riB" value="nein" checked> Betrifft uns nicht bzw. ist bereits umgesetzt</label>
+        <label class="voll" style="flex-direction:row;gap:8px;align-items:center"><input type="radio" name="riB" value="ja"> Betrifft uns – diese Unterlagen prüfen:</label></div>
+      <div id="riObj" style="display:none">${html || `<p class="hinweis">Keine passenden Unterlagen gefunden.</p>`}</div>
+      <div class="form" style="margin-top:10px">${asFeld("Notiz (optional, z. B. was zu tun ist)", "notiz", "", "textarea", "voll")}</div>`,
+    knoepfe: [{ t: "Speichern", fn: async d => {
+      const ja = d.querySelector('input[name="riB"]:checked').value === "ja";
+      const obj = ja ? [...d.querySelectorAll("[data-o]:checked")].map(c => { const o = liste[+c.dataset.o]; return { typ: o.typ, id: String(o.id) }; }) : [];
+      if(ja && !obj.length && !confirm("Keine Unterlage gewählt – trotzdem als „betrifft uns“ speichern?")) return false;
+      let anz;
+      try{ anz = await apiSend("POST", "/rest/v1/rpc/portal_rechtsinfo_quittieren", { p_id: x.id, p_slug: AS.kunde, p_betrifft: ja, p_notiz: asWerte(d).notiz || "", p_objekte: obj }); }
+      catch(e){ asMeldung(e.message || String(e)); return false; }
+      AS_SV.rqKunde = null; if(typeof AS_SV.pa !== "undefined") AS_SV.pa = null;
+      asMeldung(ja ? (anz || 0) + " Prüfaufträge angelegt – sie stehen unter Kalender & To-dos" : "Zur Kenntnis genommen");
+      AS_SEITEN.aktuelles.render(document.getElementById("haupt"));
+    } }] });
+  dlg.querySelectorAll('input[name="riB"]').forEach(r => r.onchange = () => { dlg.querySelector("#riObj").style.display = dlg.querySelector('input[name="riB"]:checked').value === "ja" ? "" : "none"; });
+  dlg.querySelectorAll("[data-alle]").forEach(c => c.onchange = () => dlg.querySelectorAll(`[data-g="${CSS.escape(c.dataset.alle)}"]`).forEach(o => o.checked = c.checked));
+}
+/* Admin-Maske: Rechtsneuerung anlegen/bearbeiten. Einträge aus dem Rechts-Radar (schluessel ohne „maske-“) pflegt
+   tools/rechtsinfo_sync.py – dort sind hier nur Themen, Sichtbarkeit und Betrieb änderbar, der Rest kommt aus dem Radar. */
+function asSvRechtBearbeiten(x, el){
+  const radar = !!(x && x.schluessel && !String(x.schluessel).startsWith("maske-"));
+  const w0 = x || { status: "kommt", titel: "", kurz: "", fuer_betrieb: "", quelle: "", datum: "", bereich: "", betrifft: [], sichtbar: true, kunde_slug: null, sortierung: 0 };
+  const th = new Set(w0.betrifft || []);
+  const dis = radar ? " disabled" : "";
+  asDialog({ titel: x ? "Rechtsneuerung bearbeiten" : "Neue Rechtsneuerung", breit: true, inhalt: `
+    ${radar ? `<p class="hinweis">Dieser Eintrag kommt aus dem Rechts-Radar (Datei <code>rechts-radar.md</code>). Texte dort ändern – hier nur Themen, Betrieb und Sichtbarkeit.</p>` : ""}
+    <div class="form">
+      <label class="voll">Titel<input data-f="titel" value="${esc(w0.titel || "")}"${dis}></label>
+      ${asAuswahl("Status", "status", w0.status, [["gilt", "gilt seit"], ["kommt", "gilt ab"], ["vorhaben", "geplant (Vorhaben)"]])}
+      <label>Datum<input type="date" data-f="datum" value="${esc(w0.datum || "")}"${dis}></label>
+      <label class="voll">Kurzbeschreibung<textarea data-f="kurz"${dis}>${esc(w0.kurz || "")}</textarea></label>
+      <label class="voll">Was heißt das für den Betrieb?<textarea data-f="fuer_betrieb"${dis}>${esc(w0.fuer_betrieb || "")}</textarea></label>
+      <label class="voll">Quelle (Fundstelle, Link)<input data-f="quelle" value="${esc(w0.quelle || "")}"${dis}></label>
+      ${asAuswahl("Bereich", "bereich", w0.bereich || "", [["", "Arbeitsschutz"], ["umwelt", "Umwelt"]])}
+      ${asAuswahl("Für", "kunde_slug", w0.kunde_slug || "", [["", "alle Betriebe"]].concat(AS.kunden.map(k => [k.kunde_slug, k.name])))}
+      ${asFeld("sichtbar", "sichtbar", w0.sichtbar !== false, "checkbox")}
+    </div>
+    <p style="margin:10px 0 4px"><b>Betrifft (für die Auswahl der Unterlagen beim Betrieb)</b></p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px 14px">${AS_RI_THEMEN.map(([k, t]) => `<label style="font-size:13.5px"><input type="checkbox" data-th="${k}" ${th.has(k) ? "checked" : ""}> ${esc(t)}</label>`).join("")}</div>`,
+    knoepfe: [{ t: "Speichern", fn: async d => {
+      const w = asWerte(d), betrifft = [...d.querySelectorAll("[data-th]:checked")].map(c => c.dataset.th);
+      const zeile = radar ? { betrifft, sichtbar: !!w.sichtbar, kunde_slug: w.kunde_slug || null }
+        : { titel: w.titel, status: w.status, datum: w.datum || null, kurz: w.kurz || "", fuer_betrieb: w.fuer_betrieb || null, quelle: w.quelle || null,
+            bereich: w.bereich || null, kunde_slug: w.kunde_slug || null, sichtbar: !!w.sichtbar, betrifft, geaendert_am: new Date().toISOString() };
+      if(radar) zeile.status = undefined;
+      if(!radar && (!w.titel || !w.kurz)){ asMeldung("Titel und Kurzbeschreibung angeben"); return false; }
+      if(radar) delete zeile.status;
+      try{
+        if(x) await apiSend("PATCH", "/rest/v1/portal_rechtsinfo?id=eq." + encodeURIComponent(x.id), zeile, "return=minimal");
+        else await apiSend("POST", "/rest/v1/portal_rechtsinfo", Object.assign(zeile, { schluessel: "maske-" + Date.now().toString(36), erfasst_am: new Date().toISOString() }), "return=minimal");
+      }catch(e){ asMeldung(e.message || String(e)); return false; }
+      AS_SV.recht = null; asMeldung("Gespeichert"); AS_SEITEN.aktuelles.render(document.getElementById("haupt"));
+    } }] });
+}
 /* Versionshinweise: eine Quelle – die Liste des Kundenportals (../portal/versionen.js) wird bei Bedarf nachgeladen */
 function asSvVersionen(){
   if(typeof EHS_VERSIONEN !== "undefined") return Promise.resolve(true);
