@@ -110,10 +110,6 @@ function asUwPersStatus(pid){
     if(z.faellig_am && (!naechste || z.faellig_am < naechste)) naechste = z.faellig_am; });
   return { status: schlimm, offen, gesamt: zeilen.length, naechste };
 }
-async function asUwSha256(text){
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
-}
 async function asUwHochladen(pfad, inhalt, typ){
   const r = await fetch(CFG.url + "/storage/v1/object/" + CFG.bucket + "/" + pfad.split("/").map(encodeURIComponent).join("/"), { method: "POST",
     headers: { apikey: CFG.anon, Authorization: "Bearer " + (await token()), "Content-Type": typ || "application/octet-stream", "x-upsert": "true" }, body: inhalt });
@@ -697,8 +693,7 @@ function asUwPersonDialog(p){
       ${asAuswahl("Sprache", "sprache", p ? p.sprache : "de", [["de", "Deutsch"], ["en", "English"], ["tr", "Türkçe"]])}
       ${asFeld("Eintritt", "eintritt", p ? p.eintritt : "", "date")}
       ${asFeld("Geburtsdatum (nur für § 29 JArbSchG)", "geburtsdatum", p ? p.geburtsdatum : "", "date")}
-      ${asAuswahl("Status", "status", p ? p.status : "aktiv", [["aktiv", "aktiv"], ["ruhend", "ruhend (Elternzeit/Langzeitkrank)"], ["archiviert", "ausgeschieden (archiviert)"]])}
-      <label>PIN (4–6 Ziffern, für die Anmeldung am Terminal)<input data-f="pin" inputmode="numeric" placeholder="${p && p.pin_hash ? "unverändert lassen" : "z. B. 4711"}"></label></div>
+      ${asAuswahl("Status", "status", p ? p.status : "aktiv", [["aktiv", "aktiv"], ["ruhend", "ruhend (Elternzeit/Langzeitkrank)"], ["archiviert", "ausgeschieden (archiviert)"]])}</div>
     <p><b>Bereiche</b></p><div style="display:flex;flex-wrap:wrap;gap:6px 16px">${einh.map(e => `<label><input type="checkbox" class="uwpE" value="${esc(e.id)}"${mE.has(e.id) ? " checked" : ""}> ${esc(e.name)}</label>`).join("") || '<span class="hinweis">Noch keine Bereiche angelegt.</span>'}</div>
     <p><b>Rollen</b> <span class="hinweis">(mehrere möglich – die Pflichten addieren sich)</span></p><div style="display:flex;flex-wrap:wrap;gap:6px 16px">${roll.map(r => `<label><input type="checkbox" class="uwpR" value="${esc(r.id)}"${mR.has(r.id) ? " checked" : ""}> ${esc(r.name)} <span class="hinweis">${esc(AS_UW_TYP[r.typ] || r.typ)}</span></label>`).join("") || '<span class="hinweis">Noch keine Rollen angelegt.</span>'}</div>
     ${p ? `<p><b>Zugewiesene Unterweisungen</b></p><div class="zeilen">${faellig.map(f => { const [farbe, txt] = AS_UW_FSTATUS[f.status] || ["grau", f.status];
@@ -707,10 +702,8 @@ function asUwPersonDialog(p){
     knoepfe: [{ t: "Speichern", fn: async dlg => {
       const w = asWerte(dlg);
       if(!w.name || w.name.length < 3){ asMeldung("Bitte den vollständigen Namen eintragen."); return false; }
-      if(w.pin && !/^\d{4,6}$/.test(w.pin)){ asMeldung("PIN: 4 bis 6 Ziffern."); return false; }
       const satz = { kunde_slug: AS.kunde, name: w.name, sprache: w.sprache, eintritt: w.eintritt || null, geburtsdatum: w.geburtsdatum || null,
         status: w.status, geaendert_am: new Date().toISOString() };
-      if(w.pin) satz.pin_hash = await asUwSha256(w.pin);
       let id = p ? p.id : null;
       if(p) await apiSend("PATCH", "/rest/v1/uw_person?id=eq." + encodeURIComponent(p.id), satz, "return=minimal");
       else { const neu = await apiSend("POST", "/rest/v1/uw_person", satz, "return=representation"); id = Array.isArray(neu) ? neu[0].id : neu.id; }

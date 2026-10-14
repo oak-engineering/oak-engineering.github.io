@@ -194,8 +194,6 @@ function personBearbeiten(id){
               .map(([v,t]) => `<option value="${v}"${p&&p.status===v?" selected":""}>${t}</option>`).join("")}
           </select>
         </label>
-        <label>PIN <span class="leise">(4–6 Ziffern, für die Anmeldung am Terminal)</span>
-          <input id="pfPin" inputmode="numeric" placeholder="${p&&p.pin_hash?"unverändert lassen":"z. B. 4711"}"></label>
       </div>
       <fieldset><legend>Bereiche</legend>
         ${einh.map(e => `<label class="haken"><input type="checkbox" class="pfE" value="${esc(e.id)}"${meineE.has(e.id)?" checked":""}> ${esc(e.name)}</label>`).join("") || `<span class="leise">Noch keine Bereiche angelegt.</span>`}
@@ -221,17 +219,10 @@ function personBearbeiten(id){
   document.getElementById("pfSpeichern").onclick = () => personSpeichern(p);
 }
 
-async function sha256Hex(text){
-  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
-}
-
 async function personSpeichern(p){
   const meld = document.getElementById("pfMeldung");
   const name = document.getElementById("pfName").value.trim();
   if(name.length < 3){ meld.textContent = "Bitte den vollständigen Namen eintragen."; return; }
-  const pin = document.getElementById("pfPin").value.trim();
-  if(pin && !/^\d{4,6}$/.test(pin)){ meld.textContent = "PIN: 4 bis 6 Ziffern."; return; }
   meld.textContent = "Speichere …";
 
   const satz = {
@@ -243,7 +234,6 @@ async function personSpeichern(p){
     status: document.getElementById("pfStatus").value,
     geaendert_am: new Date().toISOString(),
   };
-  if(pin) satz.pin_hash = await sha256Hex(pin);
 
   try{
     let id = p ? p.id : null;
