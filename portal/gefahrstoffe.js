@@ -187,9 +187,9 @@ function gsKurzinfo(g, neu){
       <h4 class="ul-h4">Gefährdungsbeurteilung und Betriebsanweisung</h4>
       <div class="gs-doks">
         <div>${typeof gseBlock === "function" ? gseBlock(g, pflege) : ""}${g.gbu_pfad ? gsOeffnen(g.gbu_pfad, "Gefährdungsbeurteilung (PDF)") : (typeof gseBlock === "function" ? "" : `<span class="gs-luecke">Gefährdungsbeurteilung (EMKG) fehlt</span>`)}</div>
-        <div>${g.ba_pfad ? gsOeffnen(g.ba_pfad, "Betriebsanweisung") : (typeof gseFuer === "function" && gseFuer(g).length
-          ? `<a class="btn sek ul-btn" href="viewer.html?typ=ba&p=${encodeURIComponent("gs:" + (g.kunde_slug || AKTIV) + ":" + g.id)}&mid=${encodeURIComponent("GS-" + g.id)}&t=${encodeURIComponent(g.bezeichnung)}" target="_blank" rel="noopener">Betriebsanweisung (aus der Beurteilung erzeugt)</a>`
-          : `<span class="gs-luecke">Stoffbezogene Betriebsanweisung fehlt – entsteht aus der Gefährdungsbeurteilung</span>`)}</div>
+        <div>${g.ba_pfad ? gsOeffnen(g.ba_pfad, "Betriebsanweisung") : (typeof GSE_ROWS !== "undefined"
+          ? `<a class="btn sek ul-btn" href="viewer.html?typ=ba&p=${encodeURIComponent("gs:" + (g.kunde_slug || AKTIV) + ":" + g.id)}&mid=${encodeURIComponent("GS-" + g.id)}&t=${encodeURIComponent(g.bezeichnung)}" target="_blank" rel="noopener">${typeof gseStand === "function" && gseStand(g) === "frei" ? "Betriebsanweisung (aus der Beurteilung)" : "Betriebsanweisung – Entwurf (Beurteilung fehlt noch)"}</a>`
+          : `<span class="gs-luecke">Stoffbezogene Betriebsanweisung fehlt</span>`)}</div>
       </div>
       ${!g.ba_pfad && sammel ? `<p class="uw-leise gs-sammel">Bis dahin gelten die Sammel-Betriebsanweisungen: ${sammel}</p>` : ""}
       ${(g.h_saetze || []).length ? `<h4 class="ul-h4">Gefahrenhinweise</h4><ul class="gs-hliste">${g.h_saetze.map(h => `<li><b>${esc(h)}</b> ${esc(GS_H[h] || "")}</li>`).join("")}</ul>
