@@ -164,6 +164,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(istShell){
       // Live-Kontext: Mandant aus dem Storage-Pfad (<slug>/...), Nutzername fuers Log.
       const gsBa = /^gsg?:/.test(String(p));   // Gefahrstoff-BA wird aus Stoff + EMKG-Beurteilung erzeugt (gs-ba-bauen.js)
+      /* im Portal angelegte Anlage (Schritt 4): doc-data steht in portal_anlage_daten, nicht im Storage */
+      const portalAnlage = String(p).match(/^([a-z0-9-]+)\/portal-anlagen\/([A-Z]+-\d+)\.json$/);
       LIVE.slug = (gsBa ? String(p).split(":")[1] : String(p).split("/")[0]) || "";
       if(window.OAK_MARKE) await OAK_MARKE.anwenden(LIVE.slug);   // Farben des Betriebs auch in der Dokument-Ansicht
       LIVE.mid = param("mid") || "";
@@ -184,7 +186,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Besucher noch die alte Shell (z. B. mit den alten Risiko-Bezeichnungen).
         fetch("shells/" + typ + ".html", {cache:"no-cache"})
           .then(r => { if(!r.ok) throw new Error("Vorlage fehlt"); return r.text(); }),
-        gsBa ? (window.GSBA ? GSBA.daten(p) : Promise.reject(new Error("BA-Baustein fehlt"))) : apiGet(storagePfad(p), true),
+        gsBa ? (window.GSBA ? GSBA.daten(p) : Promise.reject(new Error("BA-Baustein fehlt")))
+          : portalAnlage ? apiGet("/rest/v1/portal_anlage_daten?select=docdata&kunde_slug=eq." + encodeURIComponent(portalAnlage[1])
+              + "&maschinen_id=eq." + encodeURIComponent(portalAnlage[2]), false).then(r => { if(!r || !r[0]) throw new Error("Anlage nicht gefunden"); return JSON.stringify(r[0].docdata); })
+          : apiGet(storagePfad(p), true),
         liveStatePromise,
       ]);
       let html = setzePortalFlag(injiziere(shell, docdata));

@@ -24,6 +24,11 @@ async function asBetriebLaden(neu){
       + k + "&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc").catch(() => []),
     apiGet(storagePfad(AS.kunde + "/anlagenkataster/kurzinfo.json")).catch(() => ({}))]);
   AS_B.docs = docs || []; AS_B.kurz = kurz && typeof kurz === "object" && !Array.isArray(kurz) ? kurz : {}; AS_B.kunde = AS.kunde;
+  /* im Portal angelegte Anlagen: Kurzinfo steht in ihrer doc-data (portal_anlage_daten), nicht in kurzinfo.json */
+  if(AS_B.docs.some(d => /\/portal-anlagen\//.test(d.storage_path || ""))){
+    const pa = await apiGet("/rest/v1/portal_anlage_daten?select=maschinen_id,meta:docdata->meta" + k).catch(() => []);
+    (pa || []).forEach(r => { const m = r.meta || {}; AS_B.kurz[r.maschinen_id] = Object.assign({ bereich: m.bereich || "", baujahr: m.baujahr || "", hersteller: m.hersteller || "" }, AS_B.kurz[r.maschinen_id] || {}); });
+  }
 }
 function asMaengelRoh(){ return asT("as_massnahme").filter(m => m._v1 && m._mg).map(m => m._mg); }
 function asMgFeld(m, k){ return (m.manuell && m.manuell[k]) || m[k]; }
@@ -109,7 +114,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   const veraltet = (d, typ) => typeof dokVeraltetInfo === "function" ? dokVeraltetInfo(d, roh, typ) : null;
   main.innerHTML = `<h1 class="seite">Anlagen</h1><p class="unter">Alle Anlagen mit Kurzinfo, offenen Mängeln und Dokumenten – Farbe = schlimmster offener Mangel.</p>
     <div class="kacheln">${["gefahr", "besorgnis", "akzeptanz", "keine"].map(b => `<div class="kachel k-${AS_BAND_FARBE[b]}" data-band="${b}"><div class="lbl">${AS_BAND_TEXT[b]}</div><div class="zahl">${zahl(b)}</div><div class="hinweis">${st.band === b ? "Filter aktiv – erneut tippen zum Aufheben" : "Anlagen"}</div></div>`).join("")}</div>
-    <div class="karte"><h2>${sicht.length} von ${zeilen.length} Anlagen <input id="anlSuche" placeholder="Suchen (Name, Nr., Typ, Bereich)" value="${esc(st.q)}" style="max-width:280px"></h2>
+    <div class="karte"><h2>${sicht.length} von ${zeilen.length} Anlagen <span class="reihe" style="gap:8px">${AS.fachkraft ? `<button class="btn klein" id="anlNeu">+ Anlage anlegen</button>` : ""}<input id="anlSuche" placeholder="Suchen (Name, Nr., Typ, Bereich)" value="${esc(st.q)}" style="max-width:280px"></span></h2>
       <div class="zeilen">${sicht.map(z => { const d = z.d;
         return `<div class="z" data-anl="${esc(z.mid)}"><div><b>${asPunkt(AS_BAND_FARBE[z.band])}${esc(d.maschine || d.titel)} <span class="hinweis">${esc(z.mid || "")}</span></b>
           <small>${esc(String(d.maschinentyp || "").replace(/\s*\(.*\)\s*$/, ""))}${z.ki.bereich ? " · " + esc(z.ki.bereich) : ""}${z.ki.baujahr ? " · Bj. " + esc(z.ki.baujahr) : ""} · ${z.offen} offene Mängel${z.band === "aus" ? " · außer Betrieb" : ""}</small>
@@ -124,7 +129,74 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   const s = document.getElementById("anlSuche"); s.oninput = () => { st.q = s.value; clearTimeout(AS.anlT); AS.anlT = setTimeout(() => { AS_SEITEN.anlagen.render(main).then(() => { const n = document.getElementById("anlSuche"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }); }, 300); };
   asDokKnoepfe(main);
   main.querySelectorAll("[data-sys]").forEach(b => b.onclick = ev => { ev.stopPropagation(); AS.reiter.bda = b.dataset.sys; asGehe("bda/" + b.dataset.sys); });
+  const an = document.getElementById("anlNeu"); if(an) an.onclick = () => asAnlageNeuDialog(main);
 }};
+
+/* ---------------- Neue Anlage anlegen (Plan intern/portal-eigenstaendig.md, Schritt 4) ----------------
+   Die Fachkraft wählt eine vorhandene Anlage gleichen Typs als Vorlage: Gefährdungen, Maßnahmen und Betriebsanweisung
+   werden übernommen, Fotos, Mängel und Begehungsprotokoll nicht (die gehören zur alten Maschine). Ohne Vorlage startet
+   die Beurteilung leer (Gefährdungen dann im Dokument aus dem BGHM-Katalog hinzufügen). Nummer vergibt der Server. */
+function asAnlageNeuDialog(main){
+  const anl = asAnlagen().filter(d => d.storage_path).slice()
+    .sort((a, b) => String(a.maschinentyp || "").localeCompare(String(b.maschinentyp || ""), "de") || String(a.maschine).localeCompare(String(b.maschine), "de", { numeric: true }));
+  const opt = [["", "– ohne Vorlage (leer beginnen) –"]].concat(anl.map(d => [d.maschinen_id, (d.maschinentyp ? String(d.maschinentyp).replace(/\s*\(.*\)\s*$/, "") + ": " : "") + (d.maschine || d.titel) + " (" + d.maschinen_id + ")"]));
+  asDialog({ titel: "Neue Anlage anlegen", breit: true, inhalt: `<div class="form">
+      ${asFeld("Bezeichnung (wie am Hallenplan, z. B. D250/3)", "name", "", "text", "voll")}
+      ${asAuswahl("Vorlage – eine vorhandene Anlage gleichen Typs", "vorlage", "", opt, "voll")}
+      ${asFeld("Maschinenart (z. B. Spritzgießmaschine)", "art", "")}
+      ${asFeld("Hersteller", "hersteller", "")}${asFeld("Typ / Modell", "typ", "")}
+      ${asFeld("Baujahr", "baujahr", "")}${asFeld("Serien-Nr.", "seriennr", "")}
+      ${asFeld("Bereich / Standort", "bereich", "", "text", "voll")}</div>
+      <p class="hinweis">Aus der Vorlage werden Gefährdungen, Schutzmaßnahmen und Betriebsanweisung übernommen – <b>nicht</b> Fotos, Mängel und
+        Begehungsprotokoll. Prüfen und ergänzen Sie danach die Beurteilung an der neuen Anlage und geben Sie sie frei.</p>`,
+    knoepfe: [{ t: "Anlegen", fn: async d => {
+      const w = asWerte(d);
+      if(!w.name){ asMeldung("Bitte die Bezeichnung eintragen."); return false; }
+      const vorlage = anl.find(x => x.maschinen_id === w.vorlage) || null;
+      asMeldung("Anlage wird angelegt …");
+      let vd = null;
+      if(vorlage){
+        try{
+          const pm = String(vorlage.storage_path).match(/^([a-z0-9-]+)\/portal-anlagen\/([A-Z]+-\d+)\.json$/);
+          vd = pm ? ((await apiGet("/rest/v1/portal_anlage_daten?select=docdata&kunde_slug=eq." + encodeURIComponent(pm[1]) + "&maschinen_id=eq." + encodeURIComponent(pm[2])))[0] || {}).docdata
+                  : JSON.parse(await apiGet(storagePfad(vorlage.storage_path), true));
+        }catch(e){ asMeldung("Vorlage konnte nicht geladen werden: " + (e.message || e)); return false; }
+      }
+      const doc = asAnlageAusVorlage(vd, vorlage, w);
+      let mid;
+      try{ mid = await apiSend("POST", "/rest/v1/rpc/portal_anlage_anlegen", { p_slug: AS.kunde, p_maschine: w.name, p_maschinentyp: w.art || (vorlage && vorlage.maschinentyp) || null,
+        p_docdata: doc, p_qr_svg: null, p_vorlage: vorlage ? vorlage.maschinen_id : null }); }
+      catch(e){ asMeldung("Konnte nicht angelegt werden: " + (e.message || e)); return false; }
+      /* QR-Code (Ziel: Maschinenseite) – braucht die vergebene Nummer */
+      try{
+        const url = "https://www.oak-engineering.de/portal/maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(mid);
+        if(typeof asUwQrLib === "function" && await asUwQrLib()){ const q = qrcode(0, "M"); q.addData(url); q.make();
+          await apiSend("POST", "/rest/v1/rpc/portal_anlage_qr_setzen", { p_slug: AS.kunde, p_mid: mid, p_qr_svg: q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }), p_qr_url: url }); }
+      }catch(e){ console.warn("QR", e); }
+      await asBetriebLaden(true);
+      asMeldung("Anlage " + w.name + " (" + mid + ") angelegt – Beurteilung jetzt prüfen und ergänzen");
+      AS_SEITEN.anlagen.render(main);
+    } }] });
+}
+function asAnlageAusVorlage(vd, vorlage, w){
+  const heute = asHeute(), naechste = (() => { const x = new Date(); x.setFullYear(x.getFullYear() + 1); return x.toISOString().slice(0, 10); })();
+  const slug = String(w.name).toLowerCase().replace(/[äöüß]/g, c => ({ "ä": "ae", "ö": "oe", "ü": "ue", "ß": "ss" }[c])).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  let d = vd ? JSON.parse(JSON.stringify(vd)) : { _typ: "OAK-doc-data", hazards: [], rechtsquellen: [], ba: {} };
+  /* Bezeichnung der Vorlage in Texten durch die neue ersetzen (z. B. „an der D150/3“) */
+  const alt = vorlage && (vorlage.maschine || "");
+  if(alt && alt.length >= 3){ const t = JSON.stringify({ h: d.hazards || [], ba: d.ba || {} }).split(alt).join(String(w.name)); const r = JSON.parse(t); d.hazards = r.h; d.ba = r.ba; }
+  const m = Object.assign({}, d.meta || {});
+  Object.keys(m).forEach(k => { if(typeof m[k] === "string" && /^data:image\//.test(m[k]) && !/logo/i.test(k)) delete m[k]; });   // Fotos der alten Maschine
+  Object.assign(m, { maschine: w.name, slug, hersteller: w.hersteller || "", typ: w.typ || "", baujahr: w.baujahr || "", seriennr: w.seriennr || "",
+    bereich: w.bereich || "", standort: w.bereich || "", maschinenart: w.art || m.maschinenart || (vorlage && vorlage.maschinentyp) || "",
+    ce: "", anleitung: "", bemerkung: "", datum: heute, begehung: "", naechste, baNr: "MA_" + slug.toUpperCase(),
+    ersteller: (AS.ich || "") + (AS.org && AS.org.name ? " – " + AS.org.name : ""), pruefer: "", begeher: "", anzahl: "",
+    vorlage: vorlage ? (vorlage.maschine || "") + " (" + vorlage.maschinen_id + ")" : "", entwurf: true, leer: !vd, qrSvg: "", qrUrl: "" });
+  d.meta = m;
+  d.hazards = (d.hazards || []).map(h => Object.assign({}, h, { fotos: [], status: "offen", verantwortlich: "", termin: "", exposition: "", schutzzielTermin: "" }));
+  d.maengel = []; d.protokoll = {};
+  return d;
+}
 
 /* ======================= Mängel ======================= */
 AS_SEITEN.maengel = { titel: "Mängel", icon: "!", sort: 4.4, async render(main){

@@ -454,7 +454,8 @@ const HAZARDS_DEFAULT = [
 ];
 
 const DOC = (()=>{ try{ return JSON.parse(document.getElementById("doc-data").textContent)||{}; }catch(e){ return {}; } })();
-const HAZARDS = (DOC.hazards && DOC.hazards.length) ? DOC.hazards : HAZARDS_DEFAULT;
+/* meta.leer: im Portal ohne Vorlage angelegte Anlage – leer starten statt Beispiel (Plan Portal eigenständig, Schritt 4) */
+const HAZARDS = (DOC.hazards && DOC.hazards.length) ? DOC.hazards : ((DOC.meta && DOC.meta.leer) ? [] : HAZARDS_DEFAULT);
 /* GBU-Reifegrad (gestufte Beurteilung) sichtbar machen. Ohne meta.reifegrad bleibt der Block
    verborgen - Altdokumente brechen nicht. Stufe prominent, Prozent sekundaer. */
 function renderReifegrad(rg){
@@ -628,10 +629,9 @@ let saveTimer;
 function flashSaved(){ const e=document.getElementById("savehint"); e.textContent="gespeichert ✓";
   clearTimeout(saveTimer); saveTimer=setTimeout(()=>e.textContent="automatisch gespeichert",1500); }
 
-/* Risikobereiche (Nohl R=W×S, 1–16). 15–16 ist der Stilllegungsbereich und
-   bleibt echten Sofortgefahren vorbehalten (z. B. offen laufender Roboterarm). */
+/* Ampel mit genau DREI Bereichen (Nohl R=W×S, 1–16), Vorgabe Nikolai 13.08.2026.
+   Eine vierte Stufe (akute Gefahr/Stilllegung) gibt es nicht – ab 9 gilt Gefahrbereich. */
 function band(r){
-  if(r>=15) return {cls:"akut", key:"akut",      t:"AKUTE GEFAHR (Stilllegung)"};
   if(r>=9)  return {cls:"r",    key:"gefahr",    t:"Gefahrbereich"};
   if(r>=4)  return {cls:"g",    key:"besorgnis", t:"Besorgnisbereich"};
   return {cls:"gn", key:"akzeptanz", t:"Akzeptanzbereich"};
@@ -668,7 +668,7 @@ function matrixHtml(i, wKind, sKind, w, s){
   return `<table class="mxg"><tr>${kopf}</tr>${body}</table>`
        + `<div class="mxax"><b>Zeile</b> = Eintrittswahrscheinlichkeit W \u00b7 <b>Spalte</b> = Schadensschwere S \u00b7 `
        + `Feld = Risiko R = W \u00d7 S.<br><b>1\u20133</b> Akzeptanzbereich \u00b7 <b>4\u20138</b> Besorgnisbereich \u00b7 `
-       + `<b>9\u201312</b> Gefahrbereich \u00b7 <b>15\u201316</b> AKUTE GEFAHR (Stilllegung).</div>`;
+       + `<b>9\u201316</b> Gefahrbereich.</div>`;
 }
 
 /* Belegfotos an der Gefaehrdung - dort, wo der Leser sie braucht, nicht in einer Galerie am
