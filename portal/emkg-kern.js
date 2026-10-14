@@ -182,7 +182,7 @@
      "lagern": "La-A"
     },
     "EUH202": {
-     "wortlaut": "Cyanacrylat. Gefahr. Klebt innerhalb von Sekunden Haut und Augenlieder zusammen. Darf nicht in die Hände von Kindern gelangen.",
+     "wortlaut": "Cyanacrylat. Gefahr. Klebt innerhalb von Sekunden Haut und Augenlider zusammen. Darf nicht in die Hände von Kindern gelangen.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",
@@ -290,7 +290,7 @@
      "lagern": "La-A"
     },
     "EUH380": {
-     "wortlaut": "Kann beim Menschen endokrine Störungen verursachen",
+     "wortlaut": "Kann beim Menschen endokrine Störungen verursachen.",
      "einatmen": "C",
      "haut": "HC",
      "augen": "Au-A",
@@ -299,7 +299,7 @@
      "lagern": "La-A"
     },
     "EUH381": {
-     "wortlaut": "Steht in dem Verdacht, beim Menschen endokrine Störungen zu verursachen",
+     "wortlaut": "Steht in dem Verdacht, beim Menschen endokrine Störungen zu verursachen.",
      "einatmen": "C",
      "haut": "HC",
      "augen": "Au-A",
@@ -317,7 +317,7 @@
      "lagern": "La-A"
     },
     "EUH430": {
-     "wortlaut": "Kann endokrine Störungen in der Umwelt verursachen",
+     "wortlaut": "Kann endokrine Störungen in der Umwelt verursachen.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",
@@ -326,7 +326,7 @@
      "lagern": "La-A"
     },
     "EUH431": {
-     "wortlaut": "Steht in dem Verdacht, endokrine Störungen in der Umwelt zu verursachen",
+     "wortlaut": "Steht in dem Verdacht, endokrine Störungen in der Umwelt zu verursachen.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",
@@ -335,7 +335,7 @@
      "lagern": "La-A"
     },
     "EUH440": {
-     "wortlaut": "Reichert sich in der Umwelt und in lebenden Organismen, einschließlich Menschen, an",
+     "wortlaut": "Reichert sich in der Umwelt und in lebenden Organismen, einschließlich Menschen, an.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",
@@ -344,7 +344,7 @@
      "lagern": "La-A"
     },
     "EUH441": {
-     "wortlaut": "Reichert sich stark in der Umwelt und in lebenden Organismen, einschließlich Menschen, an",
+     "wortlaut": "Reichert sich stark in der Umwelt und in lebenden Organismen, einschließlich Menschen, an.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",
@@ -353,7 +353,7 @@
      "lagern": "La-A"
     },
     "EUH450": {
-     "wortlaut": "Kann langanhaltende und diffuse Verschmutzung von Wasserressourcen verursachen",
+     "wortlaut": "Kann langanhaltende und diffuse Verschmutzung von Wasserressourcen verursachen.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",
@@ -362,7 +362,7 @@
      "lagern": "La-A"
     },
     "EUH451": {
-     "wortlaut": "Kann sehr lang anhaltende und diffuse Verschmutzung von Wasserressourcen verursachen",
+     "wortlaut": "Kann sehr lang anhaltende und diffuse Verschmutzung von Wasserressourcen verursachen.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",
@@ -671,7 +671,7 @@
      ]
     },
     "H281": {
-     "wortlaut": "Enthält tiefgekühltes Gas; kann Kälteverbrennungen oder - verletzungen verursachen.",
+     "wortlaut": "Enthält tiefgekühltes Gas; kann Kälteverbrennungen oder -verletzungen verursachen.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",
@@ -818,7 +818,7 @@
      "lagern": "La-C"
     },
     "H332": {
-     "wortlaut": "Gesundheitsschädlich bei Einatmen",
+     "wortlaut": "Gesundheitsschädlich bei Einatmen.",
      "einatmen": "B",
      "haut": "HA",
      "augen": "Au-A",
@@ -845,7 +845,7 @@
      "lagern": "La-A"
     },
     "H336": {
-     "wortlaut": "Kann Schläfrigkeit und Benommenheitverursachen.",
+     "wortlaut": "Kann Schläfrigkeit und Benommenheit verursachen.",
      "einatmen": "A",
      "haut": "HA",
      "augen": "Au-A",

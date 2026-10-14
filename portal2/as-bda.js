@@ -80,7 +80,7 @@ function asBdaTabelle(box, s){
   const res = gef.filter(g => g.art === "ressource");
   box.innerHTML = `<div class="karte"><h2>Beurteilung der Arbeitsbedingungen – ${esc(s.name)}
       <span class="nodruck"><button class="btn sek klein" onclick="window.print()">Drucken</button>
-      ${s.freigabe_am ? (AS.fachkraft ? `<button class="btn adm klein" id="frZur">Freigabe zurücknehmen</button>` : "") : `<button class="btn klein" id="frGeben">Freigeben (Geschäftsführung)</button>`}</span></h2>
+      ${s.freigabe_am ? (AS.gf ? `<button class="btn adm klein" id="frZur">Freigabe zurücknehmen</button>` : "") : (AS.gf ? `<button class="btn klein" id="frGeben">Freigeben (Geschäftsführung)</button>` : `<span class="hinweis">Freigabe durch die Geschäftsführung</span>`)}</span></h2>
     <p class="hinweis">Arbeitsbereich: ${esc(asEinheitName(s.einheit_id))} · Beschäftigte: ${esc(asListe(s.rollen).join(", "))} · Stand ${asDat(asHeute())}
       · ${s.freigabe_am ? "freigegeben am " + asDat(s.freigabe_am) + " von " + esc(s.freigabe_von) : "<b>noch nicht freigegeben</b>"}</p>
     <div class="tabwrap"><table class="tab"><tr><th>Nr.</th><th>Tätigkeit</th><th>Gefährdung / Belastung</th><th>Risiko*</th><th colspan="4"><div class="mz mz-kopf"><div>Maßnahmen (STOP)</div><div>Wer</div><div>Bis wann</div><div>Stand</div></div></th></tr>
@@ -90,8 +90,8 @@ function asBdaTabelle(box, s){
     ${res.length ? `<h3 style="font-size:14px;color:var(--blau)">Ressourcen</h3>${res.map(g => `<div class="krit"><span class="ok">+</span><div><b>${esc(g.kurz)}</b> <span class="hinweis">${esc(g.faktor || "")} ${esc(g.beschreibung || "")}</span></div></div>`).join("")}` : ""}
     <div class="hinweis" style="margin-top:14px">Fachliche Herleitung: Bewertung nach Wahrscheinlichkeit × Schwere (je 1–4) unter „Bearbeiten“.</div></div>`;
   const fg = document.getElementById("frGeben"); if(fg) fg.onclick = () => asDialog({ titel: "BdA freigeben", inhalt: `<p>Mit der Freigabe übernimmt die Geschäftsführung die Beurteilung als verbindlich.</p>
-      <div class="form">${asFeld("Name (Geschäftsführung)", "freigabe_von", asOrgDaten().gf_name || "")}${asFeld("Datum", "freigabe_am", asHeute(), "date")}</div>`,
-    knoepfe: [{ t: "Freigeben", fn: async d => { const w = asWerte(d); if(!w.freigabe_von){ asMeldung("Name fehlt"); return false; }
+      <div class="form">${asFeld("Datum", "freigabe_am", asHeute(), "date")}</div><p class="hinweis">Freigegeben wird unter Ihrem Namen (${esc(AS.ich)}).</p>`,
+    knoepfe: [{ t: "Freigeben", fn: async d => { const w = asWerte(d); w.freigabe_von = AS.ich;
       await asSpeichern("as_arbeitssystem", { id: s.id, ...w }); asZeige(); } }] });
   const fz = document.getElementById("frZur"); if(fz) fz.onclick = async () => { await asSpeichern("as_arbeitssystem", { id: s.id, freigabe_am: null, freigabe_von: null }); asZeige(); };
 }

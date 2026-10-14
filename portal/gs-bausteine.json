@@ -1,338 +1,338 @@
 {
   "_stand": "2026-10-14",
   "_hinweis": "Entwurf, von Claude aus BAuA-Schutzleitfäden/TRGS 555 abgeleitet – fachliche Prüfung durch Nikolai Krawielitzki offen. Keine KI zur Laufzeit.",
-  "_regeln": "REGEL.wenn = Liste von H-/EUH-Codes (greift, wenn der Stoff mindestens einen davon hat) oder \"immer\". \"sonst\": true (mit wenn=\"immer\") = Rückfallregel: greift nur, wenn in derselben Liste keine Regel mit Code-Liste zutrifft; andere 'immer'-Regeln zählen dabei nicht mit. pikto._wenn = H-/EUH-Codes, bei denen der jeweilige pikto-Schlüssel gesetzt wird; Schlüssel ohne _wenn-Eintrag (ersthilfe, ersthilfe_arzt, hygiene) gelten immer.",
+  "_regeln": "REGEL.wenn = Liste von H-/EUH-Codes (greift, wenn der Stoff mindestens einen davon hat) oder \"immer\". \"sonst\": true (mit wenn=\"immer\") = Rückfallregel: greift nur, wenn in derselben Liste keine Regel mit Code-Liste zutrifft; andere 'immer'-Regeln zählen dabei nicht mit. pikto._wenn = H-/EUH-Codes, bei denen der jeweilige pikto-Schlüssel gesetzt wird; Schlüssel ohne _wenn-Eintrag (ersthilfe, ersthilfe_arzt, hygiene) gelten immer. REGEL.ausser = H-/EUH-Codes, bei denen die Regel entfällt (z. B. Haut-Grundregel nicht bei H281). Anrede: Sie (Nikolai 14.10.2026); H-/EUH-Sätze im amtlichen Wortlaut.",
   "_quellen": "EMKG-Schutzleitfäden der BAuA (references/gefahrstoffe/_quellen/emkg-schutzleitfaden-*.md), TRGS 555, CLP-Verordnung (EG) Nr. 1272/2008 inkl. Delegierte VO (EU) 2023/707 (EUH380/381/430/431/440/441/450/451).",
   "h": {
     "H220": {
-      "de": "Gas ist extrem entzündbar.",
-      "en": "The gas is extremely flammable.",
-      "tr": "Gaz son derece kolay alev alır."
+      "de": "Extrem entzündbares Gas.",
+      "en": "Extremely flammable gas.",
+      "tr": "Aşırı derecede alevlenir gaz."
     },
     "H221": {
-      "de": "Gas ist entzündbar.",
-      "en": "The gas is flammable.",
-      "tr": "Gaz alev alabilir."
+      "de": "Entzündbares Gas.",
+      "en": "Flammable gas.",
+      "tr": "Alevlenir gaz."
     },
     "H222": {
-      "de": "Spraydose: Inhalt ist extrem entzündbar.",
-      "en": "Aerosol: the contents are extremely flammable.",
-      "tr": "Sprey kutusu: İçeriği son derece kolay alev alır."
+      "de": "Extrem entzündbares Aerosol.",
+      "en": "Extremely flammable aerosol.",
+      "tr": "Aşırı derecede alevlenir aerosol."
     },
     "H223": {
-      "de": "Spraydose: Inhalt ist entzündbar.",
-      "en": "Aerosol: the contents are flammable.",
-      "tr": "Sprey kutusu: İçeriği alev alabilir."
+      "de": "Entzündbares Aerosol.",
+      "en": "Flammable aerosol.",
+      "tr": "Alevlenir aerosol."
     },
     "H224": {
-      "de": "Flüssigkeit und Dämpfe sind extrem entzündbar.",
-      "en": "Liquid and vapour are extremely flammable.",
-      "tr": "Sıvı ve buharları son derece kolay alev alır."
+      "de": "Flüssigkeit und Dampf extrem entzündbar.",
+      "en": "Extremely flammable liquid and vapour.",
+      "tr": "Aşırı derecede alevlenir sıvı ve buhar."
     },
     "H225": {
-      "de": "Flüssigkeit und Dämpfe sind leicht entzündbar.",
-      "en": "Liquid and vapour are highly flammable.",
-      "tr": "Sıvı ve buharları kolay alev alır."
+      "de": "Flüssigkeit und Dampf leicht entzündbar.",
+      "en": "Highly flammable liquid and vapour.",
+      "tr": "Kolay alevlenir sıvı ve buhar."
     },
     "H226": {
-      "de": "Flüssigkeit und Dämpfe sind entzündbar.",
-      "en": "Liquid and vapour are flammable.",
-      "tr": "Sıvı ve buharları alev alabilir."
+      "de": "Flüssigkeit und Dampf entzündbar.",
+      "en": "Flammable liquid and vapour.",
+      "tr": "Alevlenir sıvı ve buhar."
     },
     "H228": {
-      "de": "Der feste Stoff ist entzündbar.",
-      "en": "The solid is flammable.",
-      "tr": "Katı madde alev alabilir."
+      "de": "Entzündbarer Feststoff.",
+      "en": "Flammable solid.",
+      "tr": "Alevlenir katı."
     },
     "H229": {
-      "de": "Behälter steht unter Druck und kann bei Erwärmung bersten.",
-      "en": "The container is under pressure and may burst if heated.",
-      "tr": "Kap basınç altındadır, ısınırsa patlayabilir."
+      "de": "Behälter steht unter Druck: kann bei Erwärmung bersten.",
+      "en": "Pressurised container: may burst if heated.",
+      "tr": "Basınçlı kap: Isıtılırsa patlayabilir."
     },
     "H241": {
-      "de": "Erwärmung kann einen Brand oder eine Explosion verursachen.",
-      "en": "Heating may cause a fire or an explosion.",
+      "de": "Erwärmung kann Brand oder Explosion verursachen.",
+      "en": "Heating may cause a fire or explosion.",
       "tr": "Isıtılması yangına veya patlamaya neden olabilir."
     },
     "H242": {
-      "de": "Erwärmung kann einen Brand verursachen.",
+      "de": "Erwärmung kann Brand verursachen.",
       "en": "Heating may cause a fire.",
       "tr": "Isıtılması yangına neden olabilir."
     },
     "H250": {
-      "de": "Entzündet sich an der Luft von selbst.",
-      "en": "Catches fire by itself when exposed to air.",
-      "tr": "Havayla temas ettiğinde kendiliğinden alev alır."
+      "de": "Entzündet sich in Berührung mit Luft von selbst.",
+      "en": "Catches fire spontaneously if exposed to air.",
+      "tr": "Havaya maruz kalırsa kendiliğinden tutuşur."
     },
     "H251": {
-      "de": "Erhitzt sich von selbst und kann in Brand geraten.",
-      "en": "Heats up by itself and may catch fire.",
-      "tr": "Kendiliğinden ısınır ve alev alabilir."
+      "de": "Selbsterhitzungsfähig; kann in Brand geraten.",
+      "en": "Self-heating: may catch fire.",
+      "tr": "Kendiliğinden ısınır; alev alabilir."
     },
     "H252": {
-      "de": "Erhitzt sich in großen Mengen von selbst und kann in Brand geraten.",
-      "en": "Heats up by itself in large amounts and may catch fire.",
-      "tr": "Büyük miktarlarda kendiliğinden ısınır ve alev alabilir."
+      "de": "In großen Mengen selbsterhitzungsfähig; kann in Brand geraten.",
+      "en": "Self-heating in large quantities; may catch fire.",
+      "tr": "Büyük miktarlarda kendiliğinden ısınır; alev alabilir."
     },
     "H260": {
-      "de": "Mit Wasser entstehen entzündbare Gase, die sich von selbst entzünden können.",
-      "en": "Contact with water releases flammable gases which may ignite by themselves.",
-      "tr": "Su ile temas ettiğinde kendiliğinden alev alabilen yanıcı gazlar çıkarır."
+      "de": "In Berührung mit Wasser entstehen entzündbare Gase, die sich spontan entzünden können.",
+      "en": "In contact with water releases flammable gases which may ignite spontaneously.",
+      "tr": "Su ile temas ettiğinde kendiliğinden alev alabilen alevlenir gazlar çıkarır."
     },
     "H261": {
-      "de": "Mit Wasser entstehen entzündbare Gase.",
-      "en": "Contact with water releases flammable gases.",
-      "tr": "Su ile temas ettiğinde yanıcı gazlar çıkarır."
+      "de": "In Berührung mit Wasser entstehen entzündbare Gase.",
+      "en": "In contact with water releases flammable gas.",
+      "tr": "Su ile temas ettiğinde alevlenir gazlar çıkarır."
     },
     "H270": {
-      "de": "Kann einen Brand verursachen oder verstärken (brandförderndes Gas).",
-      "en": "May cause or intensify fire (oxidising gas).",
-      "tr": "Yangına neden olabilir veya yangını şiddetlendirebilir (oksitleyici gaz)."
+      "de": "Kann Brand verursachen oder verstärken; Oxidationsmittel.",
+      "en": "May cause or intensify fire; oxidiser.",
+      "tr": "Yangına neden olabilir veya şiddetlendirebilir; oksitleyici."
     },
     "H271": {
-      "de": "Kann einen Brand oder eine Explosion verursachen (stark brandfördernd).",
-      "en": "May cause fire or explosion (strong oxidiser).",
-      "tr": "Yangına veya patlamaya neden olabilir (güçlü oksitleyici)."
+      "de": "Kann Brand oder Explosion verursachen; starkes Oxidationsmittel.",
+      "en": "May cause fire or explosion; strong oxidiser.",
+      "tr": "Yangına veya patlamaya neden olabilir; kuvvetli oksitleyici."
     },
     "H272": {
-      "de": "Kann einen Brand verstärken (brandfördernd).",
-      "en": "May intensify fire (oxidiser).",
-      "tr": "Yangını şiddetlendirebilir (oksitleyici)."
+      "de": "Kann Brand verstärken; Oxidationsmittel.",
+      "en": "May intensify fire; oxidiser.",
+      "tr": "Yangını şiddetlendirebilir; oksitleyici."
     },
     "H280": {
       "de": "Enthält Gas unter Druck; kann bei Erwärmung explodieren.",
       "en": "Contains gas under pressure; may explode if heated.",
-      "tr": "Basınç altında gaz içerir; ısınırsa patlayabilir."
+      "tr": "Basınçlı gaz içerir; ısıtılırsa patlayabilir."
     },
     "H281": {
-      "de": "Enthält tiefkaltes Gas; kann schwere Kälteverbrennungen verursachen.",
+      "de": "Enthält tiefgekühltes Gas; kann Kälteverbrennungen oder -verletzungen verursachen.",
       "en": "Contains refrigerated gas; may cause cryogenic burns or injury.",
-      "tr": "Çok soğuk gaz içerir; ciddi soğuk yanıklarına neden olabilir."
+      "tr": "Soğutulmuş gaz içerir; kriyojenik yanıklara veya yaralanmaya yol açabilir."
     },
     "H290": {
-      "de": "Kann Metalle angreifen.",
+      "de": "Kann gegenüber Metallen korrosiv sein.",
       "en": "May be corrosive to metals.",
-      "tr": "Metalleri aşındırabilir."
+      "tr": "Metaller için aşındırıcı olabilir."
     },
     "H300": {
-      "de": "Lebensgefahr beim Verschlucken.",
+      "de": "Lebensgefahr bei Verschlucken.",
       "en": "Fatal if swallowed.",
       "tr": "Yutulması halinde öldürücüdür."
     },
     "H301": {
-      "de": "Giftig beim Verschlucken.",
+      "de": "Giftig bei Verschlucken.",
       "en": "Toxic if swallowed.",
-      "tr": "Yutulması halinde zehirlidir."
+      "tr": "Yutulması halinde toksiktir."
     },
     "H302": {
-      "de": "Gesundheitsschädlich beim Verschlucken.",
+      "de": "Gesundheitsschädlich bei Verschlucken.",
       "en": "Harmful if swallowed.",
-      "tr": "Yutulması halinde sağlığa zararlıdır."
+      "tr": "Yutulması halinde zararlıdır."
     },
     "H304": {
-      "de": "Kann tödlich sein, wenn es verschluckt wird und in die Lunge gelangt.",
-      "en": "May be fatal if swallowed and it enters the airways.",
-      "tr": "Yutulup solunum yollarına kaçarsa öldürücü olabilir."
+      "de": "Kann bei Verschlucken und Eindringen in die Atemwege tödlich sein.",
+      "en": "May be fatal if swallowed and enters airways.",
+      "tr": "Yutulması ve solunum yoluna nüfuz etmesi halinde öldürücü olabilir."
     },
     "H310": {
       "de": "Lebensgefahr bei Hautkontakt.",
       "en": "Fatal in contact with skin.",
-      "tr": "Cilde temas etmesi halinde öldürücüdür."
+      "tr": "Cilt ile teması halinde öldürücüdür."
     },
     "H311": {
       "de": "Giftig bei Hautkontakt.",
       "en": "Toxic in contact with skin.",
-      "tr": "Cilde temas etmesi halinde zehirlidir."
+      "tr": "Cilt ile teması halinde toksiktir."
     },
     "H312": {
       "de": "Gesundheitsschädlich bei Hautkontakt.",
       "en": "Harmful in contact with skin.",
-      "tr": "Cilde temas etmesi halinde sağlığa zararlıdır."
+      "tr": "Cilt ile teması halinde zararlıdır."
     },
     "H314": {
-      "de": "Verätzt Haut und Augen schwer.",
+      "de": "Verursacht schwere Verätzungen der Haut und schwere Augenschäden.",
       "en": "Causes severe skin burns and eye damage.",
-      "tr": "Ciltte ve gözlerde ağır yanıklara (dağlanmaya) yol açar."
+      "tr": "Ciddi cilt yanıklarına ve göz hasarına yol açar."
     },
     "H315": {
-      "de": "Reizt die Haut.",
+      "de": "Verursacht Hautreizungen.",
       "en": "Causes skin irritation.",
-      "tr": "Cildi tahriş eder."
+      "tr": "Cilt tahrişine yol açar."
     },
     "H317": {
-      "de": "Kann bei Hautkontakt eine Allergie auslösen.",
+      "de": "Kann allergische Hautreaktionen verursachen.",
       "en": "May cause an allergic skin reaction.",
-      "tr": "Cilde temas ettiğinde alerjiye yol açabilir."
+      "tr": "Alerjik cilt reaksiyonuna yol açabilir."
     },
     "H318": {
       "de": "Verursacht schwere Augenschäden.",
       "en": "Causes serious eye damage.",
-      "tr": "Gözlerde ciddi hasara yol açar."
+      "tr": "Ciddi göz hasarına yol açar."
     },
     "H319": {
-      "de": "Reizt die Augen stark.",
+      "de": "Verursacht schwere Augenreizung.",
       "en": "Causes serious eye irritation.",
-      "tr": "Gözleri ciddi şekilde tahriş eder."
+      "tr": "Ciddi göz tahrişine yol açar."
     },
     "H330": {
-      "de": "Lebensgefahr beim Einatmen.",
+      "de": "Lebensgefahr bei Einatmen.",
       "en": "Fatal if inhaled.",
       "tr": "Solunması halinde öldürücüdür."
     },
     "H331": {
-      "de": "Giftig beim Einatmen.",
+      "de": "Giftig bei Einatmen.",
       "en": "Toxic if inhaled.",
-      "tr": "Solunması halinde zehirlidir."
+      "tr": "Solunması halinde toksiktir."
     },
     "H332": {
-      "de": "Gesundheitsschädlich beim Einatmen.",
+      "de": "Gesundheitsschädlich bei Einatmen.",
       "en": "Harmful if inhaled.",
-      "tr": "Solunması halinde sağlığa zararlıdır."
+      "tr": "Solunması halinde zararlıdır."
     },
     "H334": {
-      "de": "Kann beim Einatmen Allergie, Asthma oder Atemnot auslösen.",
-      "en": "May cause allergy, asthma symptoms or breathing difficulties if inhaled.",
-      "tr": "Solunması halinde alerji, astım belirtileri veya nefes darlığına yol açabilir."
+      "de": "Kann bei Einatmen Allergie, asthmaartige Symptome oder Atembeschwerden verursachen.",
+      "en": "May cause allergy or asthma symptoms or breathing difficulties if inhaled.",
+      "tr": "Solunması halinde alerji veya astım belirtilerine veya solunum güçlüklerine yol açabilir."
     },
     "H335": {
       "de": "Kann die Atemwege reizen.",
       "en": "May cause respiratory irritation.",
-      "tr": "Solunum yollarını tahriş edebilir."
+      "tr": "Solunum yolu tahrişine yol açabilir."
     },
     "H336": {
-      "de": "Kann schläfrig und benommen machen.",
+      "de": "Kann Schläfrigkeit und Benommenheit verursachen.",
       "en": "May cause drowsiness or dizziness.",
-      "tr": "Uyku hali veya baş dönmesine yol açabilir."
+      "tr": "Rehavete veya baş dönmesine yol açabilir."
     },
     "H340": {
-      "de": "Kann das Erbgut schädigen.",
-      "en": "May cause genetic defects.",
-      "tr": "Genetik hasara yol açabilir."
+      "de": "Kann genetische Defekte verursachen (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "May cause genetic defects (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Genetik kusurlara yol açabilir (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H341": {
-      "de": "Kann vermutlich das Erbgut schädigen.",
-      "en": "Suspected of causing genetic defects.",
-      "tr": "Genetik hasara yol açtığından şüphelenilmektedir."
+      "de": "Kann vermutlich genetische Defekte verursachen (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "Suspected of causing genetic defects (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Genetik kusurlara yol açma şüphesi var (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H350": {
-      "de": "Kann Krebs erzeugen.",
-      "en": "May cause cancer.",
-      "tr": "Kansere yol açabilir."
+      "de": "Kann Krebs erzeugen (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "May cause cancer (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Kansere yol açabilir (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H350i": {
-      "de": "Kann beim Einatmen Krebs erzeugen.",
+      "de": "Kann bei Einatmen Krebs erzeugen.",
       "en": "May cause cancer by inhalation.",
       "tr": "Solunması halinde kansere yol açabilir."
     },
     "H351": {
-      "de": "Kann vermutlich Krebs erzeugen.",
-      "en": "Suspected of causing cancer.",
-      "tr": "Kansere yol açtığından şüphelenilmektedir."
+      "de": "Kann vermutlich Krebs erzeugen (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "Suspected of causing cancer (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Kansere yol açma şüphesi var (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H360": {
-      "de": "Kann die Fruchtbarkeit beeinträchtigen oder das Kind im Mutterleib schädigen.",
-      "en": "May damage fertility or the unborn child.",
-      "tr": "Üreme yeteneğine veya anne karnındaki bebeğe zarar verebilir."
+      "de": "Kann die Fruchtbarkeit beeinträchtigen oder das Kind im Mutterleib schädigen (konkrete Wirkung angeben, sofern bekannt) (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "May damage fertility or the unborn child (state specific effect if known) (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Üremeye/Fertiliteye veya doğmamış çocukta hasara yol açabilir (bilindiği takdirde spesifik etki belirtilmelidir) (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H360F": {
       "de": "Kann die Fruchtbarkeit beeinträchtigen.",
       "en": "May damage fertility.",
-      "tr": "Üreme yeteneğine zarar verebilir."
+      "tr": "Üremeye/Fertiliteye zarar verebilir."
     },
     "H360D": {
       "de": "Kann das Kind im Mutterleib schädigen.",
       "en": "May damage the unborn child.",
-      "tr": "Anne karnındaki bebeğe zarar verebilir."
+      "tr": "Doğmamış çocukta hasara yol açabilir."
     },
     "H360FD": {
-      "de": "Kann die Fruchtbarkeit beeinträchtigen und das Kind im Mutterleib schädigen.",
+      "de": "Kann die Fruchtbarkeit beeinträchtigen. Kann das Kind im Mutterleib schädigen.",
       "en": "May damage fertility. May damage the unborn child.",
-      "tr": "Üreme yeteneğine ve anne karnındaki bebeğe zarar verebilir."
+      "tr": "Üremeye/Fertiliteye zarar verebilir. Doğmamış çocukta hasara yol açabilir."
     },
     "H360Fd": {
-      "de": "Kann die Fruchtbarkeit beeinträchtigen und vermutlich das Kind im Mutterleib schädigen.",
+      "de": "Kann die Fruchtbarkeit beeinträchtigen. Kann vermutlich das Kind im Mutterleib schädigen.",
       "en": "May damage fertility. Suspected of damaging the unborn child.",
-      "tr": "Üreme yeteneğine zarar verebilir; anne karnındaki bebeğe zarar verdiğinden şüphelenilmektedir."
+      "tr": "Üremeye/Fertiliteye zarar verebilir. Doğmamış çocukta hasara yol açma şüphesi var."
     },
     "H360Df": {
-      "de": "Kann das Kind im Mutterleib schädigen und vermutlich die Fruchtbarkeit beeinträchtigen.",
+      "de": "Kann das Kind im Mutterleib schädigen. Kann vermutlich die Fruchtbarkeit beeinträchtigen.",
       "en": "May damage the unborn child. Suspected of damaging fertility.",
-      "tr": "Anne karnındaki bebeğe zarar verebilir; üreme yeteneğine zarar verdiğinden şüphelenilmektedir."
+      "tr": "Doğmamış çocukta hasara yol açabilir. Üremeye/Fertiliteye zarar verme şüphesi var."
     },
     "H361": {
-      "de": "Kann vermutlich die Fruchtbarkeit beeinträchtigen oder das Kind im Mutterleib schädigen.",
-      "en": "Suspected of damaging fertility or the unborn child.",
-      "tr": "Üreme yeteneğine veya anne karnındaki bebeğe zarar verdiğinden şüphelenilmektedir."
+      "de": "Kann vermutlich die Fruchtbarkeit beeinträchtigen oder das Kind im Mutterleib schädigen (konkrete Wirkung angeben, sofern bekannt) (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "Suspected of damaging fertility or the unborn child (state specific effect if known) (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Üremeye/Fertiliteye veya doğmamış çocukta hasara yol açma şüphesi var (bilindiği takdirde spesifik etki belirtilmelidir) (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H361f": {
       "de": "Kann vermutlich die Fruchtbarkeit beeinträchtigen.",
       "en": "Suspected of damaging fertility.",
-      "tr": "Üreme yeteneğine zarar verdiğinden şüphelenilmektedir."
+      "tr": "Üremeye/Fertiliteye zarar verme şüphesi var."
     },
     "H361d": {
       "de": "Kann vermutlich das Kind im Mutterleib schädigen.",
       "en": "Suspected of damaging the unborn child.",
-      "tr": "Anne karnındaki bebeğe zarar verdiğinden şüphelenilmektedir."
+      "tr": "Doğmamış çocukta hasara yol açma şüphesi var."
     },
     "H361fd": {
-      "de": "Kann vermutlich die Fruchtbarkeit beeinträchtigen und das Kind im Mutterleib schädigen.",
+      "de": "Kann vermutlich die Fruchtbarkeit beeinträchtigen. Kann vermutlich das Kind im Mutterleib schädigen.",
       "en": "Suspected of damaging fertility. Suspected of damaging the unborn child.",
-      "tr": "Üreme yeteneğine ve anne karnındaki bebeğe zarar verdiğinden şüphelenilmektedir."
+      "tr": "Üremeye/Fertiliteye zarar verme şüphesi var. Doğmamış çocukta hasara yol açma şüphesi var."
     },
     "H362": {
-      "de": "Kann gestillte Säuglinge über die Muttermilch schädigen.",
+      "de": "Kann Säuglinge über die Muttermilch schädigen.",
       "en": "May cause harm to breast-fed children.",
-      "tr": "Anne sütüyle beslenen bebeklere zarar verebilir."
+      "tr": "Anne sütü ile beslenen bebeklerde hasara yol açabilir."
     },
     "H370": {
-      "de": "Schädigt Organe.",
-      "en": "Causes damage to organs.",
-      "tr": "Organlara zarar verir."
+      "de": "Schädigt die Organe (oder alle betroffenen Organe nennen, sofern bekannt) (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "Causes damage to organs (or state all organs affected, if known) (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Organlarda hasara yol açar (bilindiği takdirde etkilenen tüm organlar belirtilmelidir) (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H371": {
-      "de": "Kann Organe schädigen.",
-      "en": "May cause damage to organs.",
-      "tr": "Organlara zarar verebilir."
+      "de": "Kann die Organe schädigen (oder alle betroffenen Organe nennen, sofern bekannt) (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "May cause damage to organs (or state all organs affected, if known) (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Organlarda hasara yol açabilir (bilindiği takdirde etkilenen tüm organlar belirtilmelidir) (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H372": {
-      "de": "Schädigt Organe bei längerer oder wiederholter Aufnahme.",
-      "en": "Causes damage to organs through prolonged or repeated exposure.",
-      "tr": "Uzun süreli veya tekrarlanan maruziyette organlara zarar verir."
+      "de": "Schädigt die Organe (alle betroffenen Organe nennen, sofern bekannt) bei längerer oder wiederholter Exposition (Expositionsweg angeben, wenn schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "Causes damage to organs (state all organs affected, if known) through prolonged or repeated exposure (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Uzun süreli veya tekrarlı maruz kalma sonucu organlarda hasara yol açar (bilindiği takdirde etkilenen tüm organlar belirtilmelidir) (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H373": {
-      "de": "Kann Organe bei längerer oder wiederholter Aufnahme schädigen.",
-      "en": "May cause damage to organs through prolonged or repeated exposure.",
-      "tr": "Uzun süreli veya tekrarlanan maruziyette organlara zarar verebilir."
+      "de": "Kann die Organe schädigen (alle betroffenen Organe nennen, sofern bekannt) bei längerer oder wiederholter Exposition (Expositionsweg angeben, sofern schlüssig belegt ist, dass diese Gefahr bei keinem anderen Expositionsweg besteht).",
+      "en": "May cause damage to organs (state all organs affected, if known) through prolonged or repeated exposure (state route of exposure if it is conclusively proven that no other routes of exposure cause the hazard).",
+      "tr": "Uzun süreli veya tekrarlı maruz kalma sonucu organlarda hasara yol açabilir (bilindiği takdirde etkilenen tüm organlar belirtilmelidir) (başka hiçbir maruz kalma yolunun tehlikeye yol açmadığı kesin olarak kanıtlanmışsa, maruz kalma yolu belirtilmelidir)."
     },
     "H400": {
-      "de": "Sehr giftig für Lebewesen im Wasser.",
+      "de": "Sehr giftig für Wasserorganismen.",
       "en": "Very toxic to aquatic life.",
-      "tr": "Sudaki canlılar için çok zehirlidir."
+      "tr": "Sucul ortamda çok toksiktir."
     },
     "H410": {
-      "de": "Sehr giftig für Lebewesen im Wasser, mit langfristiger Wirkung.",
+      "de": "Sehr giftig für Wasserorganismen, mit langfristiger Wirkung.",
       "en": "Very toxic to aquatic life with long lasting effects.",
-      "tr": "Sudaki canlılar için çok zehirlidir, etkisi uzun sürer."
+      "tr": "Sucul ortamda uzun süre kalıcı, çok toksik etki."
     },
     "H411": {
-      "de": "Giftig für Lebewesen im Wasser, mit langfristiger Wirkung.",
+      "de": "Giftig für Wasserorganismen, mit langfristiger Wirkung.",
       "en": "Toxic to aquatic life with long lasting effects.",
-      "tr": "Sudaki canlılar için zehirlidir, etkisi uzun sürer."
+      "tr": "Sucul ortamda uzun süre kalıcı, toksik etki."
     },
     "H412": {
-      "de": "Schädlich für Lebewesen im Wasser, mit langfristiger Wirkung.",
+      "de": "Schädlich für Wasserorganismen, mit langfristiger Wirkung.",
       "en": "Harmful to aquatic life with long lasting effects.",
-      "tr": "Sudaki canlılar için zararlıdır, etkisi uzun sürer."
+      "tr": "Sucul ortamda uzun süre kalıcı, zararlı etki."
     },
     "H413": {
-      "de": "Kann für Lebewesen im Wasser langfristig schädlich sein.",
+      "de": "Kann für Wasserorganismen schädlich sein, mit langfristiger Wirkung.",
       "en": "May cause long lasting harmful effects to aquatic life.",
-      "tr": "Sudaki canlılar için uzun süreli zararlı etkileri olabilir."
+      "tr": "Sucul ortamda uzun süre kalıcı zararlı etkileri olabilir."
     },
     "EUH014": {
       "de": "Reagiert heftig mit Wasser.",
       "en": "Reacts violently with water.",
-      "tr": "Su ile şiddetli tepkimeye girer."
+      "tr": "Su ile şiddetli reaksiyona girer."
     },
     "EUH019": {
       "de": "Kann explosionsfähige Peroxide bilden.",
@@ -340,104 +340,104 @@
       "tr": "Patlayıcı peroksitler oluşturabilir."
     },
     "EUH029": {
-      "de": "Bei Kontakt mit Wasser entstehen giftige Gase.",
-      "en": "Contact with water releases toxic gas.",
-      "tr": "Su ile temas ettiğinde zehirli gaz çıkarır."
+      "de": "Entwickelt bei Berührung mit Wasser giftige Gase.",
+      "en": "Contact with water liberates toxic gas.",
+      "tr": "Su ile temasında toksik gaz çıkarır."
     },
     "EUH031": {
-      "de": "Bei Kontakt mit Säure entstehen giftige Gase.",
-      "en": "Contact with acids releases toxic gas.",
-      "tr": "Asitlerle temas ettiğinde zehirli gaz çıkarır."
+      "de": "Entwickelt bei Berührung mit Säure giftige Gase.",
+      "en": "Contact with acids liberates toxic gas.",
+      "tr": "Asitlerle temasında toksik gaz çıkarır."
     },
     "EUH032": {
-      "de": "Bei Kontakt mit Säure entstehen sehr giftige Gase.",
-      "en": "Contact with acids releases very toxic gas.",
-      "tr": "Asitlerle temas ettiğinde çok zehirli gaz çıkarır."
+      "de": "Entwickelt bei Berührung mit Säure sehr giftige Gase.",
+      "en": "Contact with acids liberates very toxic gas.",
+      "tr": "Asitlerle temasında çok toksik gaz çıkarır."
     },
     "EUH066": {
-      "de": "Häufiger Kontakt kann die Haut spröde und rissig machen.",
+      "de": "Wiederholter Kontakt kann zu spröder oder rissiger Haut führen.",
       "en": "Repeated exposure may cause skin dryness or cracking.",
-      "tr": "Sık temas cildi kurutabilir ve çatlatabilir."
+      "tr": "Tekrarlı maruz kalma ciltte kuruluk veya çatlamaya yol açabilir."
     },
     "EUH071": {
-      "de": "Verätzt die Atemwege.",
+      "de": "Wirkt ätzend auf die Atemwege.",
       "en": "Corrosive to the respiratory tract.",
-      "tr": "Solunum yollarını dağlar (aşındırır)."
+      "tr": "Solunum yolu için aşındırıcıdır."
     },
     "EUH202": {
-      "de": "Klebt Haut und Augenlider innerhalb von Sekunden zusammen.",
-      "en": "Bonds skin and eyes in seconds.",
-      "tr": "Cildi ve göz kapaklarını saniyeler içinde yapıştırır."
+      "de": "Cyanacrylat. Gefahr. Klebt innerhalb von Sekunden Haut und Augenlider zusammen. Darf nicht in die Hände von Kindern gelangen.",
+      "en": "Cyanoacrylate. Danger. Bonds skin and eyes in seconds. Keep out of the reach of children.",
+      "tr": "Siyanoakrilat. Tehlike. Cildi ve gözleri saniyeler içinde yapıştırır. Çocukların erişemeyeceği yerlerde saklayın."
     },
     "EUH204": {
-      "de": "Enthält Isocyanate. Kann eine Allergie auslösen.",
+      "de": "Enthält Isocyanate. Kann allergische Reaktionen hervorrufen.",
       "en": "Contains isocyanates. May produce an allergic reaction.",
-      "tr": "İzosiyanat içerir. Alerjiye yol açabilir."
+      "tr": "İzosiyanatlar içerir. Alerjik reaksiyona yol açabilir."
     },
     "EUH208": {
-      "de": "Enthält einen Stoff, der eine Allergie auslösen kann.",
-      "en": "Contains a substance that may produce an allergic reaction.",
-      "tr": "Alerjiye yol açabilen bir madde içerir."
+      "de": "Enthält (Name des sensibilisierenden Stoffes). Kann allergische Reaktionen hervorrufen.",
+      "en": "Contains (name of sensitising substance). May produce an allergic reaction.",
+      "tr": "(Hassasiyet yapan maddenin adı) içerir. Alerjik reaksiyona yol açabilir."
     },
     "EUH210": {
       "de": "Sicherheitsdatenblatt auf Anfrage erhältlich.",
       "en": "Safety data sheet available on request.",
-      "tr": "Güvenlik bilgi formu istek üzerine verilir."
+      "tr": "Talep halinde güvenlik bilgi formu temin edilebilir."
     },
     "EUH211": {
-      "de": "Beim Sprühen können gefährliche Tröpfchen entstehen. Sprühnebel nicht einatmen.",
-      "en": "Hazardous respirable droplets may be formed when sprayed. Do not breathe spray or mist.",
-      "tr": "Püskürtülürken tehlikeli damlacıklar oluşabilir. Sprey buğusunu solumayın."
+      "de": "Achtung! Beim Sprühen können gefährliche lungengängige Tröpfchen entstehen. Aerosol oder Nebel nicht einatmen.",
+      "en": "Warning! Hazardous respirable droplets may be formed when sprayed. Do not breathe spray or mist.",
+      "tr": "Dikkat! Püskürtüldüğünde tehlikeli solunabilir damlacıklar oluşabilir. Spreyi veya buğuyu solumayın."
     },
     "EUH212": {
-      "de": "Bei der Verwendung kann gefährlicher Feinstaub entstehen. Staub nicht einatmen.",
-      "en": "Hazardous respirable dust may be formed when used. Do not breathe dust.",
-      "tr": "Kullanım sırasında tehlikeli ince toz oluşabilir. Tozu solumayın."
+      "de": "Achtung! Bei der Verwendung kann gefährlicher lungengängiger Staub entstehen. Staub nicht einatmen.",
+      "en": "Warning! Hazardous respirable dust may be formed when used. Do not breathe dust.",
+      "tr": "Dikkat! Kullanım sırasında tehlikeli solunabilir toz oluşabilir. Tozu solumayın."
     },
     "EUH380": {
-      "de": "Kann das Hormonsystem des Menschen stören.",
+      "de": "Kann beim Menschen endokrine Störungen verursachen.",
       "en": "May cause endocrine disruption in humans.",
-      "tr": "İnsanlarda hormon sistemini bozabilir."
+      "tr": "İnsanlarda endokrin bozulmaya yol açabilir."
     },
     "EUH381": {
-      "de": "Steht im Verdacht, das Hormonsystem des Menschen zu stören.",
+      "de": "Steht in dem Verdacht, beim Menschen endokrine Störungen zu verursachen.",
       "en": "Suspected of causing endocrine disruption in humans.",
-      "tr": "İnsanlarda hormon sistemini bozduğundan şüphelenilmektedir."
+      "tr": "İnsanlarda endokrin bozulmaya yol açma şüphesi var."
     },
     "EUH401": {
-      "de": "Gebrauchsanweisung einhalten, um Gefahren für Mensch und Umwelt zu vermeiden.",
-      "en": "Follow the instructions for use to avoid risks to people and the environment.",
-      "tr": "İnsan ve çevre için tehlikeleri önlemek için kullanım talimatına uyun."
+      "de": "Zur Vermeidung von Risiken für Mensch und Umwelt die Gebrauchsanleitung einhalten.",
+      "en": "To avoid risks to human health and the environment, comply with the instructions for use.",
+      "tr": "İnsan sağlığı ve çevre üzerindeki riskleri önlemek için kullanım talimatlarına uyunuz."
     },
     "EUH430": {
-      "de": "Kann das Hormonsystem von Tieren in der Umwelt stören.",
+      "de": "Kann endokrine Störungen in der Umwelt verursachen.",
       "en": "May cause endocrine disruption in the environment.",
-      "tr": "Çevredeki canlıların hormon sistemini bozabilir."
+      "tr": "Çevrede endokrin bozulmaya yol açabilir."
     },
     "EUH431": {
-      "de": "Steht im Verdacht, das Hormonsystem von Tieren in der Umwelt zu stören.",
+      "de": "Steht in dem Verdacht, endokrine Störungen in der Umwelt zu verursachen.",
       "en": "Suspected of causing endocrine disruption in the environment.",
-      "tr": "Çevredeki canlıların hormon sistemini bozduğundan şüphelenilmektedir."
+      "tr": "Çevrede endokrin bozulmaya yol açma şüphesi var."
     },
     "EUH440": {
-      "de": "Reichert sich in der Umwelt und in Lebewesen an, auch im Menschen.",
+      "de": "Reichert sich in der Umwelt und in lebenden Organismen, einschließlich Menschen, an.",
       "en": "Accumulates in the environment and living organisms including in humans.",
-      "tr": "Çevrede ve insan dahil canlıların vücudunda birikir."
+      "tr": "İnsanlar dahil olmak üzere çevrede ve canlı organizmalarda birikir."
     },
     "EUH441": {
-      "de": "Reichert sich stark in der Umwelt und in Lebewesen an, auch im Menschen.",
+      "de": "Reichert sich stark in der Umwelt und in lebenden Organismen, einschließlich Menschen, an.",
       "en": "Strongly accumulates in the environment and living organisms including in humans.",
-      "tr": "Çevrede ve insan dahil canlıların vücudunda güçlü biçimde birikir."
+      "tr": "İnsanlar dahil olmak üzere çevrede ve canlı organizmalarda yüksek oranda birikir."
     },
     "EUH450": {
-      "de": "Kann Wasservorkommen lange und großflächig verunreinigen.",
+      "de": "Kann langanhaltende und diffuse Verschmutzung von Wasserressourcen verursachen.",
       "en": "Can cause long-lasting and diffuse contamination of water resources.",
-      "tr": "Su kaynaklarını uzun süre ve geniş alanda kirletebilir."
+      "tr": "Su kaynaklarında uzun süreli ve yaygın kirlenmeye yol açabilir."
     },
     "EUH451": {
-      "de": "Kann Wasservorkommen sehr lange und großflächig verunreinigen.",
+      "de": "Kann sehr lang anhaltende und diffuse Verschmutzung von Wasserressourcen verursachen.",
       "en": "Can cause very long-lasting and diffuse contamination of water resources.",
-      "tr": "Su kaynaklarını çok uzun süre ve geniş alanda kirletebilir."
+      "tr": "Su kaynaklarında çok uzun süreli ve yaygın kirlenmeye yol açabilir."
     }
   },
   "slf": {
@@ -501,12 +501,140 @@
         }
       ]
     },
+    "300": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Das System nur geschlossen betreiben. Öffnen und Instandsetzen nur mit Erlaubnisschein.",
+          "en": "Operate the system only when closed. Open or repair it only with a work permit.",
+          "tr": "Sistemi yalnızca kapalı halde çalıştırın. Açma ve onarım yalnızca çalışma izniyle yapılır."
+        },
+        {
+          "de": "Undichtigkeiten sofort melden.",
+          "en": "Report leaks immediately.",
+          "tr": "Sızıntıları hemen bildirin."
+        }
+      ]
+    },
+    "301": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Tätigkeiten nur im Handschuhkasten ausführen. Handschuhe des Kastens vor Beginn auf Schäden prüfen.",
+          "en": "Carry out work only inside the glove box. Check the glove box gloves for damage before starting.",
+          "tr": "İşleri yalnızca eldivenli kabin içinde yapın. Başlamadan önce kabin eldivenlerini hasar açısından kontrol edin."
+        },
+        {
+          "de": "Behälter sofort wieder schließen, Abfälle sofort entsorgen, Innenraum täglich reinigen.",
+          "en": "Close containers again immediately, dispose of waste immediately and clean the inside daily.",
+          "tr": "Kapları hemen tekrar kapatın, atıkları hemen bertaraf edin, iç kısmı her gün temizleyin."
+        }
+      ]
+    },
+    "305": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur befugte Personen im Arbeitsbereich. Überfüllen vermeiden: Waage oder Füllstandsanzeige beachten.",
+          "en": "Only authorised persons in the work area. Avoid overfilling: watch the scale or level indicator.",
+          "tr": "Çalışma alanında yalnızca yetkili kişiler bulunur. Taşırmaktan kaçının: teraziyi veya seviye göstergesini izleyin."
+        },
+        {
+          "de": "Bei brennbaren Flüssigkeiten Fass und Anlage erden.",
+          "en": "With flammable liquids, earth the drum and the equipment.",
+          "tr": "Yanıcı sıvılarda varili ve tesisi topraklayın."
+        }
+      ]
+    },
+    "306": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Fass nur über die vorgesehene Entleereinrichtung entleeren. Tropfen und Leckagen in der Auffangwanne auffangen.",
+          "en": "Empty the drum only with the designated emptying equipment. Catch drips and leaks in the drip tray.",
+          "tr": "Varili yalnızca öngörülen boşaltma donanımıyla boşaltın. Damla ve sızıntıları toplama tavasında toplayın."
+        },
+        {
+          "de": "Leeres Fass sofort verschließen.",
+          "en": "Close the empty drum immediately.",
+          "tr": "Boş varili hemen kapatın."
+        }
+      ]
+    },
+    "307": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur passende Ventile und Kupplungen verwenden und auf Dichtheit achten.",
+          "en": "Use only suitable valves and couplings and check that they do not leak.",
+          "tr": "Yalnızca uygun vana ve bağlantı parçaları kullanın, sızdırmazlığa dikkat edin."
+        },
+        {
+          "de": "Füllgeschwindigkeit nicht überschreiten. Verschüttetes sofort aufnehmen.",
+          "en": "Do not exceed the filling rate. Take up spills immediately.",
+          "tr": "Dolum hızını aşmayın. Dökülenleri hemen toplayın."
+        }
+      ]
+    },
+    "308": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur passende Ventile und Kupplungen verwenden und auf Dichtheit achten.",
+          "en": "Use only suitable valves and couplings and check that they do not leak.",
+          "tr": "Yalnızca uygun vana ve bağlantı parçaları kullanın, sızdırmazlığa dikkat edin."
+        },
+        {
+          "de": "Füllgeschwindigkeit nicht überschreiten. Verschüttetes sofort aufnehmen.",
+          "en": "Do not exceed the filling rate. Take up spills immediately.",
+          "tr": "Dolum hızını aşmayın. Dökülenleri hemen toplayın."
+        }
+      ]
+    },
+    "310": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Tankfahrzeug vor dem Befüllen oder Entleeren gegen Wegrollen sichern (Feststellbremse, Unterlegkeil).",
+          "en": "Secure the tanker against rolling away before filling or emptying (parking brake, wheel chock).",
+          "tr": "Tankeri doldurmadan veya boşaltmadan önce kaymaya karşı emniyete alın (el freni, takoz)."
+        },
+        {
+          "de": "Nur passende, gekennzeichnete Schlauchkupplungen verwenden. Anschlüsse müssen über der Auffangfläche liegen.",
+          "en": "Use only suitable, marked hose couplings. Connections must be above the collecting area.",
+          "tr": "Yalnızca uygun ve işaretli hortum bağlantıları kullanın. Bağlantılar toplama alanının üzerinde olmalıdır."
+        }
+      ]
+    },
+    "312": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Vor dem Umpumpen Leitungen, Ventile und Anschlüsse auf Dichtheit prüfen.",
+          "en": "Check pipes, valves and connections for leaks before pumping.",
+          "tr": "Pompalamadan önce boruları, vanaları ve bağlantıları sızdırmazlık açısından kontrol edin."
+        },
+        {
+          "de": "Leitungsteile nur öffnen, wenn sie abgetrennt und entleert bzw. gespült sind.",
+          "en": "Open pipe sections only after they have been isolated and drained or flushed.",
+          "tr": "Boru bölümlerini ancak ayrıldıktan ve boşaltıldıktan veya yıkandıktan sonra açın."
+        }
+      ]
+    },
     "2000": {
       "kat": "organisatorisch",
       "pikto": [],
       "saetze": [
         {
-          "de": "Den Arbeitsbereich nur betreten, wenn deine Arbeit es erfordert.",
+          "de": "Den Arbeitsbereich nur betreten, wenn Ihre Arbeit es erfordert.",
           "en": "Enter the work area only if your work requires it.",
           "tr": "Çalışma alanına yalnızca işiniz gerektiriyorsa girin."
         },
@@ -1116,7 +1244,7 @@
           "tr": "Başlamadan önce emiş sistemini açın."
         },
         {
-          "de": "So arbeiten, dass Dämpfe und Staub von dir weg zur Absaugwand gezogen werden. Nicht zwischen Absaugwand und Gefahrstoff stehen.",
+          "de": "So arbeiten, dass Dämpfe und Staub von Ihnen weg zur Absaugwand gezogen werden. Nicht zwischen Absaugwand und Gefahrstoff stehen.",
           "en": "Work so that vapours and dust are drawn away from you towards the extraction wall. Do not stand between the extraction wall and the substance.",
           "tr": "Buhar ve tozun sizden uzağa, emiş duvarına doğru çekileceği şekilde çalışın. Emiş duvarı ile madde arasında durmayın."
         }
@@ -1246,7 +1374,7 @@
       "pikto": [],
       "saetze": [
         {
-          "de": "Das Gefahrstofflager nur betreten, wenn du dazu befugt bist.",
+          "de": "Das Gefahrstofflager nur betreten, wenn Sie dazu befugt sind.",
           "en": "Enter the hazardous substance store only if you are authorised.",
           "tr": "Tehlikeli madde deposuna yalnızca yetkiniz varsa girin."
         },
@@ -1326,134 +1454,6 @@
         }
       ]
     },
-    "300": {
-      "kat": "technisch",
-      "pikto": [],
-      "saetze": [
-        {
-          "de": "Das System nur geschlossen betreiben. Öffnen und Instandsetzen nur mit Erlaubnisschein.",
-          "en": "Operate the system only when closed. Open or repair it only with a work permit.",
-          "tr": "Sistemi yalnızca kapalı halde çalıştırın. Açma ve onarım yalnızca çalışma izniyle yapılır."
-        },
-        {
-          "de": "Undichtigkeiten sofort melden.",
-          "en": "Report leaks immediately.",
-          "tr": "Sızıntıları hemen bildirin."
-        }
-      ]
-    },
-    "301": {
-      "kat": "technisch",
-      "pikto": [],
-      "saetze": [
-        {
-          "de": "Tätigkeiten nur im Handschuhkasten ausführen. Handschuhe des Kastens vor Beginn auf Schäden prüfen.",
-          "en": "Carry out work only inside the glove box. Check the glove box gloves for damage before starting.",
-          "tr": "İşleri yalnızca eldivenli kabin içinde yapın. Başlamadan önce kabin eldivenlerini hasar açısından kontrol edin."
-        },
-        {
-          "de": "Behälter sofort wieder schließen, Abfälle sofort entsorgen, Innenraum täglich reinigen.",
-          "en": "Close containers again immediately, dispose of waste immediately and clean the inside daily.",
-          "tr": "Kapları hemen tekrar kapatın, atıkları hemen bertaraf edin, iç kısmı her gün temizleyin."
-        }
-      ]
-    },
-    "305": {
-      "kat": "technisch",
-      "pikto": [],
-      "saetze": [
-        {
-          "de": "Nur befugte Personen im Arbeitsbereich. Überfüllen vermeiden: Waage oder Füllstandsanzeige beachten.",
-          "en": "Only authorised persons in the work area. Avoid overfilling: watch the scale or level indicator.",
-          "tr": "Çalışma alanında yalnızca yetkili kişiler bulunur. Taşırmaktan kaçının: teraziyi veya seviye göstergesini izleyin."
-        },
-        {
-          "de": "Bei brennbaren Flüssigkeiten Fass und Anlage erden.",
-          "en": "With flammable liquids, earth the drum and the equipment.",
-          "tr": "Yanıcı sıvılarda varili ve tesisi topraklayın."
-        }
-      ]
-    },
-    "306": {
-      "kat": "technisch",
-      "pikto": [],
-      "saetze": [
-        {
-          "de": "Fass nur über die vorgesehene Entleereinrichtung entleeren. Tropfen und Leckagen in der Auffangwanne auffangen.",
-          "en": "Empty the drum only with the designated emptying equipment. Catch drips and leaks in the drip tray.",
-          "tr": "Varili yalnızca öngörülen boşaltma donanımıyla boşaltın. Damla ve sızıntıları toplama tavasında toplayın."
-        },
-        {
-          "de": "Leeres Fass sofort verschließen.",
-          "en": "Close the empty drum immediately.",
-          "tr": "Boş varili hemen kapatın."
-        }
-      ]
-    },
-    "307": {
-      "kat": "technisch",
-      "pikto": [],
-      "saetze": [
-        {
-          "de": "Nur passende Ventile und Kupplungen verwenden und auf Dichtheit achten.",
-          "en": "Use only suitable valves and couplings and check that they do not leak.",
-          "tr": "Yalnızca uygun vana ve bağlantı parçaları kullanın, sızdırmazlığa dikkat edin."
-        },
-        {
-          "de": "Füllgeschwindigkeit nicht überschreiten. Verschüttetes sofort aufnehmen.",
-          "en": "Do not exceed the filling rate. Take up spills immediately.",
-          "tr": "Dolum hızını aşmayın. Dökülenleri hemen toplayın."
-        }
-      ]
-    },
-    "308": {
-      "kat": "technisch",
-      "pikto": [],
-      "saetze": [
-        {
-          "de": "Nur passende Ventile und Kupplungen verwenden und auf Dichtheit achten.",
-          "en": "Use only suitable valves and couplings and check that they do not leak.",
-          "tr": "Yalnızca uygun vana ve bağlantı parçaları kullanın, sızdırmazlığa dikkat edin."
-        },
-        {
-          "de": "Füllgeschwindigkeit nicht überschreiten. Verschüttetes sofort aufnehmen.",
-          "en": "Do not exceed the filling rate. Take up spills immediately.",
-          "tr": "Dolum hızını aşmayın. Dökülenleri hemen toplayın."
-        }
-      ]
-    },
-    "310": {
-      "kat": "technisch",
-      "pikto": [],
-      "saetze": [
-        {
-          "de": "Tankfahrzeug vor dem Befüllen oder Entleeren gegen Wegrollen sichern (Feststellbremse, Unterlegkeil).",
-          "en": "Secure the tanker against rolling away before filling or emptying (parking brake, wheel chock).",
-          "tr": "Tankeri doldurmadan veya boşaltmadan önce kaymaya karşı emniyete alın (el freni, takoz)."
-        },
-        {
-          "de": "Nur passende, gekennzeichnete Schlauchkupplungen verwenden. Anschlüsse müssen über der Auffangfläche liegen.",
-          "en": "Use only suitable, marked hose couplings. Connections must be above the collecting area.",
-          "tr": "Yalnızca uygun ve işaretli hortum bağlantıları kullanın. Bağlantılar toplama alanının üzerinde olmalıdır."
-        }
-      ]
-    },
-    "312": {
-      "kat": "technisch",
-      "pikto": [],
-      "saetze": [
-        {
-          "de": "Vor dem Umpumpen Leitungen, Ventile und Anschlüsse auf Dichtheit prüfen.",
-          "en": "Check pipes, valves and connections for leaks before pumping.",
-          "tr": "Pompalamadan önce boruları, vanaları ve bağlantıları sızdırmazlık açısından kontrol edin."
-        },
-        {
-          "de": "Leitungsteile nur öffnen, wenn sie abgetrennt und entleert bzw. gespült sind.",
-          "en": "Open pipe sections only after they have been isolated and drained or flushed.",
-          "tr": "Boru bölümlerini ancak ayrıldıktan ve boşaltıldıktan veya yıkandıktan sonra açın."
-        }
-      ]
-    },
     "La-101": {
       "kat": "organisatorisch",
       "pikto": [],
@@ -1525,7 +1525,7 @@
       },
       {
         "wenn": "immer",
-        "de": "Löschversuch nur, wenn du dich dabei nicht selbst gefährdest. Brandrauch nicht einatmen.",
+        "de": "Löschversuch nur, wenn Sie sich dabei nicht selbst gefährden. Brandrauch nicht einatmen.",
         "en": "Try to extinguish only if you do not put yourself at risk. Do not breathe in smoke.",
         "tr": "Söndürmeyi yalnızca kendinizi tehlikeye atmadan deneyin. Yangın dumanını solumayın."
       },
@@ -1738,7 +1738,10 @@
         "wenn": "immer",
         "de": "Verschmutzte Kleidung sofort ausziehen. Haut gründlich mit Wasser und Seife waschen.",
         "en": "Remove contaminated clothing immediately. Wash the skin thoroughly with soap and water.",
-        "tr": "Kirlenmiş kıyafetleri hemen çıkarın. Cildi bol su ve sabunla iyice yıkayın."
+        "tr": "Kirlenmiş kıyafetleri hemen çıkarın. Cildi bol su ve sabunla iyice yıkayın.",
+        "ausser": [
+          "H281"
+        ]
       },
       {
         "wenn": [

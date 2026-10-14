@@ -163,7 +163,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   try{
     if(istShell){
       // Live-Kontext: Mandant aus dem Storage-Pfad (<slug>/...), Nutzername fuers Log.
-      const gsBa = /^gs:/.test(String(p));   // Gefahrstoff-BA wird aus Stoff + EMKG-Beurteilung erzeugt (gs-ba-bauen.js)
+      const gsBa = /^gsg?:/.test(String(p));   // Gefahrstoff-BA wird aus Stoff + EMKG-Beurteilung erzeugt (gs-ba-bauen.js)
       LIVE.slug = (gsBa ? String(p).split(":")[1] : String(p).split("/")[0]) || "";
       if(window.OAK_MARKE) await OAK_MARKE.anwenden(LIVE.slug);   // Farben des Betriebs auch in der Dokument-Ansicht
       LIVE.mid = param("mid") || "";

@@ -476,9 +476,10 @@ async function asStart(){
   if(!s || !(await token())){ document.getElementById("loginView").hidden = false; return; }
   try{
     AS.uid = (getSession().user || {}).id;
-    const me = await apiGet("/rest/v1/portal_mitglied?select=name,rolle,kunde_slug&user_id=eq." + encodeURIComponent(AS.uid));
+    const me = await apiGet("/rest/v1/portal_mitglied?select=name,rolle,rollen,kunde_slug&user_id=eq." + encodeURIComponent(AS.uid));
     const m = me && me[0]; if(!m) throw new Error("Kein Portal-Zugang für dieses Konto.");
     AS.admin = m.rolle === "admin"; AS.fachkraft = AS.admin || m.rolle === "fachkraft"; AS.ich = m.name || "";
+    AS.gf = AS.admin || !!(m.rollen && m.rollen.gf);   // Geschäftsführung: gibt Beurteilungen frei (DB prüft portal_ist_gf)
     await asKundenLaden();
     let gew = null; try{ gew = localStorage.getItem("as_kunde"); }catch(e){}
     AS.kunde = AS.kunden.some(k => k.kunde_slug === gew) ? gew : (AS.kunden[0] || {}).kunde_slug || null;

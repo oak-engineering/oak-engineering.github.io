@@ -188,7 +188,9 @@ function gsKurzinfo(g, neu){
       <div class="gs-doks">
         <div>${typeof gseBlock === "function" ? gseBlock(g, pflege) : ""}${g.gbu_pfad ? gsOeffnen(g.gbu_pfad, "Gefährdungsbeurteilung (PDF)") : (typeof gseBlock === "function" ? "" : `<span class="gs-luecke">Gefährdungsbeurteilung (EMKG) fehlt</span>`)}</div>
         <div>${g.ba_pfad ? gsOeffnen(g.ba_pfad, "Betriebsanweisung") : (typeof GSE_ROWS !== "undefined"
-          ? `<a class="btn sek ul-btn" href="viewer.html?typ=ba&p=${encodeURIComponent("gs:" + (g.kunde_slug || AKTIV) + ":" + g.id)}&mid=${encodeURIComponent("GS-" + g.id)}&t=${encodeURIComponent(g.bezeichnung)}" target="_blank" rel="noopener">${typeof gseStand === "function" && gseStand(g) === "frei" ? "Betriebsanweisung (aus der Beurteilung)" : "Betriebsanweisung – Entwurf (Beurteilung fehlt noch)"}</a>`
+          ? (g.ba_gruppe
+            ? `<a class="btn sek ul-btn" href="viewer.html?typ=ba&p=${encodeURIComponent("gsg:" + (g.kunde_slug || AKTIV) + ":" + g.ba_gruppe)}&mid=${encodeURIComponent("GSG-" + g.ba_gruppe)}&t=${encodeURIComponent(g.ba_gruppe)}" target="_blank" rel="noopener">Gruppen-Betriebsanweisung: ${esc(g.ba_gruppe)} (${GS_ROWS.filter(x => x.ba_gruppe === g.ba_gruppe && gsVerwendung(x) !== "inaktiv").length} Stoffe)</a>`
+            : `<a class="btn sek ul-btn" href="viewer.html?typ=ba&p=${encodeURIComponent("gs:" + (g.kunde_slug || AKTIV) + ":" + g.id)}&mid=${encodeURIComponent("GS-" + g.id)}&t=${encodeURIComponent(g.bezeichnung)}" target="_blank" rel="noopener">${typeof gseStand === "function" && gseStand(g) === "frei" ? "Betriebsanweisung (aus der Beurteilung)" : "Betriebsanweisung – Entwurf (Beurteilung fehlt noch)"}</a>`)
           : `<span class="gs-luecke">Stoffbezogene Betriebsanweisung fehlt</span>`)}</div>
       </div>
       ${!g.ba_pfad && sammel ? `<p class="uw-leise gs-sammel">Bis dahin gelten die Sammel-Betriebsanweisungen: ${sammel}</p>` : ""}
@@ -236,6 +238,9 @@ function gsDialog(g, danach, fokus){
         <label>Gefährdungsbeurteilung (PDF) ${g && g.gbu_pfad ? "– vorhanden" : ""}<input type="file" id="gsGbu" accept=".pdf"></label>
         <label>Betriebsanweisung (PDF) ${g && g.ba_pfad ? "– vorhanden" : ""}<input type="file" id="gsBaStoff" accept=".pdf"></label></fieldset>
       ${bas.length ? `<fieldset class="gs-feld gs-ba-wahl"><legend>Sammel-Betriebsanweisungen (bis zur stoffbezogenen BA)</legend>${bas.map(d => `<label class="ehs-check"><input type="checkbox" value="${esc(d.storage_path)}"${gewaehlt.has(d.storage_path) ? " checked" : ""}> ${esc(String(d.titel).replace(/^Betriebsanweisung\s*–\s*/, ""))}</label>`).join("")}</fieldset>` : ""}
+      <label>BA-Gruppe <span class="uw-leise">(Stoffe mit gleicher Gruppe teilen sich eine Betriebsanweisung, z. B. „Siebdruckfarben Pröll“ – leer = eigene BA)</span>
+        <input type="text" id="gsGruppe" maxlength="120" list="gsGruppen" value="${esc(w("ba_gruppe"))}"></label>
+      <datalist id="gsGruppen">${[...new Set(GS_ROWS.map(x => x.ba_gruppe).filter(Boolean))].sort().map(x => `<option value="${esc(x)}">`).join("")}</datalist>
       <label>Hinweis<input type="text" id="gsHinweis" maxlength="300" value="${esc(w("hinweis"))}"></label>
       <label>Verwendung<select id="gsVerwStatus">${Object.entries(GS_VERWENDUNG).map(([k, t]) => `<option value="${k}"${k === (g ? gsVerwendung(g) : "aktiv") ? " selected" : ""}>${t}</option>`).join("")}</select></label>
       <p class="pw-msg" id="gsMsg"></p>
@@ -262,7 +267,7 @@ function gsDialog(g, danach, fokus){
         h_saetze: h, bereiche: dlg.querySelector("#gsBer").value.split(",").map(s => s.trim()).filter(Boolean),
         verwendung: dlg.querySelector("#gsVerw").value.trim() || null, menge: dlg.querySelector("#gsMenge").value.trim() || null,
         lagerort: dlg.querySelector("#gsLager").value.trim() || null, sdb_ausgabe: dlg.querySelector("#gsAusgabe").value || null,
-        ba_pfade: [...dlg.querySelectorAll(".gs-ba-wahl input:checked")].map(x => x.value), hinweis: dlg.querySelector("#gsHinweis").value.trim() || null,
+        ba_pfade: [...dlg.querySelectorAll(".gs-ba-wahl input:checked")].map(x => x.value), hinweis: dlg.querySelector("#gsHinweis").value.trim() || null, ba_gruppe: dlg.querySelector("#gsGruppe").value.trim() || null,
         verwendung_status: verwStatus, aktiv: verwStatus !== "inaktiv", quelle: "portal", geaendert_von: window.__oakName || "", geaendert_am: new Date().toISOString() };
       if(sdb){ daten.sdb_pfad = await hoch(sdb, "sdb"); daten.sdb_geprueft_am = null; daten.sdb_geprueft_von = null; daten.sdb_angefordert_am = null; daten.sdb_angefordert_bei = null; }
       if(gbu) daten.gbu_pfad = await hoch(gbu, "gbu");
