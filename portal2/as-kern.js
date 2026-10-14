@@ -419,11 +419,40 @@ function asHashLesen(){
   AS.seite = AS_SEITEN[s] && (AS.fachkraft || !AS_SEITEN[s].nurFachkraft) ? s : std;
   if(r) AS.reiter[AS.seite] = r;
 }
+/* Seitenleiste in Gruppen (Nikolai 14.10.2026: „zu lang, gliedern wie in V1“). Offen ist die Gruppe der aktiven Seite
+   plus die, die man selbst aufgeklappt hat (gemerkt im Gerät). Seiten ohne Gruppe landen unter „Service“. */
+const AS_NAV_GRUPPEN = [
+  ["ueberblick", "Überblick", ["start", "cockpit", "pflichten"]],
+  ["organisation", "Organisation", ["organisation", "check", "nachweise", "prozesse"]],
+  ["gefaehrdungen", "Gefährdungen", ["bda", "massnahmen", "mitzeichnung", "gefahrstoffe"]],
+  ["anlagen", "Anlagen & Betrieb", ["anlagen", "pruefungen", "maengel", "hallenplan", "vorort"]],
+  ["personal", "Personal", ["unterweisungen", "vorfaelle"]],
+  ["steuerung", "Steuerung", ["steuerung", "kalender", "bericht", "energie"]],
+  ["service", "Service", ["fragen", "aktuelles", "unterlagen", "leistungen", "datenschutz"]],
+];
+function asNavOffen(){ try{ return JSON.parse(localStorage.getItem("as_nav_offen") || "[]"); }catch(e){ return []; } }
 function asNav(){
-  const liste = Object.entries(AS_SEITEN).filter(([, s]) => AS.fachkraft || !s.nurFachkraft).sort((a, b) => a[1].sort - b[1].sort);
-  const html = liste.map(([k, s]) => `<a href="#${k}" class="${AS.seite === k ? "an" : ""}">${asIcon(k, s)}${esc(s.titel)}</a>`).join("");
-  document.getElementById("nav").innerHTML = html;
-  document.getElementById("blatt").innerHTML = html;
+  const sicht = k => AS_SEITEN[k] && (AS.fachkraft || !AS_SEITEN[k].nurFachkraft);
+  const zugeteilt = new Set(AS_NAV_GRUPPEN.flatMap(g => g[2]));
+  const rest = Object.keys(AS_SEITEN).filter(k => !zugeteilt.has(k)).sort((a, b) => AS_SEITEN[a].sort - AS_SEITEN[b].sort);
+  const gruppen = AS_NAV_GRUPPEN.map(([id, titel, seiten]) => [id, titel, (id === "service" ? seiten.concat(rest) : seiten).filter(sicht)]).filter(g => g[2].length);
+  const offen = new Set(asNavOffen());
+  const link = k => `<a href="#${k}" class="${AS.seite === k ? "an" : ""}">${asIcon(k, AS_SEITEN[k])}${esc(AS_SEITEN[k].titel)}</a>`;
+  const html = gruppen.map(([id, titel, seiten]) => {
+    const aktiv = seiten.includes(AS.seite), auf = aktiv || offen.has(id) || gruppen.length === 1;
+    return `<div class="nav-gruppe${auf ? " auf" : ""}${aktiv ? " aktiv" : ""}" data-g="${id}">
+      <button type="button" class="nav-kopf" aria-expanded="${auf}"><span>${esc(titel)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+      <div class="nav-links">${seiten.map(link).join("")}</div></div>`;
+  }).join("");
+  ["nav", "blatt"].forEach(id => {
+    const el = document.getElementById(id); el.innerHTML = html;
+    el.querySelectorAll(".nav-kopf").forEach(b => b.onclick = () => {
+      const g = b.parentElement, auf = !g.classList.contains("auf"), o = new Set(asNavOffen());
+      g.classList.toggle("auf", auf); b.setAttribute("aria-expanded", auf);
+      auf ? o.add(g.dataset.g) : o.delete(g.dataset.g);
+      try{ localStorage.setItem("as_nav_offen", JSON.stringify([...o])); }catch(e){}
+    });
+  });
   document.getElementById("menueTitel").textContent = (AS_SEITEN[AS.seite] || {}).titel || "Bereiche";
 }
 function asKundeWahl(){
