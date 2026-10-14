@@ -953,7 +953,8 @@ async function asSvErinnerungen(box){
   box.innerHTML = `<div class="karte"><h2>E-Mail-Erinnerungen ${pflege ? `<button class="btn klein" id="svAboNeu">+ Empfänger</button>` : ""}</h2>
       <p class="hinweis">Wer soll an Fristen und Aufgaben erinnert werden? Die Mail fasst zusammen, was überfällig oder demnächst fällig ist
         (Termine, Prüfungen, Nachweise, Vorsorge, Unterweisungen, Maßnahmen, Sicherheitsdatenblätter, zu prüfende Unterlagen) –
-        <b>ohne Namen von Beschäftigten</b>; Einzelheiten stehen nur hier im Cockpit. Jede Mail enthält einen Link zum Abbestellen.</p>
+        <b>ohne Namen aus Vorsorge, Unterweisung und Qualifikationen</b> (Titel von Terminen und Maßnahmen erscheinen so, wie sie eingetragen sind).
+        Einzelheiten stehen nur hier im Cockpit. Jede Mail enthält einen Link zum Abbestellen.</p>
       ${abos.length ? `<div class="zeilen">${abos.map((a, i) => `<div class="z" style="cursor:default"><div><b>${esc(a.name || a.email)}</b>
           <small>${esc(a.email)} · ${esc(rh[a.rhythmus] || a.rhythmus)}${a.rhythmus === "woechentlich" ? " · " + esc(wt[a.wochentag] || "") : ""}
           · ${a.letzte_mail ? "zuletzt " + esc(asSvDatZeit(a.letzte_mail)) : "noch keine Mail"}</small></div>
