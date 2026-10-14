@@ -414,6 +414,7 @@ const AS_ICON = {
   unterlagen: '<path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M9.5 12h5M9.5 15.5h5"/>',
   energie: '<path d="M13 3 5 13.5h6L10 21l8-10.5h-6z"/>',
   bericht: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7.5h6M9 11h6"/>',
+  leitfaden: '<path d="M12 3 20 6.5v5c0 4.6-3.2 8.3-8 9.5-4.8-1.2-8-4.9-8-9.5v-5z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
   datenschutz: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
 };
 function asIcon(k, s){ return AS_ICON[k] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${AS_ICON[k]}</svg>` : `<i>${s.icon || ""}</i>`; }
