@@ -353,7 +353,7 @@ AS_SEITEN.hallenplan = { titel: "Hallenplan", icon: "⌗", sort: 4.6, async rend
       ${darf ? `<button onclick="asHpNeuDialog()" title="weiteren Plan anlegen (z. B. zweite Halle)">+ Plan</button>` : ""}</div>
     <iframe id="hpRahmen" sandbox="allow-scripts allow-modals allow-downloads" style="width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>
     <p class="hinweis">Zuletzt geändert ${esc(asDat(String(akt.geaendert_am || "").slice(0, 10)))}${akt.geaendert_von ? " von " + esc(akt.geaendert_von) : ""}.</p>`;
-  if(!AS_HP.vorlage){ try{ AS_HP.vorlage = await (await fetch("hallenplan-editor.html?v=2026-10-14a")).text(); }catch(e){ AS_HP.vorlage = ""; } }
+  if(!AS_HP.vorlage){ try{ AS_HP.vorlage = await (await fetch("hallenplan-editor.html?v=2026-10-14b")).text(); }catch(e){ AS_HP.vorlage = ""; } }
   if(!AS_HP.vorlage){ document.getElementById("hpRahmen").outerHTML = `<div class="karte"><div class="leer">Editor konnte nicht geladen werden.</div></div>`; return; }
   /* Bewertungen aus dem Kataster (Schluessel maschinen_id) + offene Maengel live */
   const risiko = {};

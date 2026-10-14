@@ -143,6 +143,8 @@ const FOTO=OAK_HP.foto||'';
 const ZIEL="portal";
 const NS='http://www.w3.org/2000/svg';
 const MARKER='#2E7BC4';   // alle Marker-Punkte einheitlich blau
+/* Texte aus dem Layout/Kataster sind Eingaben des Betriebs -> nie roh ins HTML (Sicherheitspruefung 14.10.2026) */
+const hx=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const svg=document.getElementById('plan'), buehne=document.getElementById('buehne');
 const foto=document.getElementById('foto'), pop=document.getElementById('pop');
 let sel=null, sel2=null, undoStack=[], handle=null, zoom=100;
@@ -344,7 +346,7 @@ function markerliste(){
   const ul=document.getElementById('markerliste'); ul.innerHTML='';
   (LAY.punkte||[]).forEach(p=>{
     const li=document.createElement('li');
-    li.innerHTML=`<span class="pnr" style="background:${MARKER}">${p.nr||''}</span> ${p.name}`;
+    li.innerHTML=`<span class="pnr" style="background:${MARKER}">${hx(p.nr||'')}</span> ${hx(p.name)}`;
     ul.appendChild(li);
   });
 }
@@ -352,12 +354,12 @@ function markerliste(){
 /* ---------- Popup ---------- */
 function zeigePopup(m){
   const d=daten(m), r=d.r, meta=r?r.meta:null;
-  let h=`<h3>${m.name}</h3>`;
+  let h=`<h3>${hx(m.name)}</h3>`;
   h+=`<div class="risk" style="background:${d.b.f};border-color:${d.b.r};color:${d.b.s}">`+
      (d.wert!==null?`Risiko ${d.wert} · ${d.b.kurz}`:d.b.kurz)+`</div>`;
   if(meta){
     h+='<dl>';
-    const zeile=(k,v)=>{ if(v) h+=`<dt>${k}</dt><dd>${v}</dd>`; };
+    const zeile=(k,v)=>{ if(v) h+=`<dt>${k}</dt><dd>${hx(v)}</dd>`; };
     zeile('ID',meta.maschinenId); zeile('Hersteller',meta.hersteller); zeile('Typ',meta.typ);
     zeile('Baujahr',meta.baujahr); zeile('Serien-Nr.',meta.seriennr); zeile('Bereich',meta.bereich);
     zeile('CE',meta.ce||'nicht belegt → BetrSichV Anh. 1');
@@ -366,14 +368,14 @@ function zeigePopup(m){
     zeile('Begehung',meta.datum);
     h+='</dl>';
   }
-  if(d.aus) h+='<div class="warn"><b>Außer Betrieb</b>'+(r&&r.betrieb_hinweis?' – '+r.betrieb_hinweis:'')+
+  if(d.aus) h+='<div class="warn"><b>Außer Betrieb</b>'+(r&&r.betrieb_hinweis?' – '+hx(r.betrieb_hinweis):'')+
     '. Die Bewertung gilt wieder, sobald die Anlage in Betrieb genommen wird.</div>';
   if(d.rob) h+='<div class="warn">Linearroboter / Entnahmegerät überfährt die Maschine '+
     '(Gefährdung Nr. 9 der Beurteilung)</div>';
-  if(m.info) h+=`<div class="warn">${m.info}</div>`;
+  if(m.info) h+=`<div class="warn">${hx(m.info)}</div>`;
   if(r&&r.docs.length){
     h+='<div style="margin-top:11px;font-weight:600;font-size:12.5px">Dokumente</div>';
-    r.docs.forEach(dk=>h+=`<a class="dok" href="${dk.url}" target="_blank" data-titel="${((r.meta&&r.meta.maschine)||'').replace(/"/g,'')}">${dk.titel}</a>`);
+    r.docs.forEach(dk=>h+=`<a class="dok" href="${/^(https?:|[\w./-]+$)/.test(dk.url||'')?hx(dk.url):'#'}" target="_blank" data-titel="${hx((r.meta&&r.meta.maschine)||'')}">${hx(dk.titel)}</a>`);
   } else if(m.slug){
     h+='<div class="warn">Bewertung vorhanden, aber <b>keine Dokumente erzeugt</b> '+
        '(nur doc-data). BdA/BA/Mängelliste nachziehen.</div>';
