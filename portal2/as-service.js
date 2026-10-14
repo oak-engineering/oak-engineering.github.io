@@ -476,12 +476,12 @@ function asSvPaErledigen(a, ergebnis){
 /* ======================= Kalender & To-dos ======================= */
 AS_SEITEN.kalender = { titel: "Kalender & To-dos", icon: "◫", sort: 7.2, async render(main){
   asSvCss();
-  const r = asReiter("kalender", [["todos", "To-dos"], ["kalender", "Kalender"]], "todos");
+  const r = asReiter("kalender", [["todos", "To-dos"], ["kalender", "Kalender"], ["erinnerungen", "E-Mail-Erinnerungen"]], "todos");
   main.innerHTML = `<h1 class="seite">Kalender & To-dos</h1><p class="unter">Prüfungen, Fristen und Aufgaben – entstehen aus den Daten, erledigt wird am Ort der Aufgabe.</p>${r.html}<div id="svInhalt"><div class="leer">wird geladen …</div></div>`;
   try{ await Promise.all([asSvLaden(), typeof asBetriebLaden === "function" ? asBetriebLaden().catch(() => null) : null]); }
   catch(e){ const b = document.getElementById("svInhalt"); if(b) b.innerHTML = `<div class="leer">Konnte nicht geladen werden: ${esc(asSvFehler(e))}</div>`; return; }
   const box = document.getElementById("svInhalt"); if(!box) return;
-  if(r.akt === "kalender") asSvKalender(box); else asSvTodos(box);
+  if(r.akt === "kalender") asSvKalender(box); else if(r.akt === "erinnerungen") asSvErinnerungen(box); else asSvTodos(box);
 }};
 
 function asSvTodos(box){
@@ -936,4 +936,61 @@ function asSvDatenschutz(box, k){
       AS.kundeV1 = Object.assign({}, AS.kundeV1 || {}, { avv_abgeschlossen_am: iso });
       asMeldung("AVV-Datum gespeichert"); asZeige();
     } }, { t: "Abbrechen", klasse: "sek", fn: () => true }] });
+}
+
+/* ---------------- E-Mail-Erinnerungen (Plan intern/portal-eigenstaendig.md, Schritt 3) ----------------
+   Der Betrieb legt Empfänger und Rhythmus selbst fest (portal_erinnerung_abo). Der Server (pg_cron → Edge Function
+   frist-erinnerung) schickt dann die fälligen Fristen und Aufgaben – ohne Personennamen, mit Abmeldelink. */
+const AS_SV_RHYTHMUS = [["woechentlich", "wöchentlich (Übersicht)"], ["taeglich", "täglich, nur wenn etwas Neues fällig wird"], ["monatlich", "monatlich am 1."], ["aus", "pausiert"]];
+const AS_SV_WTAG = [[1, "Montag"], [2, "Dienstag"], [3, "Mittwoch"], [4, "Donnerstag"], [5, "Freitag"]];
+const AS_SV_ABO_SPALTEN = "id,kunde_slug,email,name,rhythmus,wochentag,letzte_mail,angelegt_von,angelegt_am";   // token bleibt auf dem Server
+async function asSvErinnerungen(box){
+  const pflege = !!(AS.fachkraft || AS.gf || AS.admin);
+  let abos = [];
+  try{ abos = await apiGet("/rest/v1/portal_erinnerung_abo?select=" + AS_SV_ABO_SPALTEN + "&kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&order=angelegt_am.asc") || []; }
+  catch(e){ box.innerHTML = `<div class="leer">Konnte nicht geladen werden: ${esc(asSvFehler(e))}</div>`; return; }
+  const rh = Object.fromEntries(AS_SV_RHYTHMUS), wt = Object.fromEntries(AS_SV_WTAG);
+  box.innerHTML = `<div class="karte"><h2>E-Mail-Erinnerungen ${pflege ? `<button class="btn klein" id="svAboNeu">+ Empfänger</button>` : ""}</h2>
+      <p class="hinweis">Wer soll an Fristen und Aufgaben erinnert werden? Die Mail fasst zusammen, was überfällig oder demnächst fällig ist
+        (Termine, Prüfungen, Nachweise, Vorsorge, Unterweisungen, Maßnahmen, Sicherheitsdatenblätter, zu prüfende Unterlagen) –
+        <b>ohne Namen von Beschäftigten</b>; Einzelheiten stehen nur hier im Cockpit. Jede Mail enthält einen Link zum Abbestellen.</p>
+      ${abos.length ? `<div class="zeilen">${abos.map((a, i) => `<div class="z" style="cursor:default"><div><b>${esc(a.name || a.email)}</b>
+          <small>${esc(a.email)} · ${esc(rh[a.rhythmus] || a.rhythmus)}${a.rhythmus === "woechentlich" ? " · " + esc(wt[a.wochentag] || "") : ""}
+          · ${a.letzte_mail ? "zuletzt " + esc(asSvDatZeit(a.letzte_mail)) : "noch keine Mail"}</small></div>
+          ${pflege ? `<div class="sv-akt"><button class="btn sek klein" data-probe="${i}">Probe senden</button><button class="btn sek klein" data-abo="${i}">Ändern</button></div>` : ""}</div>`).join("")}</div>`
+        : `<div class="leer">Noch keine Empfänger eingetragen.${pflege ? "" : " Einrichten kann das die Fachkraft für Arbeitssicherheit oder die Geschäftsführung."}</div>`}</div>`;
+  const neu = box.querySelector("#svAboNeu"); if(neu) neu.onclick = () => asSvAboDialog(null);
+  box.querySelectorAll("[data-abo]").forEach(b => b.onclick = () => asSvAboDialog(abos[+b.dataset.abo]));
+  box.querySelectorAll("[data-probe]").forEach(b => b.onclick = async () => {
+    const a = abos[+b.dataset.probe]; b.disabled = true;
+    try{
+      const t = await token();
+      const r = await fetch(CFG.url + "/functions/v1/frist-erinnerung", { method: "POST",
+        headers: { "Content-Type": "application/json", apikey: CFG.anon, Authorization: "Bearer " + t }, body: JSON.stringify({ test: a.id }) });
+      const j = await r.json().catch(() => ({}));
+      asMeldung(j.ok ? "Probe-Mail an " + a.email + " verschickt" : "Probe fehlgeschlagen: " + (j.error || r.status));
+    }catch(e){ asMeldung("Probe fehlgeschlagen: " + asSvFehler(e)); }
+    b.disabled = false;
+  });
+}
+function asSvAboDialog(a){
+  asDialog({ titel: a ? "Erinnerung ändern" : "Empfänger für Erinnerungen", inhalt: `<div class="form">
+      ${asFeld("E-Mail-Adresse", "email", a ? a.email : "", "email", "voll")}
+      ${asFeld("Name / Funktion (optional)", "name", a ? a.name : "", "text", "voll")}
+      ${asAuswahl("Wie oft?", "rhythmus", a ? a.rhythmus : "woechentlich", AS_SV_RHYTHMUS)}
+      ${asAuswahl("Wochentag (bei wöchentlich)", "wochentag", a ? a.wochentag : 1, AS_SV_WTAG)}</div>
+      <p class="hinweis">Versand morgens gegen 7 Uhr. „Täglich“ meldet sich nur, wenn seit der letzten Mail etwas Neues fällig wurde.</p>`,
+    knoepfe: [
+      ...(a ? [{ t: "Entfernen", klasse: "sek", fn: async () => { if(!confirm("Empfänger entfernen?")) return false;
+        await apiSend("DELETE", "/rest/v1/portal_erinnerung_abo?id=eq." + encodeURIComponent(a.id), null, "return=minimal"); asZeige(); } }] : []),
+      { t: "Speichern", fn: async d => {
+        const w = asWerte(d);
+        if(!w.email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(w.email)){ asMeldung("Bitte eine gültige E-Mail-Adresse eintragen."); return false; }
+        const daten = { email: w.email.toLowerCase(), name: w.name || null, rhythmus: w.rhythmus || "woechentlich", wochentag: +(w.wochentag || 1) };
+        try{
+          if(a) await apiSend("PATCH", "/rest/v1/portal_erinnerung_abo?id=eq." + encodeURIComponent(a.id), daten, "return=minimal");
+          else await apiSend("POST", "/rest/v1/portal_erinnerung_abo", Object.assign({ kunde_slug: AS.kunde, angelegt_von: AS.ich || null }, daten), "return=minimal");
+        }catch(e){ asMeldung(/23505|duplicate/.test(asSvFehler(e)) ? "Diese Adresse ist schon eingetragen." : "Konnte nicht gespeichert werden: " + asSvFehler(e)); return false; }
+        asZeige();
+      } }] });
 }

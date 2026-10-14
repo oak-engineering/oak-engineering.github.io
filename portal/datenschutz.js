@@ -54,6 +54,7 @@ function renderDatenschutz(wrap){
       <li><b>Qualifikationsnachweise:</b> Name, Art des Nachweises (z. B. Staplerschein, Ersthelfer), Ausstellungs- und Ablaufdatum, Beauftragung, optional eine Kopie des Nachweises.</li>
       <li><b>Arbeitsmedizinische Vorsorge:</b> nur dass, wann und aus welchem Anlass Vorsorge stattgefunden hat und der nächste Termin (Vorsorgekartei nach § 3 Abs. 4 ArbMedVV) – keine Befunde oder Diagnosen. Die Angaben werden nach dem Ende der Beschäftigung gelöscht; die Person erhält vorher eine Kopie.</li>
       <li><b>Kalender und Aufgaben:</b> Termine sowie Name und Zeitpunkt, wenn ein Termin erledigt oder eine Aufgabe quittiert wird.</li>
+      <li><b>E-Mail-Erinnerungen:</b> die vom Betrieb eingetragenen Empfänger-Adressen und der gewünschte Rhythmus. Die Mails nennen nur Fristen und Aufgaben, keine Namen von Beschäftigten, und lassen sich über einen Link in jeder Mail abbestellen.</li>
       <li><b>Fragen zur Arbeitssicherheit:</b> Fragen und Antworten mit Namen – sichtbar für alle Nutzer des Betriebs.</li>
       <li><b>Logbuch:</b> wer wann was im EHS-Cockpit geändert hat.</li>
     </ul>
