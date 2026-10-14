@@ -519,7 +519,10 @@ async function asStart(){
     AS.admin = m.rolle === "admin"; AS.fachkraft = AS.admin || m.rolle === "fachkraft"; AS.ich = m.name || "";
     AS.gf = AS.admin || !!(m.rollen && m.rollen.gf);   // Geschäftsführung: gibt Beurteilungen frei (DB prüft portal_ist_gf)
     await asKundenLaden();
-    let gew = null; try{ gew = localStorage.getItem("as_kunde"); }catch(e){}
+    /* ?kunde=<slug> in der Adresse öffnet direkt diesen Kunden (Link aus dem Terminal) */
+    let gew = new URLSearchParams(location.search).get("kunde");
+    if(!gew){ try{ gew = localStorage.getItem("as_kunde"); }catch(e){} }
+    else { try{ localStorage.setItem("as_kunde", gew); }catch(e){} }
     AS.kunde = AS.kunden.some(k => k.kunde_slug === gew) ? gew : (AS.kunden[0] || {}).kunde_slug || null;
     await asLaden();
   }catch(e){
