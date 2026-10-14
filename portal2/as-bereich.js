@@ -129,7 +129,6 @@ asKundeWahl = function(){
   sel.id = "bereichSel"; sel.title = b.fest ? "Ihre Bereiche" : "Ansicht auf einen Bereich einschränken";
   sel.innerHTML = `<option value="">${b.fest ? "Meine Bereiche" : "Alle Bereiche"}</option>`
     + zeilen.map(([e, t]) => `<option value="${esc(e.id)}" ${e.id === akt ? "selected" : ""}>${"  ".repeat(t)}${esc(e.name)}</option>`).join("");
-  sel.style.marginLeft = "8px";
   sel.onchange = async () => {
     try{ sel.value ? localStorage.setItem("as_bereich_" + AS.kunde, sel.value) : localStorage.removeItem("as_bereich_" + AS.kunde); }catch(e){}
     await asLaden(); asZeige();
