@@ -1,4 +1,4 @@
-/* OAK Arbeitsschutz-App – Cockpit (P05): Gesamtstand im Aufbaupfad, „Das ist jetzt dran", wenige Kacheln.
+/* OAK Arbeitsschutz-App – Cockpit (P05): „Ihr Weg“ mit Stufen-Badges (as-leitfaden.js), wenige Kacheln.
    Alles wird aus den Daten berechnet; nichts wird hier gepflegt. */
 "use strict";
 
@@ -17,15 +17,8 @@ AS_SEITEN.cockpit = { titel: "Übersicht", icon: "◉", sort: 1, render(main){
   const mOffen = asT("as_massnahme").filter(m => m.status === "offen").length, mPruef = asT("as_massnahme").filter(m => m.status === "erledigt").length;
   const kachel = (ziel, farbe, zahl, lbl, info) => `<div class="kachel k-${farbe}" onclick="asGehe('${ziel}')"><div class="lbl">${lbl}</div><div class="zahl">${zahl}</div><div class="hinweis">${info || ""}</div></div>`;
   const akt = pfad.find(s => s.nr === AS.cockpitStufe);
-  main.innerHTML = `<h1 class="seite">${esc(AS.org.name)}</h1><p class="unter">Stand ${asDat(asHeute())} · Aufbaupfad: Stufe ${offeneStufe} von 4 in Arbeit</p>
-    <div class="karte"><h2>Gesamtstand</h2><div class="stufen">${pfad.map(s => { const ok = s.krit.filter(k => k.ok).length;
-      return `<div class="stufe ${s.nr === AS.cockpitStufe ? "aktiv" : ""}" data-st="${s.nr}"><b>Stufe ${s.nr} · ${esc(s.titel)}</b>
-        <div class="balken" style="margin:8px 0 4px"><span style="width:${asProz(ok, s.krit.length)}%;background:${ok === s.krit.length ? "var(--gruen)" : "var(--blau)"}"></span></div>
-        <div class="zahl">${ok} von ${s.krit.length} erfüllt · ${esc(s.text)}</div></div>`; }).join("")}</div>
-      <div style="margin-top:12px">${akt.krit.map(k => `<div class="krit" style="cursor:pointer" onclick="asGehe('${k.ziel}')"><span class="${k.ok ? "ok" : "nok"}">${k.ok ? "✓" : "○"}</span>
-        <div>${esc(k.t)}${k.info ? ` <span class="hinweis">${esc(k.info)}</span>` : ""}</div></div>`).join("")}</div></div>
-    <div class="karte jetzt"><h2>Das ist jetzt dran</h2>${jetzt.slice(0, 5).map(k => `<a href="#${k.ziel}" class="s${k.stufe}"><b>${esc(k.t)}</b><small>Stufe ${k.stufe}${k.info ? " · " + esc(k.info) : ""}</small></a>`).join("") || `<div class="leer">Alles erfüllt – Stand halten und jährlich prüfen.</div>`}
-      ${faellig ? `<a href="#check" class="s3"><b>${voll ? "Jährlicher Reifegrad-Check fällig" : "Reifegrad-Check (Vollfassung) noch nicht durchgeführt"}</b><small>${voll ? "zuletzt " + asDat(voll.datum) : chk ? "Erstaufnahme vom " + asDat(chk.datum) + " liegt vor" : "zuerst die Erstaufnahme"}</small></a>` : ""}</div>
+  main.innerHTML = `<h1 class="seite">${esc(AS.org.name)}</h1><p class="unter">Stand ${asDat(asHeute())}</p>
+    <div class="karte" id="lfUebersicht"><div class="leer">Ihr Weg wird ausgewertet …</div></div>
     <div class="kacheln">
       ${kachel("check", rg ? (Object.values(rg).some(s => s === 1) ? "rot" : Object.values(rg).some(s => s === 2) ? "gelb" : "gruen") : "grau",
         rg ? kz.reifegrad_mittel.toString().replace(".", ",") : "–", "Reifegrad (Mittel)", rg ? Object.entries(rg).map(([k, s]) => k + " " + (s ? "I".repeat(s) : "–")).join(" · ") : "noch kein Check")}
@@ -47,5 +40,5 @@ AS_SEITEN.cockpit = { titel: "Übersicht", icon: "◉", sort: 1, render(main){
           return kachel("steuerung/kultur", n("rot") ? "rot" : n("gelb") ? "gelb" : "gruen", n("rot") + " rot · " + n("gelb") + " gelb", "Präventionskultur", "KurzCheck " + asDat(kc.datum)); }
         return kachel("steuerung/kultur", "grau", k && AS_KAT.bradley[k.stufe - 1] ? esc(AS_KAT.bradley[k.stufe - 1].split(" – ")[0]) : "–", "Sicherheitskultur", "Bradley-Kurve"); })()}
     </div>`;
-  main.querySelectorAll("[data-st]").forEach(s => s.onclick = () => { AS.cockpitStufe = +s.dataset.st; asZeige(); });
+  if(typeof asLfUebersicht === "function") asLfUebersicht(document.getElementById("lfUebersicht"));
 }};

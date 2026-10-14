@@ -37,7 +37,8 @@ function asOrgGrund(box){
       ${asFeld("WZ-Kode (Branche)", "wz_kode", d.wz_kode)}${asFeld("Schichtmodell", "schichtmodell", d.schichtmodell)}
       ${asFeld("Vollzeit-Beschäftigte", "ma_vz", d.ma_vz, "number")}${asFeld("Teilzeit bis 20 h", "ma_tz20", d.ma_tz20, "number")}
       ${asFeld("Teilzeit bis 30 h", "ma_tz30", d.ma_tz30, "number")}${asFeld("Geschäftsführung", "gf_name", d.gf_name)}
-      ${asFeld("Fachkraft vor Ort", "fkv_name", d.fkv_name)}${asFeld("Betriebsrat (falls vorhanden)", "br", d.br)}</div>`,
+      ${asFeld("Fachkraft vor Ort", "fkv_name", d.fkv_name)}${asFeld("Betriebsrat (falls vorhanden)", "br", d.br)}
+      ${asFeld("Besondere Gefährdung für Leben und Gesundheit laut Gefährdungsbeurteilung (§ 22 Abs. 1 S. 3 SGB VII – Sicherheitsbeauftragte schon ab 21 Beschäftigten)", "sibe_besondere_gefaehrdung", d.sibe_besondere_gefaehrdung, "checkbox", "voll")}</div>`,
     knoepfe: [{ t: "Speichern", fn: async dl => { await asOrgSpeichern(asWerte(dl)); asZeige(); } }] });
   box.querySelectorAll("[data-n]").forEach(z => z.onclick = () => {
     const [k, t, h, name] = AS_NACHWEISE.find(n => n[0] === z.dataset.n);
@@ -105,7 +106,7 @@ function asOrgBeauftragte(box){
       ${soll.length ? `<div class="tabwrap"><table class="tab"><tr><th>Funktion</th><th>Bereich</th><th>Schicht</th><th>Anwesend</th><th>Soll</th><th>Ist</th><th></th></tr>
       ${soll.map(z => `<tr><td>${esc(AS_KAT.beauftragte[z.funktion].titel)}</td><td>${esc(z.einheit)}</td><td>${z.schicht || "–"}</td><td>${z.n}</td>
         <td>${z.soll}${z.richtwert ? " *" : ""}</td><td>${z.ist}</td><td>${z.ist >= z.soll ? asChip("erfüllt", "gruen") : asChip("fehlt " + (z.soll - z.ist), "rot")}</td></tr>`).join("")}</table></div>
-      <p class="hinweis">Ersthelfer: 1 bei 2–20 Anwesenden, darüber 10 % (Verwaltung 5 %) – DGUV V1 § 26. Brandschutzhelfer: in der Regel 5 % – ASR A2.2. * Sicherheitsbeauftragte: Richtwert, maßgeblich ist die Unfallverhütungsvorschrift der BG.</p>`
+      <p class="hinweis">Ersthelfer: 1 bei 2–20 Anwesenden, darüber 10 % (Verwaltung 5 %) – DGUV V1 § 26. Brandschutzhelfer: in der Regel 5 % – ASR A2.2. * Sicherheitsbeauftragte: Pflicht ab 50 Beschäftigten, bei 21–49 nur bei besonderer Gefährdung (§ 22 Abs. 1 SGB VII, seit 29.05.2026). Die Anzahl legt der Unternehmer fest (DGUV Regel 100-001 Nr. 4.2.1); Soll = OAK-Empfehlung 1 je angefangene 50 Beschäftigte.</p>`
       : `<div class="leer">Unter „Struktur“ Einheiten mit Beschäftigten und Schichten anlegen – dann rechnet die App das Soll.</div>`}</div>
     <div class="karte"><h2>Personen <button class="btn klein" id="bNeu">+ Person</button></h2><div class="zeilen">
       ${asT("as_beauftragter").sort((a, b) => a.funktion.localeCompare(b.funktion)).map(b => { const ab = b.gueltig_bis && b.gueltig_bis < heute;

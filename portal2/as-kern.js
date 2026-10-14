@@ -236,8 +236,16 @@ function asBeauftragteSoll(){
     }
   });
   const ges = asBeschaeftigte().kopf;
-  if(ges > 20) zeilen.push({ funktion: "sibe", einheit: "Betrieb gesamt", schicht: null, soll: Math.max(1, Math.ceil(ges / 100)), richtwert: true,
-    ist: asT("as_beauftragter").filter(b => b.funktion === "sibe" && gueltig(b)).length, n: ges });
+  /* Sicherheitsbeauftragte – § 22 Abs. 1 SGB VII n. F. (seit 29.05.2026): Pflicht ab 50 Beschäftigten; 21–49 nur bei besonderer
+     Gefährdung (Feld sibe_besondere_gefaehrdung) oder auf Anordnung des UV-Trägers; unter 250 ohne besondere Gefährdung genügt einer.
+     Anzahl legt der Unternehmer fest (DGUV Regel 100-001 Nr. 4.2.1) – OAK-Empfehlung 1 je angefangene 50 Beschäftigte (Nikolai 14.10.2026).
+     soll = Empfehlung, pflicht = gesetzliches Minimum (für Stufe 1 / Badge). */
+  const bes = !!asOrgDaten().sibe_besondere_gefaehrdung;
+  if(ges >= 50 || (ges > 20 && bes)){
+    const pflicht = ges >= 250 || bes ? Math.max(1, Math.ceil(ges / 50)) : 1;
+    zeilen.push({ funktion: "sibe", einheit: "Betrieb gesamt", schicht: null, soll: Math.max(1, Math.ceil(ges / 50)), pflicht, richtwert: true,
+      ist: asT("as_beauftragter").filter(b => b.funktion === "sibe" && gueltig(b)).length, n: ges });
+  }
   return zeilen;
 }
 function asAbgelaufen(){
@@ -422,7 +430,7 @@ function asHashLesen(){
 /* Seitenleiste in Gruppen (Nikolai 14.10.2026: „zu lang, gliedern wie in V1“). Offen ist die Gruppe der aktiven Seite
    plus die, die man selbst aufgeklappt hat (gemerkt im Gerät). Seiten ohne Gruppe landen unter „Service“. */
 const AS_NAV_GRUPPEN = [
-  ["ueberblick", "Überblick", ["start", "cockpit", "pflichten"]],
+  ["ueberblick", "Überblick", ["start", "cockpit", "leitfaden", "pflichten"]],
   ["organisation", "Organisation", ["organisation", "check", "nachweise", "prozesse"]],
   ["gefaehrdungen", "Gefährdungen", ["bda", "massnahmen", "mitzeichnung", "gefahrstoffe"]],
   ["anlagen", "Anlagen & Betrieb", ["anlagen", "pruefungen", "maengel", "hallenplan", "vorort"]],
