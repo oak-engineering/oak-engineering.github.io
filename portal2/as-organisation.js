@@ -9,7 +9,7 @@ const AS_NACHWEISE = [
   ["avv_am", "Auftragsverarbeitung (AVV) abgeschlossen", "Art. 28 DSGVO – vor dem Erfassen von Personendaten"],
   ["pruefkataster_am", "Prüfkataster für gefährliche Arbeitsmittel", "BetrSichV § 14"],
   ["grundunterweisung_am", "Grundunterweisung aller Beschäftigten nachgewiesen", "§ 12 ArbSchG"],
-  ["gefahrstoffe_am", "Gefahrstoffverzeichnis mit aktuellen SDB geprüft", "GefStoffV § 6 – jährlich"],
+  ["gefahrstoffe_am", "Gefahrstoffverzeichnis mit aktuellen SDB geprüft", "GefStoffV § 6 Abs. 12 – führen und aktuell halten (jährliche Durchsicht: OAK-Empfehlung, keine gesetzliche Frist)"],
   ["vorsorge_am", "Arbeitsmedizinische Vorsorge organisiert", "ArbMedVV"],
 ];
 
