@@ -284,16 +284,25 @@ async function asOrgKonten(box){
   try{ d = await asZgAufruf({ aktion: "liste" }); }
   catch(e){ box.innerHTML = `<div class="karte"><div class="leer">Konnte nicht geladen werden: ${esc(e.message || e)}</div></div>`; return; }
   const liste = d.zugaenge || [], darf = d.darf || {};
+  // Bereichszuordnung (as-bereich.js): ohne Zuordnung sieht ein Zugang den ganzen Betrieb
+  const zuo = await apiGet("/rest/v1/portal_mitglied_einheit?select=user_id,einheit_id&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []);
+  const einhName = id => (asNach("as_einheit", id) || {}).name || "";
+  const bereicheVon = uid => zuo.filter(x => x.user_id === uid).map(x => einhName(x.einheit_id)).filter(Boolean);
+  const darfBereiche = AS.admin || AS.gf || AS.fachkraft;
   box.innerHTML = `<div class="karte"><h2>Zugänge zum EHS-Cockpit <button class="btn klein" id="zgNeu">+ Zugang anlegen</button></h2>
       <p class="hinweis">Jede Person bekommt einen eigenen Zugang – so ist im Logbuch nachvollziehbar, wer was eingetragen hat.
-        ${darf.sperren ? "Als Geschäftsführung können Sie alle Zugänge Ihres Betriebs verwalten." : "Als Fachkraft können Sie Zugänge mit der Rolle „Betrieb“ anlegen und deren Passwort neu setzen."}</p>
+        ${darf.sperren ? "Als Geschäftsführung können Sie alle Zugänge Ihres Betriebs verwalten." : "Als Fachkraft können Sie Zugänge mit der Rolle „Betrieb“ anlegen und deren Passwort neu setzen."}
+        Über <b>Bereiche</b> legen Sie fest, welchen Teil der Organisation ein Zugang sieht (z. B. Meister Werkzeugbau) – ohne Zuordnung den ganzen Betrieb.</p>
       <div class="zeilen">${liste.map((z, i) => `<div class="z" style="cursor:default"><div><b>${esc(z.name || z.email)}</b>
           <small>${esc(z.email)} · ${esc(z.gf ? "Geschäftsführung" : (AS_ZG_ROLLE[z.rolle] || z.rolle))}${z.gesperrt || z.status === "gesperrt" ? " · <b>gesperrt</b>" : ""}
-          · ${z.zuletzt ? "zuletzt angemeldet " + esc(asDat(String(z.zuletzt).slice(0, 10))) : "noch nie angemeldet"}</small></div>
-          <div class="sv-akt" style="display:flex;gap:6px">${(darf.sperren || (z.rolle === "kunde" && !z.gf)) ? `<button class="btn sek klein" data-pw="${i}">Passwort neu</button>` : ""}
+          · ${z.zuletzt ? "zuletzt angemeldet " + esc(asDat(String(z.zuletzt).slice(0, 10))) : "noch nie angemeldet"}
+          · Bereich: ${esc(bereicheVon(z.user_id).join(", ") || "ganzer Betrieb")}</small></div>
+          <div class="sv-akt" style="display:flex;gap:6px">${darfBereiche && z.user_id ? `<button class="btn sek klein" data-be="${i}">Bereiche</button>` : ""}
+            ${(darf.sperren || (z.rolle === "kunde" && !z.gf)) ? `<button class="btn sek klein" data-pw="${i}">Passwort neu</button>` : ""}
             ${darf.sperren && z.user_id !== AS.uid ? `<button class="btn sek klein" data-sp="${i}">${z.gesperrt || z.status === "gesperrt" ? "Entsperren" : "Sperren"}</button>` : ""}</div></div>`).join("")
         || `<div class="leer">Noch keine Zugänge.</div>`}</div></div>`;
   box.querySelector("#zgNeu").onclick = () => asZgNeu(box, darf);
+  box.querySelectorAll("[data-be]").forEach(b => b.onclick = () => asZgBereiche(box, liste[+b.dataset.be], zuo));
   box.querySelectorAll("[data-pw]").forEach(b => b.onclick = () => {
     const z = liste[+b.dataset.pw], pw = asZgPasswort();
     asDialog({ titel: "Neues Passwort für " + (z.name || z.email), inhalt: `<div class="form">${asFeld("Neues Passwort (mindestens 10 Zeichen)", "pw", pw, "text", "voll")}</div>
@@ -310,6 +319,30 @@ async function asOrgKonten(box){
     catch(e){ asMeldung(e.message || String(e)); return; }
     asMeldung(weg ? "Zugang gesperrt" : "Zugang entsperrt"); asOrgKonten(box);
   });
+}
+/* Bereiche eines Zugangs: Häkchen je Einheit der Organisationsstruktur; Unterbereiche gelten automatisch mit */
+function asZgBereiche(box, z, zuo){
+  const hat = new Set(zuo.filter(x => x.user_id === z.user_id).map(x => x.einheit_id));
+  const einh = asT("as_einheit");
+  const kinder = p => einh.filter(e => (e.parent_id || null) === p).sort((a, b) => (a.sort || 0) - (b.sort || 0) || String(a.name).localeCompare(b.name));
+  const zeilen = [];
+  (function lauf(p, t){ kinder(p).forEach(e => { zeilen.push([e, t]); lauf(e.id, t + 1); }); })(null, 0);
+  asDialog({ titel: "Bereiche für " + (z.name || z.email), inhalt: `
+      <p class="hinweis">Der Zugang sieht die angehakten Bereiche mit allen Unterbereichen. Übergeordnete und betriebsweite Einträge
+        sieht er nur zum Lesen. Ohne Häkchen sieht er den ganzen Betrieb.</p>
+      <div class="form">${zeilen.map(([e, t]) => `<label class="voll" style="flex-direction:row;align-items:center;gap:8px;padding-left:${t * 18}px">
+        <input type="checkbox" data-eid="${esc(e.id)}" ${hat.has(e.id) ? "checked" : ""}> ${esc(e.name)}${e.art ? ` <span class="hinweis">(${esc(e.art)})</span>` : ""}</label>`).join("")
+        || `<div class="leer">Noch keine Organisationsstruktur – zuerst unter „Struktur“ Standorte und Bereiche anlegen.</div>`}</div>`,
+    knoepfe: [{ t: "Speichern", fn: async dl => {
+      const neu = new Set([...dl.querySelectorAll("[data-eid]")].filter(c => c.checked).map(c => c.dataset.eid));
+      const weg = [...hat].filter(id => !neu.has(id)), dazu = [...neu].filter(id => !hat.has(id));
+      try{
+        for(const id of weg) await apiSend("DELETE", "/rest/v1/portal_mitglied_einheit?user_id=eq." + encodeURIComponent(z.user_id) + "&einheit_id=eq." + encodeURIComponent(id), null, "return=minimal");
+        if(dazu.length) await apiSend("POST", "/rest/v1/portal_mitglied_einheit",
+          dazu.map(id => ({ user_id: z.user_id, einheit_id: id, kunde_slug: AS.kunde, angelegt_von: AS.ich })), "return=minimal");
+      }catch(e){ asMeldung("Konnte nicht gespeichert werden: " + (e.message || e)); return false; }
+      asMeldung(neu.size ? "Bereiche gespeichert" : "Zugang sieht jetzt den ganzen Betrieb"); asOrgKonten(box);
+    } }] });
 }
 function asZgNeu(box, darf){
   const pw = asZgPasswort();

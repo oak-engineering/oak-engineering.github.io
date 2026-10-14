@@ -106,6 +106,7 @@ const AS_QUELLEN = {
 
 async function asLaden(){
   if(!AS.kunde){ AS.db = {}; AS.org = null; return; }
+  if(typeof asBereichVorbereiten === "function") await asBereichVorbereiten();   // Bereichsfilter (as-bereich.js)
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const eigen = AS_TABELLEN.filter(t => !(AS_QUELLEN[t] && AS_QUELLEN[t].ganz)), quellen = Object.entries(AS_QUELLEN);
   const [org, ...rest] = await Promise.all([
@@ -118,6 +119,7 @@ async function asLaden(){
   eigen.forEach((t, i) => AS.db[t] = rest[i] || []);
   quellen.forEach(([t, q], i) => { const v1 = (rest[eigen.length + i] || []).map(q.zuV2); AS.db[t] = q.ganz ? v1 : (AS.db[t] || []).concat(v1); });
   ["as_einheit", "as_taetigkeit", "as_gefaehrdung", "as_arbeitssystem"].forEach(t => AS.db[t].sort((a, b) => (a.sort || 0) - (b.sort || 0)));
+  if(typeof asBereichNachLaden === "function") asBereichNachLaden();
   if(typeof asMarkeAnwenden === "function") asMarkeAnwenden();
   if(typeof asNameSetzen === "function") asNameSetzen();
 }
