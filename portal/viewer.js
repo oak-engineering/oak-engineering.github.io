@@ -163,7 +163,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   try{
     if(istShell){
       // Live-Kontext: Mandant aus dem Storage-Pfad (<slug>/...), Nutzername fuers Log.
-      LIVE.slug = String(p).split("/")[0] || "";
+      const gsBa = /^gs:/.test(String(p));   // Gefahrstoff-BA wird aus Stoff + EMKG-Beurteilung erzeugt (gs-ba-bauen.js)
+      LIVE.slug = (gsBa ? String(p).split(":")[1] : String(p).split("/")[0]) || "";
       if(window.OAK_MARKE) await OAK_MARKE.anwenden(LIVE.slug);   // Farben des Betriebs auch in der Dokument-Ansicht
       LIVE.mid = param("mid") || "";
       LIVE.docTyp = LIVE_TYPEN[typ] ? typ : "";
@@ -183,7 +184,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         // Besucher noch die alte Shell (z. B. mit den alten Risiko-Bezeichnungen).
         fetch("shells/" + typ + ".html", {cache:"no-cache"})
           .then(r => { if(!r.ok) throw new Error("Vorlage fehlt"); return r.text(); }),
-        apiGet(storagePfad(p), true),
+        gsBa ? (window.GSBA ? GSBA.daten(p) : Promise.reject(new Error("BA-Baustein fehlt"))) : apiGet(storagePfad(p), true),
         liveStatePromise,
       ]);
       let html = setzePortalFlag(injiziere(shell, docdata));

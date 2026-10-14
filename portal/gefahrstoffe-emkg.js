@@ -118,6 +118,7 @@ function gseDialog(g, gbu, danach){
     <p class="pw-msg" id="gseMsg"></p>
     <div class="pw-akt">${gbu && typeof ADMIN !== "undefined" && ADMIN ? `<button type="button" class="btn sek" id="gseLoe">Löschen</button>` : ""}
       <button type="button" class="btn sek" id="gseAbb">Schließen</button>
+      ${gbu ? `<button type="button" class="btn sek" id="gseDruck">Drucken</button>` : ""}
       ${pflege ? `<button type="submit" class="btn sek" value="entwurf">Als Entwurf speichern</button><button type="submit" class="btn" value="freigegeben">Speichern und freigeben</button>` : ""}</div>
   </form>`;
   const q = s => dlg.querySelector(s), zahl = s => { const v = q(s).value; return v === "" ? undefined : Number(v); };
@@ -153,6 +154,8 @@ function gseDialog(g, gbu, danach){
   dlg.querySelectorAll("input,select").forEach(el => el.addEventListener(el.type === "number" || el.type === "text" ? "input" : "change", rechnen));
   rechnen();
   q("#gseAbb").addEventListener("click", () => dlg.close());
+  const dr = q("#gseDruck");
+  if(dr) dr.addEventListener("click", () => { const r = rechnen(); if(r) gseDrucken(g, gbu, eingaben(), r); });
   const loe = q("#gseLoe");
   if(loe) loe.addEventListener("click", async () => {
     if(!confirm("Diese Tätigkeit samt Beurteilung löschen?")) return;
@@ -198,4 +201,29 @@ function gseErgebnisHtml(r){
     ${r.mutterschutz ? `<div class="ul-hinweis">Mutterschutz beachten: ${esc(r.mutterschutzSaetze.join(", "))}</div>` : ""}
     ${(r.hinweise || []).length ? `<details><summary>Hinweise (${r.hinweise.length})</summary><ul class="gse-hw">${r.hinweise.map(h => `<li>${esc(h)}</li>`).join("")}</ul></details>` : ""}
     <p class="uw-leise">Berechnet mit EMKG-Kern ${esc(r.version)} nach BAuA-Leitfaden 2.2, Leitfaden Brand und Explosion 2020 und H-/EUH-Zuordnung 06/2026.</p>`;
+}
+
+/* Druckfassung der Beurteilung (eine Tätigkeit) – Kopf, Angaben, Ergebnis je Modul, Freigabe */
+function gseDrucken(g, gbu, e, r){
+  const z = (k, v) => v === undefined || v === null || v === "" ? "" : `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`;
+  const mg = e.menge ? e.menge.wert + " " + e.menge.einheit + (e.grossflaechig ? " pro Arbeitstag (großflächig)" : " je Tätigkeit") : "";
+  const haut = e.hautkontakt_ausgeschlossen ? "technisch ausgeschlossen" : ({ klein: "Spritzer, kleinflächig", gross: "großflächig" }[e.wirkflaeche] || "");
+  ehsDrucken("Gefährdungsbeurteilung – " + g.bezeichnung, `
+    <h1>Gefährdungsbeurteilung Gefahrstoffe (EMKG)</h1>
+    <p class="leise">§ 6 GefStoffV · Einfaches Maßnahmenkonzept Gefahrstoffe der BAuA</p>
+    <h2>Stoff und Tätigkeit</h2><table>
+      ${z("Gefahrstoff", g.bezeichnung)}${z("Hersteller", g.hersteller)}${z("Signalwort", g.signalwort)}${z("H-/EUH-Sätze", (g.h_saetze || []).join(" "))}
+      ${z("Sicherheitsdatenblatt", g.sdb_ausgabe ? "Stand " + ehsDatum(g.sdb_ausgabe) : "")}
+      ${z("Tätigkeit", gbu.taetigkeit)}${z("Bereich", gbu.arbeitsbereich)}${z("Art der Tätigkeit", GSE_ART[e.taetigkeitsart || ""])}</table>
+    <h2>Angaben zur Tätigkeit</h2><table>
+      ${z("Menge", mg)}${z("Dauer pro Tag", e.dauer_min_tag != null ? e.dauer_min_tag + " min" : "")}${z("Versprüht", e.versprueht ? "ja" : "nein")}
+      ${z("Temperatur", e.verarbeitungstemp_c != null ? e.verarbeitungstemp_c + " °C" : "")}${z("Hautkontakt", haut)}
+      ${z("Dauer Hautkontakt", { kurz: "unter 15 min/Tag", lang: "über 15 min/Tag" }[e.wirkdauer])}
+      ${z("Lüftung", { normal: "normale Raumlüftung", absaugung: "Absaugung am Arbeitsplatz", gering: "schlecht belüftet", keine: "keine Lüftung" }[e.raumlueftung])}
+      ${z("Enge Räume", e.enge_raeume ? "ja" : "")}${z("Lagermenge", e.lagermenge_kg != null ? e.lagermenge_kg + " kg bzw. l" : "")}</table>
+    ${gseErgebnisHtml(r).replace(/<details>/g, "<div>").replace(/<\/details>/g, "</div>").replace(/<summary>/g, "<h3>").replace(/<\/summary>/g, "</h3>")}
+    <h2>Freigabe</h2><table>
+      ${z("Status", gbu.status === "freigegeben" ? "freigegeben" : "Entwurf")}${z("Freigegeben von", gbu.freigegeben_von)}
+      ${z("Freigegeben am", gbu.freigegeben_am ? ehsDatum(gbu.freigegeben_am) : "")}${z("Nächste Überprüfung", gbu.naechste_pruefung ? ehsDatum(gbu.naechste_pruefung) : "")}
+      ${z("Erstellt von", gbu.erstellt_von)}</table>`);
 }

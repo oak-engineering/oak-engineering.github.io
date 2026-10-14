@@ -1,0 +1,2029 @@
+{
+  "_stand": "2026-10-14",
+  "_hinweis": "Entwurf, von Claude aus BAuA-Schutzleitfäden/TRGS 555 abgeleitet – fachliche Prüfung durch Nikolai Krawielitzki offen. Keine KI zur Laufzeit.",
+  "_regeln": "REGEL.wenn = Liste von H-/EUH-Codes (greift, wenn der Stoff mindestens einen davon hat) oder \"immer\". \"sonst\": true (mit wenn=\"immer\") = Rückfallregel: greift nur, wenn in derselben Liste keine Regel mit Code-Liste zutrifft; andere 'immer'-Regeln zählen dabei nicht mit. pikto._wenn = H-/EUH-Codes, bei denen der jeweilige pikto-Schlüssel gesetzt wird; Schlüssel ohne _wenn-Eintrag (ersthilfe, ersthilfe_arzt, hygiene) gelten immer.",
+  "_quellen": "EMKG-Schutzleitfäden der BAuA (references/gefahrstoffe/_quellen/emkg-schutzleitfaden-*.md), TRGS 555, CLP-Verordnung (EG) Nr. 1272/2008 inkl. Delegierte VO (EU) 2023/707 (EUH380/381/430/431/440/441/450/451).",
+  "h": {
+    "H220": {
+      "de": "Gas ist extrem entzündbar.",
+      "en": "The gas is extremely flammable.",
+      "tr": "Gaz son derece kolay alev alır."
+    },
+    "H221": {
+      "de": "Gas ist entzündbar.",
+      "en": "The gas is flammable.",
+      "tr": "Gaz alev alabilir."
+    },
+    "H222": {
+      "de": "Spraydose: Inhalt ist extrem entzündbar.",
+      "en": "Aerosol: the contents are extremely flammable.",
+      "tr": "Sprey kutusu: İçeriği son derece kolay alev alır."
+    },
+    "H223": {
+      "de": "Spraydose: Inhalt ist entzündbar.",
+      "en": "Aerosol: the contents are flammable.",
+      "tr": "Sprey kutusu: İçeriği alev alabilir."
+    },
+    "H224": {
+      "de": "Flüssigkeit und Dämpfe sind extrem entzündbar.",
+      "en": "Liquid and vapour are extremely flammable.",
+      "tr": "Sıvı ve buharları son derece kolay alev alır."
+    },
+    "H225": {
+      "de": "Flüssigkeit und Dämpfe sind leicht entzündbar.",
+      "en": "Liquid and vapour are highly flammable.",
+      "tr": "Sıvı ve buharları kolay alev alır."
+    },
+    "H226": {
+      "de": "Flüssigkeit und Dämpfe sind entzündbar.",
+      "en": "Liquid and vapour are flammable.",
+      "tr": "Sıvı ve buharları alev alabilir."
+    },
+    "H228": {
+      "de": "Der feste Stoff ist entzündbar.",
+      "en": "The solid is flammable.",
+      "tr": "Katı madde alev alabilir."
+    },
+    "H229": {
+      "de": "Behälter steht unter Druck und kann bei Erwärmung bersten.",
+      "en": "The container is under pressure and may burst if heated.",
+      "tr": "Kap basınç altındadır, ısınırsa patlayabilir."
+    },
+    "H241": {
+      "de": "Erwärmung kann einen Brand oder eine Explosion verursachen.",
+      "en": "Heating may cause a fire or an explosion.",
+      "tr": "Isıtılması yangına veya patlamaya neden olabilir."
+    },
+    "H242": {
+      "de": "Erwärmung kann einen Brand verursachen.",
+      "en": "Heating may cause a fire.",
+      "tr": "Isıtılması yangına neden olabilir."
+    },
+    "H250": {
+      "de": "Entzündet sich an der Luft von selbst.",
+      "en": "Catches fire by itself when exposed to air.",
+      "tr": "Havayla temas ettiğinde kendiliğinden alev alır."
+    },
+    "H251": {
+      "de": "Erhitzt sich von selbst und kann in Brand geraten.",
+      "en": "Heats up by itself and may catch fire.",
+      "tr": "Kendiliğinden ısınır ve alev alabilir."
+    },
+    "H252": {
+      "de": "Erhitzt sich in großen Mengen von selbst und kann in Brand geraten.",
+      "en": "Heats up by itself in large amounts and may catch fire.",
+      "tr": "Büyük miktarlarda kendiliğinden ısınır ve alev alabilir."
+    },
+    "H260": {
+      "de": "Mit Wasser entstehen entzündbare Gase, die sich von selbst entzünden können.",
+      "en": "Contact with water releases flammable gases which may ignite by themselves.",
+      "tr": "Su ile temas ettiğinde kendiliğinden alev alabilen yanıcı gazlar çıkarır."
+    },
+    "H261": {
+      "de": "Mit Wasser entstehen entzündbare Gase.",
+      "en": "Contact with water releases flammable gases.",
+      "tr": "Su ile temas ettiğinde yanıcı gazlar çıkarır."
+    },
+    "H270": {
+      "de": "Kann einen Brand verursachen oder verstärken (brandförderndes Gas).",
+      "en": "May cause or intensify fire (oxidising gas).",
+      "tr": "Yangına neden olabilir veya yangını şiddetlendirebilir (oksitleyici gaz)."
+    },
+    "H271": {
+      "de": "Kann einen Brand oder eine Explosion verursachen (stark brandfördernd).",
+      "en": "May cause fire or explosion (strong oxidiser).",
+      "tr": "Yangına veya patlamaya neden olabilir (güçlü oksitleyici)."
+    },
+    "H272": {
+      "de": "Kann einen Brand verstärken (brandfördernd).",
+      "en": "May intensify fire (oxidiser).",
+      "tr": "Yangını şiddetlendirebilir (oksitleyici)."
+    },
+    "H280": {
+      "de": "Enthält Gas unter Druck; kann bei Erwärmung explodieren.",
+      "en": "Contains gas under pressure; may explode if heated.",
+      "tr": "Basınç altında gaz içerir; ısınırsa patlayabilir."
+    },
+    "H281": {
+      "de": "Enthält tiefkaltes Gas; kann schwere Kälteverbrennungen verursachen.",
+      "en": "Contains refrigerated gas; may cause cryogenic burns or injury.",
+      "tr": "Çok soğuk gaz içerir; ciddi soğuk yanıklarına neden olabilir."
+    },
+    "H290": {
+      "de": "Kann Metalle angreifen.",
+      "en": "May be corrosive to metals.",
+      "tr": "Metalleri aşındırabilir."
+    },
+    "H300": {
+      "de": "Lebensgefahr beim Verschlucken.",
+      "en": "Fatal if swallowed.",
+      "tr": "Yutulması halinde öldürücüdür."
+    },
+    "H301": {
+      "de": "Giftig beim Verschlucken.",
+      "en": "Toxic if swallowed.",
+      "tr": "Yutulması halinde zehirlidir."
+    },
+    "H302": {
+      "de": "Gesundheitsschädlich beim Verschlucken.",
+      "en": "Harmful if swallowed.",
+      "tr": "Yutulması halinde sağlığa zararlıdır."
+    },
+    "H304": {
+      "de": "Kann tödlich sein, wenn es verschluckt wird und in die Lunge gelangt.",
+      "en": "May be fatal if swallowed and it enters the airways.",
+      "tr": "Yutulup solunum yollarına kaçarsa öldürücü olabilir."
+    },
+    "H310": {
+      "de": "Lebensgefahr bei Hautkontakt.",
+      "en": "Fatal in contact with skin.",
+      "tr": "Cilde temas etmesi halinde öldürücüdür."
+    },
+    "H311": {
+      "de": "Giftig bei Hautkontakt.",
+      "en": "Toxic in contact with skin.",
+      "tr": "Cilde temas etmesi halinde zehirlidir."
+    },
+    "H312": {
+      "de": "Gesundheitsschädlich bei Hautkontakt.",
+      "en": "Harmful in contact with skin.",
+      "tr": "Cilde temas etmesi halinde sağlığa zararlıdır."
+    },
+    "H314": {
+      "de": "Verätzt Haut und Augen schwer.",
+      "en": "Causes severe skin burns and eye damage.",
+      "tr": "Ciltte ve gözlerde ağır yanıklara (dağlanmaya) yol açar."
+    },
+    "H315": {
+      "de": "Reizt die Haut.",
+      "en": "Causes skin irritation.",
+      "tr": "Cildi tahriş eder."
+    },
+    "H317": {
+      "de": "Kann bei Hautkontakt eine Allergie auslösen.",
+      "en": "May cause an allergic skin reaction.",
+      "tr": "Cilde temas ettiğinde alerjiye yol açabilir."
+    },
+    "H318": {
+      "de": "Verursacht schwere Augenschäden.",
+      "en": "Causes serious eye damage.",
+      "tr": "Gözlerde ciddi hasara yol açar."
+    },
+    "H319": {
+      "de": "Reizt die Augen stark.",
+      "en": "Causes serious eye irritation.",
+      "tr": "Gözleri ciddi şekilde tahriş eder."
+    },
+    "H330": {
+      "de": "Lebensgefahr beim Einatmen.",
+      "en": "Fatal if inhaled.",
+      "tr": "Solunması halinde öldürücüdür."
+    },
+    "H331": {
+      "de": "Giftig beim Einatmen.",
+      "en": "Toxic if inhaled.",
+      "tr": "Solunması halinde zehirlidir."
+    },
+    "H332": {
+      "de": "Gesundheitsschädlich beim Einatmen.",
+      "en": "Harmful if inhaled.",
+      "tr": "Solunması halinde sağlığa zararlıdır."
+    },
+    "H334": {
+      "de": "Kann beim Einatmen Allergie, Asthma oder Atemnot auslösen.",
+      "en": "May cause allergy, asthma symptoms or breathing difficulties if inhaled.",
+      "tr": "Solunması halinde alerji, astım belirtileri veya nefes darlığına yol açabilir."
+    },
+    "H335": {
+      "de": "Kann die Atemwege reizen.",
+      "en": "May cause respiratory irritation.",
+      "tr": "Solunum yollarını tahriş edebilir."
+    },
+    "H336": {
+      "de": "Kann schläfrig und benommen machen.",
+      "en": "May cause drowsiness or dizziness.",
+      "tr": "Uyku hali veya baş dönmesine yol açabilir."
+    },
+    "H340": {
+      "de": "Kann das Erbgut schädigen.",
+      "en": "May cause genetic defects.",
+      "tr": "Genetik hasara yol açabilir."
+    },
+    "H341": {
+      "de": "Kann vermutlich das Erbgut schädigen.",
+      "en": "Suspected of causing genetic defects.",
+      "tr": "Genetik hasara yol açtığından şüphelenilmektedir."
+    },
+    "H350": {
+      "de": "Kann Krebs erzeugen.",
+      "en": "May cause cancer.",
+      "tr": "Kansere yol açabilir."
+    },
+    "H350i": {
+      "de": "Kann beim Einatmen Krebs erzeugen.",
+      "en": "May cause cancer by inhalation.",
+      "tr": "Solunması halinde kansere yol açabilir."
+    },
+    "H351": {
+      "de": "Kann vermutlich Krebs erzeugen.",
+      "en": "Suspected of causing cancer.",
+      "tr": "Kansere yol açtığından şüphelenilmektedir."
+    },
+    "H360": {
+      "de": "Kann die Fruchtbarkeit beeinträchtigen oder das Kind im Mutterleib schädigen.",
+      "en": "May damage fertility or the unborn child.",
+      "tr": "Üreme yeteneğine veya anne karnındaki bebeğe zarar verebilir."
+    },
+    "H360F": {
+      "de": "Kann die Fruchtbarkeit beeinträchtigen.",
+      "en": "May damage fertility.",
+      "tr": "Üreme yeteneğine zarar verebilir."
+    },
+    "H360D": {
+      "de": "Kann das Kind im Mutterleib schädigen.",
+      "en": "May damage the unborn child.",
+      "tr": "Anne karnındaki bebeğe zarar verebilir."
+    },
+    "H360FD": {
+      "de": "Kann die Fruchtbarkeit beeinträchtigen und das Kind im Mutterleib schädigen.",
+      "en": "May damage fertility. May damage the unborn child.",
+      "tr": "Üreme yeteneğine ve anne karnındaki bebeğe zarar verebilir."
+    },
+    "H360Fd": {
+      "de": "Kann die Fruchtbarkeit beeinträchtigen und vermutlich das Kind im Mutterleib schädigen.",
+      "en": "May damage fertility. Suspected of damaging the unborn child.",
+      "tr": "Üreme yeteneğine zarar verebilir; anne karnındaki bebeğe zarar verdiğinden şüphelenilmektedir."
+    },
+    "H360Df": {
+      "de": "Kann das Kind im Mutterleib schädigen und vermutlich die Fruchtbarkeit beeinträchtigen.",
+      "en": "May damage the unborn child. Suspected of damaging fertility.",
+      "tr": "Anne karnındaki bebeğe zarar verebilir; üreme yeteneğine zarar verdiğinden şüphelenilmektedir."
+    },
+    "H361": {
+      "de": "Kann vermutlich die Fruchtbarkeit beeinträchtigen oder das Kind im Mutterleib schädigen.",
+      "en": "Suspected of damaging fertility or the unborn child.",
+      "tr": "Üreme yeteneğine veya anne karnındaki bebeğe zarar verdiğinden şüphelenilmektedir."
+    },
+    "H361f": {
+      "de": "Kann vermutlich die Fruchtbarkeit beeinträchtigen.",
+      "en": "Suspected of damaging fertility.",
+      "tr": "Üreme yeteneğine zarar verdiğinden şüphelenilmektedir."
+    },
+    "H361d": {
+      "de": "Kann vermutlich das Kind im Mutterleib schädigen.",
+      "en": "Suspected of damaging the unborn child.",
+      "tr": "Anne karnındaki bebeğe zarar verdiğinden şüphelenilmektedir."
+    },
+    "H361fd": {
+      "de": "Kann vermutlich die Fruchtbarkeit beeinträchtigen und das Kind im Mutterleib schädigen.",
+      "en": "Suspected of damaging fertility. Suspected of damaging the unborn child.",
+      "tr": "Üreme yeteneğine ve anne karnındaki bebeğe zarar verdiğinden şüphelenilmektedir."
+    },
+    "H362": {
+      "de": "Kann gestillte Säuglinge über die Muttermilch schädigen.",
+      "en": "May cause harm to breast-fed children.",
+      "tr": "Anne sütüyle beslenen bebeklere zarar verebilir."
+    },
+    "H370": {
+      "de": "Schädigt Organe.",
+      "en": "Causes damage to organs.",
+      "tr": "Organlara zarar verir."
+    },
+    "H371": {
+      "de": "Kann Organe schädigen.",
+      "en": "May cause damage to organs.",
+      "tr": "Organlara zarar verebilir."
+    },
+    "H372": {
+      "de": "Schädigt Organe bei längerer oder wiederholter Aufnahme.",
+      "en": "Causes damage to organs through prolonged or repeated exposure.",
+      "tr": "Uzun süreli veya tekrarlanan maruziyette organlara zarar verir."
+    },
+    "H373": {
+      "de": "Kann Organe bei längerer oder wiederholter Aufnahme schädigen.",
+      "en": "May cause damage to organs through prolonged or repeated exposure.",
+      "tr": "Uzun süreli veya tekrarlanan maruziyette organlara zarar verebilir."
+    },
+    "H400": {
+      "de": "Sehr giftig für Lebewesen im Wasser.",
+      "en": "Very toxic to aquatic life.",
+      "tr": "Sudaki canlılar için çok zehirlidir."
+    },
+    "H410": {
+      "de": "Sehr giftig für Lebewesen im Wasser, mit langfristiger Wirkung.",
+      "en": "Very toxic to aquatic life with long lasting effects.",
+      "tr": "Sudaki canlılar için çok zehirlidir, etkisi uzun sürer."
+    },
+    "H411": {
+      "de": "Giftig für Lebewesen im Wasser, mit langfristiger Wirkung.",
+      "en": "Toxic to aquatic life with long lasting effects.",
+      "tr": "Sudaki canlılar için zehirlidir, etkisi uzun sürer."
+    },
+    "H412": {
+      "de": "Schädlich für Lebewesen im Wasser, mit langfristiger Wirkung.",
+      "en": "Harmful to aquatic life with long lasting effects.",
+      "tr": "Sudaki canlılar için zararlıdır, etkisi uzun sürer."
+    },
+    "H413": {
+      "de": "Kann für Lebewesen im Wasser langfristig schädlich sein.",
+      "en": "May cause long lasting harmful effects to aquatic life.",
+      "tr": "Sudaki canlılar için uzun süreli zararlı etkileri olabilir."
+    },
+    "EUH014": {
+      "de": "Reagiert heftig mit Wasser.",
+      "en": "Reacts violently with water.",
+      "tr": "Su ile şiddetli tepkimeye girer."
+    },
+    "EUH019": {
+      "de": "Kann explosionsfähige Peroxide bilden.",
+      "en": "May form explosive peroxides.",
+      "tr": "Patlayıcı peroksitler oluşturabilir."
+    },
+    "EUH029": {
+      "de": "Bei Kontakt mit Wasser entstehen giftige Gase.",
+      "en": "Contact with water releases toxic gas.",
+      "tr": "Su ile temas ettiğinde zehirli gaz çıkarır."
+    },
+    "EUH031": {
+      "de": "Bei Kontakt mit Säure entstehen giftige Gase.",
+      "en": "Contact with acids releases toxic gas.",
+      "tr": "Asitlerle temas ettiğinde zehirli gaz çıkarır."
+    },
+    "EUH032": {
+      "de": "Bei Kontakt mit Säure entstehen sehr giftige Gase.",
+      "en": "Contact with acids releases very toxic gas.",
+      "tr": "Asitlerle temas ettiğinde çok zehirli gaz çıkarır."
+    },
+    "EUH066": {
+      "de": "Häufiger Kontakt kann die Haut spröde und rissig machen.",
+      "en": "Repeated exposure may cause skin dryness or cracking.",
+      "tr": "Sık temas cildi kurutabilir ve çatlatabilir."
+    },
+    "EUH071": {
+      "de": "Verätzt die Atemwege.",
+      "en": "Corrosive to the respiratory tract.",
+      "tr": "Solunum yollarını dağlar (aşındırır)."
+    },
+    "EUH202": {
+      "de": "Klebt Haut und Augenlider innerhalb von Sekunden zusammen.",
+      "en": "Bonds skin and eyes in seconds.",
+      "tr": "Cildi ve göz kapaklarını saniyeler içinde yapıştırır."
+    },
+    "EUH204": {
+      "de": "Enthält Isocyanate. Kann eine Allergie auslösen.",
+      "en": "Contains isocyanates. May produce an allergic reaction.",
+      "tr": "İzosiyanat içerir. Alerjiye yol açabilir."
+    },
+    "EUH208": {
+      "de": "Enthält einen Stoff, der eine Allergie auslösen kann.",
+      "en": "Contains a substance that may produce an allergic reaction.",
+      "tr": "Alerjiye yol açabilen bir madde içerir."
+    },
+    "EUH210": {
+      "de": "Sicherheitsdatenblatt auf Anfrage erhältlich.",
+      "en": "Safety data sheet available on request.",
+      "tr": "Güvenlik bilgi formu istek üzerine verilir."
+    },
+    "EUH211": {
+      "de": "Beim Sprühen können gefährliche Tröpfchen entstehen. Sprühnebel nicht einatmen.",
+      "en": "Hazardous respirable droplets may be formed when sprayed. Do not breathe spray or mist.",
+      "tr": "Püskürtülürken tehlikeli damlacıklar oluşabilir. Sprey buğusunu solumayın."
+    },
+    "EUH212": {
+      "de": "Bei der Verwendung kann gefährlicher Feinstaub entstehen. Staub nicht einatmen.",
+      "en": "Hazardous respirable dust may be formed when used. Do not breathe dust.",
+      "tr": "Kullanım sırasında tehlikeli ince toz oluşabilir. Tozu solumayın."
+    },
+    "EUH380": {
+      "de": "Kann das Hormonsystem des Menschen stören.",
+      "en": "May cause endocrine disruption in humans.",
+      "tr": "İnsanlarda hormon sistemini bozabilir."
+    },
+    "EUH381": {
+      "de": "Steht im Verdacht, das Hormonsystem des Menschen zu stören.",
+      "en": "Suspected of causing endocrine disruption in humans.",
+      "tr": "İnsanlarda hormon sistemini bozduğundan şüphelenilmektedir."
+    },
+    "EUH401": {
+      "de": "Gebrauchsanweisung einhalten, um Gefahren für Mensch und Umwelt zu vermeiden.",
+      "en": "Follow the instructions for use to avoid risks to people and the environment.",
+      "tr": "İnsan ve çevre için tehlikeleri önlemek için kullanım talimatına uyun."
+    },
+    "EUH430": {
+      "de": "Kann das Hormonsystem von Tieren in der Umwelt stören.",
+      "en": "May cause endocrine disruption in the environment.",
+      "tr": "Çevredeki canlıların hormon sistemini bozabilir."
+    },
+    "EUH431": {
+      "de": "Steht im Verdacht, das Hormonsystem von Tieren in der Umwelt zu stören.",
+      "en": "Suspected of causing endocrine disruption in the environment.",
+      "tr": "Çevredeki canlıların hormon sistemini bozduğundan şüphelenilmektedir."
+    },
+    "EUH440": {
+      "de": "Reichert sich in der Umwelt und in Lebewesen an, auch im Menschen.",
+      "en": "Accumulates in the environment and living organisms including in humans.",
+      "tr": "Çevrede ve insan dahil canlıların vücudunda birikir."
+    },
+    "EUH441": {
+      "de": "Reichert sich stark in der Umwelt und in Lebewesen an, auch im Menschen.",
+      "en": "Strongly accumulates in the environment and living organisms including in humans.",
+      "tr": "Çevrede ve insan dahil canlıların vücudunda güçlü biçimde birikir."
+    },
+    "EUH450": {
+      "de": "Kann Wasservorkommen lange und großflächig verunreinigen.",
+      "en": "Can cause long-lasting and diffuse contamination of water resources.",
+      "tr": "Su kaynaklarını uzun süre ve geniş alanda kirletebilir."
+    },
+    "EUH451": {
+      "de": "Kann Wasservorkommen sehr lange und großflächig verunreinigen.",
+      "en": "Can cause very long-lasting and diffuse contamination of water resources.",
+      "tr": "Su kaynaklarını çok uzun süre ve geniş alanda kirletebilir."
+    }
+  },
+  "slf": {
+    "100": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Für gute Lüftung sorgen: dauernd lüften oder regelmäßig stoßlüften.",
+          "en": "Ensure good ventilation: ventilate continuously or open windows wide at regular intervals.",
+          "tr": "İyi havalandırma sağlayın: sürekli havalandırın veya düzenli olarak pencereleri tamamen açın."
+        },
+        {
+          "de": "Lüftungsöffnungen und -gitter nicht zustellen.",
+          "en": "Do not block ventilation openings or grilles.",
+          "tr": "Havalandırma açıklarını ve ızgaralarını kapatmayın."
+        }
+      ]
+    },
+    "110": {
+      "kat": "organisatorisch",
+      "pikto": [
+        "P022"
+      ],
+      "saetze": [
+        {
+          "de": "Nur die vom Betrieb vorgesehenen Gefahrstoffe verwenden. Gefahrstoffe nie in Getränke- oder Lebensmittelbehälter füllen.",
+          "en": "Use only the hazardous substances provided by the company. Never fill hazardous substances into drink or food containers.",
+          "tr": "Yalnızca işletmenin öngördüğü tehlikeli maddeleri kullanın. Tehlikeli maddeleri asla içecek veya gıda kaplarına doldurmayın."
+        },
+        {
+          "de": "Am Arbeitsplatz nicht essen, trinken oder rauchen. Pausenverpflegung nicht am Arbeitsplatz aufbewahren.",
+          "en": "Do not eat, drink or smoke at the workplace. Do not keep food or drinks at the workplace.",
+          "tr": "Çalışma yerinde yemek yemeyin, içmeyin, sigara içmeyin. Yiyecek ve içecekleri çalışma yerinde bulundurmayın."
+        },
+        {
+          "de": "Vor Pausen und nach der Arbeit Hände waschen. Behälter nach Gebrauch schließen, Arbeitsplatz sauber halten.",
+          "en": "Wash your hands before breaks and after work. Close containers after use and keep the workplace clean.",
+          "tr": "Molalardan önce ve iş bitiminde ellerinizi yıkayın. Kapları kullandıktan sonra kapatın, çalışma yerini temiz tutun."
+        }
+      ]
+    },
+    "120": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Verschmutzte Haut sofort reinigen. Keine Lösemittel, Verdünner, Maschinenreiniger oder Putzlappen zur Hautreinigung verwenden.",
+          "en": "Clean contaminated skin immediately. Never use solvents, thinners, machine cleaners or cleaning rags to clean your skin.",
+          "tr": "Kirlenen cildi hemen temizleyin. Cildi temizlemek için asla çözücü, tiner, makine temizleyicisi veya temizlik bezi kullanmayın."
+        },
+        {
+          "de": "Hautschutzplan beachten: Hautschutz vor der Arbeit, Hautreinigung und -pflege vor den Pausen und nach der Arbeit.",
+          "en": "Follow the skin protection plan: protective cream before work, cleaning and care cream before breaks and after work.",
+          "tr": "Cilt koruma planına uyun: işe başlamadan önce koruyucu krem, molalardan önce ve iş bitiminde temizlik ve bakım."
+        },
+        {
+          "de": "Keinen Schmuck an Händen und Armen tragen. Gebrauchte Putzlappen nicht in die Kleidung stecken.",
+          "en": "Do not wear jewellery on hands or arms. Do not put used cleaning rags in your pockets.",
+          "tr": "Ellerde ve kollarda takı takmayın. Kullanılmış temizlik bezlerini cebinize koymayın."
+        }
+      ]
+    },
+    "2000": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Den Arbeitsbereich nur betreten, wenn deine Arbeit es erfordert.",
+          "en": "Enter the work area only if your work requires it.",
+          "tr": "Çalışma alanına yalnızca işiniz gerektiriyorsa girin."
+        },
+        {
+          "de": "Arbeitskleidung und Straßenkleidung getrennt aufbewahren. Verschmutzte Arbeitskleidung nicht mit nach Hause nehmen.",
+          "en": "Keep work clothes and private clothes separate. Do not take contaminated work clothes home.",
+          "tr": "İş kıyafetlerini ve günlük kıyafetleri ayrı saklayın. Kirlenmiş iş kıyafetlerini eve götürmeyin."
+        },
+        {
+          "de": "Allein arbeiten nur nach Absprache und mit geregelter Notfallmeldung.",
+          "en": "Work alone only if agreed and with an emergency alarm arrangement in place.",
+          "tr": "Yalnız çalışmayı yalnızca onay alarak ve acil durum bildirimi düzenlenmişse yapın."
+        }
+      ]
+    },
+    "2100": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Hilfsmittel, Deckel und Spritzschutz benutzen, damit Gefahrstoffe nicht auf die Haut kommen.",
+          "en": "Use tools, lids and splash guards so that hazardous substances do not get onto your skin.",
+          "tr": "Tehlikeli maddelerin cildinize temas etmemesi için yardımcı aletler, kapaklar ve sıçrama koruyucuları kullanın."
+        },
+        {
+          "de": "Verschmutzte Arbeitskleidung wechseln. Gefahrstoffreste von Haut und Haaren abwaschen.",
+          "en": "Change contaminated work clothes. Wash residues of hazardous substances off your skin and hair.",
+          "tr": "Kirlenmiş iş kıyafetlerini değiştirin. Cildinizdeki ve saçınızdaki madde kalıntılarını yıkayın."
+        }
+      ]
+    },
+    "2110": {
+      "kat": "persoenlich",
+      "pikto": [
+        "M009"
+      ],
+      "saetze": [
+        {
+          "de": "Die vorgeschriebenen Chemikalienschutzhandschuhe tragen.",
+          "en": "Wear the specified chemical protective gloves.",
+          "tr": "Belirtilen kimyasal koruyucu eldivenleri takın."
+        },
+        {
+          "de": "Handschuhe vor dem Benutzen auf Risse und Schäden prüfen. Beschädigte oder innen verschmutzte Handschuhe sofort wechseln.",
+          "en": "Check gloves for cracks and damage before use. Replace damaged gloves or gloves that are dirty inside immediately.",
+          "tr": "Eldivenleri kullanmadan önce yırtık ve hasar açısından kontrol edin. Hasarlı veya içi kirlenmiş eldivenleri hemen değiştirin."
+        },
+        {
+          "de": "Handschuhe nur so lange wie nötig tragen und mindestens täglich wechseln. Bei längerem Tragen Unterziehhandschuhe aus Baumwolle benutzen.",
+          "en": "Wear gloves only as long as necessary and change them at least daily. For longer use, wear cotton under-gloves.",
+          "tr": "Eldivenleri yalnızca gerektiği kadar takın ve en az günde bir değiştirin. Uzun süre takılacaksa altına pamuklu eldiven giyin."
+        }
+      ]
+    },
+    "2111": {
+      "kat": "persoenlich",
+      "pikto": [
+        "M008"
+      ],
+      "saetze": [
+        {
+          "de": "Die vorgeschriebenen Schutzschuhe tragen.",
+          "en": "Wear the specified safety shoes.",
+          "tr": "Belirtilen iş güvenliği ayakkabılarını giyin."
+        },
+        {
+          "de": "Schuhe vor Arbeitsbeginn auf Schäden prüfen. Verschmutzte Schuhe, die nicht gereinigt werden können, austauschen.",
+          "en": "Check shoes for damage before starting work. Replace contaminated shoes that cannot be cleaned.",
+          "tr": "İşe başlamadan önce ayakkabıları hasar açısından kontrol edin. Temizlenemeyen kirlenmiş ayakkabıları değiştirin."
+        }
+      ]
+    },
+    "2112": {
+      "kat": "persoenlich",
+      "pikto": [
+        "M010"
+      ],
+      "saetze": [
+        {
+          "de": "Die vorgeschriebene Schutzkleidung tragen.",
+          "en": "Wear the specified protective clothing.",
+          "tr": "Belirtilen koruyucu kıyafeti giyin."
+        },
+        {
+          "de": "Schutzkleidung vor der Arbeit auf Löcher, Risse, offene Nähte und defekte Verschlüsse prüfen.",
+          "en": "Check protective clothing for holes, tears, open seams and broken fasteners before work.",
+          "tr": "Koruyucu kıyafeti işe başlamadan önce delik, yırtık, açık dikiş ve bozuk kapanma açısından kontrol edin."
+        },
+        {
+          "de": "Verschmutzte Schutzkleidung sofort wechseln. Einweg-Schutzanzüge nach dem Benutzen entsorgen.",
+          "en": "Change contaminated protective clothing immediately. Dispose of disposable coveralls after use.",
+          "tr": "Kirlenmiş koruyucu kıyafeti hemen değiştirin. Tek kullanımlık tulumları kullandıktan sonra atın."
+        }
+      ]
+    },
+    "2120": {
+      "kat": "organisatorisch",
+      "pikto": [
+        "M009"
+      ],
+      "saetze": [
+        {
+          "de": "Bei Arbeiten mit Wasser oder wässrigen Lösungen flüssigkeitsdichte Schutzhandschuhe tragen.",
+          "en": "Wear liquid-tight protective gloves when working with water or water-based solutions.",
+          "tr": "Su veya sulu çözeltilerle çalışırken sıvı geçirmez koruyucu eldiven takın."
+        },
+        {
+          "de": "Nasse und trockene Arbeiten abwechseln. Hände nur so oft wie nötig waschen und gut abtrocknen.",
+          "en": "Alternate wet work with dry work. Wash your hands only as often as necessary and dry them well.",
+          "tr": "Islak ve kuru işleri dönüşümlü yapın. Ellerinizi yalnızca gerektiği kadar yıkayın ve iyice kurulayın."
+        },
+        {
+          "de": "Hautschutz und Hautpflege nach Hautschutzplan anwenden.",
+          "en": "Use skin protection and skin care according to the skin protection plan.",
+          "tr": "Cilt koruma ve bakım ürünlerini cilt koruma planına göre kullanın."
+        }
+      ]
+    },
+    "2121": {
+      "kat": "persoenlich",
+      "pikto": [
+        "M009"
+      ],
+      "saetze": [
+        {
+          "de": "Jeden Hautkontakt vermeiden, geeignete Schutzhandschuhe tragen.",
+          "en": "Avoid any skin contact and wear suitable protective gloves.",
+          "tr": "Her türlü cilt temasından kaçının, uygun koruyucu eldiven takın."
+        },
+        {
+          "de": "Werkzeuge und Geräte reinigen, bevor sie woanders benutzt werden.",
+          "en": "Clean tools and equipment before they are used elsewhere.",
+          "tr": "Aletleri ve cihazları başka bir yerde kullanmadan önce temizleyin."
+        },
+        {
+          "de": "Bei Ausschlag, Juckreiz oder Schwellungen der Haut Vorgesetzten informieren und ärztlichen Rat holen.",
+          "en": "If you notice a rash, itching or swelling of the skin, inform your supervisor and seek medical advice.",
+          "tr": "Ciltte kızarıklık, kaşıntı veya şişlik olursa amirinize haber verin ve doktora danışın."
+        }
+      ]
+    },
+    "2200": {
+      "kat": "persoenlich",
+      "pikto": [
+        "M004"
+      ],
+      "saetze": [
+        {
+          "de": "Die vorgeschriebene Schutzbrille tragen. Wenn Spritzer ins Gesicht möglich sind, zusätzlich einen Gesichtsschutz (Visier) tragen.",
+          "en": "Wear the specified safety goggles. If splashes to the face are possible, also wear a face shield.",
+          "tr": "Belirtilen koruyucu gözlüğü takın. Yüze sıçrama ihtimali varsa ayrıca yüz siperi takın."
+        },
+        {
+          "de": "Schutzbrille sauber halten und in der Aufbewahrungsbox lagern.",
+          "en": "Keep safety goggles clean and store them in their box.",
+          "tr": "Koruyucu gözlüğü temiz tutun ve kutusunda saklayın."
+        }
+      ]
+    },
+    "2201": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Standort der Augendusche bzw. Augenspülflasche kennen. Zugang immer freihalten.",
+          "en": "Know where the eye shower or eye wash bottle is. Always keep access clear.",
+          "tr": "Göz duşunun veya göz yıkama şişesinin yerini bilin. Önünü her zaman açık tutun."
+        },
+        {
+          "de": "Bei Spritzern ins Auge sofort spülen, dabei das Augenlid weit offen halten.",
+          "en": "If anything splashes into your eye, rinse immediately and hold the eyelid wide open.",
+          "tr": "Göze sıçrama olursa hemen yıkayın, göz kapağını iyice açık tutun."
+        }
+      ]
+    },
+    "2411": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Förderband nur mit geschlossener Einhausung und eingeschalteter Absaugung betreiben.",
+          "en": "Operate the conveyor belt only with the enclosure closed and extraction switched on.",
+          "tr": "Konveyör bandını yalnızca muhafazası kapalı ve emiş sistemi açıkken çalıştırın."
+        },
+        {
+          "de": "Schäden an Einhausung, Staubschürzen oder Absaugung sofort melden.",
+          "en": "Report damage to the enclosure, dust curtains or extraction immediately.",
+          "tr": "Muhafaza, toz perdeleri veya emiş sistemindeki hasarları hemen bildirin."
+        }
+      ]
+    },
+    "2421": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Säcke nur mit eingeschalteter Absaugung befüllen.",
+          "en": "Fill sacks only with the extraction switched on.",
+          "tr": "Çuvalları yalnızca emiş sistemi açıkken doldurun."
+        },
+        {
+          "de": "Vor dem Verschließen warten, bis sich der Staub gesetzt hat.",
+          "en": "Wait until the dust has settled before closing the sack.",
+          "tr": "Çuvalı kapatmadan önce tozun çökmesini bekleyin."
+        },
+        {
+          "de": "Verschüttetes Material nicht kehren, sondern absaugen.",
+          "en": "Do not sweep up spilled material, vacuum it.",
+          "tr": "Dökülen malzemeyi süpürmeyin, vakumla çekin."
+        }
+      ]
+    },
+    "2422": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur geeignete und dichte Behälter befüllen.",
+          "en": "Fill only suitable and leak-tight containers.",
+          "tr": "Yalnızca uygun ve sızdırmaz kapları doldurun."
+        },
+        {
+          "de": "Nach dem Befüllen nachlaufen lassen; Tropfen in einem Auffangbehälter auffangen. Behälter danach sofort schließen.",
+          "en": "After filling, let the line drain and catch drips in a drip container. Then close the container immediately.",
+          "tr": "Doldurduktan sonra kalan sıvının akmasını bekleyin, damlaları toplama kabında toplayın. Ardından kabı hemen kapatın."
+        }
+      ]
+    },
+    "2423": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Mit Trichter und kleiner Fallhöhe einfüllen. Absaugung einschalten.",
+          "en": "Fill using a funnel and a small drop height. Switch on the extraction.",
+          "tr": "Huni kullanarak ve düşük yükseklikten doldurun. Emiş sistemini açın."
+        },
+        {
+          "de": "Staubablagerungen an der Füllstation regelmäßig entfernen – feucht oder mit Staubsauger, nicht kehren.",
+          "en": "Remove dust deposits at the filling station regularly – wet or with a vacuum cleaner, do not sweep.",
+          "tr": "Doldurma istasyonundaki toz birikintilerini düzenli olarak temizleyin – ıslak bezle veya süpürge makinesiyle, süpürgeyle süpürmeyin."
+        }
+      ]
+    },
+    "2424": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Absaugung vor dem Öffnen einschalten. Kessel erst öffnen, wenn sich der Staub gesetzt hat.",
+          "en": "Switch on extraction before opening. Open the vessel only when the dust has settled.",
+          "tr": "Açmadan önce emiş sistemini çalıştırın. Kazanı ancak toz çöktükten sonra açın."
+        },
+        {
+          "de": "Stoffe langsam und direkt an der Öffnung zugeben. Hebe- und Kipphilfen benutzen.",
+          "en": "Add substances slowly and directly at the opening. Use lifting and tipping aids.",
+          "tr": "Maddeleri yavaşça ve doğrudan açıklıktan ekleyin. Kaldırma ve devirme yardımcılarını kullanın."
+        },
+        {
+          "de": "Verschüttetes sofort staubarm beseitigen. Leere Säcke im Absaugbereich zusammenlegen und geschlossen sammeln.",
+          "en": "Remove spills immediately without raising dust. Fold empty sacks within the extraction area and collect them in a closed container.",
+          "tr": "Dökülenleri toz kaldırmadan hemen temizleyin. Boş çuvalları emiş alanında katlayın ve kapalı bir kapta toplayın."
+        }
+      ]
+    },
+    "2425": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur an der vorgesehenen Abfüllstelle abfüllen, nie in Fluren oder Durchgängen.",
+          "en": "Decant only at the designated filling point, never in corridors or passageways.",
+          "tr": "Yalnızca belirlenen dolum yerinde aktarın, asla koridorlarda veya geçitlerde yapmayın."
+        },
+        {
+          "de": "Nur zugelassene Pumpen und leitfähige Behälter verwenden. Behälter, Trichter und Pumpe erden bzw. leitend verbinden.",
+          "en": "Use only approved pumps and conductive containers. Earth or bond containers, funnels and pumps.",
+          "tr": "Yalnızca onaylı pompalar ve iletken kaplar kullanın. Kapları, huniyi ve pompayı topraklayın veya iletken şekilde birbirine bağlayın."
+        },
+        {
+          "de": "Langsam abfüllen. Behälter vorsichtig und ohne Funken öffnen.",
+          "en": "Fill slowly. Open containers carefully and without causing sparks.",
+          "tr": "Yavaşça doldurun. Kapları dikkatlice ve kıvılcım çıkarmadan açın."
+        }
+      ]
+    },
+    "2426": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur mit eingeschalteter Absaugung abfüllen.",
+          "en": "Decant only with the extraction switched on.",
+          "tr": "Yalnızca emiş sistemi açıkken aktarın."
+        },
+        {
+          "de": "Mit Lösemittel benetzte Teile von Füllrohr oder Zapfpistole nicht berühren.",
+          "en": "Do not touch parts of the filling pipe or nozzle that are wet with solvent.",
+          "tr": "Dolum borusunun veya tabancanın çözücüyle ıslanmış kısımlarına dokunmayın."
+        }
+      ]
+    },
+    "2431": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Säcke nur an der Entleerstelle mit eingeschalteter Absaugung öffnen und entleeren.",
+          "en": "Open and empty sacks only at the emptying station with the extraction switched on.",
+          "tr": "Çuvalları yalnızca boşaltma istasyonunda ve emiş sistemi açıkken açın ve boşaltın."
+        },
+        {
+          "de": "Leere Säcke staubarm zusammenlegen und in geschlossenen Behältern oder Abfallsäcken sammeln.",
+          "en": "Fold empty sacks without raising dust and collect them in closed containers or waste bags.",
+          "tr": "Boş çuvalları toz kaldırmadan katlayın ve kapalı kaplarda veya atık torbalarında toplayın."
+        }
+      ]
+    },
+    "2432": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur die vorgesehene, geeignete Fasspumpe verwenden. Tropfen auffangen.",
+          "en": "Use only the designated, suitable drum pump. Catch any drips.",
+          "tr": "Yalnızca öngörülen uygun varil pompasını kullanın. Damlaları toplayın."
+        },
+        {
+          "de": "Gebrauchte Lappen sofort in einen geschlossenen Behälter legen.",
+          "en": "Put used rags into a closed container immediately.",
+          "tr": "Kullanılmış bezleri hemen kapalı bir kaba koyun."
+        },
+        {
+          "de": "Leeren Behälter vor dem Transport verschließen.",
+          "en": "Close the empty container before moving it.",
+          "tr": "Boş kabı taşımadan önce kapatın."
+        }
+      ]
+    },
+    "2433": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Unter dem Zapfhahn immer einen Auffangbehälter bereitstellen.",
+          "en": "Always place a drip container under the tap.",
+          "tr": "Musluğun altına her zaman bir toplama kabı koyun."
+        },
+        {
+          "de": "Die obere Öffnung des IBC nur leicht öffnen.",
+          "en": "Open the top opening of the IBC only slightly.",
+          "tr": "IBC'nin üst kapağını yalnızca hafifçe açın."
+        },
+        {
+          "de": "Leeren IBC vor dem Bewegen verschließen. Undichte Ventile sofort melden.",
+          "en": "Close the empty IBC before moving it. Report leaking valves immediately.",
+          "tr": "Boş IBC'yi hareket ettirmeden önce kapatın. Sızdıran vanaları hemen bildirin."
+        }
+      ]
+    },
+    "2441": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur im Absaug- oder Abzugschrank bzw. in der abgesaugten Wiegekabine wiegen.",
+          "en": "Weigh only in the extraction cabinet, fume cupboard or the ventilated weighing booth.",
+          "tr": "Tartımı yalnızca emişli dolapta, çeker ocakta veya emişli tartım kabininde yapın."
+        },
+        {
+          "de": "Behälter erst öffnen, wenn sich der Staub gesetzt hat, nur so weit wie nötig öffnen und nach dem Wiegen sofort verschließen.",
+          "en": "Open containers only after the dust has settled, only as far as necessary, and close them immediately after weighing.",
+          "tr": "Kapları ancak toz çöktükten sonra ve yalnızca gerektiği kadar açın; tartımdan hemen sonra kapatın."
+        },
+        {
+          "de": "Mit der Schaufel staubarm umfüllen. Restmengen in den Entnahmebehälter zurückgeben.",
+          "en": "Transfer with a scoop without raising dust. Return leftover amounts to the original container.",
+          "tr": "Kürekle toz kaldırmadan aktarın. Artan miktarları alındığı kaba geri koyun."
+        }
+      ]
+    },
+    "2442": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Absaugung vor dem Öffnen einschalten. Rührwerk nur zum Zugeben kurz öffnen.",
+          "en": "Switch on extraction before opening. Open the mixer only briefly to add material.",
+          "tr": "Açmadan önce emiş sistemini çalıştırın. Karıştırıcıyı yalnızca malzeme eklemek için kısa süre açın."
+        },
+        {
+          "de": "Mischgut so entnehmen und transportieren, dass wenig Staub oder Dampf entsteht.",
+          "en": "Remove and transport the mixture so that little dust or vapour is released.",
+          "tr": "Karışımı az toz veya buhar çıkacak şekilde alın ve taşıyın."
+        }
+      ]
+    },
+    "2451": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur bei laufender Absaugung beschichten.",
+          "en": "Coat only while the extraction is running.",
+          "tr": "Yalnızca emiş sistemi çalışırken boyama yapın."
+        },
+        {
+          "de": "Pulverablagerungen nicht mit Druckluft abblasen, sondern absaugen. Kontaktstellen der Erdung sauber halten.",
+          "en": "Do not blow off powder deposits with compressed air, vacuum them. Keep earthing contact points clean.",
+          "tr": "Toz birikintilerini basınçlı havayla üflemeyin, vakumla çekin. Topraklama temas noktalarını temiz tutun."
+        }
+      ]
+    },
+    "2452": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur in der Lackierkabine bzw. am Spritzstand mit laufender Absaugung spritzen.",
+          "en": "Spray only in the spray booth or at the spray stand with the extraction running.",
+          "tr": "Yalnızca boya kabininde veya püskürtme yerinde, emiş sistemi çalışırken püskürtün."
+        },
+        {
+          "de": "Lackreste und getränkte Lappen in geschlossenen, nicht brennbaren Behältern sammeln – Gefahr der Selbstentzündung.",
+          "en": "Collect paint residues and soaked rags in closed, non-combustible containers – risk of spontaneous ignition.",
+          "tr": "Boya artıklarını ve emdirilmiş bezleri kapalı, yanmaz kaplarda toplayın – kendiliğinden tutuşma tehlikesi."
+        }
+      ]
+    },
+    "2453": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Gebinde und Tauchbecken nach Gebrauch abdecken oder schließen. Offene Flächen klein halten.",
+          "en": "Cover or close containers and dip tanks after use. Keep open surfaces small.",
+          "tr": "Kapları ve daldırma havuzlarını kullandıktan sonra örtün veya kapatın. Açık yüzeyleri küçük tutun."
+        },
+        {
+          "de": "Für gute Lüftung oder Absaugung sorgen. Getränkte Lappen in geschlossenen, nicht brennbaren Behältern sammeln.",
+          "en": "Ensure good ventilation or extraction. Collect soaked rags in closed, non-combustible containers.",
+          "tr": "İyi havalandırma veya emiş sağlayın. Emdirilmiş bezleri kapalı, yanmaz kaplarda toplayın."
+        }
+      ]
+    },
+    "2454": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Frisch beschichtete Teile sofort in den abgesaugten Trockenschrank oder auf die abgesaugte Ablagefläche bringen.",
+          "en": "Put freshly coated parts immediately into the ventilated drying cabinet or onto the ventilated storage area.",
+          "tr": "Yeni boyanmış parçaları hemen emişli kurutma dolabına veya emişli bekletme alanına koyun."
+        },
+        {
+          "de": "Türen des Trockenschranks nur kurz öffnen. Warnsignal bei zu wenig Absaugung beachten und melden.",
+          "en": "Open drying cabinet doors only briefly. Pay attention to the low-extraction alarm and report it.",
+          "tr": "Kurutma dolabının kapılarını yalnızca kısa süre açın. Emiş yetersizliği uyarısına dikkat edin ve bildirin."
+        }
+      ]
+    },
+    "2461": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Anlage vor dem Reinigen ausschalten und gegen Wiedereinschalten sichern.",
+          "en": "Switch off the equipment before cleaning and secure it against being switched on again.",
+          "tr": "Temizlemeden önce tesisi kapatın ve yeniden çalıştırılmaya karşı emniyete alın."
+        },
+        {
+          "de": "Staub nicht kehren oder mit Druckluft abblasen: feucht reinigen oder Industriestaubsauger (Staubklasse M) benutzen.",
+          "en": "Do not sweep dust or blow it off with compressed air: clean wet or use an industrial vacuum cleaner (dust class M).",
+          "tr": "Tozu süpürmeyin veya basınçlı havayla üflemeyin: ıslak temizleyin veya endüstriyel süpürge (toz sınıfı M) kullanın."
+        },
+        {
+          "de": "Konzentrierte Reiniger nur mit der Dosiereinrichtung verdünnen.",
+          "en": "Dilute concentrated cleaners only with the dosing device.",
+          "tr": "Konsantre temizleyicileri yalnızca dozaj cihazıyla seyreltin."
+        }
+      ]
+    },
+    "2462": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Vor der Staubentnahme Anlage abschalten und Staub sich setzen lassen. Staubbehälter oder -säcke vor der Entnahme staubdicht verschließen.",
+          "en": "Before removing dust, switch off the equipment and let the dust settle. Seal dust containers or bags dust-tight before removing them.",
+          "tr": "Tozu almadan önce tesisi kapatın ve tozun çökmesini bekleyin. Toz kaplarını veya torbalarını çıkarmadan önce toz geçirmez şekilde kapatın."
+        },
+        {
+          "de": "Gebrauchte Filter staubarm verpacken. Reste mit einem staubzurückhaltenden Sauger aufnehmen.",
+          "en": "Pack used filters without raising dust. Remove residues with a dust-retaining vacuum cleaner.",
+          "tr": "Kullanılmış filtreleri toz kaldırmadan paketleyin. Kalıntıları toz tutucu bir süpürgeyle alın."
+        },
+        {
+          "de": "Wenn sich Staub nicht vermeiden lässt: Atemschutz und staubdichte Kleidung tragen.",
+          "en": "If dust cannot be avoided: wear respiratory protection and dust-tight clothing.",
+          "tr": "Toz önlenemiyorsa: solunum koruyucu ve toz geçirmez kıyafet giyin."
+        }
+      ]
+    },
+    "2471": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Anlage nur mit laufender Absaugung betreiben. Störungen der Absaugung sofort melden.",
+          "en": "Operate the equipment only with the extraction running. Report extraction faults immediately.",
+          "tr": "Tesisi yalnızca emiş sistemi çalışırken kullanın. Emiş arızalarını hemen bildirin."
+        },
+        {
+          "de": "Pelletlager nur nach Freigabe betreten – Gefahr durch Kohlenmonoxid (CO).",
+          "en": "Enter the pellet store only when cleared – danger from carbon monoxide (CO).",
+          "tr": "Pelet deposuna yalnızca izin verildikten sonra girin – karbonmonoksit (CO) tehlikesi."
+        }
+      ]
+    },
+    "2500": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Absaugung während der ganzen Tätigkeit eingeschaltet lassen, auch beim Trocknen und Abdunsten.",
+          "en": "Keep the extraction switched on during the whole task, including drying and flash-off.",
+          "tr": "Emiş sistemini işin tamamı boyunca, kuruma ve buharlaşma sırasında da açık tutun."
+        },
+        {
+          "de": "Absaugung nur für die vorgesehenen Stoffe und Tätigkeiten benutzen.",
+          "en": "Use the extraction only for the substances and tasks it is intended for.",
+          "tr": "Emiş sistemini yalnızca öngörülen maddeler ve işler için kullanın."
+        }
+      ]
+    },
+    "2501": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur die vorgesehenen Absaugeinrichtungen benutzen. Nachlassende Wirkung oder Störungen sofort melden.",
+          "en": "Use only the designated extraction equipment. Report reduced performance or faults immediately.",
+          "tr": "Yalnızca öngörülen emiş donanımlarını kullanın. Etkinin azalmasını veya arızaları hemen bildirin."
+        }
+      ]
+    },
+    "2502": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Staub nicht kehren, trocken fegen oder mit Druckluft abblasen. Feucht reinigen oder absaugen.",
+          "en": "Do not sweep, dry-brush or blow off dust with compressed air. Clean wet or vacuum.",
+          "tr": "Tozu süpürmeyin, kuru fırçalamayın veya basınçlı havayla üflemeyin. Islak temizleyin veya vakumla çekin."
+        },
+        {
+          "de": "Anlagen erst öffnen, wenn sich der Staub gesetzt hat oder abgesaugt ist.",
+          "en": "Open equipment only when the dust has settled or has been extracted.",
+          "tr": "Tesisleri ancak toz çöktükten veya emildikten sonra açın."
+        },
+        {
+          "de": "Staubende Materialien und Böden wenn möglich befeuchten.",
+          "en": "Dampen dusty materials and floors where possible.",
+          "tr": "Toz çıkaran malzemeleri ve zeminleri mümkünse nemlendirin."
+        }
+      ]
+    },
+    "2510": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur im Absaugschrank arbeiten. Absaugung vorher einschalten und Anzeige beachten.",
+          "en": "Work only in the extraction cabinet. Switch on the extraction first and check the indicator.",
+          "tr": "Yalnızca emişli dolapta çalışın. Önce emiş sistemini açın ve göstergeyi kontrol edin."
+        },
+        {
+          "de": "Schrank nur so weit wie nötig öffnen.",
+          "en": "Open the cabinet only as far as necessary.",
+          "tr": "Dolabı yalnızca gerektiği kadar açın."
+        }
+      ]
+    },
+    "2511": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Im Abzug mit möglichst weit geschlossenem Frontschieber arbeiten. Luftstromanzeige beachten.",
+          "en": "Work in the fume cupboard with the front sash as closed as possible. Watch the airflow indicator.",
+          "tr": "Çeker ocakta ön camı mümkün olduğunca kapalı tutarak çalışın. Hava akışı göstergesine dikkat edin."
+        },
+        {
+          "de": "Abzug nicht als Lagerplatz benutzen.",
+          "en": "Do not use the fume cupboard for storage.",
+          "tr": "Çeker ocağı depolama yeri olarak kullanmayın."
+        }
+      ]
+    },
+    "2512": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Absaugung vor Beginn einschalten.",
+          "en": "Switch on the extraction before starting.",
+          "tr": "Başlamadan önce emiş sistemini açın."
+        },
+        {
+          "de": "So arbeiten, dass Dämpfe und Staub von dir weg zur Absaugwand gezogen werden. Nicht zwischen Absaugwand und Gefahrstoff stehen.",
+          "en": "Work so that vapours and dust are drawn away from you towards the extraction wall. Do not stand between the extraction wall and the substance.",
+          "tr": "Buhar ve tozun sizden uzağa, emiş duvarına doğru çekileceği şekilde çalışın. Emiş duvarı ile madde arasında durmayın."
+        }
+      ]
+    },
+    "2513": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Arbeiten mit dem Gefahrstoff auf dem Absaugtisch ausführen. Absaugung vorher einschalten.",
+          "en": "Carry out work with the substance on the extraction table. Switch on the extraction first.",
+          "tr": "Maddeyle çalışmayı emişli masada yapın. Önce emiş sistemini açın."
+        },
+        {
+          "de": "Absaugschlitze nicht abdecken oder zustellen.",
+          "en": "Do not cover or block the extraction slots.",
+          "tr": "Emiş yarıklarını örtmeyin veya kapatmayın."
+        }
+      ]
+    },
+    "2514": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Randabsaugung nicht verstellen oder abdecken.",
+          "en": "Do not adjust or cover the rim extraction.",
+          "tr": "Kenar emişini ayarını bozmayın veya örtmeyin."
+        },
+        {
+          "de": "Behälter bzw. Bad abdecken, wenn nicht daran gearbeitet wird.",
+          "en": "Cover the tank or bath when no work is being done on it.",
+          "tr": "Üzerinde çalışılmadığında kabı veya banyoyu örtün."
+        }
+      ]
+    },
+    "2515": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Absaugung vor Beginn einschalten.",
+          "en": "Switch on the extraction before starting.",
+          "tr": "Başlamadan önce emiş sistemini açın."
+        },
+        {
+          "de": "Absaugtrichter bzw. -arm möglichst nah an die Stelle bringen, an der Dampf oder Staub entsteht, und mitführen.",
+          "en": "Bring the extraction hood or arm as close as possible to where vapour or dust is released, and move it along as you work.",
+          "tr": "Emiş ağzını veya kolunu buhar ya da tozun çıktığı noktaya mümkün olduğunca yaklaştırın ve çalışırken birlikte hareket ettirin."
+        }
+      ]
+    },
+    "2600": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Gebinde nie auf heißen Oberflächen abstellen.",
+          "en": "Never place containers on hot surfaces.",
+          "tr": "Kapları asla sıcak yüzeylere koymayın."
+        },
+        {
+          "de": "Im feuergefährdeten Bereich nicht allein arbeiten. Schweißen, Trennen oder Schleifen nur mit schriftlicher Erlaubnis.",
+          "en": "Do not work alone in fire-hazard areas. Welding, cutting or grinding only with written permission.",
+          "tr": "Yangın tehlikesi olan alanda yalnız çalışmayın. Kaynak, kesme veya taşlama yalnızca yazılı izinle yapılır."
+        }
+      ]
+    },
+    "2601": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Brandschutztüren nicht festkeilen oder blockieren.",
+          "en": "Do not wedge open or block fire doors.",
+          "tr": "Yangın kapılarını takozla açık tutmayın veya önünü kapatmayın."
+        },
+        {
+          "de": "Im feuergefährdeten Bereich sind Feuer, offenes Licht und Rauchen verboten.",
+          "en": "Fire, open flames and smoking are prohibited in fire-hazard areas.",
+          "tr": "Yangın tehlikesi olan alanda ateş, açık alev ve sigara içmek yasaktır."
+        }
+      ]
+    },
+    "2602": {
+      "kat": "organisatorisch",
+      "pikto": [
+        "P003"
+      ],
+      "saetze": [
+        {
+          "de": "Feuer, offenes Licht und Rauchen sind verboten.",
+          "en": "Fire, open flames and smoking are prohibited.",
+          "tr": "Ateş, açık alev ve sigara içmek yasaktır."
+        },
+        {
+          "de": "Keine Funken (z. B. Schleifen) und keine heißen Oberflächen erzeugen. In explosionsgefährdeten Bereichen nur zugelassene, explosionsgeschützte Geräte verwenden.",
+          "en": "Do not create sparks (e.g. grinding) or hot surfaces. In explosion-hazard areas use only approved explosion-protected equipment.",
+          "tr": "Kıvılcım (ör. taşlama) ve sıcak yüzey oluşturmayın. Patlama tehlikesi olan alanlarda yalnızca onaylı, patlamaya karşı korumalı cihazlar kullanın."
+        },
+        {
+          "de": "In explosionsgefährdeten Bereichen ableitfähige Schutzschuhe tragen und Kleidung dort nicht an- oder ausziehen.",
+          "en": "Wear antistatic safety shoes in explosion-hazard areas and do not put on or take off clothing there.",
+          "tr": "Patlama tehlikesi olan alanlarda antistatik iş ayakkabısı giyin ve orada kıyafet giyip çıkarmayın."
+        }
+      ]
+    },
+    "2603": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Kennzeichnung explosionsgefährdeter Bereiche beachten. Dort nur mit Erlaubnis arbeiten.",
+          "en": "Observe the marking of explosion-hazard areas. Work there only with permission.",
+          "tr": "Patlama tehlikesi olan alanların işaretlerine uyun. Orada yalnızca izinle çalışın."
+        },
+        {
+          "de": "Absaugung nach Arbeitsende weiterlaufen lassen, bis keine Dämpfe mehr entstehen.",
+          "en": "Keep the extraction running after work until no more vapours are released.",
+          "tr": "İş bittikten sonra buhar çıkışı bitene kadar emiş sistemini çalıştırmaya devam edin."
+        }
+      ]
+    },
+    "2700": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Das Gefahrstofflager nur betreten, wenn du dazu befugt bist.",
+          "en": "Enter the hazardous substance store only if you are authorised.",
+          "tr": "Tehlikeli madde deposuna yalnızca yetkiniz varsa girin."
+        },
+        {
+          "de": "Nur geschlossene, unbeschädigte Behälter einlagern. Schäden und Undichtigkeiten sofort melden.",
+          "en": "Store only closed, undamaged containers. Report damage and leaks immediately.",
+          "tr": "Yalnızca kapalı ve hasarsız kapları depolayın. Hasar ve sızıntıları hemen bildirin."
+        }
+      ]
+    },
+    "2710": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Gefahrstoffe nur am festgelegten Lagerplatz abstellen.",
+          "en": "Put hazardous substances only in their designated storage place.",
+          "tr": "Tehlikeli maddeleri yalnızca belirlenen depolama yerine koyun."
+        },
+        {
+          "de": "Stoffe, die gefährlich miteinander reagieren können, nie zusammen lagern.",
+          "en": "Never store substances together that can react dangerously with each other.",
+          "tr": "Birbiriyle tehlikeli tepkimeye girebilecek maddeleri asla birlikte depolamayın."
+        }
+      ]
+    },
+    "2711": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Vorgegebene Abstände, Trennwände und getrennte Auffangwannen einhalten.",
+          "en": "Keep to the specified distances, partitions and separate drip trays.",
+          "tr": "Belirlenen mesafelere, ayırma duvarlarına ve ayrı toplama tavalarına uyun."
+        },
+        {
+          "de": "Kein Papier, Holz, Textilien oder Folien im selben Lagerabschnitt abstellen.",
+          "en": "Do not store paper, wood, textiles or plastic film in the same storage section.",
+          "tr": "Aynı depo bölümünde kâğıt, ahşap, tekstil veya folyo bulundurmayın."
+        }
+      ]
+    },
+    "2712": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Diese Stoffe nur in ihrem eigenen Sicherheitsschrank bzw. Lagerabschnitt lagern.",
+          "en": "Store these substances only in their own safety cabinet or storage section.",
+          "tr": "Bu maddeleri yalnızca kendilerine ait güvenlik dolabında veya depo bölümünde saklayın."
+        },
+        {
+          "de": "Schäden an Sicherheitsschränken oder Abtrennungen sofort melden.",
+          "en": "Report damage to safety cabinets or partitions immediately.",
+          "tr": "Güvenlik dolaplarındaki veya ayırma duvarlarındaki hasarları hemen bildirin."
+        }
+      ]
+    },
+    "2714": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Ausgelaufene oder verschüttete Stoffe sofort mit dem bereitgestellten Bindemittel aufnehmen. Staub feucht aufnehmen oder absaugen.",
+          "en": "Take up leaked or spilled substances immediately with the absorbent provided. Pick up dust wet or vacuum it.",
+          "tr": "Sızan veya dökülen maddeleri sağlanan emici malzemeyle hemen toplayın. Tozu ıslak olarak alın veya vakumla çekin."
+        },
+        {
+          "de": "Danach die Stelle gründlich reinigen.",
+          "en": "Then clean the area thoroughly.",
+          "tr": "Ardından bölgeyi iyice temizleyin."
+        },
+        {
+          "de": "Bei großen Mengen: Bereich verlassen, andere warnen, Vorgesetzten informieren.",
+          "en": "For large amounts: leave the area, warn others, inform your supervisor.",
+          "tr": "Büyük miktarlarda: alanı terk edin, diğerlerini uyarın, amirinize haber verin."
+        }
+      ]
+    },
+    "300": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Das System nur geschlossen betreiben. Öffnen und Instandsetzen nur mit Erlaubnisschein.",
+          "en": "Operate the system only when closed. Open or repair it only with a work permit.",
+          "tr": "Sistemi yalnızca kapalı halde çalıştırın. Açma ve onarım yalnızca çalışma izniyle yapılır."
+        },
+        {
+          "de": "Undichtigkeiten sofort melden.",
+          "en": "Report leaks immediately.",
+          "tr": "Sızıntıları hemen bildirin."
+        }
+      ]
+    },
+    "301": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Tätigkeiten nur im Handschuhkasten ausführen. Handschuhe des Kastens vor Beginn auf Schäden prüfen.",
+          "en": "Carry out work only inside the glove box. Check the glove box gloves for damage before starting.",
+          "tr": "İşleri yalnızca eldivenli kabin içinde yapın. Başlamadan önce kabin eldivenlerini hasar açısından kontrol edin."
+        },
+        {
+          "de": "Behälter sofort wieder schließen, Abfälle sofort entsorgen, Innenraum täglich reinigen.",
+          "en": "Close containers again immediately, dispose of waste immediately and clean the inside daily.",
+          "tr": "Kapları hemen tekrar kapatın, atıkları hemen bertaraf edin, iç kısmı her gün temizleyin."
+        }
+      ]
+    },
+    "305": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur befugte Personen im Arbeitsbereich. Überfüllen vermeiden: Waage oder Füllstandsanzeige beachten.",
+          "en": "Only authorised persons in the work area. Avoid overfilling: watch the scale or level indicator.",
+          "tr": "Çalışma alanında yalnızca yetkili kişiler bulunur. Taşırmaktan kaçının: teraziyi veya seviye göstergesini izleyin."
+        },
+        {
+          "de": "Bei brennbaren Flüssigkeiten Fass und Anlage erden.",
+          "en": "With flammable liquids, earth the drum and the equipment.",
+          "tr": "Yanıcı sıvılarda varili ve tesisi topraklayın."
+        }
+      ]
+    },
+    "306": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Fass nur über die vorgesehene Entleereinrichtung entleeren. Tropfen und Leckagen in der Auffangwanne auffangen.",
+          "en": "Empty the drum only with the designated emptying equipment. Catch drips and leaks in the drip tray.",
+          "tr": "Varili yalnızca öngörülen boşaltma donanımıyla boşaltın. Damla ve sızıntıları toplama tavasında toplayın."
+        },
+        {
+          "de": "Leeres Fass sofort verschließen.",
+          "en": "Close the empty drum immediately.",
+          "tr": "Boş varili hemen kapatın."
+        }
+      ]
+    },
+    "307": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur passende Ventile und Kupplungen verwenden und auf Dichtheit achten.",
+          "en": "Use only suitable valves and couplings and check that they do not leak.",
+          "tr": "Yalnızca uygun vana ve bağlantı parçaları kullanın, sızdırmazlığa dikkat edin."
+        },
+        {
+          "de": "Füllgeschwindigkeit nicht überschreiten. Verschüttetes sofort aufnehmen.",
+          "en": "Do not exceed the filling rate. Take up spills immediately.",
+          "tr": "Dolum hızını aşmayın. Dökülenleri hemen toplayın."
+        }
+      ]
+    },
+    "308": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Nur passende Ventile und Kupplungen verwenden und auf Dichtheit achten.",
+          "en": "Use only suitable valves and couplings and check that they do not leak.",
+          "tr": "Yalnızca uygun vana ve bağlantı parçaları kullanın, sızdırmazlığa dikkat edin."
+        },
+        {
+          "de": "Füllgeschwindigkeit nicht überschreiten. Verschüttetes sofort aufnehmen.",
+          "en": "Do not exceed the filling rate. Take up spills immediately.",
+          "tr": "Dolum hızını aşmayın. Dökülenleri hemen toplayın."
+        }
+      ]
+    },
+    "310": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Tankfahrzeug vor dem Befüllen oder Entleeren gegen Wegrollen sichern (Feststellbremse, Unterlegkeil).",
+          "en": "Secure the tanker against rolling away before filling or emptying (parking brake, wheel chock).",
+          "tr": "Tankeri doldurmadan veya boşaltmadan önce kaymaya karşı emniyete alın (el freni, takoz)."
+        },
+        {
+          "de": "Nur passende, gekennzeichnete Schlauchkupplungen verwenden. Anschlüsse müssen über der Auffangfläche liegen.",
+          "en": "Use only suitable, marked hose couplings. Connections must be above the collecting area.",
+          "tr": "Yalnızca uygun ve işaretli hortum bağlantıları kullanın. Bağlantılar toplama alanının üzerinde olmalıdır."
+        }
+      ]
+    },
+    "312": {
+      "kat": "technisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Vor dem Umpumpen Leitungen, Ventile und Anschlüsse auf Dichtheit prüfen.",
+          "en": "Check pipes, valves and connections for leaks before pumping.",
+          "tr": "Pompalamadan önce boruları, vanaları ve bağlantıları sızdırmazlık açısından kontrol edin."
+        },
+        {
+          "de": "Leitungsteile nur öffnen, wenn sie abgetrennt und entleert bzw. gespült sind.",
+          "en": "Open pipe sections only after they have been isolated and drained or flushed.",
+          "tr": "Boru bölümlerini ancak ayrıldıktan ve boşaltıldıktan veya yıkandıktan sonra açın."
+        }
+      ]
+    },
+    "La-101": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Am Arbeitsplatz nur die Menge für den Tag bzw. die Schicht bereitstellen.",
+          "en": "Keep only the amount needed for the day or shift at the workplace.",
+          "tr": "Çalışma yerinde yalnızca günlük veya vardiyalık ihtiyaç kadar madde bulundurun."
+        },
+        {
+          "de": "Gefahrstoffe möglichst in der Originalverpackung aufbewahren – nie in Verkehrswegen, Pausenräumen oder neben Lebensmitteln.",
+          "en": "Keep hazardous substances in their original packaging where possible – never in walkways, break rooms or next to food.",
+          "tr": "Tehlikeli maddeleri mümkünse orijinal ambalajında saklayın – asla geçiş yollarında, dinlenme odalarında veya gıdaların yanında bulundurmayın."
+        },
+        {
+          "de": "Spraydosen und Gaskartuschen nicht in die Sonne oder an Wärmequellen stellen.",
+          "en": "Do not place spray cans or gas cartridges in the sun or near heat sources.",
+          "tr": "Sprey kutularını ve gaz kartuşlarını güneşe veya ısı kaynaklarının yanına koymayın."
+        }
+      ]
+    },
+    "pc-170": {
+      "kat": "organisatorisch",
+      "pikto": [
+        "P003"
+      ],
+      "saetze": [
+        {
+          "de": "Jeden Brand, auch eine kurze Stichflamme, dem Vorgesetzten melden.",
+          "en": "Report every fire, even a brief flash of flame, to your supervisor.",
+          "tr": "Her yangını, kısa bir alev parlamasını bile amirinize bildirin."
+        },
+        {
+          "de": "Öl- oder lösemittelgetränkte Lappen in nicht brennbaren, verschließbaren Behältern sammeln.",
+          "en": "Collect rags soaked with oil or solvent in non-combustible, closable containers.",
+          "tr": "Yağ veya çözücü emmiş bezleri yanmaz, kapatılabilir kaplarda toplayın."
+        },
+        {
+          "de": "Fluchtwege, Notausgänge und Feuerlöscher immer freihalten.",
+          "en": "Always keep escape routes, emergency exits and fire extinguishers clear.",
+          "tr": "Kaçış yollarını, acil çıkışları ve yangın söndürücülerin önünü her zaman açık tutun."
+        }
+      ]
+    },
+    "pc-370": {
+      "kat": "organisatorisch",
+      "pikto": [],
+      "saetze": [
+        {
+          "de": "Brandschutzeinrichtungen und Zufahrten für die Feuerwehr freihalten.",
+          "en": "Keep fire protection equipment and fire brigade access routes clear.",
+          "tr": "Yangın koruma donanımlarının ve itfaiye geçiş yollarının önünü açık tutun."
+        },
+        {
+          "de": "Notfallplan und Brandschutzregeln des Betriebs beachten.",
+          "en": "Follow the company's emergency plan and fire safety rules.",
+          "tr": "İşletmenin acil durum planına ve yangın güvenliği kurallarına uyun."
+        }
+      ]
+    }
+  },
+  "gefahrfall": {
+    "brand": [
+      {
+        "wenn": "immer",
+        "de": "Brand sofort melden: Notruf 112. Andere warnen und den Gefahrenbereich verlassen.",
+        "en": "Report a fire immediately: call 112. Warn others and leave the danger area.",
+        "tr": "Yangını hemen bildirin: 112'yi arayın. Diğerlerini uyarın ve tehlikeli alanı terk edin."
+      },
+      {
+        "wenn": "immer",
+        "de": "Löschversuch nur, wenn du dich dabei nicht selbst gefährdest. Brandrauch nicht einatmen.",
+        "en": "Try to extinguish only if you do not put yourself at risk. Do not breathe in smoke.",
+        "tr": "Söndürmeyi yalnızca kendinizi tehlikeye atmadan deneyin. Yangın dumanını solumayın."
+      },
+      {
+        "wenn": [
+          "H222",
+          "H223",
+          "H224",
+          "H225",
+          "H226",
+          "H228",
+          "H241",
+          "H242"
+        ],
+        "de": "Mit Schaum, Löschpulver oder Kohlendioxid (CO2) löschen. Keinen Wasservollstrahl verwenden.",
+        "en": "Extinguish with foam, dry powder or carbon dioxide (CO2). Do not use a full water jet.",
+        "tr": "Köpük, kuru toz veya karbondioksit (CO2) ile söndürün. Tam su jeti kullanmayın."
+      },
+      {
+        "wenn": [
+          "H220",
+          "H221"
+        ],
+        "de": "Brennendes ausströmendes Gas nicht löschen, solange die Gaszufuhr nicht gefahrlos abgestellt werden kann.",
+        "en": "Do not extinguish a leaking gas fire unless the leak can be stopped safely.",
+        "tr": "Gaz akışı güvenli şekilde kesilemiyorsa yanan sızıntı gazını söndürmeyin."
+      },
+      {
+        "wenn": [
+          "H222",
+          "H229",
+          "H280",
+          "H281"
+        ],
+        "de": "Behälter können bei Hitze bersten. Nur aus sicherer Entfernung bzw. Deckung mit Wasser kühlen.",
+        "en": "Containers may burst when heated. Cool them with water only from a safe distance or from behind cover.",
+        "tr": "Kaplar ısındığında patlayabilir. Yalnızca güvenli bir mesafeden veya siper arkasından suyla soğutun."
+      },
+      {
+        "wenn": [
+          "H270",
+          "H271",
+          "H272"
+        ],
+        "de": "Der Stoff fördert den Brand. Von brennbaren Stoffen fernhalten. Die Feuerwehr auf den brandfördernden Stoff hinweisen.",
+        "en": "The substance intensifies fire. Keep it away from combustible materials. Tell the fire brigade about the oxidising substance.",
+        "tr": "Madde yangını şiddetlendirir. Yanıcı maddelerden uzak tutun. İtfaiyeye oksitleyici maddeyi bildirin."
+      },
+      {
+        "wenn": [
+          "H260",
+          "H261",
+          "EUH014",
+          "EUH029"
+        ],
+        "de": "Kein Wasser verwenden – der Stoff reagiert mit Wasser. Löschmittel nach Sicherheitsdatenblatt (Abschnitt 5).",
+        "en": "Do not use water – the substance reacts with water. Use extinguishing media according to the safety data sheet (section 5).",
+        "tr": "Su kullanmayın – madde su ile tepkimeye girer. Söndürücü maddeyi güvenlik bilgi formuna (Bölüm 5) göre seçin."
+      },
+      {
+        "wenn": "immer",
+        "sonst": true,
+        "de": "Der Stoff ist selbst nicht entzündbar. Löschmittel nach dem Brand in der Umgebung wählen.",
+        "en": "The substance itself is not flammable. Choose the extinguishing agent according to the surrounding fire.",
+        "tr": "Madde kendisi alev almaz. Söndürücü maddeyi çevredeki yangına göre seçin."
+      }
+    ],
+    "freisetzung": [
+      {
+        "wenn": [
+          "H220",
+          "H221",
+          "H222",
+          "H223",
+          "H224",
+          "H225",
+          "H226",
+          "H228",
+          "H241",
+          "H242",
+          "H250",
+          "H251",
+          "H252"
+        ],
+        "de": "Zündquellen fernhalten bzw. abschalten, wenn das gefahrlos möglich ist. Nicht rauchen.",
+        "en": "Keep ignition sources away or switch them off if this can be done safely. Do not smoke.",
+        "tr": "Tutuşturucu kaynakları uzak tutun veya güvenliyse kapatın. Sigara içmeyin."
+      },
+      {
+        "wenn": "immer",
+        "de": "Bei der Beseitigung die vorgeschriebene Schutzausrüstung tragen.",
+        "en": "Wear the specified protective equipment when cleaning up.",
+        "tr": "Temizlik sırasında belirtilen koruyucu donanımı kullanın."
+      },
+      {
+        "wenn": "immer",
+        "de": "Für gute Lüftung sorgen.",
+        "en": "Ensure good ventilation.",
+        "tr": "İyi havalandırma sağlayın."
+      },
+      {
+        "wenn": "immer",
+        "de": "Flüssigkeiten mit Bindemittel aufnehmen, Feststoffe feucht aufnehmen oder absaugen – nicht kehren. In gekennzeichnete, verschließbare Behälter füllen.",
+        "en": "Soak up liquids with absorbent; pick up solids wet or vacuum them – do not sweep. Put into labelled, closable containers.",
+        "tr": "Sıvıları emici malzemeyle toplayın; katıları ıslak alın veya vakumla çekin – süpürmeyin. Etiketli, kapatılabilir kaplara koyun."
+      },
+      {
+        "wenn": [
+          "H270",
+          "H271",
+          "H272"
+        ],
+        "de": "Kein Sägemehl oder andere brennbare Bindemittel verwenden.",
+        "en": "Do not use sawdust or other combustible absorbents.",
+        "tr": "Talaş veya başka yanıcı emici malzemeler kullanmayın."
+      },
+      {
+        "wenn": [
+          "H290",
+          "H314"
+        ],
+        "de": "Nur chemikalienbeständiges, geeignetes Bindemittel verwenden.",
+        "en": "Use only a suitable, chemical-resistant absorbent.",
+        "tr": "Yalnızca uygun, kimyasallara dayanıklı emici malzeme kullanın."
+      },
+      {
+        "wenn": [
+          "H220",
+          "H221",
+          "H280",
+          "H330",
+          "H331",
+          "H310",
+          "EUH071"
+        ],
+        "de": "Bei größeren Mengen oder austretendem Gas: Bereich sofort räumen, andere warnen, Vorgesetzten informieren.",
+        "en": "For larger amounts or escaping gas: clear the area immediately, warn others, inform your supervisor.",
+        "tr": "Büyük miktarlarda veya gaz kaçağında: alanı hemen boşaltın, diğerlerini uyarın, amirinize haber verin."
+      }
+    ],
+    "umwelt": [
+      {
+        "wenn": [
+          "H400",
+          "H410",
+          "H411",
+          "H412",
+          "H413",
+          "EUH430",
+          "EUH431",
+          "EUH440",
+          "EUH441",
+          "EUH450",
+          "EUH451"
+        ],
+        "de": "Nicht in Kanalisation, Gewässer oder Erdreich gelangen lassen. Bodenabläufe abdecken.",
+        "en": "Do not let it get into drains, water bodies or the ground. Cover floor drains.",
+        "tr": "Kanalizasyona, sulara veya toprağa ulaşmasına izin vermeyin. Yer giderlerini kapatın."
+      },
+      {
+        "wenn": "immer",
+        "de": "Vorgesetzten über jede Freisetzung informieren.",
+        "en": "Inform your supervisor about every release.",
+        "tr": "Her türlü sızıntı veya dökülmeyi amirinize bildirin."
+      }
+    ]
+  },
+  "ersthilfe": {
+    "einatmen": [
+      {
+        "wenn": [
+          "H330",
+          "H331",
+          "H332",
+          "H334",
+          "H335",
+          "H336",
+          "H370",
+          "H371",
+          "EUH071",
+          "EUH029",
+          "EUH031",
+          "EUH032"
+        ],
+        "de": "Betroffene Person an die frische Luft bringen und ruhig lagern. Bei Beschwerden Arzt rufen.",
+        "en": "Move the person to fresh air and keep them at rest. Call a doctor if symptoms occur.",
+        "tr": "Etkilenen kişiyi temiz havaya çıkarın ve dinlendirin. Şikâyet olursa doktor çağırın."
+      },
+      {
+        "wenn": [
+          "H330",
+          "H331",
+          "H334",
+          "EUH071"
+        ],
+        "de": "Bei Atemnot oder Bewusstlosigkeit sofort Notruf 112. Bewusstlose Person in stabile Seitenlage bringen.",
+        "en": "In case of breathing difficulties or unconsciousness, call 112 immediately. Place an unconscious person in the recovery position.",
+        "tr": "Nefes darlığı veya bilinç kaybında hemen 112'yi arayın. Bilinci kapalı kişiyi koma pozisyonuna (yan yatış) getirin."
+      },
+      {
+        "wenn": "immer",
+        "sonst": true,
+        "de": "Bei Beschwerden nach dem Einatmen an die frische Luft gehen.",
+        "en": "If you feel unwell after breathing it in, go into the fresh air.",
+        "tr": "Soluduktan sonra rahatsızlık hissederseniz temiz havaya çıkın."
+      }
+    ],
+    "haut": [
+      {
+        "wenn": "immer",
+        "de": "Verschmutzte Kleidung sofort ausziehen. Haut gründlich mit Wasser und Seife waschen.",
+        "en": "Remove contaminated clothing immediately. Wash the skin thoroughly with soap and water.",
+        "tr": "Kirlenmiş kıyafetleri hemen çıkarın. Cildi bol su ve sabunla iyice yıkayın."
+      },
+      {
+        "wenn": [
+          "H314"
+        ],
+        "de": "Haut sofort mindestens 15 Minuten mit viel Wasser spülen. Arzt aufsuchen.",
+        "en": "Rinse the skin immediately with plenty of water for at least 15 minutes. See a doctor.",
+        "tr": "Cildi hemen en az 15 dakika bol suyla yıkayın. Doktora gidin."
+      },
+      {
+        "wenn": [
+          "H310",
+          "H311"
+        ],
+        "de": "Sofort Arzt rufen.",
+        "en": "Call a doctor immediately.",
+        "tr": "Hemen doktor çağırın."
+      },
+      {
+        "wenn": [
+          "H317",
+          "EUH204",
+          "EUH208"
+        ],
+        "de": "Bei Hautreizung oder Ausschlag Arzt aufsuchen.",
+        "en": "If skin irritation or a rash occurs, see a doctor.",
+        "tr": "Ciltte tahriş veya kızarıklık olursa doktora gidin."
+      },
+      {
+        "wenn": [
+          "H281"
+        ],
+        "de": "Bei Kälteverbrennung nicht reiben. Festgefrorene Kleidung nicht abreißen, mit lauwarmem Wasser auftauen. Arzt aufsuchen.",
+        "en": "For cold burns do not rub. Do not tear off clothing that is frozen to the skin; thaw with lukewarm water. See a doctor.",
+        "tr": "Soğuk yanığında ovmayın. Cilde yapışmış donmuş kıyafeti çekip çıkarmayın, ılık suyla çözün. Doktora gidin."
+      }
+    ],
+    "augen": [
+      {
+        "wenn": [
+          "H314",
+          "H318"
+        ],
+        "de": "Sofort mindestens 15 Minuten mit viel Wasser spülen, Augenlid dabei weit offen halten. Kontaktlinsen nach Möglichkeit entfernen. Sofort zum Augenarzt.",
+        "en": "Rinse immediately with plenty of water for at least 15 minutes, holding the eyelid wide open. Remove contact lenses if possible. Go to an eye doctor immediately.",
+        "tr": "Hemen en az 15 dakika bol suyla yıkayın, göz kapağını iyice açık tutun. Mümkünse kontakt lensleri çıkarın. Hemen göz doktoruna gidin."
+      },
+      {
+        "wenn": [
+          "H319"
+        ],
+        "de": "Einige Minuten vorsichtig mit Wasser spülen. Kontaktlinsen nach Möglichkeit entfernen. Bei anhaltender Reizung Augenarzt aufsuchen.",
+        "en": "Rinse carefully with water for several minutes. Remove contact lenses if possible. If irritation persists, see an eye doctor.",
+        "tr": "Birkaç dakika boyunca suyla dikkatlice yıkayın. Mümkünse kontakt lensleri çıkarın. Tahriş geçmezse göz doktoruna gidin."
+      },
+      {
+        "wenn": "immer",
+        "sonst": true,
+        "de": "Bei Kontakt mit den Augen vorsichtig mit Wasser spülen. Bei Beschwerden Arzt aufsuchen.",
+        "en": "In case of eye contact, rinse carefully with water. See a doctor if symptoms occur.",
+        "tr": "Göze temas ederse suyla dikkatlice yıkayın. Şikâyet olursa doktora gidin."
+      }
+    ],
+    "verschlucken": [
+      {
+        "wenn": [
+          "H304"
+        ],
+        "de": "Kein Erbrechen herbeiführen! Sofort Arzt rufen – Gefahr, dass Flüssigkeit in die Lunge gelangt.",
+        "en": "Do NOT induce vomiting! Call a doctor immediately – risk of liquid entering the lungs.",
+        "tr": "Kusturmaya çalışmayın! Hemen doktor çağırın – sıvının akciğerlere kaçma tehlikesi var."
+      },
+      {
+        "wenn": [
+          "H314"
+        ],
+        "de": "Mund mit Wasser ausspülen. Kein Erbrechen herbeiführen. Sofort Arzt rufen.",
+        "en": "Rinse the mouth with water. Do not induce vomiting. Call a doctor immediately.",
+        "tr": "Ağzı suyla çalkalayın. Kusturmaya çalışmayın. Hemen doktor çağırın."
+      },
+      {
+        "wenn": [
+          "H300",
+          "H301",
+          "H302",
+          "H370",
+          "H371"
+        ],
+        "de": "Mund mit Wasser ausspülen. Sofort Arzt oder Giftnotruf anrufen.",
+        "en": "Rinse the mouth with water. Call a doctor or the poison centre immediately.",
+        "tr": "Ağzı suyla çalkalayın. Hemen doktoru veya zehir danışma hattını arayın."
+      },
+      {
+        "wenn": "immer",
+        "sonst": true,
+        "de": "Mund mit Wasser ausspülen. Bei Beschwerden Arzt aufsuchen.",
+        "en": "Rinse the mouth with water. See a doctor if symptoms occur.",
+        "tr": "Ağzı suyla çalkalayın. Şikâyet olursa doktora gidin."
+      },
+      {
+        "wenn": "immer",
+        "de": "Bewusstlosen Personen nichts in den Mund geben.",
+        "en": "Never give anything by mouth to an unconscious person.",
+        "tr": "Bilinci kapalı kişiye ağızdan hiçbir şey vermeyin."
+      }
+    ],
+    "arzt": [
+      {
+        "wenn": "immer",
+        "de": "Ersthelfer rufen. Im Notfall Notruf 112.",
+        "en": "Call a first aider. In an emergency call 112.",
+        "tr": "İlk yardımcıyı çağırın. Acil durumda 112'yi arayın."
+      },
+      {
+        "wenn": "immer",
+        "de": "Sicherheitsdatenblatt oder Etikett zum Arzt mitnehmen.",
+        "en": "Take the safety data sheet or the label to the doctor.",
+        "tr": "Güvenlik bilgi formunu veya etiketi doktora götürün."
+      },
+      {
+        "wenn": "immer",
+        "de": "Giftnotruf München: 089 19240 (rund um die Uhr).",
+        "en": "Poison centre Munich: 089 19240 (24 hours).",
+        "tr": "Münih Zehir Danışma Hattı: 089 19240 (7/24)."
+      },
+      {
+        "wenn": [
+          "H317",
+          "EUH204",
+          "EUH208",
+          "H334"
+        ],
+        "de": "Bei Anzeichen einer Allergie den Betriebsarzt informieren.",
+        "en": "If there are signs of an allergy, inform the company doctor.",
+        "tr": "Alerji belirtileri varsa işyeri hekimine haber verin."
+      }
+    ]
+  },
+  "entsorgung": [
+    {
+      "wenn": "immer",
+      "de": "Reste und leere Gebinde in gekennzeichneten Behältern sammeln und nach betrieblicher Anweisung entsorgen.",
+      "en": "Collect residues and empty containers in labelled containers and dispose of them according to company instructions.",
+      "tr": "Artıkları ve boş kapları etiketli kaplarda toplayın ve işletme talimatına göre bertaraf edin."
+    },
+    {
+      "wenn": "immer",
+      "de": "Leere Gebinde nicht für andere Zwecke verwenden.",
+      "en": "Do not reuse empty containers for other purposes.",
+      "tr": "Boş kapları başka amaçlarla kullanmayın."
+    },
+    {
+      "wenn": [
+        "H224",
+        "H225",
+        "H226"
+      ],
+      "de": "Mit Lösemittel getränkte Lappen in geschlossenen, nicht brennbaren Behältern sammeln.",
+      "en": "Collect rags soaked with solvent in closed, non-combustible containers.",
+      "tr": "Çözücü emmiş bezleri kapalı, yanmaz kaplarda toplayın."
+    },
+    {
+      "wenn": [
+        "H222",
+        "H223",
+        "H229"
+      ],
+      "de": "Spraydosen nur vollständig leer in den Sammelbehälter geben. Nicht anstechen oder verbrennen.",
+      "en": "Put spray cans into the collection container only when completely empty. Do not pierce or burn them.",
+      "tr": "Sprey kutularını toplama kabına yalnızca tamamen boşaldıktan sonra atın. Delmeyin veya yakmayın."
+    },
+    {
+      "wenn": [
+        "H400",
+        "H410",
+        "H411",
+        "H412",
+        "H413",
+        "EUH430",
+        "EUH431",
+        "EUH440",
+        "EUH441",
+        "EUH450",
+        "EUH451"
+      ],
+      "de": "Nicht in den Ausguss, die Kanalisation oder den Hausmüll geben.",
+      "en": "Do not pour into sinks or drains and do not put into household waste.",
+      "tr": "Lavaboya, kanalizasyona veya evsel çöpe atmayın."
+    }
+  ],
+  "pikto": {
+    "ersthilfe": [
+      "E003"
+    ],
+    "ersthilfe_arzt": [
+      "E009"
+    ],
+    "ersthilfe_augen": [
+      "E011"
+    ],
+    "ersthilfe_notdusche": [
+      "E012"
+    ],
+    "gefahren_entzuendbar": [
+      "W021"
+    ],
+    "gefahren_brandfoerdernd": [
+      "W028"
+    ],
+    "gefahren_aetzend": [
+      "W023"
+    ],
+    "gefahren_giftig": [
+      "W016"
+    ],
+    "gefahren_gasflaschen": [
+      "W029"
+    ],
+    "gefahrfall_entzuendbar": [
+      "P003"
+    ],
+    "hygiene": [
+      "P022"
+    ],
+    "_wenn": {
+      "ersthilfe_augen": [
+        "H314",
+        "H318",
+        "H319"
+      ],
+      "ersthilfe_notdusche": [
+        "H314"
+      ],
+      "gefahren_entzuendbar": [
+        "H220",
+        "H221",
+        "H222",
+        "H223",
+        "H224",
+        "H225",
+        "H226",
+        "H228",
+        "H241",
+        "H242",
+        "H250",
+        "H251",
+        "H252"
+      ],
+      "gefahren_brandfoerdernd": [
+        "H270",
+        "H271",
+        "H272"
+      ],
+      "gefahren_aetzend": [
+        "H314",
+        "H290",
+        "EUH071"
+      ],
+      "gefahren_giftig": [
+        "H300",
+        "H301",
+        "H310",
+        "H311",
+        "H330",
+        "H331"
+      ],
+      "gefahren_gasflaschen": [
+        "H280",
+        "H281"
+      ],
+      "gefahrfall_entzuendbar": [
+        "H220",
+        "H221",
+        "H222",
+        "H223",
+        "H224",
+        "H225",
+        "H226",
+        "H228",
+        "H241",
+        "H242",
+        "H250",
+        "H251",
+        "H252"
+      ]
+    }
+  }
+}
