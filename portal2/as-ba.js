@@ -97,3 +97,27 @@ function asBaVorschlag(s){
       first_list: "<li>Ersthelfer holen, Notruf 112, Unfall melden.</li>", checks_text: "", p015_text: "", psa_note: "",
       footer: "Piktogramme nach ASR A1.3 / ISO 7010." } } };
 }
+
+/* Neue Anlage (Cockpit): Beurteilung und BA direkt in der Datenbank anlegen – aus der Vorlage einer gleichen Anlage
+   kopiert (Gefährdungen, Schutzmaßnahmen, BA-Texte; ohne Fotos und Mängel), sonst leer. Plan „eine Welt“, Schritt 4. */
+async function asAnlageBdaAnlegen(mid, w, vorlageMid){
+  const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
+  const vSys = vorlageMid ? ((await apiGet("/rest/v1/as_arbeitssystem?select=*&anlagen=cs." + encodeURIComponent(JSON.stringify([vorlageMid])) + "&order=art.asc,sort.asc" + k).catch(() => [])) || [])[0] : null;
+  const dok = { meta: { maschine: w.name, maschinenId: mid, hersteller: w.hersteller || "", typ: w.typ || "", baujahr: w.baujahr || "", seriennr: w.seriennr || "",
+    bereich: w.bereich || "", standort: w.bereich || "", maschinenart: w.art || "", datum: asHeute().split("-").reverse().join("."),
+    ersteller: AS.ich || "", entwurf: true, vorlage: vorlageMid || "" }, rechtsquellen: (vSys && vSys.dok && vSys.dok.rechtsquellen) || [], protokoll: {}, maengel: [] };
+  const sys = (await apiSend("POST", "/rest/v1/as_arbeitssystem", { kunde_slug: AS.kunde, name: w.name + " (" + mid + ")", art: "anlage", anlagen: [mid],
+    rollen: vSys ? vSys.rollen : [], einheit_id: w.einheit_id || null, dok, quelle_id: mid, sort: 900 }, "return=representation"))[0];
+  if(!vSys) return sys;
+  const alt = String((vSys.dok && vSys.dok.meta && vSys.dok.meta.maschine) || "");
+  const tausch = x => alt.length >= 3 ? JSON.parse(JSON.stringify(x).split(alt).join(w.name)) : x;
+  const gef = (await apiGet("/rest/v1/as_gefaehrdung?select=*&arbeitssystem_id=eq." + vSys.id + "&order=sort.asc").catch(() => [])) || [];
+  if(gef.length) await apiSend("POST", "/rest/v1/as_gefaehrdung", gef.map(g => tausch({ kunde_slug: AS.kunde, arbeitssystem_id: sys.id, art: g.art, faktor: g.faktor,
+    kurz: g.kurz, beschreibung: g.beschreibung, situation: g.situation, rechtsquelle: g.rechtsquelle, bghm: g.bghm, schutzziel: g.schutzziel,
+    exposition: g.exposition, wirkweise: g.wirkweise, schutzmassnahmen: g.schutzmassnahmen || [], w_v: g.w_v, s_v: g.s_v, w_n: g.w_n, s_n: g.s_n,
+    nr: g.nr, sort: g.sort, extra: g.extra || {} })), "return=minimal");
+  const vba = ((await apiGet("/rest/v1/as_ba?select=inhalt&arbeitssystem_id=eq." + vSys.id + "&order=version.desc").catch(() => [])) || [])[0];
+  if(vba) await apiSend("POST", "/rest/v1/as_ba", { kunde_slug: AS.kunde, arbeitssystem_id: sys.id, maschinen_id: mid, titel: w.name,
+    inhalt: tausch(vba.inhalt || {}), status: "entwurf", einheit_id: w.einheit_id || null }, "return=minimal");
+  return sys;
+}

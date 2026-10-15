@@ -146,6 +146,13 @@ function asTaetigkeitDialog(s, t){
     ${asFeld("Wer führt sie aus? (Rollen mit Komma)", "rollen", asListe(t.rollen).join(", "), "text", "voll")}</div>
     <p class="hinweis">Rollen dieses Arbeitssystems: ${esc(asListe(s.rollen).join(", ") || "–")}</p>`, knoepfe: kn });
 }
+/* Vorschaubilder der Gefährdungsfotos (signiert, nur eigener Fotoordner) */
+async function asGefFotosZeigen(){
+  for(const img of document.querySelectorAll("#gefFotoListe img[data-fpfad]")){
+    const p = img.dataset.fpfad; if(!p || !p.startsWith(AS.kunde + "/bda-fotos/")) continue;
+    const u = await asSigniert(p); if(u) img.src = u;
+  }
+}
 function asGefDialog(s, g, taetigkeitId){
   const neu = !g; g = g || { art: "gefaehrdung", taetigkeit_id: taetigkeitId, w_v: 2, s_v: 2, w_n: 1, s_n: 2 };
   const ws = (f, v) => asAuswahl(f.startsWith("w") ? "Wahrscheinlichkeit " + (f.endsWith("v") ? "vorher" : "nachher") : "Schwere " + (f.endsWith("v") ? "vorher" : "nachher"), f, v || "", [["", "–"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]]);
@@ -158,7 +165,20 @@ function asGefDialog(s, g, taetigkeitId){
         const m = /^([STOP])\s*[:|]\s*(.+)$/i.exec(z), stop = m ? m[1].toUpperCase() : "T", text = m ? m[2].trim() : z;
         return Object.assign({}, alt.find(x => x.text === text) || {}, { stop, text }); });
       delete w.schutz_text; }
-    await asSpeichern("as_gefaehrdung", Object.assign({ id: g.id, arbeitssystem_id: s.id }, w)); asZeige(); } }];
+    /* Fotos: abgewählte entfernen, neue hochladen (Storage <slug>/bda-fotos/cockpit/…, nur Fachkraft/GF) */
+    const behalten = new Set([...d.querySelectorAll("[data-fbeh]:checked")].map(x => x.dataset.fbeh));
+    let fotos = (g.fotos || []).filter((f, i) => behalten.has(String(i)));
+    const dateien = [...((d.querySelector("#gefFotos") || {}).files || [])];
+    const r = await asSpeichern("as_gefaehrdung", Object.assign({ id: g.id, arbeitssystem_id: s.id }, w, g.id ? { fotos } : {}));
+    if(dateien.length){
+      const gid = (r && r.id) || g.id;
+      for(const [i, f] of dateien.entries()){
+        const pfad = AS.kunde + "/bda-fotos/cockpit/" + gid + "-" + Date.now() + "-" + i + ".jpg";
+        await asFotoHochladen(f, pfad); fotos.push({ pfad, alt: f.name.replace(/\.[^.]+$/, "") });
+      }
+      await asSpeichern("as_gefaehrdung", { id: gid, fotos });
+    }
+    asZeige(); } }];
   if(!neu){
     kn.unshift({ t: "+ Maßnahme", klasse: "sek", fn: () => { asMassnahmeDialog(null, { gefaehrdung_id: g.id, quelle: "bda" }, s); return false; } });
     if(AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Gefährdung löschen? Maßnahmen bleiben ohne Bezug erhalten.")) return false; await asLoeschen("as_gefaehrdung", g.id); await asLaden(); asZeige(); } });
@@ -173,10 +193,14 @@ function asGefDialog(s, g, taetigkeitId){
       ${asFeld("Rechtsquelle / Regel (typspezifisch, z. B. DGUV Information 113-606 Abschn. 3.1.3)", "rechtsquelle", g.rechtsquelle || "", "text", "voll")}
       ${asFeld("Schutzziel", "schutzziel", g.schutzziel || "")}${asFeld("Exposition (wer, wie oft)", "exposition", g.exposition || "")}
       ${asFeld("Herleitung / Notiz", "beschreibung", g.beschreibung, "textarea", "voll")}
-      ${(g.fotos || []).length ? `<p class="hinweis voll">${g.fotos.length} Foto(s) aus der Begehung – zu sehen in der BdA (Reiter „Dokumente &amp; BA“).</p>` : ""}
+      <div class="voll"><b>Fotos</b><div class="hakenliste" id="gefFotoListe">${(g.fotos || []).map((f, i) =>
+          `<label title="abwählen = entfernen"><input type="checkbox" data-fbeh="${i}" checked><img data-fpfad="${esc(f.pfad || "")}" alt="" style="width:64px;height:48px;object-fit:cover;border-radius:6px;background:#eef1f5"> ${esc(f.alt || "Foto " + (i + 1))}</label>`).join("")
+          || `<span class="hinweis">noch keine</span>`}</div>
+        ${AS.fachkraft || AS.gf ? `<label style="margin-top:6px">Fotos hinzufügen<input type="file" id="gefFotos" accept="image/*" capture="environment" multiple></label>` : ""}</div>
       ${ws("w_v", g.w_v)}${ws("s_v", g.s_v)}${ws("w_n", g.w_n)}${ws("s_n", g.s_n)}</div>
       <p class="hinweis">Wahrscheinlichkeit 1 unwahrscheinlich … 4 häufig · Schwere 1 leicht … 4 tödlich/irreversibel · Risiko = W × S: ab 9 hoch, ab 4 mittel.</p>
       ${!neu ? `<h4 style="margin:14px 0 6px">Maßnahmen</h4>${ms.map(m => `<div class="krit">${asStopChip(m.stop)}<div>${esc(m.text)} ${asStatusChip(m)}</div></div>`).join("") || `<div class="leer">Noch keine – „+ Maßnahme“.</div>`}` : ""}`, knoepfe: kn });
+  asGefFotosZeigen();
 }
 
 function asBdaPsyche(box, s){

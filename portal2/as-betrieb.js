@@ -184,6 +184,8 @@ function asAnlageNeuDialog(main){
         if(typeof asUwQrLib === "function" && await asUwQrLib()){ const q = qrcode(0, "M"); q.addData(url); q.make();
           await apiSend("POST", "/rest/v1/rpc/portal_anlage_qr_setzen", { p_slug: AS.kunde, p_mid: mid, p_qr_svg: q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }), p_qr_url: url }); }
       }catch(e){ console.warn("QR", e); }
+      if(typeof asAnlageBdaAnlegen === "function")
+        await asAnlageBdaAnlegen(mid, w, vorlage ? vorlage.maschinen_id : null).catch(e => asMeldung("Beurteilung nicht angelegt: " + (e.message || e)));
       if(w.einheit_id) await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: mid, p_einheit: w.einheit_id }).catch(e => asMeldung("Bereich nicht gesetzt: " + (e.message || e)));
       await asBetriebLaden(true);
       asMeldung("Anlage " + w.name + " (" + mid + ") angelegt – Beurteilung jetzt prüfen und ergänzen");

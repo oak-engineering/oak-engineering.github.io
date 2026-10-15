@@ -412,6 +412,7 @@ function asSvAufgaben(){
    von der Fachkraft des Betriebs. Dazu die Regelfristen (naechste_pruefung) der Beurteilungen. */
 const AS_SV_PA = {
   anlage_unterlagen: ["Unterlagen der Anlage prüfen", "anlagen"],
+  anlage_ba: ["Betriebsanweisung prüfen", "bda"],
   bda_system: ["Beurteilung nachbewerten", "bda"],
   gs_gbu: ["Gefahrstoff-Beurteilung prüfen", "gefahrstoffe"],
   gs_ba: ["Gefahrstoff-Betriebsanweisung prüfen", "gefahrstoffe"],
@@ -429,13 +430,13 @@ function asSvPaText(a){ return (a.anlaesse || []).map(x => x.text).filter(Boolea
 function asSvPaAufgaben(){
   const l = [], fk = !!(AS.fachkraft || AS.admin);
   (AS_SV.pa || []).forEach(a => { const [t, ziel] = AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = asSvPaText(a);
-    const akt = [["Öffnen", () => asGehe(String(a.objekt_id).startsWith("GS:") ? "gefahrstoffe" : ziel)]];
+    const akt = [["Öffnen", () => asSvPaOeffnen(a, ziel)]];
     if(a.objekt_typ === "unterweisung"){
       if(fk || AS.gf) akt.push(["Unterwiesen …", () => asSvUwQuittieren(a)]);
       if(fk) akt.push(["Nicht nötig", () => asSvPaErledigen(a, "unveraendert")]);
     } else if(fk){
       akt.push(["Geprüft – unverändert", () => asSvPaErledigen(a, "unveraendert")]);
-      akt.push(["Aktualisiert", () => asSvPaErledigen(a, "aktualisiert")]);
+      if(a.objekt_typ !== "anlage_ba") akt.push(["Aktualisiert", () => asSvPaErledigen(a, "aktualisiert")]);
     }
     l.push({ schluessel: "pa:" + a.id, stufe: asSvTage(a.faellig_am) < 0 ? "kritisch" : "warnung", titel: t + ": " + (a.objekt_titel || a.objekt_id),
       sub: txt.slice(0, 2).join(" · ") + (txt.length > 2 ? " · und " + (txt.length - 2) + " weitere" : "") + (fk ? "" : " – erledigt die Fachkraft"),
@@ -471,6 +472,15 @@ function asSvPaKalender(){
   (AS_SV.gbuFrist || []).forEach(g => l.push({ quelle: "gbu-frist", id: g.id, datum: g.naechste_pruefung, art: "pruefung",
     titel: "Gefahrstoff-Beurteilung überprüfen: " + (g.taetigkeit || ""), sub: "Regelfrist nach Freigabe", ziel: "gefahrstoffe", roh: g }));
   return l;
+}
+/* „Öffnen“ führt direkt zur Stelle: Beurteilung bzw. BA der Anlage (Reiter „Dokumente & BA“) */
+function asSvPaOeffnen(a, ziel){
+  const oid = String(a.objekt_id || "");
+  if(oid.startsWith("GS:")) return asGehe("gefahrstoffe");
+  const sys = a.objekt_typ === "bda_system" ? asNach("as_arbeitssystem", oid)
+    : asT("as_arbeitssystem").find(x => x.art === "anlage" && asListe(x.anlagen).includes(oid)) || asT("as_arbeitssystem").find(x => asListe(x.anlagen).includes(oid));
+  if(sys){ AS.reiter["bda_" + sys.id] = a.objekt_typ === "anlage_ba" ? "dokumente" : "tabelle"; AS.reiter.bda = sys.id; return asGehe("bda/" + sys.id); }
+  asGehe(ziel);
 }
 /* Neuunterweisung quittieren: betroffene Personen über Rollen des Arbeitssystems bzw. den Bereich (Anlage/Gefahrstoff) */
 async function asSvUwQuittieren(a){
