@@ -1234,7 +1234,7 @@ body.eingebettet main.wrap{max-width:none;padding:12px 14px}
 body.eingebettet{padding-bottom:0!important;background:#fff}
 /* OAK-UI-Regeln im Cockpit (references/oak-ui-regeln.md): gleiche Schrift, Filter und Knöpfe wie V2 */
 body.eingebettet,body.eingebettet button,body.eingebettet input,body.eingebettet select,body.eingebettet textarea{font-family:'Jost','Segoe UI',Arial,sans-serif}
-body.eingebettet .gs-kopf h2,body.eingebettet .gs-kopf h3,body.eingebettet main.wrap h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600}
+body.eingebettet .seiten-kopf{display:none!important}
 body.eingebettet .mg-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 body.eingebettet .mg-filter select,body.eingebettet .mg-filter input{height:32px;border-radius:16px;padding:0 14px;font-size:13px;width:auto;flex:0 1 auto;min-width:0;margin:0}
 body.eingebettet .mg-filter input[type=search]{flex:0 1 260px;min-width:150px}
