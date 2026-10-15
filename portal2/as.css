@@ -177,7 +177,7 @@ h1.seite span,.karte h2 span,.karte h2 .btn,.dlg-kopf h3 span{font-family:'Jost'
 .filterleiste .fl-zahl{margin-left:auto;font-size:13px;color:var(--grau)}
 @media(max-width:600px){.filterleiste select,.filterleiste input:not([type=checkbox]){flex:1 1 100%}.filterleiste .fl-zahl{margin-left:0}}
 .fl-pill{height:32px;border-radius:16px;padding:0 28px 0 14px;font-size:13px}
-/* Zwischenüberschriften, Listen, Sonderknöpfe – zentral statt Inline-Stil (Layout-Prüfung 16.10.2026) */
+/* Zwischenüberschriften, Listen, Sonderknöpfe – zentral statt Inline-Stil (Layout-Prüfung 15.10.2026) */
 #haupt h3,.dlg h3{font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:14px;font-weight:600;color:var(--blau);margin:16px 0 6px;letter-spacing:0}
 #haupt h3.rot,.dlg h3.rot{color:var(--rot)}
 .kurzliste{margin:0 0 6px;padding-left:18px}
