@@ -13,7 +13,7 @@ AS.bereich = { aktiv: false, fest: false, meine: [], wurzeln: [], einheiten: [],
 const AS_BEREICH_FELD = { portal_maengel: "einheit_id", as_massnahme: "einheit_id", portal_termin: "einheit_id",
   portal_dokumente: "einheit_id", portal_anlage_daten: "einheit_id", as_pruefobjekt: "einheit_id", as_meldung: "einheit_id",
   as_arbeitssystem: "einheit_id", portal_vorfaelle: "as_einheit_id", portal_nachweis: "as_einheit_id", portal_gefahrstoff: "einheit_ids",
-  as_beauftragter: "einheit_id", as_mitzeichnung: "einheit_id" };
+  as_beauftragter: "einheit_id", as_mitzeichnung: "einheit_id", portal_handschuh: "einheit_ids" };
 const AS_BEREICH_PERSON = ["v_uw_faelligkeit", "unterweisungsnachweise", "uw_zuweisung_person", "uw_person_einheit", "uw_person_rolle"];
 /* V2-Tabellen mit eigener Spalte einheit_id: neue Einträge eines Bereichs-Logins landen in seinem Bereich */
 const AS_BEREICH_NEU = ["as_massnahme", "as_pruefobjekt", "as_meldung", "as_arbeitssystem"];
