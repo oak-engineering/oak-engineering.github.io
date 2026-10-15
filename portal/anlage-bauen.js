@@ -44,7 +44,8 @@
     const marke = ((kunde || [])[0] || {}).marke || {};
     const [oakLogo, kundenLogo] = await Promise.all([alsDataUri("../assets/oak-logo.png"),
       marke.logo ? alsDataUri(/^https:/.test(marke.logo) ? marke.logo : marke.logo.replace(/^\/?/, "")) : Promise.resolve("")]);
-    const meta = Object.assign({}, meta0, { maschinenId: mid });
+    /* leer = nie Beispielinhalte der Vorlage (Schneidmühle) einsetzen – die Datenbank ist die einzige Quelle */
+    const meta = Object.assign({}, meta0, { maschinenId: mid, leer: true });
     if(oakLogo) meta.oakLogoB64 = oakLogo;
     if(kundenLogo) meta.kundenLogoB64 = kundenLogo;
     if(qr && qr[0] && qr[0].qr_svg){ meta.qrSvg = qr[0].qr_svg; meta.qrUrl = "https://www.oak-engineering.de/portal/maschine.html?k=" + q(slug) + "&mid=" + q(mid); }
