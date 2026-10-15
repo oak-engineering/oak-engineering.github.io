@@ -155,7 +155,7 @@ function asSuZeigen(){
   const artName = a => (AS_SU_ARTEN.find(x => x[0] === a) || [a, a])[1];
   box.innerHTML = `<div class="karte nodruck" style="padding:10px 14px">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <span class="hinweis">${bName ? "Bereich: <b>" + esc(bName) + "</b> (oben umstellen)" : "Alle Bereiche – oben neben dem Betrieb auf einen Bereich einschränken"}</span></div>
+        <span class="hinweis">${bName ? "Bereich: <b>" + esc(bName) + "</b> (im Menü ☰ umstellen)" : "Alle Bereiche – im Menü ☰ auf einen Bereich einschränken"}</span></div>
       <div class="reiter" style="margin-top:8px"><button class="${!AS_SU.art ? "an" : ""}" data-suart="">Alle (${alle.length})</button>${AS_SU_ARTEN.filter(([a]) => zahl(a)).map(([a, t]) =>
         `<button class="${AS_SU.art === a ? "an" : ""}" data-suart="${a}">${esc(t)} (${zahl(a)})</button>`).join("")}</div></div>
     ${AS_SU.q.length < 2 ? `<div class="karte"><div class="leer">Mindestens zwei Zeichen eingeben. Gesucht wird in Funktionen, Unterlagen, Anlagen, Mängeln, Maßnahmen, Beurteilungen, Gefahrstoffen, Personen, Nachweisen, Prüfungen, Terminen und Bereichen.</div></div>`
