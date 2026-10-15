@@ -1236,10 +1236,12 @@ body.eingebettet{padding-bottom:0!important;background:#fff}
 body.eingebettet,body.eingebettet button,body.eingebettet input,body.eingebettet select,body.eingebettet textarea{font-family:'Jost','Segoe UI',Arial,sans-serif}
 body.eingebettet .seiten-kopf{display:none!important}
 body.eingebettet .mg-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-body.eingebettet .mg-filter select,body.eingebettet .mg-filter input{height:32px;border-radius:16px;padding:0 14px;font-size:13px;width:auto;flex:0 1 auto;min-width:0;margin:0}
-body.eingebettet .mg-filter input[type=search]{flex:0 1 260px;min-width:150px}
+body.eingebettet .mg-filter select,body.eingebettet .mg-filter input{height:32px!important;min-height:0!important;border-radius:16px!important;padding:0 28px 0 14px!important;font-size:13px!important;width:auto;flex:0 1 auto;min-width:0!important;margin:0;border:1px solid #e3e8ef!important}
+body.eingebettet .mg-filter input{padding-right:14px!important}
+body.eingebettet{font-size:15px}
+body.eingebettet .mg-filter input[type=search]{flex:0 1 260px;min-width:150px!important}
 body.eingebettet .mg-filter select{padding-right:28px}
-body.eingebettet .btn{border-radius:16px;height:32px;padding:0 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+body.eingebettet .btn{border-radius:16px!important;height:32px!important;min-height:0!important;padding:0 12px!important;font-size:13px!important;font-weight:500!important;display:inline-flex;align-items:center;gap:6px}
 
 
 /* Gefahrstoffe – EMKG-Erhebung je Taetigkeit (gefahrstoffe-emkg.js) */
