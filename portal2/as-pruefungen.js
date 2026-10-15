@@ -152,6 +152,12 @@ function asPfNeu(art, o, mid){
       w.erstellt_von = AS.ich; }
     else w.id = o.id;
     await asSpeichern("as_pruefobjekt", w); asMeldung("Gespeichert"); asZeige(); } }] });
+  /* Prüfart gewechselt: Frist, Grundlage und Hinweis der neuen Prüfart übernehmen (Durchlauf 15.10.2026: Leiter bekam Not-Halt-Grundlage) */
+  const dl = document.getElementById("dlg"), sel = dl.querySelector('[data-f="art"]');
+  if(sel) sel.onchange = () => { const n = asPfArt(sel.value), f = k => dl.querySelector(`[data-f="${k}"]`);
+    if(f("grundlage")) f("grundlage").value = n.grundlage || "";
+    if(f("intervall_monate")) f("intervall_monate").value = n.intervall || "";
+    const h = dl.querySelector(".dlg-inhalt > p.hinweis"); if(h) h.textContent = n.hinweis || "Die Frist ist ein Vorschlag. Verbindlich ist die Frist aus der Gefährdungsbeurteilung (§ 3 Abs. 6 BetrSichV)."; };
 }
 /* Mehrere Anlagen auf einmal (z. B. Not-Halt + Schutztür für alle Spritzgießmaschinen) */
 function asPfMasse(){

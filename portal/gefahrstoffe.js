@@ -65,7 +65,7 @@ async function gsLaden(erzwingen){
   if(typeof gseLaden === "function") await gseLaden(true);
   return GS_ROWS;
 }
-function gsDarfPflegen(){ return !!(typeof ADMIN !== "undefined" && ADMIN) || !!window.__oakFachkraft; }
+function gsDarfPflegen(){ return !!(typeof ADMIN !== "undefined" && ADMIN) || !!window.__oakFachkraft || !!window.__oakGf; }
 function gsDokumente(){ return (typeof katRows === "function" ? katRows("gefahrstoffe") : []); }
 function gsDokTitel(pfad){ const d = gsDokumente().find(r => r.storage_path === pfad); return d ? String(d.titel).replace(/^Betriebsanweisung\s*–\s*/, "") : String(pfad).split("/").pop(); }
 function gsOeffnen(pfad, titel, klasse){ return `<a class="${klasse || "btn sek ul-btn"}" href="${viewerUrl("pdf", pfad, titel)}" target="_blank" rel="noopener">${esc(titel)}</a>`; }

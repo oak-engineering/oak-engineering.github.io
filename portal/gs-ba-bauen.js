@@ -105,6 +105,7 @@
       meta: { art: "gefahrstoff", kunde: opt.kunde || "", titel: stoff.bezeichnung, maschinenId: "GS-" + String(stoff.id).slice(0, 8),
         slug: "gs-" + String(stoff.id).slice(0, 8), baNr: "BA-GS-" + String(stoff.id).slice(0, 4).toUpperCase(),
         datum: datumDe(stand) || datumDe(new Date().toISOString()), arbeitsbereich: bereiche, taetigkeit: taet, notruf: "112",
+        freigabeAm: stand || "", freigabeVon: (frei.slice().sort((a, b) => String(b.freigegeben_am || "").localeCompare(String(a.freigegeben_am || "")))[0] || {}).freigegeben_von || "",
         oakLogoB64: opt.oakLogo || undefined, kundenLogoB64: opt.kundenLogo || undefined },
       stoff: { bezeichnung: stoff.bezeichnung, signalwort: stoff.signalwort || "", ghs: ghs(hs),
         produkte: opt.produkte || [{ name: stoff.bezeichnung, hersteller: stoff.hersteller || "", sdb_stand: datumDe(stoff.sdb_ausgabe) }] },

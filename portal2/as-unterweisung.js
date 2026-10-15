@@ -18,7 +18,7 @@ const AS_UW_STAND = { fertig: "einsetzbar", aufbau: "im Aufbau", geplant: "in Pl
 const AS_UW_FSTATUS = { ueberfaellig: ["rot", "überfällig"], erstunterweisung: ["rot", "Erstunterweisung"], bald: ["gelb", "läuft ab"],
   ok: ["gruen", "aktuell"], keine: ["grau", "nichts zugewiesen"], ohne: ["grau", "nichts zugewiesen"] };
 const AS_UW_MODUL_ALT = { grund: "Allgemeine Grundunterweisung", spritzguss: "Sicher an der Spritzgießmaschine", leitern: "Leitern & Tritte",
-  flurfoerder: "Flurförderzeuge", kran: "Hallenkran und Anschlagen", bildschirm: "Gesund am Bildschirm", extern: "Sicher auf dem WIBO-Gelände" };
+  flurfoerder: "Flurförderzeuge", kran: "Hallenkran und Anschlagen", bildschirm: "Gesund am Bildschirm", extern: "Sicher auf dem Betriebsgelände" };
 
 /* ---------------- Daten ---------------- */
 async function asUwLaden(neu){

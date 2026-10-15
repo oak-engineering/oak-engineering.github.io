@@ -556,6 +556,9 @@ if(DOC.meta && DOC.meta.dokumentart==="nachweis"){
   if(m.maschine){ document.getElementById("ba-titel").textContent=m.maschine; document.title="BA – "+m.maschine; }
   const setF=(f,v)=>{ if(v!=null&&v!==""){ const el=document.querySelector('[data-f="'+f+'"]'); if(el&&!el.value) el.value=v; } };
   setF("type", m.maschine); setF("nr", m.baNr); setF("datum", m.datum);
+  /* Freigabe aus dem Cockpit (Gefahrstoff-BA: freigegebene EMKG-Beurteilung) in die Unterschriftszeile */
+  document.querySelectorAll('[data-f="signame"]').forEach(el=>{ if(m.freigabeVon && !el.value) el.value=m.freigabeVon; });
+  document.querySelectorAll('[data-f="sigdate"]').forEach(el=>{ if(m.freigabeAm && !el.value) el.value=m.freigabeAm; });
   const mgl=document.getElementById("ba-mgl"), mglList=document.getElementById("ba-mgl-list");
   if(m.mitgeltend && m.mitgeltend.length){ mglList.innerHTML=m.mitgeltend.join(" · "); }
   else if(mgl){ mgl.style.display="none"; }

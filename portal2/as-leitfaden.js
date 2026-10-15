@@ -59,9 +59,9 @@ const asLfOk = (b, info, offenInfo) => b ? { s: "ok", info: info || "" } : { s: 
 function asLfSa(d, id){ return (d.sa || []).filter(x => x.kriterium === id).sort((a, b) => String(b.datum).localeCompare(String(a.datum)))[0] || null; }
 function asLfSaPruef(d, krit){
   const x = asLfSa(d, krit.id);
-  if(!x) return { s: "offen", info: "Selbstauskunft fehlt", sa: true };
-  if(x.nicht_zutreffend) return { s: "na", info: "trifft nicht zu (" + asDat(x.datum) + (x.notiz ? ": " + x.notiz : "") + ")", sa: true };
-  return Object.assign(asLfFrist(asLfMon(x.datum, krit.sa), 30, !!krit.rot, "bestätigt " + asDat(x.datum) + (x.person ? " · " + x.person : "") + " · gültig bis " + asDat(asLfMon(x.datum, krit.sa))), { sa: true });
+  if(!x) return { s: "offen", info: "Selbstauskunft fehlt", sa: krit.sa };
+  if(x.nicht_zutreffend) return { s: "na", info: "trifft nicht zu (" + asDat(x.datum) + (x.notiz ? ": " + x.notiz : "") + ")", sa: krit.sa };
+  return Object.assign(asLfFrist(asLfMon(x.datum, krit.sa), 30, !!krit.rot, "bestätigt " + asDat(x.datum) + (x.person ? " · " + x.person : "") + " · gültig bis " + asDat(asLfMon(x.datum, krit.sa))), { sa: krit.sa });
 }
 function asLfGsAktiv(d){ return (d.gs || []).filter(g => g.aktiv !== false && g.verwendung_status !== "inaktiv"); }
 function asLfQuartal(dt){ const x = new Date(dt); return x.getFullYear() * 4 + Math.floor(x.getMonth() / 3); }
@@ -321,13 +321,13 @@ async function asLfVerlauf(erg){
       try{ if(b) await apiSend("PATCH", "/rest/v1/as_badge?kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&stufe=eq." + st.nr, { erstmals_am: z.erstmals_am, seit: heute, entzogen_am: null, ausloeser: null, geaendert_am: z.geaendert_am }, "return=minimal");
         else await apiSend("POST", "/rest/v1/as_badge", z, "return=minimal");
         Object.assign(b || (alt[alt.length] = {}), z);
-        await apiSend("POST", "/rest/v1/rpc/portal_logbuch_schreiben", { p_slug: AS.kunde, p_wer: "Automatik", p_bereich: "leitfaden", p_aktion: "Badge Stufe " + st.nr + " erreicht", p_objekt: st.name, p_details: null }).catch(() => {});
+        await apiSend("POST", "/rest/v1/rpc/portal_logbuch_eintragen", { p_slug: AS.kunde, p_wer: "Automatik", p_bereich: "leitfaden", p_aktion: "Badge Stufe " + st.nr + " erreicht", p_objekt: st.name, p_details: null }).catch(() => {});
       }catch(e){ /* kein Schreibrecht oder offline – Anzeige bleibt live */ }
     } else if(!st.erreicht && aktiv){
       const ausl = st.krit.concat(erg.liste.filter(x => x.stufe < st.nr)).find(x => x.s === "offen");
       try{ await apiSend("PATCH", "/rest/v1/as_badge?kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&stufe=eq." + st.nr, { entzogen_am: heute, ausloeser: ausl ? ausl.id + " " + ausl.titel : null, geaendert_am: new Date().toISOString() }, "return=minimal");
         b.entzogen_am = heute;
-        await apiSend("POST", "/rest/v1/rpc/portal_logbuch_schreiben", { p_slug: AS.kunde, p_wer: "Automatik", p_bereich: "leitfaden", p_aktion: "Badge Stufe " + st.nr + " erloschen", p_objekt: st.name, p_details: ausl ? ausl.id + " " + ausl.titel : null }).catch(() => {});
+        await apiSend("POST", "/rest/v1/rpc/portal_logbuch_eintragen", { p_slug: AS.kunde, p_wer: "Automatik", p_bereich: "leitfaden", p_aktion: "Badge Stufe " + st.nr + " erloschen", p_objekt: st.name, p_details: ausl ? ausl.id + " " + ausl.titel : null }).catch(() => {});
       }catch(e){}
     }
   }
@@ -439,7 +439,7 @@ function asLfSaDialog(k){
         if(f){ asNwDateiOk(f); pfad = AS.kunde + "/selbstauskunft/" + k.id + "-" + Date.now() + "-" + asNwDateiName(f); await asNwHochladen(f, pfad); }
         await apiSend("POST", "/rest/v1/as_selbstauskunft", { kunde_slug: AS.kunde, kriterium: k.id, datum: w.datum || asHeute(), person: w.person || null,
           notiz: w.notiz || null, datei_pfad: pfad, nicht_zutreffend: !!w.nz, erfasst_von: AS.ich || null }, "return=minimal");
-        apiSend("POST", "/rest/v1/rpc/portal_logbuch_schreiben", { p_slug: AS.kunde, p_wer: AS.ich || "Portal", p_bereich: "leitfaden", p_aktion: "Selbstauskunft " + k.id, p_objekt: k.titel, p_details: w.nz ? "trifft nicht zu" : null }).catch(() => {});
+        apiSend("POST", "/rest/v1/rpc/portal_logbuch_eintragen", { p_slug: AS.kunde, p_wer: AS.ich || "Portal", p_bereich: "leitfaden", p_aktion: "Selbstauskunft " + k.id, p_objekt: k.titel, p_details: w.nz ? "trifft nicht zu" : null }).catch(() => {});
       }catch(e){ asMeldung(e.message || String(e)); return false; }
       asMeldung("Gespeichert"); await asLfLaden(true); asZeige();
     } }] : [] });

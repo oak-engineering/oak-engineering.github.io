@@ -419,10 +419,11 @@ const AS_SV_PA = {
 async function asSvPaLaden(){
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const hole = p => apiGet(p).then(r => Array.isArray(r) ? r : []).catch(() => []);
-  const [pa, gbu] = await Promise.all([
+  const [pa, gbu, po] = await Promise.all([
     hole("/rest/v1/portal_pruefauftrag?select=*&erledigt_am=is.null" + k + "&order=faellig_am.asc"),
-    hole("/rest/v1/portal_gefahrstoff_gbu?select=id,taetigkeit,gefahrstoff_id,naechste_pruefung,status&status=eq.freigegeben&naechste_pruefung=not.is.null" + k)]);
-  AS_SV.pa = pa; AS_SV.gbuFrist = gbu;
+    hole("/rest/v1/portal_gefahrstoff_gbu?select=id,taetigkeit,gefahrstoff_id,naechste_pruefung,status&status=eq.freigegeben&naechste_pruefung=not.is.null" + k),
+    hole("/rest/v1/as_pruefobjekt?select=id,art,bezeichnung,ort,naechste_am,aktiv,einheit_id&naechste_am=not.is.null" + k)]);
+  AS_SV.pa = pa; AS_SV.gbuFrist = gbu; AS_SV.pruefFrist = po.filter(o => o.aktiv !== false);
 }
 function asSvPaText(a){ return (a.anlaesse || []).map(x => x.text).filter(Boolean); }
 function asSvPaAufgaben(){
@@ -445,6 +446,11 @@ function asSvPaAufgaben(){
     schluessel: "gbu-frist:" + g.id + ":" + g.naechste_pruefung, stufe: asSvTage(g.naechste_pruefung) < 0 ? "kritisch" : "warnung",
     titel: "Gefahrstoff-Beurteilung regelmäßig überprüfen: " + (g.taetigkeit || ""), sub: "nächste Überprüfung " + asDat(g.naechste_pruefung),
     frist: asSvTage(g.naechste_pruefung), aktionen: [["Öffnen", () => asGehe("gefahrstoffe")]] }));
+  /* Prüfkataster: fällige und überfällige Prüfungen (Durchlauf 15.10.2026: standen nur im Kalender) */
+  (AS_SV.pruefFrist || []).filter(o => bald(o.naechste_am)).forEach(o => l.push({
+    schluessel: "pruef-frist:" + o.id + ":" + o.naechste_am, stufe: asSvTage(o.naechste_am) < 0 ? "kritisch" : "warnung",
+    titel: "Prüfung fällig: " + (o.bezeichnung || (typeof asPfArt === "function" ? asPfArt(o.art).titel : o.art)), sub: [o.ort, "fällig " + asDat(o.naechste_am)].filter(Boolean).join(" · "),
+    frist: asSvTage(o.naechste_am), aktionen: [["Öffnen", () => asGehe("pruefungen")]] }));
   return l;
 }
 function asSvPaKalender(){

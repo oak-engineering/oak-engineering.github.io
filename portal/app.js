@@ -900,7 +900,7 @@ async function ladePortal(){
   try{
     let me = [];
     if(s && s.user && s.user.id)
-      me = await apiGet("/rest/v1/portal_mitglied?select=rolle,kunde,kunde_slug,name&user_id=eq."
+      me = await apiGet("/rest/v1/portal_mitglied?select=rolle,rollen,kunde,kunde_slug,name&user_id=eq."
         + encodeURIComponent(s.user.id), false);
     ADMIN = !!(me && me[0] && me[0].rolle === "admin");
     ADMIN_NAME = (me && me[0] && me[0].name) || (s && s.user && s.user.email) || "OAK engineering";
@@ -909,6 +909,7 @@ async function ladePortal(){
        Die Rechte haengen serverseitig an portal_ist_fachkraft(); das Flag hier steuert nur,
        welche Knoepfe erscheinen. */
     window.__oakFachkraft = !!(me && me[0] && me[0].rolle === "fachkraft");
+    window.__oakGf = !!(me && me[0] && me[0].rollen && me[0].rollen.gf);   // Geschäftsführung: gibt frei (Gefahrstoff-GBU)
     window.__oakName = ADMIN_NAME;
     document.body.classList.toggle("app-modus", IST_APP);   // App: Seitenleiste/Leiste unten; Browser: Reiter
     MITGLIED = (me && me[0]) || null;

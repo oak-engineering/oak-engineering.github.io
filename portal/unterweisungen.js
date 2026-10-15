@@ -83,7 +83,7 @@ function uwModulTitel(k){
   const bu = (typeof UW_BUCHUNG !== "undefined" ? UW_BUCHUNG : []).find(x => x.kiosk_modul === k || x.thema === k);
   const m = (typeof UW_MODULE !== "undefined" ? UW_MODULE : []).find(x => x.thema === (bu ? bu.thema : k));
   return (m && m.titel) || ({ grund: "Allgemeine Grundunterweisung", spritzguss: "Sicher an der Spritzgießmaschine", leitern: "Leitern & Tritte",
-    flurfoerder: "Flurförderzeuge", kran: "Hallenkran und Anschlagen", bildschirm: "Gesund am Bildschirm", extern: "Sicher auf dem WIBO-Gelände" })[k] || k;
+    flurfoerder: "Flurförderzeuge", kran: "Hallenkran und Anschlagen", bildschirm: "Gesund am Bildschirm", extern: "Sicher auf dem Betriebsgelände" })[k] || k;
 }
 function uwModule(n){
   const m = Array.isArray(n.module) ? n.module : (n.unterweisung ? String(n.unterweisung).split(/,\s*/) : []);
