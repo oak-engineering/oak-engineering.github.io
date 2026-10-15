@@ -443,7 +443,7 @@ const AS_NAV_GRUPPEN = [
 ];
 function asNavOffen(){ try{ return JSON.parse(localStorage.getItem("as_nav_offen") || "[]"); }catch(e){ return []; } }
 function asNav(){
-  const sicht = k => AS_SEITEN[k] && (AS.fachkraft || !AS_SEITEN[k].nurFachkraft);
+  const sicht = k => AS_SEITEN[k] && !AS_SEITEN[k].versteckt && (AS.fachkraft || !AS_SEITEN[k].nurFachkraft);
   const zugeteilt = new Set(AS_NAV_GRUPPEN.flatMap(g => g[2]));
   const rest = Object.keys(AS_SEITEN).filter(k => !zugeteilt.has(k)).sort((a, b) => AS_SEITEN[a].sort - AS_SEITEN[b].sort);
   const gruppen = AS_NAV_GRUPPEN.map(([id, titel, seiten]) => [id, titel, (id === "service" ? seiten.concat(rest) : seiten).filter(sicht)]).filter(g => g[2].length);
