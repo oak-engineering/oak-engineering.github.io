@@ -307,7 +307,7 @@ function asSvAufgaben(){
     const tage = asSvTage(t.faellig_am); if(tage == null || tage > 14) return;
     l.push({ schluessel: "termin:" + t.id, stufe: tage < 0 ? "kritisch" : "warnung", titel: t.titel + (t.objekt ? " · " + t.objekt : ""),
       sub: (AS_SV_ART[t.art] || "Termin") + " · fällig " + asDat(t.faellig_am) + (t.zustaendig ? " · zuständig: " + t.zustaendig : ""), frist: tage,
-      aktionen: [["Erledigt", () => asSvErledigenDialog(t)]], unterlagen: t });
+      aktionen: AS.bereich && AS.bereich.fest && !asBereichSchreibbar(t.einheit_id) ? [] : [["Erledigt", () => asSvErledigenDialog(t)]], unterlagen: t });
     if(asSvEntwurfOffen(t)) asSvTerminDoks(t).filter(asSvEntwurf).forEach(d => l.push({ schluessel: "entwurf:" + t.id + ":" + d.id, stufe: "warnung", quittierbar: true,
       titel: "Unterlage noch Entwurf: " + asSvDokTitel(d).replace(/^\s*ENTWURF( zur Freigabe)?\s*[–-]\s*/i, ""), sub: "gebraucht für „" + t.titel + "“ am " + asDat(t.faellig_am) + " – Freigabe einholen", frist: tage,
       aktionen: [["Unterlage öffnen", () => asDokOeffnen(asSvDokUrl(d), asSvDokTitel(d))], ["Termin", () => asSvErledigenDialog(t, true)]] }));
@@ -742,6 +742,7 @@ function asSvTerminDialog(t, vorlage){
 }
 function asSvErledigenDialog(t, mitAendern){
   if(!t) return;
+  if(AS.bereich && AS.bereich.fest && !asBereichSchreibbar(t.einheit_id)){ asMeldung("Dieser Termin gehört nicht zu Ihrem Bereich – erledigen kann ihn die Fachkraft oder die Geschäftsführung"); return; }
   const heute = asSvHeute();
   const kn = [{ t: "Erledigt", fn: async d => {
     const w = asWerte(d), wer = asSvNameLesen(w); if(!wer){ asMeldung("Bitte eintragen, wer den Termin erledigt hat."); return false; }

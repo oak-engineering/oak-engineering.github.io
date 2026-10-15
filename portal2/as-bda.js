@@ -248,7 +248,7 @@ function asMassnahmeDialog(m, vorgabe, sys){
       ${neu ? asAuswahl("Umsetzung", "umsetzung", m.umsetzung, [["zentral", "zentral für alle"], ["anlage", "je Anlage (Zähler „x von y“)"]]) : ""}
       ${asFeld("Maßnahme", "text", m.text, "textarea", "voll")}
       ${asFeld("Verantwortlich", "verantwortlich", m.verantwortlich)}${asFeld("Bis wann", "termin", m.termin, "date")}
-      ${m.gefaehrdung_id ? "" : asBereichWahl("Bereich", "einheit_id", neu ? null : (m.einheit_id || ""), "", "– betriebsweit –")}</div>
+      ${m.gefaehrdung_id ? "" : asBereichWahl("Bereich", "einheit_id", neu && !("einheit_id" in m) ? null : (m.einheit_id || ""), "", "– betriebsweit –")}</div>
       ${neu && anlagen.length ? `<div style="margin-top:10px"><span class="hinweis">Anlagen (bei „je Anlage“):</span><br>${anlagen.map(a => `<label style="margin-right:12px"><input type="checkbox" data-anl value="${esc(a)}" checked> ${esc(a)}</label>`).join("")}</div>` : ""}
       <p class="hinweis">Rangfolge nach § 4 ArbSchG: erst S und T, dann O, zuletzt P (z. B. Gehörschutz ist P).</p>`, knoepfe: kn });
 }

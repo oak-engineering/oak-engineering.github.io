@@ -91,8 +91,9 @@ function asLfKriterien(){
       pruef: () => asLfOk(d0().einsatz_vereinbart_am && (asBeschaeftigte().gewichtet <= 20 || d0().betreuungsgruppe), d0().einsatz_vereinbart_am ? "vereinbart " + asDat(d0().einsatz_vereinbart_am) : "", "Vereinbarung und Betreuungsgruppe eintragen") }),
     K("1a-5", 1, "1a", "Sifa und Betriebsarzt berichten regelmäßig", { warum: "Der Unternehmer muss die Berichte einfordern.", recht: "§ 5 DGUV V2", ziel: "bericht",
       pruef: () => asLfFrist(asLfPlus(d0().jahresbericht_am, 365), 30, false) }),
-    K("1a-6", 1, "1a", "Begehung durch Sifa/Betriebsarzt in den letzten 12 Monaten", { warum: "Regelmäßige Begehung ist gesetzliche Aufgabe (Intervall 12 Monate: OAK-Festlegung).", recht: "§§ 3, 6, 10 ASiG", ziel: "unterlagen",
-      pruef: () => { const b = (AS_B.docs || []).filter(x => x.kategorie === "begehungen" && x.stand).map(x => x.stand).sort().pop(); return asLfFrist(asLfPlus(b, 365), 30, false); } }),
+    K("1a-6", 1, "1a", "Begehung durch Sifa/Betriebsarzt in den letzten 12 Monaten", { warum: "Regelmäßige Begehung ist gesetzliche Aufgabe (Intervall 12 Monate: OAK-Festlegung).", recht: "§§ 3, 6, 10 ASiG", ziel: "unterlagen", sa: 12,
+      pruef: () => { const b = (AS_B.docs || []).filter(x => x.kategorie === "begehungen" && x.stand).map(x => x.stand).sort().pop();
+        return b ? asLfFrist(asLfPlus(b, 365), 30, false) : asLfSaPruef(AS_LF.d, { id: "1a-6", sa: 12 }); } }),
     K("1a-7", 1, "1a", "Arbeitsschutzausschuss tagt jedes Quartal", { warum: "Gesetzliches Gremium ab mehr als 20 Beschäftigten.", recht: "§ 11 ASiG", ziel: "steuerung/asa",
       gilt: () => asBeschaeftigte().gewichtet > 20,
       pruef: () => { const q = asT("as_asa").filter(a => a.abgeschlossen && a.datum).map(a => asLfQuartal(a.datum)), jetzt = asLfQuartal(new Date());

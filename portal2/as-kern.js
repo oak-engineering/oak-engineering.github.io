@@ -433,7 +433,7 @@ function asHashLesen(){
   const std = AS.fachkraft || !AS_SEITEN.start ? "cockpit" : "start";   // Betrieb (Schichtführer) startet mit der Startseite
   const h = decodeURIComponent(location.hash.replace(/^#/, "")) || std;
   const [s, r] = h.split("/");
-  AS.seite = AS_SEITEN[s] && (AS.fachkraft || !AS_SEITEN[s].nurFachkraft) ? s : std;
+  AS.seite = AS_SEITEN[s] && (AS.fachkraft || AS.gf || !AS_SEITEN[s].nurFachkraft) ? s : std;
   if(r) AS.reiter[AS.seite] = r;
 }
 /* Seitenleiste in Gruppen (Nikolai 14.10.2026: „zu lang, gliedern wie in V1“). Offen ist die Gruppe der aktiven Seite
@@ -449,7 +449,7 @@ const AS_NAV_GRUPPEN = [
 ];
 function asNavOffen(){ try{ return JSON.parse(localStorage.getItem("as_nav_offen") || "[]"); }catch(e){ return []; } }
 function asNav(){
-  const sicht = k => AS_SEITEN[k] && !AS_SEITEN[k].versteckt && (AS.fachkraft || !AS_SEITEN[k].nurFachkraft);
+  const sicht = k => AS_SEITEN[k] && !AS_SEITEN[k].versteckt && (AS.fachkraft || AS.gf || !AS_SEITEN[k].nurFachkraft);
   const zugeteilt = new Set(AS_NAV_GRUPPEN.flatMap(g => g[2]));
   const rest = Object.keys(AS_SEITEN).filter(k => !zugeteilt.has(k)).sort((a, b) => AS_SEITEN[a].sort - AS_SEITEN[b].sort);
   const gruppen = AS_NAV_GRUPPEN.map(([id, titel, seiten]) => [id, titel, (id === "service" ? seiten.concat(rest) : seiten).filter(sicht)]).filter(g => g[2].length);

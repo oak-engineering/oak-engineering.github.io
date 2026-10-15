@@ -275,8 +275,13 @@ function asVfDetail(id){
     { t: asVfAusgewertet(v) || v.ursache || v.ausfalltage != null ? "Auswertung ändern" : "Auswerten", klasse: "sek", fn: () => { asVfAuswerten(v); return false; } },
     { t: "Maßnahme ableiten", klasse: "sek", fn: () => { asVfMassnahme(v); return false; } },
   ];
-  if(v.status === "neu" && asVfVerwalter()) knoepfe.push({ t: "Freigeben", fn: async () => {
-    try{ await asVfSpeichern(v.id, { status: "offen" }); }
+  if(v.status === "neu" && asVfVerwalter()) knoepfe.push({ t: "Freigeben", fn: async d => {
+    /* Eingaben aus demselben Dialog mitnehmen (Durchlauf 2: gingen beim Freigeben verloren) */
+    const w = asWerte(d), felder = { status: "offen" };
+    ["bearbeitung", "rueckmeldung", "domaene"].forEach(k => { if(k in w && w[k] != null) felder[k] = w[k]; });
+    if("as_einheit_id" in w) felder.as_einheit_id = w.as_einheit_id || null;
+    if(felder.rueckmeldung) felder.rueckmeldung_am = felder.rueckmeldung === v.rueckmeldung && v.rueckmeldung_am ? v.rueckmeldung_am : asHeute();
+    try{ await asVfSpeichern(v.id, felder); }
     catch(e){ asMeldung("Konnte nicht freigegeben werden: " + asVfFehlertext(e)); return false; }
     await asVfNeu("Meldung freigegeben");
   }});
@@ -351,7 +356,7 @@ function asVfErfassen(umwelt){
   const einheiten = asT("as_einheit");
   const d = asDialog({ titel: "Vorfall erfassen", breit: true, inhalt: `<div class="form">
       ${asAuswahl("Art", "art", umwelt ? "umwelt" : "unfall", Object.entries(AS_VF_ART).map(([k, a]) => [k, a.label]))}
-      ${asAuswahl("Bereich", "domaene", umwelt ? "umwelt" : "arbeitssicherheit", Object.entries(AS_VF_DOMAENE))}
+      ${asAuswahl("Thema", "domaene", umwelt ? "umwelt" : "arbeitssicherheit", Object.entries(AS_VF_DOMAENE))}
       ${asFeld("Datum", "ereignis_am", asHeute(), "date")}
       <label>Uhrzeit / Schicht<input type="text" data-f="ereignis_zeit" placeholder="z. B. 22:30 oder Nachtschicht"></label>
       <label>Ort<input type="text" data-f="ort" placeholder="Halle, Bereich"></label>

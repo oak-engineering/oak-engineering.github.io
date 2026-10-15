@@ -439,7 +439,7 @@ AS_SEITEN.vorort = { titel: "Vor Ort", icon: "⌂", sort: 4.8, async render(main
   main.innerHTML = `<h1 class="seite">Vor Ort</h1><p class="unter">Die Werkzeuge für Schichtführer und Beschäftigte – dieselben Seiten wie im Kundenportal.</p>${r.html}<div id="voInhalt"><div class="leer">wird geladen …</div></div>`;
   const box = document.getElementById("voInhalt"), k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const rahmen = src => `<iframe src="${esc(src)}" allow="fullscreen; camera; microphone; geolocation" style="width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
-  if(r.akt === "pruefen") box.innerHTML = rahmen("../portal/pruefen.html?eingebettet=1&k=" + encodeURIComponent(AS.kunde));
+  if(r.akt === "pruefen") box.innerHTML = rahmen("../portal/pruefen.html?eingebettet=1&k=" + encodeURIComponent(AS.kunde) + (AS.bereich && AS.bereich.aktiv ? "&e=" + encodeURIComponent([...AS.bereich.lesen].join(",")) : ""));
   else if(r.akt === "melden"){
     const t = (await apiGet("/rest/v1/portal_melde_token?select=token,kunde_slug&aktiv=is.true" + k).catch(() => []))[0];
     box.innerHTML = t ? rahmen("../portal/melden.html?t=" + encodeURIComponent(t.token) + "&eingebettet=1")

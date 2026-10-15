@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Maschine prüfen – OAK EHS-Cockpit</title>
-<link rel="stylesheet" href="portal.css?v=202610151112">
+<link rel="stylesheet" href="portal.css?v=202610151122">
 <script src="marke.js?v=2026-09-16d"></script>
 <style>
 /* Maschinenpruefung fuer Schichtfuehrer (16.09.2026): Checkliste BG RCI T 008-2 „Wiederkehrende Pruefung"
@@ -226,7 +226,10 @@ async function start(){
     SLUG = (ich.rolle === "admin" && Q.get("k")) ? Q.get("k") : (ich.kunde_slug || Q.get("k") || "");
     $("#pruefer").value = (ich.rolle === "admin" || /^Schichtf/i.test(ich.name || "")) ? "" : (ich.name || "");   // gemeinsamer Zugang: Name selbst eintragen
     if(window.OAK_MARKE && SLUG) OAK_MARKE.anwenden(SLUG);
-    const rows = await apiGet("/rest/v1/portal_dokumente?select=maschine,maschinen_id,maschinentyp,kunde&kategorie=eq.anlagen&kunde_slug=eq." + encodeURIComponent(SLUG), false) || [];
+    /* Bereichs-Login im Cockpit (?e=ids): nur Anlagen dieser Bereiche, betriebsweite bleiben sichtbar (Durchlauf 2) */
+    const nurE = (Q.get("e") || "").split(",").filter(Boolean);
+    const rows = ((await apiGet("/rest/v1/portal_dokumente?select=maschine,maschinen_id,maschinentyp,kunde,einheit_id&kategorie=eq.anlagen&kunde_slug=eq." + encodeURIComponent(SLUG), false)) || [])
+      .filter(r => !nurE.length || !r.einheit_id || nurE.includes(r.einheit_id));
     const gesehen = new Set();
     MASCHINEN = rows.filter(r => r.maschinen_id && !gesehen.has(r.maschinen_id) && gesehen.add(r.maschinen_id))
       .sort((a, b) => String(a.maschine).localeCompare(String(b.maschine), "de", { numeric: true }));

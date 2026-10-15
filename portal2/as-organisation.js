@@ -66,6 +66,12 @@ function asEinheitDialog(e){
     await asSpeichern("as_einheit", Object.assign({ id: e.id }, w)); asZeige(); } }];
   if(!neu){
     kn.unshift({ t: "+ Untereinheit", klasse: "sek", fn: () => { asEinheitDialog({ parent_id: e.id, art: "kostenstelle", schichten: e.schichten, beschaeftigte: 0 }); return false; } });
+    if(AS.fachkraft || AS.gf) kn.unshift({ t: "Stilllegen", klasse: "sek", fn: async () => {
+      const kinder = asT("as_einheit").filter(x => x.parent_id === e.id);
+      if(kinder.length){ asMeldung("Zuerst die Untereinheiten stilllegen oder umhängen (" + kinder.map(x => x.name).join(", ") + ")"); return false; }
+      if(!confirm("„" + e.name + "“ stilllegen? Die Einheit verschwindet aus allen Auswahllisten; zugeordnete Einträge bleiben erhalten.")) return false;
+      await apiSend("PATCH", "/rest/v1/uw_einheit?id=eq." + encodeURIComponent(e.id), { status: "inaktiv" }, "return=minimal");
+      asMeldung("Stillgelegt"); await asLaden(); asZeige(); } });
     if(AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Einheit mit allen Untereinheiten löschen?")) return false; await asLoeschen("as_einheit", e.id); await asLaden(); asZeige(); } });
   }
   asDialog({ titel: neu ? "Neue Einheit" : e.name, inhalt: `<div class="form">

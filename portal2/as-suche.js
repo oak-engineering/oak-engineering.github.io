@@ -96,7 +96,7 @@ async function asSuDaten(){
 /* ---- Trefferliste bauen: jeder Treffer { art, titel, sub, text (durchsucht), los() } ---- */
 function asSuEintraege(d){
   const l = [], add = (art, titel, sub, text, los, extra) => l.push(Object.assign({ art, titel, sub: sub || "", text: asSuNorm(titel + " " + (sub || "") + " " + (text || "")), los }, extra || {}));
-  const sicht = k => AS_SEITEN[k] && !AS_SEITEN[k].versteckt && (AS.fachkraft || !AS_SEITEN[k].nurFachkraft);
+  const sicht = k => AS_SEITEN[k] && !AS_SEITEN[k].versteckt && (AS.fachkraft || AS.gf || !AS_SEITEN[k].nurFachkraft);
   Object.keys(AS_SEITEN).filter(sicht).forEach(k => add("seite", AS_SEITEN[k].titel, "Seite im Cockpit", k + " " + (AS_SU_WOERTER[k] || ""), () => asGehe(k)));
   if(sicht("gefahrstoffe")) add("seite", "Handschuhplan", "Gefahrstoffe → Handschuhplan", "handschuh schutzhandschuh", () => asGehe("gefahrstoffe/handschuhe"));
   const einh = (AS.bereich && AS.bereich.einheiten) || [], eName = id => (einh.find(e => e.id === id) || {}).name || "";
