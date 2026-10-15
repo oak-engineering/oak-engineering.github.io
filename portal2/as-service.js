@@ -420,18 +420,34 @@ const AS_SV_PA = {
 async function asSvPaLaden(){
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const hole = p => apiGet(p).then(r => Array.isArray(r) ? r : []).catch(() => []);
-  const [pa, gbu, po, gbuAlle] = await Promise.all([
+  const [pa, gbu, po, gbuAlle, baVor, anl, gsE] = await Promise.all([
     hole("/rest/v1/portal_pruefauftrag?select=*&erledigt_am=is.null" + k + "&order=faellig_am.asc"),
     hole("/rest/v1/portal_gefahrstoff_gbu?select=id,taetigkeit,gefahrstoff_id,naechste_pruefung,status&status=eq.freigegeben&naechste_pruefung=not.is.null" + k),
     hole("/rest/v1/as_pruefobjekt?select=id,art,bezeichnung,ort,naechste_am,aktiv,einheit_id&naechste_am=not.is.null" + k),
-    hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k)]);
-  AS_SV.gbuAlle = gbuAlle;
+    hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k),
+    hole("/rest/v1/as_ba?select=id,titel,arbeitssystem_id,vorgelegt_am,vorgelegt_von,status&vorgelegt_am=not.is.null&status=neq.freigegeben" + k),
+    hole("/rest/v1/portal_dokumente?select=maschinen_id,einheit_id&kategorie=in.(anlagen,allg-gbu)" + k),
+    hole("/rest/v1/portal_gefahrstoff?select=id,einheit_ids" + k)]);
+  AS_SV.gbuAlle = gbuAlle; AS_SV.baVor = baVor;
+  /* Bereich je Auftragsobjekt – Bereichs-Logins sehen nur Aufträge ihres Bereichs (Durchlauf 2). Unbekannt = betriebsweit. */
+  AS_SV.objEinheit = {}; (anl || []).forEach(d => { if(d.maschinen_id) AS_SV.objEinheit[d.maschinen_id] = d.einheit_id || null; });
+  AS_SV.gsEinheit = {}; (gsE || []).forEach(g => { AS_SV.gsEinheit[g.id] = g.einheit_ids || []; });
+  AS_SV.anlBekannt = new Set((anl || []).map(d => d.maschinen_id)); AS_SV.gsBekannt = new Set((gsE || []).map(g => g.id));
   AS_SV.pa = pa; AS_SV.gbuFrist = gbu; AS_SV.pruefFrist = po.filter(o => o.aktiv !== false);
+}
+function asSvPaSichtbar(a){
+  if(!AS.bereich || !AS.bereich.aktiv) return true;
+  const oid = String(a.objekt_id || ""), typ = a.objekt_typ;
+  if(typ === "bda_system") return !!asNach("as_arbeitssystem", oid);
+  const gs = oid.startsWith("GS:") ? oid.slice(3) : (typ === "gs_ba" ? oid : typ === "gs_gbu" ? ((AS_SV.gbuAlle || []).find(x => x.id === oid) || {}).gefahrstoff_id : null);
+  if(gs) return asBereichLesbar(AS_SV.gsEinheit[gs] || []) && (AS_SV.gsBekannt.has(gs) || !AS_SV.gsBekannt.size);
+  if(oid in AS_SV.objEinheit) return asBereichLesbar(AS_SV.objEinheit[oid]);
+  return !(AS_SV.anlBekannt && AS_SV.anlBekannt.size && /^[A-Z]+-\d+$/.test(oid));   // Anlage eines fremden Bereichs (vom Filter entfernt)
 }
 function asSvPaText(a){ return (a.anlaesse || []).map(x => x.text).filter(Boolean); }
 function asSvPaAufgaben(){
   const l = [], fk = !!(AS.fachkraft || AS.admin);
-  (AS_SV.pa || []).forEach(a => { const [t, ziel] = AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = asSvPaText(a);
+  (AS_SV.pa || []).filter(asSvPaSichtbar).forEach(a => { const [t, ziel] = AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = asSvPaText(a);
     const akt = [["Öffnen", () => asSvPaOeffnen(a, ziel)]];
     if(a.objekt_typ === "unterweisung"){
       if(fk || AS.gf) akt.push(["Unterwiesen …", () => asSvUwQuittieren(a)]);
@@ -457,6 +473,11 @@ function asSvPaAufgaben(){
     schluessel: "gbu-frist:" + g.id + ":" + g.naechste_pruefung, stufe: asSvTage(g.naechste_pruefung) < 0 ? "kritisch" : "warnung",
     titel: "Gefahrstoff-Beurteilung regelmäßig überprüfen: " + (g.taetigkeit || ""), sub: "nächste Überprüfung " + asDat(g.naechste_pruefung),
     frist: asSvTage(g.naechste_pruefung), aktionen: [["Öffnen", () => { AS_GS.oeffnen = g.gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] }));
+  /* Betriebsanweisung wartet auf die Freigabe der Geschäftsführung (Durchlauf 2) */
+  (AS_SV.baVor || []).filter(b => !b.arbeitssystem_id || asNach("as_arbeitssystem", b.arbeitssystem_id)).forEach(b => l.push({
+    schluessel: "ba-freigabe:" + b.id + ":" + b.vorgelegt_am, stufe: "warnung", titel: "Betriebsanweisung freigeben: " + (b.titel || ""),
+    sub: "zur Freigabe vorgelegt " + asDat(b.vorgelegt_am) + (b.vorgelegt_von ? " von " + b.vorgelegt_von : "") + (AS.gf ? "" : " – gibt die Geschäftsführung frei"),
+    frist: null, aktionen: [["Öffnen", () => { if(b.arbeitssystem_id){ AS.reiter["bda_" + b.arbeitssystem_id] = "dokumente"; AS.reiter.bda = b.arbeitssystem_id; asGehe("bda/" + b.arbeitssystem_id); } else asGehe("bda"); }]] }));
   /* Gefahrstoff-Beurteilung wartet auf die Freigabe der Geschäftsführung (Schritt 6) */
   (AS_SV.gbuAlle || []).filter(g => g.vorgelegt_am && g.status !== "freigegeben").forEach(g => l.push({
     schluessel: "gsgbu-freigabe:" + g.id + ":" + g.vorgelegt_am, stufe: "warnung", titel: "Gefahrstoff-Beurteilung freigeben: " + (g.taetigkeit || ""),
@@ -488,7 +509,7 @@ function asSvPaOeffnen(a, ziel){
     return asGehe("gefahrstoffe/kataster"); }
   const sys = a.objekt_typ === "bda_system" ? asNach("as_arbeitssystem", oid)
     : asT("as_arbeitssystem").find(x => x.art === "anlage" && asListe(x.anlagen).includes(oid)) || asT("as_arbeitssystem").find(x => asListe(x.anlagen).includes(oid));
-  if(sys){ AS.reiter["bda_" + sys.id] = a.objekt_typ === "anlage_ba" ? "dokumente" : "tabelle"; AS.reiter.bda = sys.id; return asGehe("bda/" + sys.id); }
+  if(sys){ AS.reiter["bda_" + sys.id] = a.objekt_typ === "anlage_ba" || a.objekt_typ === "unterweisung" ? "dokumente" : "tabelle"; AS.reiter.bda = sys.id; return asGehe("bda/" + sys.id); }
   asGehe(ziel);
 }
 /* Neuunterweisung quittieren: betroffene Personen über Rollen des Arbeitssystems bzw. den Bereich (Anlage/Gefahrstoff) */

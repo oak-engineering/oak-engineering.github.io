@@ -511,6 +511,10 @@ function renderReifegrad(rg){
     const w=document.createElement("span"); w.className="oak-wort"; w.textContent="OAK engineering"; marke.appendChild(w);
   }
   if(m.kundenLogoB64 && imgs[1]){ imgs[1].src = m.kundenLogoB64; imgs[1].className = "kundenlogo"; if(m.kunde) imgs[1].alt = m.kunde; }
+  else if(imgs[1] && m.kunde && !/wibo/i.test(m.kunde)){   /* Vorlage trägt das WIBO-Logo – bei anderen Betrieben Firmenname statt fremdem Logo */
+    const ph = document.createElement("span"); ph.textContent = m.kunde;
+    ph.style.cssText = "display:inline-block;padding:0 18px;line-height:60px;border:1px solid #cdd8e2;border-radius:6px;color:#4a5663;font-size:14px;font-weight:600";
+    imgs[1].replaceWith(ph); }
   document.querySelectorAll("table.meta input").forEach(inp=>{
     const k = inp.dataset.k;
     if(m[k] != null && m[k] !== ""){ inp.setAttribute("value", m[k]); if(!inp.value) inp.value = m[k]; }
@@ -608,7 +612,9 @@ function normH(src, seed){
 function loadState(){
   let meta={}, hs=null, sign=null;
   try{ const el=document.getElementById("oak-state"); const emb=el?JSON.parse(el.textContent):null;
-    if(emb && emb.h){ meta=emb.meta||{}; hs=emb.h; sign=emb.signaturen; } }catch(e){}
+    if(emb && emb.h){ meta=emb.meta||{}; hs=emb.h; sign=emb.signaturen; }
+    else if(emb && emb.signaturen){ sign=emb.signaturen; hs=null; meta=null; } }catch(e){}
+  if(meta===null) return { meta:{}, h: HAZARDS.map(x=>normH(x, x)), signaturen: sign||{} };   /* Cockpit-Dokument: Inhalt aus der DB, nur Unterschriften */
   if(!hs){ try{ const s=JSON.parse(localStorage.getItem(LSKEY)); if(s && s.h){ meta=s.meta||{}; hs=s.h; sign=s.signaturen; } }catch(e){} }
   if(hs) return { meta, h: hs.map((hh,i)=>normH(hh, HAZARDS[i])), signaturen: sign||{} };
   return { meta:{}, h: HAZARDS.map(x=>normH(x, x)), signaturen:{} };

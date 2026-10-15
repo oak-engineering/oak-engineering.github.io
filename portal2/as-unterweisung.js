@@ -25,7 +25,7 @@ async function asUwLaden(neu){
   if(!neu && AS_UW.kunde === AS.kunde && AS_UW.d.geladen) return;
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const hole = p => apiGet(p).then(r => r || []).catch(() => []);
-  const [nachweise, pers, rollen, einheiten, tok, beleg, einarb, module, buchung, faellig, modulZuw, zusatz, docs, baustein] = await Promise.all([
+  const [nachweise, pers, rollen, einheiten, tok, beleg, einarb, module, buchung, faellig, modulZuw, zusatz, docs, baustein, anlassP, anlassA] = await Promise.all([
     hole("/rest/v1/unterweisungsnachweise?select=" + AS_UW_SPALTEN + k + "&order=created_at.desc"),
     hole("/rest/v1/uw_person?select=*,uw_person_einheit(einheit_id),uw_person_rolle(rolle_id)" + k + "&order=name.asc"),
     hole("/rest/v1/uw_rolle?select=*" + k + "&order=name.asc"),
@@ -40,8 +40,11 @@ async function asUwLaden(neu){
     hole("/rest/v1/uw_zusatz?select=*" + k + "&order=sortierung.asc"),
     hole("/rest/v1/portal_dokumente?select=id,kunde_slug,storage_path,doc_typ,titel,kategorie,stand,updated_at" + k
       + "&kategorie=eq.unterweisungen&order=sortierung.asc,titel.asc"),
-    hole("/rest/v1/portal_uw_baustein?select=*" + k + "&order=gueltig_ab.desc")]);
-  AS_UW.d = { geladen: true, nachweise, pers, rollen, einheiten, tok, beleg, einarb, module, buchung, faellig, modulZuw, zusatz, docs, baustein };
+    hole("/rest/v1/portal_uw_baustein?select=*" + k + "&order=gueltig_ab.desc"),
+    hole("/rest/v1/portal_pruefauftrag_person?select=person_id,am,durch,pruefauftrag_id" + k + "&order=am.desc"),
+    hole("/rest/v1/portal_pruefauftrag?select=id,objekt_titel&objekt_typ=eq.unterweisung&erledigt_am=not.is.null" + k)]);
+  AS_UW.d = { geladen: true, nachweise, pers, rollen, einheiten, tok, beleg, einarb, module, buchung, faellig, modulZuw, zusatz, docs, baustein,
+    anlass: (anlassP || []).map(x => Object.assign({}, x, { titel: ((anlassA || []).find(a => a.id === x.pruefauftrag_id) || {}).objekt_titel || "" })) };
   if(AS_UW.kunde !== AS.kunde){ AS_UW.kap = null; AS_UW.detail = null; AS_UW.mobil = null; }
   AS_UW.kunde = AS.kunde;
 }
@@ -152,7 +155,8 @@ function asUwTerminal(box){
   const pdf = n => n && n.id ? `<button class="btn sek klein" data-pdf="${esc(n.id)}">Nachweis (PDF)</button>` : "";
   const zeilen = pers.map(p => { const n = asUwLetzter(p.name), st = n ? asUwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" }, g = asUwGruppenName(p);
     return { rang: AS_UW_AMPEL[st.klasse] ?? 2, html: `<tr data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(g)}" data-stand="${st.klasse}" data-ea="${asUwEinarb(p.name) ? "ja" : "nein"}">
-      <td><b>${esc(p.name)}</b></td><td>${esc(g || "—")}</td><td>${n ? asDat(n.created_at) : "—"}</td><td>${asChip(st.text, AS_UW_FARBE[st.klasse])}</td>
+      <td><b>${esc(p.name)}</b>${(() => { const a = (AS_UW.d.anlass || []).find(x => x.person_id === p.id);
+        return a ? `<br><small class="hinweis" title="anlassbezogene Unterweisung (Neuunterweisung)">Anlass: ${esc(a.titel || "Neuunterweisung")} · ${asDat(a.am)}${a.durch ? " · " + esc(a.durch) : ""}</small>` : ""; })()}</td><td>${esc(g || "—")}</td><td>${n ? asDat(n.created_at) : "—"}</td><td>${asChip(st.text, AS_UW_FARBE[st.klasse])}</td>
       <td>${einarbZelle(p.name, g)}</td><td style="white-space:nowrap">${pdf(n)} <button class="btn sek klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` }; })
     .concat(zusatz.map(n => { const st = asUwStatus(n);
       return { rang: AS_UW_AMPEL[st.klasse] ?? 2, html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}" data-ea="${asUwEinarb(n.mitarbeiter_name) ? "ja" : "nein"}">
@@ -197,7 +201,7 @@ function asUwTerminal(box){
         ${ohneRecht.map(m => `<div class="z"><div><b>${esc(m.titel)}</b></div>${asChip("Rechtsbezug fehlt", "gelb")}</div>`).join("")}</div>` : ""}
       <p class="hinweis">Grundlage der Fälligkeit: § 12 ArbSchG und § 4 DGUV Vorschrift 1 — vor Aufnahme der Tätigkeit und danach mindestens jährlich. Für Beschäftigte unter 18 Jahren rechnet das Portal automatisch mit sechs Monaten (§ 29 JArbSchG). Gespeichert wird, <i>dass</i> unterwiesen wurde — kein Punktestand.</p></div>
     ${beleg}
-    <div class="karte"><h2>Wer ist fällig <span class="hinweis">${zeilen.length ? (faelligZahl ? faelligZahl + " fällig" : "alle aktuell") : ""}</span>
+    <div class="karte"><h2>Jährliche Unterweisung je Person (Terminal) <span class="hinweis">${zeilen.length ? (faelligZahl ? faelligZahl + " fällig" : "alle aktuell") : ""}</span>
         ${d.nachweise.length ? `<button class="btn sek klein" id="uwCsv">Excel-Export</button>` : ""} <button class="btn klein" id="uwPersNeu">Mitarbeiter anlegen</button></h2>
       ${zeilen.length ? `<div class="filterleiste">
           <input type="search" id="uwfName" placeholder="Name suchen" autocomplete="off">

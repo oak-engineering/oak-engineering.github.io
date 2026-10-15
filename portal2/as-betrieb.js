@@ -80,7 +80,7 @@ function asDokOeffnen(url, titel){
   let el = document.getElementById("asDok");
   if(!el){ el = document.createElement("div"); el.id = "asDok";
     el.style.cssText = "position:fixed;inset:0;z-index:50;background:#fff;display:flex;flex-direction:column";
-    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:#1f4e79;color:#fff">
+    el.innerHTML = `<div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--blau);color:#fff">
         <button class="btn sek klein" id="asDokZu">← zurück</button><b id="asDokTitel" style="flex:1"></b>
         <a id="asDokNeu" target="_blank" rel="noopener" style="color:#fff">in neuem Fenster</a></div>
       <iframe id="asDokRahmen" style="flex:1;border:0;width:100%" allow="fullscreen; camera; microphone"></iframe>`;
@@ -187,7 +187,7 @@ function asAnlageNeuDialog(main){
       if(typeof asAnlageBdaAnlegen === "function")
         await asAnlageBdaAnlegen(mid, w, vorlage ? vorlage.maschinen_id : null).catch(e => asMeldung("Beurteilung nicht angelegt: " + (e.message || e)));
       if(w.einheit_id) await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: mid, p_einheit: w.einheit_id }).catch(e => asMeldung("Bereich nicht gesetzt: " + (e.message || e)));
-      await asBetriebLaden(true);
+      await asBetriebLaden(true); await asLaden().catch(() => {});
       asMeldung("Anlage " + w.name + " (" + mid + ") angelegt – Beurteilung jetzt prüfen und ergänzen");
       AS_SEITEN.anlagen.render(main);
     } }] });

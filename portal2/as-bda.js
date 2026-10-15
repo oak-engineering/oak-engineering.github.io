@@ -79,7 +79,9 @@ function asBdaTabelle(box, s){
   const stufe = r => r >= 9 ? 3 : r >= 4 ? 2 : r > 0 ? 1 : 0;
   const ampel = r => { const st = stufe(r); return `<div class="ampel3">${[1, 2, 3].map(i => `<span style="background:${i === st ? ["", "var(--gruen)", "var(--gelb)", "var(--rot)"][i] : "#eef1f5"}">${i === st ? i : ""}</span>`).join("")}</div>`; };
   let nr = 0, rows = "";
-  tk.forEach(t => { const gg = gef.filter(g => g.taetigkeit_id === t.id && g.art !== "ressource");
+  const gruppen = tk.concat(gef.some(g => !g.taetigkeit_id && g.art !== "ressource")
+    ? [{ id: null, name: tk.length ? "Anlage gesamt (alle Betriebszustände)" : "Arbeitsplatz / Anlage gesamt", rollen: s.rollen }] : []);
+  gruppen.forEach(t => { const gg = gef.filter(g => (g.taetigkeit_id || null) === t.id && g.art !== "ressource");
     if(!gg.length){ rows += `<tr><td>${++nr}</td><td><b>${esc(t.name)}</b><div class="hinweis">${esc(asListe(t.rollen).join(", "))}</div></td><td colspan="5" class="hinweis">noch keine Gefährdung erfasst</td></tr>`; return; }
     gg.forEach((g, i) => {
       // Massnahmen je Anlage zu einer Zeile buendeln: „x von y Anlagen wirksam"

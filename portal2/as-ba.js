@@ -61,7 +61,9 @@ async function asBdaDokumente(box, s){
       <p class="hinweis">Version ${ba.version}${ba.geaendert_am ? " · zuletzt geändert " + asDat(ba.geaendert_am) + (ba.geaendert_von ? " von " + esc(ba.geaendert_von) : "") : ""}. Jede Änderung nach der Freigabe macht die BA wieder zum Entwurf – die Geschäftsführung gibt neu frei.</p>`
       : `<div class="leer">Für diese Beurteilung gibt es noch keine Betriebsanweisung.</div>`}</div>`;
   box.querySelectorAll("[data-vor]").forEach(b => b.onclick = () => asDokOeffnen(asBaVorschauUrl(s, b.dataset.vor), s.name + " · " + b.textContent));
-  box.querySelectorAll("[data-spr]").forEach(b => b.onclick = () => { AS_BA.sprache = b.dataset.spr; asBdaDokumente(box, s); });
+  box.querySelectorAll("[data-spr]").forEach(b => b.onclick = async () => {
+    if(AS_BA.dirty && AS_BA.speichern){ try{ await AS_BA.speichern(); asMeldung("Änderungen gespeichert"); }catch(e){ asMeldung("Fehler: " + (e.message || e)); return; } }
+    AS_BA.sprache = b.dataset.spr; asBdaDokumente(box, s); });
   const neu = box.querySelector("#baNeu"); if(neu) neu.onclick = async () => {
     await apiSend("POST", "/rest/v1/as_ba", { kunde_slug: AS.kunde, arbeitssystem_id: s.id, maschinen_id: asListe(s.anlagen)[0] || null, titel: s.name,
       inhalt: asBaVorschlag(s), status: "entwurf", einheit_id: s.einheit_id || null }, "return=minimal");
@@ -75,20 +77,32 @@ async function asBdaDokumente(box, s){
     ["gefahren", "schutz", "ersthilfe"].forEach(k => { const c = String(w["pk_" + k] || "").toUpperCase().match(/[A-Z]\d{3}/g) || [];
       const h = Math.ceil(c.length / 2); inhalt.piktogramme[k] = { links: c.slice(0, h), rechts: c.slice(h) }; });
     await apiSend("PATCH", "/rest/v1/as_ba?id=eq." + encodeURIComponent(ba.id), { inhalt }, "return=minimal");
+    AS_BA.dirty = false;
   };
+  AS_BA.dirty = false; AS_BA.speichern = speichern;
+  box.querySelectorAll(".form [data-f]").forEach(el => el.addEventListener("input", () => { AS_BA.dirty = true; }));
+  if(!AS_BA.wache){ AS_BA.wache = true;
+    /* Seitenwechsel mit ungespeicherter BA: fragen statt still verwerfen (Durchlauf 2) */
+    window.addEventListener("hashchange", () => { if(AS_BA.dirty && AS_BA.speichern){ const sp = AS_BA.speichern; AS_BA.dirty = false;
+      if(confirm("Die Änderungen an der Betriebsanweisung sind noch nicht gespeichert. Jetzt speichern?")) sp().then(() => asMeldung("BA gespeichert")).catch(e => asMeldung("Fehler: " + (e.message || e))); } });
+    window.addEventListener("beforeunload", ev => { if(AS_BA.dirty){ ev.preventDefault(); ev.returnValue = ""; } }); }
   const sp = box.querySelector("#baSpeichern"); if(sp) sp.onclick = async () => { try{ await speichern(); asMeldung("Gespeichert"); asBdaDokumente(box, s); }catch(e){ asMeldung("Fehler: " + (e.message || e)); } };
   const vl = box.querySelector("#baVorlegen"); if(vl) vl.onclick = async () => { await speichern();
     await apiSend("PATCH", "/rest/v1/as_ba?id=eq." + encodeURIComponent(ba.id), { vorgelegt_am: new Date().toISOString() }, "return=minimal");
     asMeldung("Der Geschäftsführung zur Freigabe vorgelegt"); asBdaDokumente(box, s); };
-  const fr = box.querySelector("#baFrei"); if(fr) fr.onclick = async () => { await speichern();
+  const fr = box.querySelector("#baFrei"); if(fr) fr.onclick = async () => {
+    const tt = (ba.inhalt && ba.inhalt.t) || {}, leer = AS_BA_SPR.filter(([k]) => k !== "de" && !Object.values(tt[k] || {}).some(v => String(v || "").replace(/<[^>]+>/g, "").trim())).map(([, n]) => n);
+    if(leer.length && !confirm("Noch nicht übersetzt: " + leer.join(", ") + ". Die BA wird dann in diesen Sprachen auf Deutsch gezeigt. Trotzdem freigeben?")) return;
+    await speichern();
     await apiSend("PATCH", "/rest/v1/as_ba?id=eq." + encodeURIComponent(ba.id), { status: "freigegeben" }, "return=minimal");
     asMeldung("Betriebsanweisung freigegeben"); asBdaDokumente(box, s); };
 }
 function asBaPk(ba, k){ const p = ((ba.inhalt || {}).piktogramme || {})[k] || {}; return [].concat(p.links || [], p.rechts || []).join(" "); }
 
 /* Vorschlag für eine neue BA aus der Beurteilung (Mensch prüft und gibt frei) */
-function asBaVorschlag(s){
-  const gef = asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id && g.art === "gefaehrdung");
+function asBaVorschlag(s){ return asBaVorschlagAus(s.name, asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id)); }
+function asBaVorschlagAus(name, liste){
+  const s = { name }, gef = (liste || []).filter(g => g.art === "gefaehrdung");
   const gefahren = gef.slice(0, 6).map(g => "<b>" + esc(String(g.kurz || "").split(" – ").pop()) + ":</b> " + esc(g.situation || g.beschreibung || ""));
   const schutz = [...new Set(gef.flatMap(g => (g.schutzmassnahmen || []).map(x => x.text)).filter(Boolean))].slice(0, 8).map(esc);
   return { piktogramme: { gefahren: { links: [], rechts: [] }, schutz: { links: [], rechts: [] }, ersthilfe: { links: ["E003"], rechts: [] } },
@@ -112,12 +126,19 @@ async function asAnlageBdaAnlegen(mid, w, vorlageMid){
   const alt = String((vSys.dok && vSys.dok.meta && vSys.dok.meta.maschine) || "");
   const tausch = x => alt.length >= 3 ? JSON.parse(JSON.stringify(x).split(alt).join(w.name)) : x;
   const gef = (await apiGet("/rest/v1/as_gefaehrdung?select=*&arbeitssystem_id=eq." + vSys.id + "&order=sort.asc").catch(() => [])) || [];
-  if(gef.length) await apiSend("POST", "/rest/v1/as_gefaehrdung", gef.map(g => tausch({ kunde_slug: AS.kunde, arbeitssystem_id: sys.id, art: g.art, faktor: g.faktor,
+  /* Tätigkeiten (Betriebszustände) der Vorlage übernehmen, Zuordnung der Gefährdungen mitnehmen (Durchlauf 2) */
+  const tk = (await apiGet("/rest/v1/as_taetigkeit?select=*&arbeitssystem_id=eq." + vSys.id + "&order=sort.asc").catch(() => [])) || [];
+  const tkNeu = {};
+  if(tk.length){
+    const r = await apiSend("POST", "/rest/v1/as_taetigkeit", tk.map(t => ({ kunde_slug: AS.kunde, arbeitssystem_id: sys.id, name: t.name, rollen: t.rollen || [], sort: t.sort })), "return=representation");
+    (r || []).forEach((x, i) => { tkNeu[tk[i].id] = x.id; });
+  }
+  if(gef.length) await apiSend("POST", "/rest/v1/as_gefaehrdung", gef.map(g => tausch({ kunde_slug: AS.kunde, arbeitssystem_id: sys.id, taetigkeit_id: tkNeu[g.taetigkeit_id] || null, art: g.art, faktor: g.faktor,
     kurz: g.kurz, beschreibung: g.beschreibung, situation: g.situation, rechtsquelle: g.rechtsquelle, bghm: g.bghm, schutzziel: g.schutzziel,
     exposition: g.exposition, wirkweise: g.wirkweise, schutzmassnahmen: g.schutzmassnahmen || [], w_v: g.w_v, s_v: g.s_v, w_n: g.w_n, s_n: g.s_n,
     nr: g.nr, sort: g.sort, extra: g.extra || {} })), "return=minimal");
   const vba = ((await apiGet("/rest/v1/as_ba?select=inhalt&arbeitssystem_id=eq." + vSys.id + "&order=version.desc").catch(() => [])) || [])[0];
-  if(vba) await apiSend("POST", "/rest/v1/as_ba", { kunde_slug: AS.kunde, arbeitssystem_id: sys.id, maschinen_id: mid, titel: w.name,
-    inhalt: tausch(vba.inhalt || {}), status: "entwurf", einheit_id: w.einheit_id || null }, "return=minimal");
+  await apiSend("POST", "/rest/v1/as_ba", { kunde_slug: AS.kunde, arbeitssystem_id: sys.id, maschinen_id: mid, titel: w.name,
+    inhalt: vba ? tausch(vba.inhalt || {}) : asBaVorschlagAus(w.name, gef.map(tausch)), status: "entwurf", einheit_id: w.einheit_id || null }, "return=minimal");
   return sys;
 }

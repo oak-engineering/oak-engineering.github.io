@@ -40,7 +40,7 @@ async function asHsLaden(){
 }
 
 function asHsChip(h, zusatz){
-  return `<span class="hs-chip" style="background:${esc(h.farbe || "#2D6A4F")}">${h.bild_url ? `<img src="${esc(h.bild_url)}" alt="">` : ""}${esc(h.name)}</span>${zusatz ? `<span class="hs-sdb">${esc(zusatz)}</span>` : ""}`;
+  return `<span class="hs-chip${h.bild_url ? "" : " ohne"}" style="background:${esc(h.farbe || "#2D6A4F")}">${h.bild_url ? `<img src="${esc(h.bild_url)}" alt="">` : ""}${esc(h.name)}</span>${zusatz ? `<span class="hs-sdb">${esc(zusatz)}</span>` : ""}`;
 }
 
 async function asHsRender(box){
@@ -51,7 +51,7 @@ async function asHsRender(box){
   const mitStoff = einh.filter(e => gs.some(g => (g.einheit_ids || []).includes(e.id)));
   if(AS_HS.bereich && !mitStoff.some(e => e.id === AS_HS.bereich)) AS_HS.bereich = "";
   const zeigen = AS_HS.bereich ? mitStoff.filter(e => e.id === AS_HS.bereich) : mitStoff;
-  const edit = AS.fachkraft;
+  const edit = !!(AS.fachkraft || AS.gf);
 
   const abschnitt = e => {
     const hsB = hs.filter(h => (h.einheit_ids || []).includes(e.id));

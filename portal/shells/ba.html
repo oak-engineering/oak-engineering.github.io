@@ -555,7 +555,8 @@ if(DOC.meta && DOC.meta.dokumentart==="nachweis"){
   else if(m.kunde){ document.getElementById("kunden-logo").textContent=m.kunde; }
   if(m.maschine){ document.getElementById("ba-titel").textContent=m.maschine; document.title="BA – "+m.maschine; }
   const setF=(f,v)=>{ if(v!=null&&v!==""){ const el=document.querySelector('[data-f="'+f+'"]'); if(el&&!el.value) el.value=v; } };
-  setF("type", m.maschine); setF("nr", m.baNr); setF("datum", m.datum);
+  setF("type", m.maschinenart || m.typ || m.maschine); setF("nr", m.baNr || (m.maschinenId ? "BA-" + m.maschinenId : "")); setF("datum", m.datum);
+  setF("standort", m.standort || m.bereich);
   /* Freigabe aus dem Cockpit (Gefahrstoff-BA: freigegebene EMKG-Beurteilung) in die Unterschriftszeile */
   document.querySelectorAll('[data-f="signame"]').forEach(el=>{ if(m.freigabeVon && !el.value) el.value=m.freigabeVon; });
   document.querySelectorAll('[data-f="sigdate"]').forEach(el=>{ if(m.freigabeAm && !el.value) el.value=m.freigabeAm; });

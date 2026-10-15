@@ -61,6 +61,14 @@ function badge(txt, err){
   const b=document.getElementById("saveBadge");
   b.classList.remove("hidden"); b.classList.toggle("err", !!err); b.textContent=txt;
 }
+/* Dokument aus der Cockpit-Datenbank (Plan „eine Welt“): Inhalt wird nur im Cockpit gepflegt – aus dem Arbeitsstand
+   gelten nur Unterschriften und Sprachwahl, sonst entstünde wieder eine zweite Fassung (Durchlauf 2). */
+function nurUnterschriften(docTyp, st){
+  if(!st) return null;
+  if(docTyp === "bda") return st.signaturen ? { signaturen: st.signaturen } : null;
+  if(docTyp === "ba") return { lang: st.lang || "de", sign: st.sign || {} };
+  return null;
+}
 function injiziereLiveState(html, stateObj){
   if(!stateObj) return html;
   const blob = JSON.stringify(stateObj).replace(/<\//g, "<\\/");
@@ -120,8 +128,9 @@ window.addEventListener("message", ev => {
   // opake Origin -> ev.origin==="null", daher ist der source-Vergleich die belastbare Prüfung).
   const rahmen = document.getElementById("rahmen");
   if(!rahmen || ev.source !== rahmen.contentWindow) return;
-  const d = ev.data;
+  let d = ev.data;
   if(!d || d.typ!=="oak-doc-state" || !LIVE_TYPEN[d.docTyp] || d.docTyp!==LIVE.docTyp) return;
+  if(LIVE.ausDb){ const st = nurUnterschriften(d.docTyp, d.state); if(!st) return; d = Object.assign({}, d, { state: st }); }
   /* erster Stand direkt nach dem Laden = Ausgangsstand, keine Änderung (Durchlauf 15.10.2026: Ansehen schrieb „bearbeitet“) */
   const sig = JSON.stringify([d.state, d.status || null]);
   if(LIVE.basis === undefined && Date.now() - (LIVE.geladenUm || 0) < 4000){ LIVE.basis = sig; return; }
@@ -209,7 +218,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         liveStatePromise,
       ]);
       let html = setzePortalFlag(injiziere(shell, docdata));
-      const liveState = liveRows && liveRows[0] && liveRows[0].state;
+      LIVE.ausDb = !!(ausDb || gsBa);
+      const liveState = LIVE.ausDb ? nurUnterschriften(typ, liveRows && liveRows[0] && liveRows[0].state) : (liveRows && liveRows[0] && liveRows[0].state);
+      if(LIVE.ausDb && typ === "bda") html = html.replace(/werden\s+lokal im Browser gespeichert\./,"werden im EHS-Cockpit gepflegt (Beurteilung → Bearbeiten); hier werden nur Unterschriften gespeichert.");
       if(liveState){
         html = injiziereLiveState(html, liveState);
         LIVE.letzterZaehler = null;   // Diff beginnt mit der ersten Aenderung dieser Sitzung
@@ -219,7 +230,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         lb.classList.remove("hidden"); lb.addEventListener("click", zeigeLog);
         document.getElementById("logZu").addEventListener("click", ()=>document.getElementById("logModal").classList.add("hidden"));
         document.getElementById("logModal").addEventListener("click", ev=>{ if(ev.target.id==="logModal") ev.target.classList.add("hidden"); });
-        badge(liveState ? "Stand geladen (zuletzt gespeicherte Version)" : "Bereit – Änderungen werden automatisch gespeichert");
+        badge(LIVE.ausDb ? (typ === "maengelliste" ? "Stand aus dem Cockpit" : "Stand aus dem Cockpit – hier werden nur Unterschriften gespeichert")
+          : liveState ? "Stand geladen (zuletzt gespeicherte Version)" : "Bereit – Änderungen werden automatisch gespeichert");
       }
       LIVE.geladenUm = Date.now(); LIVE.basis = undefined;
       frame.srcdoc = mitLightbox(html, typ).replace(/<\/head>/i, (window.OAK_MARKE ? OAK_MARKE.styleBlock() : "") + "</head>");   // Kundenmarke ins Dokument

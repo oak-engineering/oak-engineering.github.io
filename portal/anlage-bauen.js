@@ -48,6 +48,7 @@
     const meta = Object.assign({}, meta0, { maschinenId: mid, leer: true });
     if(oakLogo) meta.oakLogoB64 = oakLogo;
     if(kundenLogo) meta.kundenLogoB64 = kundenLogo;
+    if(!meta.kunde) meta.kunde = ((kunde || [])[0] || {}).name || "";
     if(qr && qr[0] && qr[0].qr_svg){ meta.qrSvg = qr[0].qr_svg; meta.qrUrl = "https://www.oak-engineering.de/portal/maschine.html?k=" + q(slug) + "&mid=" + q(mid); }
     if(Array.isArray(prot.fotos)) prot.fotos = prot.fotos.map(f => foto(f, url));
     const hazards = (gef || []).map(g => {
@@ -61,6 +62,8 @@
         fotos: (g.fotos || []).map(f => foto(f, url)).filter(f => f && (f.src || f.data)) });
     });
     const ba = (bas || []).find(b => b.status === "freigegeben") || (bas || [])[0];
+    /* Freigabe der BA (Cockpit, nur GF) in die Unterschriftszeile der BA */
+    if(ba && ba.status === "freigegeben"){ meta.freigabeVon = ba.freigabe_von || ""; meta.freigabeAm = String(ba.freigabe_am || "").slice(0, 10).split("-").reverse().join("."); }
     return JSON.stringify({ _typ: "OAK-doc-data", _quelle: "Cockpit-Datenbank", meta, hazards, rechtsquellen: dok.rechtsquellen || [],
       ba: ba ? ba.inhalt : {}, maengel: dok.maengel || [], protokoll: prot, stundensatz: dok.stundensatz });
   }
