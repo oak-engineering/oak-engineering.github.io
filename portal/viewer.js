@@ -178,6 +178,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         LIVE.userName = (me&&me[0]&&me[0].name) || (s&&s.user&&s.user.email) || "?";
       }catch(e){ LIVE.userName = (s&&s.user&&s.user.email) || "?"; }
 
+      /* Schalter je Betrieb (portal_kunde.rechte.dokumente_aus_db, Plan „eine Welt“): Anlagen-Dokumente aus der
+         Cockpit-Datenbank statt aus der veröffentlichten JSON – gilt für V1 und V2. Ohne Beurteilung in der DB: alte Datei. */
+      let ausDb = anlDb;
+      if(!anlDb && !gsBa && !portalAnlage && /\.json$/.test(String(p)) && LIVE.mid && window.ANLB){
+        const kd = await apiGet("/rest/v1/portal_kunde?select=rechte&slug=eq." + encodeURIComponent(LIVE.slug), false).catch(() => []);
+        ausDb = !!(kd && kd[0] && kd[0].rechte && kd[0].rechte.dokumente_aus_db);
+      }
       const liveStatePromise = (LIVE.docTyp && LIVE.mid)
         ? apiGet("/rest/v1/portal_doc_state?select=state&kunde_slug=eq."+encodeURIComponent(LIVE.slug)
             +"&maschinen_id=eq."+encodeURIComponent(LIVE.mid)+"&doc_typ=eq."+typ, false).catch(()=>[])
@@ -188,6 +195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         fetch("shells/" + typ + ".html", {cache:"no-cache"})
           .then(r => { if(!r.ok) throw new Error("Vorlage fehlt"); return r.text(); }),
         anlDb ? (window.ANLB ? ANLB.daten(p) : Promise.reject(new Error("Anlagen-Baustein fehlt")))
+        : ausDb ? ANLB.daten("anl:" + LIVE.slug + ":" + LIVE.mid).catch(() => apiGet(storagePfad(p), true))
         : gsBa ? (window.GSBA ? GSBA.daten(p) : Promise.reject(new Error("BA-Baustein fehlt")))
           : portalAnlage ? apiGet("/rest/v1/portal_anlage_daten?select=docdata&kunde_slug=eq." + encodeURIComponent(portalAnlage[1])
               + "&maschinen_id=eq." + encodeURIComponent(portalAnlage[2]), false).then(r => { if(!r || !r[0]) throw new Error("Anlage nicht gefunden"); return JSON.stringify(r[0].docdata); })

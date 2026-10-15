@@ -62,14 +62,14 @@ async function asSystemDialog(s){
 }
 
 function asBdaSystem(main, s){
-  const r = asReiter("bda_" + s.id, [["tabelle", "Beurteilung"], ["bearbeiten", "Bearbeiten"], ["psyche", "Psychische Belastung"]], "tabelle");
+  const r = asReiter("bda_" + s.id, [["tabelle", "Beurteilung"], ["bearbeiten", "Bearbeiten"], ["dokumente", "Dokumente & BA"], ["psyche", "Psychische Belastung"]], "tabelle");
   main.innerHTML = `<p class="nodruck"><a href="#bda" onclick="AS.reiter.bda=''">← alle Arbeitssysteme</a></p>
     <h1 class="seite">${esc(s.name)}</h1><p class="unter">${esc(asEinheitName(s.einheit_id))} · Rollen: ${esc(asListe(s.rollen).join(", ") || "–")}</p>
-    <div class="reiter nodruck">${[["tabelle", "Beurteilung"], ["bearbeiten", "Bearbeiten"], ["psyche", "Psychische Belastung"]].map(([k, t]) =>
+    <div class="reiter nodruck">${[["tabelle", "Beurteilung"], ["bearbeiten", "Bearbeiten"], ["dokumente", "Dokumente & BA"], ["psyche", "Psychische Belastung"]].map(([k, t]) =>
       `<button class="${k === r.akt ? "an" : ""}" data-r="${k}">${t}</button>`).join("")}</div><div id="sysInhalt"></div>`;
   main.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { AS.reiter["bda_" + s.id] = b.dataset.r; asBdaSystem(main, s); });
   const box = document.getElementById("sysInhalt");
-  ({ tabelle: asBdaTabelle, bearbeiten: asBdaBearbeiten, psyche: asBdaPsyche })[r.akt](box, s);
+  ({ tabelle: asBdaTabelle, bearbeiten: asBdaBearbeiten, psyche: asBdaPsyche, dokumente: typeof asBdaDokumente === "function" ? asBdaDokumente : asBdaTabelle })[r.akt](box, s);
 }
 
 /* Kundenansicht wie die klassische taetigkeitsbezogene GBU: Taetigkeit | Gefaehrdung | Risiko 1-2-3 | Massnahmen | Wer | Bis wann | Stand */
@@ -152,6 +152,12 @@ function asGefDialog(s, g, taetigkeitId){
   const ms = g.id ? asMassnahmenZu(g.id) : [];
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.kurz){ asMeldung("Kurztext fehlt"); return false; }
     ["w_v", "s_v", "w_n", "s_n"].forEach(k => w[k] = w[k] ? +w[k] : null); w.taetigkeit_id = w.taetigkeit_id || null;
+    /* Schutzmaßnahmen zeilenweise „T: Text“ (S/T/O/P) – vorhandene Zusatzangaben (Priorität, Status …) bleiben erhalten */
+    if("schutz_text" in w){ const alt = g.schutzmassnahmen || [];
+      w.schutzmassnahmen = String(w.schutz_text || "").split(/\n/).map(z => z.trim()).filter(Boolean).map(z => {
+        const m = /^([STOP])\s*[:|]\s*(.+)$/i.exec(z), stop = m ? m[1].toUpperCase() : "T", text = m ? m[2].trim() : z;
+        return Object.assign({}, alt.find(x => x.text === text) || {}, { stop, text }); });
+      delete w.schutz_text; }
     await asSpeichern("as_gefaehrdung", Object.assign({ id: g.id, arbeitssystem_id: s.id }, w)); asZeige(); } }];
   if(!neu){
     kn.unshift({ t: "+ Maßnahme", klasse: "sek", fn: () => { asMassnahmeDialog(null, { gefaehrdung_id: g.id, quelle: "bda" }, s); return false; } });
@@ -162,7 +168,12 @@ function asGefDialog(s, g, taetigkeitId){
       ${asAuswahl("Tätigkeit", "taetigkeit_id", g.taetigkeit_id || "", [["", "– ohne Tätigkeitsbezug –"]].concat(asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).map(t => [t.id, t.name])))}
       ${asAuswahl("Gefährdungsfaktor", "faktor", g.faktor || "", [["", "–"]].concat(AS_KAT.faktoren.map(f => [f, f])).concat(AS_KAT.ressourcen.map(r => [r, "Ressource: " + r])), "voll")}
       ${asFeld("Kurz und verständlich (z. B. „Quetschen im Werkzeugbereich“)", "kurz", g.kurz, "text", "voll")}
-      ${asFeld("Beschreibung / Herleitung", "beschreibung", g.beschreibung, "textarea", "voll")}
+      ${asFeld("Situation (was kann passieren?)", "situation", g.situation || "", "textarea", "voll")}
+      ${asFeld("Schutzmaßnahmen – eine je Zeile, vorne S/T/O/P (z. B. „T: Verriegelte Schutztür“)", "schutz_text", (g.schutzmassnahmen || []).map(x => (x.stop || "T") + ": " + x.text).join(String.fromCharCode(10)), "textarea", "voll")}
+      ${asFeld("Rechtsquelle / Regel (typspezifisch, z. B. DGUV Information 113-606 Abschn. 3.1.3)", "rechtsquelle", g.rechtsquelle || "", "text", "voll")}
+      ${asFeld("Schutzziel", "schutzziel", g.schutzziel || "")}${asFeld("Exposition (wer, wie oft)", "exposition", g.exposition || "")}
+      ${asFeld("Herleitung / Notiz", "beschreibung", g.beschreibung, "textarea", "voll")}
+      ${(g.fotos || []).length ? `<p class="hinweis voll">${g.fotos.length} Foto(s) aus der Begehung – zu sehen in der BdA (Reiter „Dokumente &amp; BA“).</p>` : ""}
       ${ws("w_v", g.w_v)}${ws("s_v", g.s_v)}${ws("w_n", g.w_n)}${ws("s_n", g.s_n)}</div>
       <p class="hinweis">Wahrscheinlichkeit 1 unwahrscheinlich … 4 häufig · Schwere 1 leicht … 4 tödlich/irreversibel · Risiko = W × S: ab 9 hoch, ab 4 mittel.</p>
       ${!neu ? `<h4 style="margin:14px 0 6px">Maßnahmen</h4>${ms.map(m => `<div class="krit">${asStopChip(m.stop)}<div>${esc(m.text)} ${asStatusChip(m)}</div></div>`).join("") || `<div class="leer">Noch keine – „+ Maßnahme“.</div>`}` : ""}`, knoepfe: kn });

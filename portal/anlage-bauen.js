@@ -29,7 +29,7 @@
     if(!slug || !id) throw new Error("Ungültiger Anlagen-Verweis");
     const k = "&kunde_slug=eq." + encodeURIComponent(slug), q = encodeURIComponent;
     let sys = (await apiGet("/rest/v1/as_arbeitssystem?select=*&quelle_id=eq." + q(id) + k, false) || [])[0];
-    if(!sys) sys = (await apiGet("/rest/v1/as_arbeitssystem?select=*&anlagen=cs." + q(JSON.stringify([id])) + "&order=sort.asc" + k, false) || [])[0];
+    if(!sys) sys = (await apiGet("/rest/v1/as_arbeitssystem?select=*&anlagen=cs." + q(JSON.stringify([id])) + "&order=art.asc,sort.asc" + k, false) || [])[0];   // „anlage“ vor „arbeitssystem“
     if(!sys) throw new Error("Für diese Anlage ist keine Beurteilung hinterlegt");
     const dok = sys.dok || {}, meta0 = dok.meta || {}, mid = meta0.maschinenId || (sys.anlagen || [])[0] || id;
     const [gef, bas, kunde, qr] = await Promise.all([
@@ -38,7 +38,9 @@
       apiGet("/rest/v1/portal_kunde?select=name,marke&slug=eq." + q(slug), false).catch(() => []),
       apiGet("/rest/v1/portal_dokumente?select=qr_svg&kategorie=in.(anlagen,allg-gbu)&maschinen_id=eq." + q(mid) + k, false).catch(() => [])]);
     const prot = Object.assign({}, dok.protokoll || {});
-    const url = await signieren((gef || []).flatMap(g => (g.fotos || []).map(f => f && f.pfad)).concat((prot.fotos || []).map(f => f && f.pfad)));
+    /* nur Fotos aus dem Begehungsordner DIESES Betriebs signieren (Pfade stehen in der DB – keine fremden Dateien freigeben) */
+    const erlaubt = x => typeof x === "string" && x.startsWith(slug + "/bda-fotos/") && !x.includes("..");
+    const url = await signieren((gef || []).flatMap(g => (g.fotos || []).map(f => f && f.pfad)).concat((prot.fotos || []).map(f => f && f.pfad)).filter(erlaubt));
     const marke = ((kunde || [])[0] || {}).marke || {};
     const [oakLogo, kundenLogo] = await Promise.all([alsDataUri("../assets/oak-logo.png"),
       marke.logo ? alsDataUri(/^https:/.test(marke.logo) ? marke.logo : marke.logo.replace(/^\/?/, "")) : Promise.resolve("")]);
