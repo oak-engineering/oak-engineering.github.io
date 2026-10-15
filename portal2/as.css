@@ -9,12 +9,12 @@
 @font-face{font-family:'Jost';font-style:normal;font-weight:600;font-display:swap;src:url(../assets/fonts/jost-600-normal.woff2) format('woff2')}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:15px}
-button{font-family:inherit}
+button,input,select,textarea,.btn{font-family:'Jost','Segoe UI',Arial,sans-serif}
 [hidden]{display:none!important}
-.btn{background:var(--blau);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-size:14px;cursor:pointer}
+.btn{background:var(--blau);color:#fff;border:1px solid var(--blau);border-radius:18px;padding:0 16px;height:36px;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;vertical-align:middle}
 .btn.sek{background:#fff;color:var(--blau);border:1px solid var(--blau)}
 .btn.adm{background:var(--bern2);color:var(--bern);border:1px solid var(--bern)}
-.btn.klein{padding:5px 10px;font-size:13px}
+.btn.klein{padding:0 12px;height:32px;font-size:13px}
 .btn.gefahr{background:#fff;color:var(--rot);border:1px solid var(--rot)}
 .link{background:none;border:0;color:inherit;text-decoration:underline;cursor:pointer;font-size:13px}
 /* Login */
@@ -162,3 +162,18 @@ main{min-width:0;overflow-wrap:break-word}
 /* Suche in der Kopfzeile (15.10.2026) */
 @media print{#suchFeld{display:none}}
 @media(max-width:600px){.kopf{padding:0 6px 0 12px;gap:6px}.kopf-kontext{font-size:12px;padding:4px 10px}.kopf-logo img{height:24px;max-width:72px}}
+
+/* ===== OAK-UI-Regeln (references/oak-ui-regeln.md, 15.10.2026) ===== */
+/* Regel 1: Zusätze und Knöpfe in Überschriften immer Jost */
+h1.seite span,.karte h2 span,.karte h2 .btn,.dlg-kopf h3 span{font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:400;letter-spacing:0}
+.karte h2{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.karte h2>span:last-child{margin-left:auto;display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.karte h2 .hinweis{font-size:13px}
+/* Regel 3: Filterleiste – alles rund, eine Zeile, Zahl rechts */
+.filterleiste{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 12px}
+.filterleiste select,.filterleiste input:not([type=checkbox]){height:32px;border-radius:16px;border:1px solid var(--linie);background:#fff;padding:0 14px;font-size:13px;width:auto;max-width:100%;color:var(--text)}
+.filterleiste select{padding-right:28px}
+.filterleiste input:not([type=checkbox]){flex:0 1 240px;min-width:150px}
+.filterleiste .fl-schalter{display:inline-flex;align-items:center;gap:6px;height:32px;border:1px solid var(--linie);border-radius:16px;padding:0 12px;font-size:13px;background:#fff;cursor:pointer;margin:0}
+.filterleiste .fl-zahl{margin-left:auto;font-size:13px;color:var(--grau)}
+@media(max-width:600px){.filterleiste select,.filterleiste input:not([type=checkbox]){flex:1 1 100%}.filterleiste .fl-zahl{margin-left:0}}
+.fl-pill{height:32px;border-radius:16px;padding:0 28px 0 14px;font-size:13px}

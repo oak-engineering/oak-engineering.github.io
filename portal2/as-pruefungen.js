@@ -91,9 +91,9 @@ function asPfKataster(box){
   const alle = asT("as_pruefobjekt"), q = (f.q || "").toLowerCase();
   const sicht = alle.filter(o => (!f.art || o.art === f.art) && (f.inaktiv || o.aktiv !== false)
     && (!q || (o.bezeichnung + " " + asPfOrt(o) + " " + (o.maschinen_id || "") + " " + (o.pruefer || "")).toLowerCase().includes(q))).sort(asPfSort);
-  box.innerHTML = `<div class="karte"><h2>${sicht.length} Einrichtungen</h2><div class="reihe nodruck" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">
-      <select id="pfArt" style="max-width:100%"><option value="">Alle Prüfarten</option>${AS_PF_ARTEN.map(a => `<option value="${esc(a.id)}" ${f.art === a.id ? "selected" : ""}>${esc(a.titel)}</option>`).join("")}</select>
-      <input id="pfQ" placeholder="Suchen (Anlage, Nr., Ort)" value="${esc(f.q || "")}" style="max-width:220px;min-width:0;flex:1 1 140px">
+  box.innerHTML = `<div class="karte"><h2>${sicht.length} Einrichtungen</h2><div class="filterleiste nodruck">
+      <select id="pfArt" aria-label="Prüfart"><option value="">Prüfart: alle</option>${AS_PF_ARTEN.map(a => `<option value="${esc(a.id)}" ${f.art === a.id ? "selected" : ""}>Prüfart: ${esc(a.titel)}</option>`).join("")}</select>
+      <input type="search" id="pfQ" placeholder="Suchen (Anlage, Nr., Ort)" value="${esc(f.q || "")}">
       <button class="btn sek klein" id="pfNeu">+ Einrichtung</button>
       ${sicht.length ? `<button class="btn klein" id="pfRunde">Prüfrunde (${sicht.length})</button>` : ""}
       <button class="btn sek klein" id="pfCsv">CSV</button></div>

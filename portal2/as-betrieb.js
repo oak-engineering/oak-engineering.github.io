@@ -114,7 +114,8 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   const veraltet = (d, typ) => typeof dokVeraltetInfo === "function" ? dokVeraltetInfo(d, roh, typ) : null;
   main.innerHTML = `<h1 class="seite">Anlagen</h1><p class="unter">Alle Anlagen mit Kurzinfo, offenen Mängeln und Dokumenten – Farbe = schlimmster offener Mangel.</p>
     <div class="kacheln">${["gefahr", "besorgnis", "akzeptanz", "keine"].map(b => `<div class="kachel k-${AS_BAND_FARBE[b]}" data-band="${b}"><div class="lbl">${AS_BAND_TEXT[b]}</div><div class="zahl">${zahl(b)}</div><div class="hinweis">${st.band === b ? "Filter aktiv – erneut tippen zum Aufheben" : "Anlagen"}</div></div>`).join("")}</div>
-    <div class="karte"><h2>${sicht.length} von ${zeilen.length} Anlagen <span class="reihe" style="gap:8px">${AS.fachkraft ? `<button class="btn klein" id="anlNeu">+ Anlage anlegen</button>` : ""}<input id="anlSuche" placeholder="Suchen (Name, Nr., Typ, Bereich)" value="${esc(st.q)}" style="max-width:280px"></span></h2>
+    <div class="karte"><h2>${sicht.length} von ${zeilen.length} Anlagen <span class="reihe" style="gap:8px">${AS.fachkraft ? `<button class="btn klein" id="anlNeu">+ Anlage anlegen</button>` : ""}</span></h2>
+      <div class="filterleiste"><input type="search" id="anlSuche" placeholder="Suchen (Name, Nr., Typ, Bereich)" value="${esc(st.q)}"></div>
       <div class="zeilen">${sicht.map(z => { const d = z.d;
         return `<div class="z" data-anl="${esc(z.mid)}"><div><b>${asPunkt(AS_BAND_FARBE[z.band])}${esc(d.maschine || d.titel)} <span class="hinweis">${esc(z.mid || "")}</span></b>
           <small>${esc(String(d.maschinentyp || "").replace(/\s*\(.*\)\s*$/, ""))}${z.ki.bereich ? " · " + esc(z.ki.bereich) : ""}${z.ki.baujahr ? " · Bj. " + esc(z.ki.baujahr) : ""} · ${z.offen} offene Mängel${z.band === "aus" ? " · außer Betrieb" : ""}</small>
@@ -214,8 +215,8 @@ AS_SEITEN.maengel = { titel: "Mängel", icon: "!", sort: 4.4, async render(main)
   main.innerHTML = `<h1 class="seite">Mängel</h1><p class="unter">Gleiche Mängelliste wie im Kundenportal. Erledigt melden mit Foto oder Text; „wirksam“ bestätigt die Fachkraft unter Maßnahmen.</p>
     <div class="kacheln">${["gefahr", "besorgnis", "akzeptanz"].map(b => `<div class="kachel k-${AS_BAND_FARBE[b]}" data-band="${b}"><div class="lbl">${AS_BAND_TEXT[b]}</div><div class="zahl">${zahl(b)}</div><div class="hinweis">offen${st.band === b ? " · Filter aktiv" : ""}</div></div>`).join("")}</div>
     <div class="karte"><h2>${sicht.length} Mängel <span><button class="btn klein" id="mgNeu">+ Mangel melden</button>${AS.admin ? ` <button class="btn adm klein" id="mgCsv">Zusammenstellung (CSV)</button>` : ""}</span></h2>
-      <div class="form" style="margin-bottom:10px">${asAuswahl("Status", "status", st.status, [["offen", "offen"], ["erledigt", "erledigt"], ["alle", "alle"]].concat(AS.admin ? [["uebernehmen", "erledigt, noch nicht übernommen"]] : []))}
-        ${asAuswahl("Anlage", "anlage", st.anlage, [["", "alle Anlagen"]].concat(anlagen))}</div>
+      <div class="filterleiste">${asFilterWahl('data-f="status"', st.status, [["offen", "offen"], ["erledigt", "erledigt"], ["alle", "alle"]].concat(AS.admin ? [["uebernehmen", "erledigt, noch nicht übernommen"]] : []), "Status")}
+        ${asFilterWahl('data-f="anlage"', st.anlage, [["", "alle"]].concat(anlagen), "Anlage")}</div>
       ${Object.entries(gruppen).sort((a, b) => (AS_MG_RANG[a[0]] ?? 9) - (AS_MG_RANG[b[0]] ?? 9)).map(([th, l]) => `<h3 style="font-size:14px;color:var(--blau);margin:16px 0 6px">${esc(AS_MG_THEMA[th] || th)} · ${l.length}</h3>
         <div class="zeilen">${l.sort((a, b) => (a.prioritaet || 9999) - (b.prioritaet || 9999)).map(m => `<div class="z" data-mg="${m.id}"><div>
           <b>${asPunkt(AS_BAND_FARBE[asMgBand(m)])}${esc(asMgFeld(m, "label") || "")}</b>

@@ -199,11 +199,11 @@ function asUwTerminal(box){
     ${beleg}
     <div class="karte"><h2>Wer ist fällig <span class="hinweis">${zeilen.length ? (faelligZahl ? faelligZahl + " fällig" : "alle aktuell") : ""}</span>
         ${d.nachweise.length ? `<button class="btn sek klein" id="uwCsv">Excel-Export</button>` : ""} <button class="btn klein" id="uwPersNeu">Mitarbeiter anlegen</button></h2>
-      ${zeilen.length ? `<div class="form" style="margin-bottom:10px">
-          <label>Name<input type="search" id="uwfName" placeholder="Name suchen" autocomplete="off"></label>
-          <label>Gruppe<select id="uwfGruppe"><option value="">Alle Gruppen</option>${gruppenOpt.map(g => `<option>${esc(g)}</option>`).join("")}</select></label>
-          <label>Stand<select id="uwfStand"><option value="">Alle</option><option value="faellig">fällig oder überfällig</option><option value="gut">gültig</option><option value="einarb">Einarbeitung offen</option></select></label>
-          <span class="hinweis" id="uwfZahl" style="align-self:end"></span></div>
+      ${zeilen.length ? `<div class="filterleiste">
+          <input type="search" id="uwfName" placeholder="Name suchen" autocomplete="off">
+          <select id="uwfGruppe" aria-label="Gruppe"><option value="">Gruppe: alle</option>${gruppenOpt.map(g => `<option value="${esc(g)}">Gruppe: ${esc(g)}</option>`).join("")}</select>
+          <select id="uwfStand" aria-label="Stand"><option value="">Stand: alle</option><option value="faellig">Stand: fällig oder überfällig</option><option value="gut">Stand: gültig</option><option value="einarb">Stand: Einarbeitung offen</option></select>
+          <span class="fl-zahl" id="uwfZahl"></span></div>
         <div class="tabwrap"><table class="tab" id="uwListe"><thead><tr><th>Name</th><th>Gruppe</th><th>zuletzt unterwiesen</th><th>Stand</th><th>Praktische Einarbeitung</th><th></th></tr></thead>
           <tbody>${zeilen.map(z => z.html).join("")}</tbody></table></div>`
         : `<div class="leer">Noch niemand eingetragen. <b>„Mitarbeiter anlegen"</b> – oder die Beschäftigten tragen sich am Terminal selbst ein und erscheinen dann hier.</div>`}</div>`;

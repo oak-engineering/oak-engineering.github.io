@@ -530,7 +530,7 @@ function asSvKalender(box){
       <button class="btn" id="svNeu">Termin anlegen</button>
       <button class="btn sek" id="svVorlage">Aus Vorlage (UVV-Prüfungen …)</button>
       <span style="flex:1"></span>
-      <select id="svFilter" aria-label="Art">${filterOpt.map(o => `<option value="${o[0]}"${o[0] === f ? " selected" : ""}>${o[1]}</option>`).join("")}</select>
+      <select id="svFilter" class="fl-pill" aria-label="Art">${filterOpt.map(o => `<option value="${o[0]}"${o[0] === f ? " selected" : ""}>${o[1]}</option>`).join("")}</select>
       <button class="sv-pill${AS_SV.ansicht === "monat" ? " an" : ""}" data-ansicht="monat">Monat</button><button class="sv-pill${AS_SV.ansicht === "liste" ? " an" : ""}" data-ansicht="liste">Liste</button>
     </div><div id="svKal"></div>`;
   const inhalt = box.querySelector("#svKal");

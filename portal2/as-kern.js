@@ -203,6 +203,11 @@ function asFeld(label, f, wert, typ, extra){
   if(typ === "checkbox") return `<label class="${extra || ""}" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" data-f="${f}" ${wert ? "checked" : ""}> ${label}</label>`;
   return `<label class="${extra || ""}">${label}<input type="${typ}" data-f="${f}" value="${esc(wert == null ? "" : wert)}"></label>`;
 }
+/* Filterleiste (OAK-UI-Regeln 3): Pill-Auswahl mit Bezeichnung im Text, z. B. „Status: offen“ */
+function asFilterWahl(attr, wert, optionen, bez){
+  return `<select ${attr} aria-label="${esc(bez)}">${optionen.map(o => { const [v, t] = Array.isArray(o) ? o : [o, o];
+    return `<option value="${esc(v)}" ${String(wert) === String(v) ? "selected" : ""}>${esc(bez + ": " + t)}</option>`; }).join("")}</select>`;
+}
 function asAuswahl(label, f, wert, optionen, extra){
   return `<label class="${extra || ""}">${label}<select data-f="${f}">${optionen.map(o => {
     const [v, t] = Array.isArray(o) ? o : [o, o];

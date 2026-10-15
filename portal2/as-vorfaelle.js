@@ -143,11 +143,11 @@ AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render
     <div class="karte">
       <h2>${umwelt ? "Umweltvorfälle" : "Unfälle &amp; Beinahe-Unfälle"} <span class="hinweis">${alle.length} ${alle.length === 1 ? "Meldung" : "Meldungen"}${offen ? " · " + offen + " offen" : ""}</span></h2>
       <p class="hinweis">${info}</p>
-      <div class="form nodruck" style="margin:8px 0 12px">
-        <label>Suchen<input id="vfSuche" placeholder="Beschreibung, Ort, Anlage${AS.admin ? ", Melder" : ""}" value="${esc(st.q)}"></label>
-        <label>Art<select id="vfArt"><option value="">alle</option>${arten.map(([k, a]) => `<option value="${k}" ${st.art === k ? "selected" : ""}>${esc(a.label)}</option>`).join("")}</select></label>
-        <label>Status<select id="vfStatus"><option value="">alle</option>${Object.entries(AS_VF_STATUS).filter(([k]) => asVfVerwalter() || k !== "neu").map(([k, l]) => `<option value="${k}" ${st.status === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
-        <label style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="vfAusw" ${st.auswertung ? "checked" : ""}> nur „Auswertung offen“</label>
+      <div class="filterleiste nodruck">
+        <input type="search" id="vfSuche" placeholder="Suchen (Beschreibung, Ort, Anlage${AS.admin ? ", Melder" : ""})" value="${esc(st.q)}">
+        <select id="vfArt" aria-label="Art"><option value="">Art: alle</option>${arten.map(([k, a]) => `<option value="${k}" ${st.art === k ? "selected" : ""}>Art: ${esc(a.label)}</option>`).join("")}</select>
+        <select id="vfStatus" aria-label="Status"><option value="">Status: alle</option>${Object.entries(AS_VF_STATUS).filter(([k]) => asVfVerwalter() || k !== "neu").map(([k, l]) => `<option value="${k}" ${st.status === k ? "selected" : ""}>Status: ${esc(l)}</option>`).join("")}</select>
+        <label class="fl-schalter"><input type="checkbox" id="vfAusw" ${st.auswertung ? "checked" : ""}> nur „Auswertung offen“</label>
       </div>
       <div class="zeilen">${sicht.map(asVfZeile).join("") || (alle.length
         ? `<div class="leer">Keine Meldungen zum Filter.</div>`

@@ -81,10 +81,10 @@ async function asHsRender(box){
       <p class="hs-sdb">Grundlage: GefStoffV § 7, TRGS 401, Sicherheitsdatenblätter Abschnitt 8.2. Handschuh vor Gebrauch auf Schäden prüfen; nach Kontakt mit dem Stoff wechseln. Stand ${esc(new Date().toLocaleDateString("de-DE"))}.</p></div>`;
   };
 
-  box.innerHTML = `<div class="nodruck" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 10px">
-      <select id="hsBereich"><option value="">Alle Bereiche (${mitStoff.length})</option>${mitStoff.map(e => `<option value="${esc(e.id)}" ${e.id === AS_HS.bereich ? "selected" : ""}>${esc(e.name)}</option>`).join("")}</select>
-      <button class="btn sek klein" id="hsDruck">Drucken</button>${edit ? `<button class="btn klein" id="hsNeu">+ Handschuh</button>` : ""}
-      <span class="hinweis">Welcher Handschuh für welchen Stoff – je Bereich, direkt aus dem Gefahrstoffkataster.</span></div>
+  box.innerHTML = `<p class="unter nodruck">Welcher Handschuh für welchen Stoff – je Bereich, direkt aus dem Gefahrstoffkataster.</p>
+    <div class="filterleiste nodruck">
+      <select id="hsBereich" aria-label="Bereich"><option value="">Bereich: alle (${mitStoff.length})</option>${mitStoff.map(e => `<option value="${esc(e.id)}" ${e.id === AS_HS.bereich ? "selected" : ""}>Bereich: ${esc(e.name)}</option>`).join("")}</select>
+      <span class="fl-zahl"><button class="btn sek klein" id="hsDruck">Drucken</button>${edit ? ` <button class="btn klein" id="hsNeu">+ Handschuh</button>` : ""}</span></div>
     ${zeigen.length ? zeigen.map(abschnitt).join("") : `<div class="karte"><div class="leer">Keine Gefahrstoffe mit Bereich erfasst.</div></div>`}`;
 
   box.querySelector("#hsBereich").onchange = ev => { AS_HS.bereich = ev.target.value; asHsRender(box); };

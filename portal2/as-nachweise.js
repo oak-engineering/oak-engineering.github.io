@@ -185,11 +185,11 @@ function asNwListe(box){
   const F = AS_NW.filter;
   box.innerHTML = `${AS_NW.fehler ? `<div class="karte"><div class="leer">Nachweise konnten nicht vollständig geladen werden: ${esc(AS_NW.fehler)}</div></div>` : ""}
     <div class="karte"><h2>Qualifikationen <span class="nodruck"><button class="btn sek klein" id="asNwDruck">Drucken</button> <button class="btn klein" id="asNwNeu">Nachweis eintragen</button></span></h2>
-      <div class="reihe nodruck" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
-        <input type="search" id="asNwSuche" placeholder="Name suchen" autocomplete="off" value="${esc(F.suche)}" style="max-width:220px">
-        <select id="asNwArtF"><option value="">Alle Nachweise</option>${arten.map(a => `<option value="${esc(a)}"${a === F.art ? " selected" : ""}>${esc(asNwArtLabel(a))}</option>`).join("")}</select>
-        <select id="asNwStandF"><option value="">Alle</option><option value="faellig"${F.stand === "faellig" ? " selected" : ""}>abgelaufen oder läuft ab</option></select>
-        <span class="hinweis" id="asNwZahl"></span></div>
+      <div class="filterleiste nodruck">
+        <input type="search" id="asNwSuche" placeholder="Name suchen" autocomplete="off" value="${esc(F.suche)}">
+        <select id="asNwArtF" aria-label="Nachweis"><option value="">Nachweis: alle</option>${arten.map(a => `<option value="${esc(a)}"${a === F.art ? " selected" : ""}>Nachweis: ${esc(asNwArtLabel(a))}</option>`).join("")}</select>
+        <select id="asNwStandF" aria-label="Stand"><option value="">Stand: alle</option><option value="faellig"${F.stand === "faellig" ? " selected" : ""}>Stand: abgelaufen oder läuft ab</option></select>
+        <span class="fl-zahl" id="asNwZahl"></span></div>
       ${zeilen.length ? `<div class="tabwrap"><table class="tab" id="asNwTab"><thead><tr><th>Name</th><th>Nachweis</th><th>ausgestellt</th><th>gültig bis</th><th>Stand</th><th></th></tr></thead>
         <tbody>${zeilen.map(({ n, st }) => `<tr data-name="${esc(asNwNorm(n.person_name))}" data-art="${esc(n.art)}" data-stand="${st.klasse}">
           <td><b>${esc(n.person_name)}</b>${n.as_einheit_id ? `<div class="hinweis">${esc(asEinheitName(n.as_einheit_id))}</div>` : ""}</td>
