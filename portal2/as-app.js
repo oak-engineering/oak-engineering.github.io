@@ -120,7 +120,7 @@ AS_SEITEN.start = { titel: "Start", icon: "⌂", sort: 0.5, async render(main){
           <div class="reihe" style="gap:4px;margin-top:6px"><button class="btn sek klein" data-sk="links" data-i="${i}" ${i === 0 ? "disabled" : ""}>←</button>
           <button class="btn sek klein" data-sk="rechts" data-i="${i}" ${i === liste.length - 1 ? "disabled" : ""}>→</button>
           <button class="btn sek klein" data-sk="weg" data-i="${i}">entfernen</button></div></div>`
-        : `<div class="kachel k-gruen" data-geh="${esc(id)}" style="cursor:pointer"><div class="zahl" style="font-size:18px">${esc(k[1])}</div><div class="hinweis">${esc(k[2])}</div></div>`; };
+        : `<div class="kachel k-gruen" data-geh="${esc(id)}" style="cursor:pointer"><div class="zahl klein">${esc(k[1])}</div><div class="hinweis">${esc(k[2])}</div></div>`; };
     main.innerHTML = `<h1 class="seite">Guten Tag${AS.ich ? ", " + esc(AS.ich.split(" ")[0]) : ""}</h1><p class="unter">${esc(AS.org ? AS.org.name : "")}</p>
       <div class="karte"><h2>Schnellzugriffe <span>${AS_SK.edit ? `<button class="btn sek klein" id="skStd">Standard</button> <button class="btn klein" id="skFertig">Fertig</button>` : `<button class="btn sek klein" id="skAnp">Anpassen</button>`}</span></h2>
         <div class="kacheln">${liste.map(kachel).join("")}${AS_SK.edit ? `<div class="kachel" id="skNeu" style="cursor:pointer"><div class="zahl">+</div><div class="hinweis">Schnellzugriff hinzufügen</div></div>` : ""}</div></div>

@@ -177,7 +177,7 @@ function asUwTerminal(box){
 
   box.innerHTML = `<div class="karte">
       ${tok ? `<div class="reihe" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <button class="btn" id="uwStart" style="font-size:18px;padding:14px 26px">Unterweisungs-Terminal starten</button>
+          <button class="btn gross" id="uwStart">Unterweisungs-Terminal starten</button>
           <button class="btn sek" id="uwTeilen" title="QR-Code für Handy & Tablet">Teilen</button>
           <button class="btn sek" id="uwEinst" title="Module je Rolle festlegen, Rollen anlegen">Einstellungen</button>
           <span id="uwMobil"></span></div>`
@@ -192,7 +192,7 @@ function asUwTerminal(box){
       <div class="zeilen">${leute.length ? (dringend.map(p => `<div class="z"><div><b>${esc(p.name)}</b><small>${p.naechste ? "fällig am " + asDat(p.naechste) : ""}</small></div>${asChip(AS_UW_FSTATUS[p.status][1], AS_UW_FSTATUS[p.status][0])}</div>`).join("")
           || `<div class="leer">Niemand ist fällig. Alle zugewiesenen Unterweisungen sind aktuell.</div>`)
         : `<div class="leer">Noch keine Personen angelegt. Unter <b>Mitarbeiter</b> Bereiche, Rollen und Personen anlegen — daraus rechnet das Portal die Fälligkeiten.</div>`}</div>
-      ${vorschlaege.length || ohneRecht.length ? `<h3 style="font-size:14px;margin:14px 0 6px">Was ist freizugeben</h3><div class="zeilen">
+      ${vorschlaege.length || ohneRecht.length ? `<h3>Was ist freizugeben</h3><div class="zeilen">
         ${vorschlaege.slice(0, 8).map(v => `<div class="z"><div><b>${esc(v.titel || "Vorschlag")}</b><small>${asDat(v.gueltig_ab)}</small></div>${asChip("wartet auf Freigabe", "gelb")}</div>`).join("")}
         ${ohneRecht.map(m => `<div class="z"><div><b>${esc(m.titel)}</b></div>${asChip("Rechtsbezug fehlt", "gelb")}</div>`).join("")}</div>` : ""}
       <p class="hinweis">Grundlage der Fälligkeit: § 12 ArbSchG und § 4 DGUV Vorschrift 1 — vor Aufnahme der Tätigkeit und danach mindestens jährlich. Für Beschäftigte unter 18 Jahren rechnet das Portal automatisch mit sechs Monaten (§ 29 JArbSchG). Gespeichert wird, <i>dass</i> unterwiesen wurde — kein Punktestand.</p></div>
@@ -396,10 +396,10 @@ function asUwNachweise(box){
   const sicht = alle.filter(n => (!f.q || (n.mitarbeiter_name + " " + (n.funktion || "") + " " + asUwModule(n).join(" ")).toLowerCase().includes(f.q.toLowerCase()))
     && (!f.jahr || String(n.created_at).startsWith(f.jahr)) && (!f.best || (f.best === "ja") === !!n.bestanden));
   box.innerHTML = `<div class="karte"><h2>${sicht.length} von ${alle.length} Nachweisen ${sicht.length ? `<button class="btn sek klein" id="uwCsvN">Excel-Export</button>` : ""}</h2>
-    <div class="form" style="margin-bottom:10px">
-      <label>Suche<input type="search" id="uwnQ" value="${esc(f.q)}" placeholder="Name, Rolle, Modul" autocomplete="off"></label>
-      ${asAuswahl("Jahr", "jahr", f.jahr, [["", "alle Jahre"]].concat(jahre))}
-      ${asAuswahl("Verständnisfragen", "best", f.best, [["", "alle"], ["ja", "bestanden"], ["nein", "nicht bestanden"]])}</div>
+    <div class="filterleiste">
+      <input type="search" id="uwnQ" value="${esc(f.q)}" placeholder="Suchen (Name, Rolle, Modul)" autocomplete="off">
+      ${asFilterWahl('data-f="jahr"', f.jahr, [["", "alle"]].concat(jahre), "Jahr")}
+      ${asFilterWahl('data-f="best"', f.best, [["", "alle"], ["ja", "bestanden"], ["nein", "nicht bestanden"]], "Verständnisfragen")}</div>
     ${sicht.length ? `<div class="tabwrap"><table class="tab"><tr><th>Datum</th><th>Name</th><th>Rolle</th><th>Module</th><th>bestanden</th><th>Stand</th><th>Fassung</th><th></th></tr>
       ${sicht.map(n => { const st = asUwStatus(n); return `<tr><td>${asDat(n.created_at)}</td><td><b>${esc(n.mitarbeiter_name || "")}</b></td>
         <td>${esc(n.funktion || "—")}${n.bereich ? `<br><small class="hinweis">${esc(n.bereich)}</small>` : ""}</td><td>${asUwModule(n).map(esc).join("<br>") || "—"}</td>
@@ -495,13 +495,13 @@ function asUwModuleSeite(box){
   const weitere = docs.filter(x => !benutzt.has(x));
 
   box.innerHTML = `<div class="karte"><h2>Modulkatalog <span class="hinweis">${gebucht.length} freigeschaltet · ${gesperrt.length} verfügbar</span></h2>
-      ${gebucht.length ? `<h3 style="font-size:14px;margin:10px 0 6px">Für diesen Betrieb freigeschaltet</h3><div class="zeilen">${gebucht.map(m => zeile(m, true)).join("")}</div>` : ""}
-      ${gesperrt.length ? `<h3 style="font-size:14px;margin:16px 0 6px">Weitere Module von OAK engineering</h3><div class="zeilen">${gesperrt.map(m => zeile(m, false)).join("")}</div>` : ""}
+      ${gebucht.length ? `<h3>Für diesen Betrieb freigeschaltet</h3><div class="zeilen">${gebucht.map(m => zeile(m, true)).join("")}</div>` : ""}
+      ${gesperrt.length ? `<h3>Weitere Module von OAK engineering</h3><div class="zeilen">${gesperrt.map(m => zeile(m, false)).join("")}</div>` : ""}
       <p class="hinweis">Der Katalog zeigt das vollständige Angebot. Fachlicher Inhalt und Rechtsbezug kommen von OAK engineering und werden zentral aktuell gehalten; Auswahl, eigene Ergänzungen und Medien liegen beim Betrieb. Zum Freischalten weiterer Module sprechen Sie uns an.</p></div>
     <div class="karte"><h2>Was am Terminal läuft <span class="hinweis">${AS.admin ? "Auswahl = läuft am Terminal, sofort wirksam" : "hervorgehoben = läuft am Terminal"}</span></h2>
       <div class="tabwrap"><table class="tab"><tr><th>Thema</th><th>Version 1.0</th><th>Version 2.0</th><th>Am Terminal</th></tr>
         ${archiv || '<tr><td colspan="4" class="hinweis">Noch keine Module freigeschaltet.</td></tr>'}</table></div>
-      ${weitere.length ? `<h3 style="font-size:14px;margin:14px 0 6px">Weitere Unterlagen</h3><div class="zeilen">${weitere.map(x => `<div class="z"><div><b>${esc(x.titel || base(x))}</b><small>${esc(x.stand || "")}</small></div>
+      ${weitere.length ? `<h3>Weitere Unterlagen</h3><div class="zeilen">${weitere.map(x => `<div class="z"><div><b>${esc(x.titel || base(x))}</b><small>${esc(x.stand || "")}</small></div>
         <button class="btn sek klein" data-dok="${esc(asUwViewer(x, x.titel))}" data-titel="${esc(x.titel || "")}">Öffnen</button></div>`).join("")}</div>` : ""}</div>`;
 
   box.querySelectorAll("[data-dok]").forEach(b => b.onclick = () => asDokOeffnen(b.dataset.dok, b.dataset.titel));
@@ -530,7 +530,7 @@ function asUwModulDetail(box, thema){
   const zus = asUwZusaetze(thema), pflegen = asUwDarfPflegen();
   box.innerHTML = `<p><button class="btn sek klein" id="uwZurueck">← Katalog</button></p>
     <div class="karte"><h2>${esc(m.titel)} <span class="hinweis">${esc(m.untertitel || "")}</span></h2>
-      <h3 style="font-size:14px;margin:6px 0">Für welche Gruppen gilt dieses Modul?</h3>
+      <h3>Für welche Gruppen gilt dieses Modul?</h3>
       ${rollen.length ? `<div style="display:flex;flex-wrap:wrap;gap:6px 18px">${rollen.map(r => `<label><input type="checkbox" data-rolle="${esc(r.id)}"${gew.has(r.id) ? " checked" : ""}${pflegen ? "" : " disabled"}>
           <b>${esc(r.name)}</b> <span class="hinweis">${esc(AS_UW_TYP[r.typ] || r.typ)}</span></label>`).join("")}</div>`
         : `<div class="leer">Noch keine Nutzergruppen angelegt. Unter <b>Mitarbeiter</b> → Bereiche &amp; Rollen anlegen.</div>`}
@@ -663,10 +663,10 @@ function asUwMitarbeiter(box){
     && (!q || p.name.toLowerCase().includes(q)));
   box.innerHTML = `<div class="karte"><h2>Personen &amp; Fälligkeiten <span class="hinweis">${d.pers.filter(p => p.status === "aktiv").length} aktiv${offen ? ` · <b>${offen} offen</b>` : ""}</span>
       ${pflegen ? `<button class="btn klein" id="uwpNeu">Person anlegen</button> <button class="btn sek klein" id="uwpOrg">Bereiche &amp; Rollen</button>` : ""}</h2>
-    <div class="form" style="margin-bottom:10px">
-      <label>Suche<input type="search" id="uwpSuche" value="${esc(f.suche)}" placeholder="Person suchen …" autocomplete="off"></label>
-      ${asAuswahl("Bereich", "einheit", f.einheit, [["", "Alle Bereiche"]].concat(einh.map(e => [e.id, e.name + (e.kst_nr ? " (" + e.kst_nr + ")" : "")])))}
-      ${asAuswahl("Status", "status", f.status, [["aktiv", "Aktive"], ["ruhend", "Ruhend"], ["archiviert", "Archiviert"], ["", "Alle"]])}</div>
+    <div class="filterleiste">
+      <input type="search" id="uwpSuche" value="${esc(f.suche)}" placeholder="Person suchen …" autocomplete="off">
+      ${asFilterWahl('data-f="einheit"', f.einheit, [["", "alle"]].concat(einh.map(e => [e.id, e.name + (e.kst_nr ? " (" + e.kst_nr + ")" : "")])), "Bereich")}
+      ${asFilterWahl('data-f="status"', f.status, [["aktiv", "aktiv"], ["ruhend", "ruhend"], ["archiviert", "archiviert"], ["", "alle"]], "Status")}</div>
     ${rows.length ? `<div class="tabwrap"><table class="tab"><tr><th>Name</th><th>Bereich</th><th>Rolle</th><th>Unterweisungen</th><th>nächste</th><th></th></tr>
       ${rows.map(p => { const st = asUwPersStatus(p.id), [farbe, txt] = AS_UW_FSTATUS[st.status] || ["grau", ""];
         const minderj = p.geburtsdatum && new Date(p.geburtsdatum) > new Date(Date.now() - 18 * 365.25 * 864e5);
@@ -718,10 +718,10 @@ function asUwPersonDialog(p){
 function asUwOrgDialog(){
   const d = AS_UW.d;
   const dlg = asDialog({ titel: "Bereiche & Rollen", breit: true, inhalt: `<p class="hinweis">Bereiche sind Abteilungen oder Kostenstellen. Rollen beschreiben Tätigkeiten — der Typ entscheidet über die rechtliche Einordnung (Leiharbeit ist vom Entleiher zu unterweisen). Wer Personen zugeordnet hat, lässt sich nicht löschen, nur archivieren.</p>
-    <h3 style="font-size:14px">Bereiche</h3><div class="zeilen">${d.einheiten.map(e => `<div class="z"><div><b>${esc(e.name)}</b><small>${esc(e.kst_nr || "")}</small></div>
+    <h3>Bereiche</h3><div class="zeilen">${d.einheiten.map(e => `<div class="z"><div><b>${esc(e.name)}</b><small>${esc(e.kst_nr || "")}</small></div>
       ${e.status === "aktiv" ? `<button class="btn sek klein" data-earch="${esc(e.id)}">archivieren</button>` : asChip("archiviert", "grau")}</div>`).join("") || '<div class="leer">noch keiner</div>'}</div>
     <div class="form"><label>Name<input id="uwoEName" placeholder="z. B. Halle 1"></label><label>Kst-Nr. (optional)<input id="uwoEKst"></label><button class="btn sek" id="uwoENeu" style="align-self:end">anlegen</button></div>
-    <h3 style="font-size:14px;margin-top:16px">Rollen</h3><div class="zeilen">${d.rollen.map(r => `<div class="z"><div><b>${esc(r.name)}</b><small>${esc(AS_UW_TYP[r.typ] || r.typ)}</small></div>
+    <h3>Rollen</h3><div class="zeilen">${d.rollen.map(r => `<div class="z"><div><b>${esc(r.name)}</b><small>${esc(AS_UW_TYP[r.typ] || r.typ)}</small></div>
       ${r.status === "aktiv" ? `<button class="btn sek klein" data-rarch="${esc(r.id)}">archivieren</button>` : asChip("archiviert", "grau")}</div>`).join("") || '<div class="leer">noch keine</div>'}</div>
     <div class="form"><label>Name<input id="uwoRName" placeholder="z. B. Einrichter"></label>
       <label>Typ<select id="uwoRTyp">${Object.entries(AS_UW_TYP).map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join("")}</select></label>
@@ -745,8 +745,8 @@ function asUwInhalte(box){
       ${AS.admin ? `<button class="btn adm klein" data-dok="editor.html" data-titel="Unterweisung bearbeiten">Editor öffnen</button>` : ""}</h2>
     <p class="hinweis">${AS.admin ? "Als OAK bearbeitest du hier Text, Fragen und Rechtsbezug. Änderungen wirken bei allen Kunden, die dieses Kapitel verwenden."
       : "Sie können Kapitel für Ihren Betrieb ab- und anwählen und eigene Bilder einsetzen. Der Fachtext wird von OAK engineering gepflegt und ist deshalb schreibgeschützt."}</p>
-    <div class="form" style="margin-bottom:10px">${asAuswahl("Thema", "thema", AS_UW.kapThema || "", themen.map(t => [t, asUwThemaTitel(t)]))}
-      <label>Suche<input type="search" id="uwkSuche" placeholder="Kapitel suchen …" autocomplete="off"></label></div>
+    <div class="filterleiste">${asFilterWahl('data-f="thema"', AS_UW.kapThema || "", themen.map(t => [t, asUwThemaTitel(t)]), "Thema")}
+      <input type="search" id="uwkSuche" placeholder="Kapitel suchen …" autocomplete="off"></div>
     <div id="uwkTab"></div></div>`;
   const tab = box.querySelector("#uwkTab");
   const zeichnen = () => {

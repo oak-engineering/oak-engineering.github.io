@@ -319,7 +319,7 @@ AS_SEITEN.bericht = { titel: "Jahresbericht", icon: "▣", sort: 9, render(main)
   const abschnitt = (t, inhalt) => `<div class="karte"><h2>${t}</h2>${inhalt}</div>`;
   const soll = asBeauftragteSoll();
   main.innerHTML = `<div class="nodruck" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">Jahr
-      <select id="bJahr">${[0, 1, 2].map(i => new Date().getFullYear() - i).map(y => `<option ${y === jahr ? "selected" : ""}>${y}</option>`).join("")}</select>
+      <span class="filterleiste" style="display:inline-flex;margin:0"><select id="bJahr" aria-label="Jahr">${[0, 1, 2].map(i => new Date().getFullYear() - i).map(y => `<option value="${y}" ${y === jahr ? "selected" : ""}>Jahr: ${y}</option>`).join("")}</select></span>
       <button class="btn sek klein" onclick="window.print()">Drucken / PDF</button>${AS.fachkraft ? `<button class="btn adm klein" id="bErstellt">Als erstellt vermerken</button>` : ""}</div>
     <h1 class="seite">Jahresbericht der Fachkraft für Arbeitssicherheit ${jahr}</h1>
     <p class="unter">${esc(AS.org.name)} · erstellt ${asDat(asHeute())} von ${esc(d.sifa_name || AS.ich)} · nach DGUV Vorschrift 2</p>

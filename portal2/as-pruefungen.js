@@ -194,7 +194,7 @@ function asPfObjekt(o){
     <p>${asChip(s.text, s.farbe)} ${esc(a.titel)}${asPfOrt(o) ? " · " + esc(asPfOrt(o)) : ""}</p>
     <p class="hinweis">Prüfen: ${esc(a.frage || "")}<br>Grundlage: ${esc(o.grundlage || a.grundlage || "–")} · ${o.intervall_monate ? "alle " + o.intervall_monate + " Monate" : "ohne Frist"}${o.pruefer ? " · Prüfer: " + esc(o.pruefer) : ""}${a.wer ? " · wer prüft: " + esc(a.wer) : ""}</p>
     ${o.notiz ? `<p>${esc(o.notiz)}</p>` : ""}
-    <h3 style="margin:14px 0 6px">Verlauf</h3><div class="zeilen">${verlauf.map(p => { const e = AS_PF_ERG[p.ergebnis] || [p.ergebnis, "grau"];
+    <h3>Verlauf</h3><div class="zeilen">${verlauf.map(p => { const e = AS_PF_ERG[p.ergebnis] || [p.ergebnis, "grau"];
       return `<div class="z"><div><b>${asDat(p.datum)}</b><small>${esc(p.pruefer_name || "")}${p.bemerkung ? " · " + esc(p.bemerkung) : ""}${p.mangel_id ? " · Mangel angelegt" : ""}</small></div>
         <span class="reihe" style="gap:6px">${p.nachweis_pfad ? `<button class="btn sek klein" data-nw="${esc(p.nachweis_pfad)}">Nachweis</button>` : ""}${asChip(e[0], e[1])}</span></div>`; }).join("") || `<div class="leer">Noch keine Prüfung eingetragen.</div>`}</div>`,
     knoepfe: [{ t: "Prüfung eintragen", fn: () => { setTimeout(() => asPfEintragen(o), 0); } },
@@ -279,7 +279,7 @@ function asPfRunde(liste, titel){
     const o = liste[i], a = asPfArt(o.art), e = erg[o.id] || {}, s = asPfStand(o);
     el.innerHTML = `<div class="hinweis">${i + 1} von ${liste.length}</div>
       <div style="height:6px;background:var(--linie);border-radius:3px;margin:6px 0 12px"><div style="height:6px;width:${Math.round((i) / liste.length * 100)}%;background:var(--blau);border-radius:3px"></div></div>
-      <h3 style="margin:0 0 4px">${esc(o.bezeichnung)}</h3>
+      <h3>${esc(o.bezeichnung)}</h3>
       <p class="hinweis" style="margin:0 0 8px">${esc(a.titel)}${asPfOrt(o) ? " · " + esc(asPfOrt(o)) : ""} · ${esc(s.text)}</p>
       <p><b>Prüfen:</b> ${esc(a.frage || "Funktion in Ordnung")}</p>
       <div class="reihe" style="gap:8px;flex-wrap:wrap;margin:10px 0">${Object.entries(AS_PF_ERG).map(([k, v]) =>

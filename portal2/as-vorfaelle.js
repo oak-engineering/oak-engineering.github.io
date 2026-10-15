@@ -130,9 +130,9 @@ AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render
       <div class="reihe" style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" id="vfMelden">${umwelt ? "Umweltvorfall melden" : "Vorfall melden"}</button>
         ${asVfVerwalter() ? `<button class="btn ${AS.admin ? "adm" : ""}" id="vfNeu">+ Vorfall erfassen</button>` : ""}${aushangKnopf}</div>
-      ${AS.gf ? `<p class="hinweis" style="margin-top:10px">Neue Meldungen prüft und gibt frei:
-        <select id="vfFreigabe"><option value="oak" ${AS_VF.betrieb ? "" : "selected"}>OAK engineering</option><option value="betrieb" ${AS_VF.betrieb ? "selected" : ""}>die Fachkraft im Betrieb</option></select>
-        <span class="hinweis">– bei „Fachkraft“ erhalten die Empfänger der E-Mail-Erinnerungen jede neue Meldung (ohne Namen der Meldenden).</span></p>` : ""}</div>
+      ${AS.gf ? `<div class="form" style="margin-top:12px"><label>Neue Meldungen prüft und gibt frei
+        <select id="vfFreigabe"><option value="oak" ${AS_VF.betrieb ? "" : "selected"}>OAK engineering</option><option value="betrieb" ${AS_VF.betrieb ? "selected" : ""}>die Fachkraft im Betrieb</option></select></label>
+        <p class="hinweis" style="align-self:end">Bei „Fachkraft“ erhalten die Empfänger der E-Mail-Erinnerungen jede neue Meldung (ohne Namen der Meldenden).</p></div>` : ""}</div>
     ${AS_VF.fehler ? `<div class="karte"><div class="leer">Vorfälle konnten nicht geladen werden: ${esc(AS_VF.fehler)}</div></div>` : ""}
     <div class="kacheln">
       ${kachel("grau", "Meldungen", alle.length, umwelt ? "Umweltvorfälle" : "Unfälle & Beinahe-Unfälle", "")}
@@ -257,7 +257,7 @@ function asVfDetail(id){
   const mn = asVfMassnahmen(v);
   const einheiten = asT("as_einheit");
   const verwaltung = asVfVerwalter() ? `
-    <h3 style="margin:16px 0 6px">Bearbeitung${AS.admin ? " durch OAK" : ""}</h3>
+    <h3>Bearbeitung${AS.admin ? " durch OAK" : ""}</h3>
     <div class="form">
       ${asAuswahl("Status", "status", v.status || "offen", Object.entries(AS_VF_STATUS))}
       ${asAuswahl("Themenfeld", "domaene", v.domaene || "arbeitssicherheit", Object.entries(AS_VF_DOMAENE))}
@@ -267,8 +267,8 @@ function asVfDetail(id){
     </div>
     ${v.status === "neu" ? `<p class="hinweis">Status „eingegangen – wird geprüft“: Der Betrieb sieht die Meldung erst, wenn sie auf „offen“ oder weiter gesetzt ist.</p>` : ""}
     ${v.rueckmeldung_am ? `<p class="hinweis">Rückmeldung gegeben am ${asVfDatum(v.rueckmeldung_am)}.</p>` : ""}`
-    : `${v.bearbeitung ? `<h3 style="margin:16px 0 6px">Bearbeitung</h3><p>${asVfText(v.bearbeitung)}</p>` : ""}
-       ${v.rueckmeldung ? `<h3 style="margin:16px 0 6px">Rückmeldung an den Melder</h3><p>${asVfText(v.rueckmeldung)}</p><p class="hinweis">am ${asVfDatum(v.rueckmeldung_am)}</p>` : ""}`;
+    : `${v.bearbeitung ? `<h3>Bearbeitung</h3><p>${asVfText(v.bearbeitung)}</p>` : ""}
+       ${v.rueckmeldung ? `<h3>Rückmeldung an den Melder</h3><p>${asVfText(v.rueckmeldung)}</p><p class="hinweis">am ${asVfDatum(v.rueckmeldung_am)}</p>` : ""}`;
 
   const knoepfe = [
     { t: "Drucken", klasse: "sek", fn: () => { asVfDrucken(v); return false; } },
@@ -293,15 +293,15 @@ function asVfDetail(id){
   const d = asDialog({ titel: a.label + " · " + asVfDatum(v.ereignis_am), breit: true, inhalt: `
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">${asChip(a.label, a.farbe)} ${asChip(AS_VF_STATUS[v.status] || v.status || "–", AS_VF_STATUS_FARBE[v.status] || "grau")}
       ${asVfAusgewertet(v) ? asChip("ausgewertet", "gruen") : asChip("Auswertung offen", "rot")}</div>
-    <h3 style="margin:0 0 6px">Was ist passiert?</h3>
+    <h3>Was ist passiert?</h3>
     <p>${asVfText(v.beschreibung)}</p>
     <div class="tabwrap"><table class="tab">${asVfDatenZeilen(v).map(([k, w]) => `<tr><th>${k}</th><td>${w}</td></tr>`).join("")}</table></div>
     <div id="vfFotoBox" style="margin:8px 0">${v.id in AS_VF.fotos
       ? (asVfFotoHtml(AS_VF.fotos[v.id]) || `<span class="hinweis">kein Foto</span>`)
       : `<button class="btn sek klein" id="vfFotoLaden">Foto anzeigen</button>`}</div>
-    <h3 style="margin:16px 0 6px">Auswertung</h3>
+    <h3>Auswertung</h3>
     ${asVfAuswertungHtml(v)}
-    ${mn.length ? `<h3 style="margin:16px 0 6px">Abgeleitete Maßnahmen</h3><div class="zeilen">${mn.map(m => `<div class="z"><div><b>${esc(m.text || "")}</b><small>${m.verantwortlich ? esc(m.verantwortlich) + " · " : ""}${m.termin ? "bis " + asDat(m.termin) : "ohne Termin"}</small></div>${asChip(m.status === "wirksam" ? "wirksam" : m.status === "erledigt" ? "erledigt" : "offen", m.status === "offen" ? "gelb" : "gruen")}</div>`).join("")}</div>` : ""}
+    ${mn.length ? `<h3>Abgeleitete Maßnahmen</h3><div class="zeilen">${mn.map(m => `<div class="z"><div><b>${esc(m.text || "")}</b><small>${m.verantwortlich ? esc(m.verantwortlich) + " · " : ""}${m.termin ? "bis " + asDat(m.termin) : "ohne Termin"}</small></div>${asChip(m.status === "wirksam" ? "wirksam" : m.status === "erledigt" ? "erledigt" : "offen", m.status === "offen" ? "gelb" : "gruen")}</div>`).join("")}</div>` : ""}
     ${verwaltung}`, knoepfe });
 
   const fb = d.querySelector("#vfFotoLaden");

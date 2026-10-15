@@ -291,7 +291,7 @@ function asNwVsListe(box){
     <div class="karte"><h2>Betriebsärztliche Vorsorge <button class="btn klein nodruck" id="asNwVsNeu">Vorsorge eintragen</button></h2>
       <p class="hinweis" style="background:var(--gelb2);padding:8px 10px;border-radius:8px"><b>Vorsorgekartei nach § 3 Abs. 4 ArbMedVV</b> – nur Anlass, Datum und nächster Termin laut Vorsorgebescheinigung.
         Keine Befunde, Diagnosen oder ärztlichen Unterlagen eintragen. Nach dem Ausscheiden löschen; die Person erhält vorher eine Kopie ihrer Angaben.</p>
-      <div class="nodruck" style="display:flex;gap:8px;align-items:center;margin:8px 0"><input type="search" id="asNwVsSuche" placeholder="Name suchen" autocomplete="off" value="${esc(AS_NW.vsSuche)}" style="max-width:220px"><span class="hinweis" id="asNwVsZahl"></span></div>
+      <div class="filterleiste nodruck"><input type="search" id="asNwVsSuche" placeholder="Name suchen" autocomplete="off" value="${esc(AS_NW.vsSuche)}"><span class="hinweis" id="asNwVsZahl"></span></div>
       ${zeilen.length ? `<div class="tabwrap"><table class="tab" id="asNwVsTab"><thead><tr><th>Name</th><th>Anlass</th><th>letzte Vorsorge</th><th>nächste</th><th>Stand</th><th></th></tr></thead>
         <tbody>${zeilen.map(({ v, st }) => `<tr data-name="${esc(asNwNorm(v.person_name))}"><td><b>${esc(v.person_name)}</b></td>
           <td>${esc(v.anlass)}<div class="hinweis">${esc(AS_NW_VS_ART[v.art] || "")}</div></td>
@@ -405,7 +405,7 @@ function asNwEKarte(m){
   return `<details style="border-top:1px solid var(--linie);padding:10px 4px">
     <summary style="cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${asPunkt(farbe)}<span class="hinweis">${m.festgestellt_am ? asDat(m.festgestellt_am) : "–"}</span>
       <b style="flex:1">${esc(m.titel)}</b>${asChip(AS_NW_E_STATUS[m.status] || m.status || "offen", farbe)}</summary>
-    <div style="margin-top:8px">${AS.admin ? `<div style="text-align:right">${status}</div>` : ""}
+    <div style="margin-top:8px">${AS.admin ? `<div class="form"><label>Status${status}</label></div>` : ""}
       <p>${esc(m.beschreibung || "").replace(/\n/g, "<br>")}</p>
       <table class="tab">${zeilen.map(([k, v]) => `<tr><th style="width:140px">${k}</th><td>${v}</td></tr>`).join("")}</table>
       ${notiz}<p class="hinweis">Erfasst ${m.angelegt_am ? asDat(m.angelegt_am) : "–"}</p></div></details>`;
@@ -541,7 +541,7 @@ async function asNwWoche(box){
   const posten = (e, mitDetails) => `<li><span class="hinweis">${esc(new Date(e.am).toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" }))}</span>
       ${esc(e.objekt || e.aktion)}${e.wer ? ` <span class="hinweis">· ${esc(e.wer)}</span>` : ""}${mitDetails && e.details ? `<br><span class="hinweis">${esc(e.details)}</span>` : ""}</li>`;
   const liste = (titel, eintraege, mitDetails, max) => { max = max || 8; return eintraege.length
-    ? `<h3 style="font-size:14px;margin:12px 0 4px">${esc(titel)} <span class="hinweis">${eintraege.length}</span></h3><ul style="margin:0 0 6px;padding-left:18px">${eintraege.slice(0, max).map(e => posten(e, mitDetails)).join("")}</ul>${eintraege.length > max ? `<div class="hinweis">und ${eintraege.length - max} weitere – siehe Logbuch</div>` : ""}` : ""; };
+    ? `<h3>${esc(titel)} <span class="hinweis">${eintraege.length}</span></h3><ul class="kurzliste">${eintraege.slice(0, max).map(e => posten(e, mitDetails)).join("")}</ul>${eintraege.length > max ? `<div class="hinweis">und ${eintraege.length - max} weitere – siehe Logbuch</div>` : ""}` : ""; };
   const app = (l2 || []).map(x => ({ am: x.am, wer: x.wer, objekt: (AS_NW_LOG_TAB[x.tabelle] || x.tabelle || "App") + " · " + (x.aktion || "") + (x.objekt ? ": " + x.objekt : "") }));
   const bloecke = [
     liste("Mängel gemeldet", nach("maengel", /erfasst/), true),
@@ -567,8 +567,8 @@ async function asNwWoche(box){
   const naechste = eintraege.filter(e => String(e.datum) >= asNwIso(abV) && String(e.datum) < asNwIso(abB));
   const ueberfaellig = AS_NW.woche === 0 ? eintraege.filter(e => asNwTage(e.datum) < 0) : [];
   const aPosten = e => `<li><span class="hinweis">${esc(asNwKurzTag(e.datum))}</span> ${esc(e.titel)}${e.sub ? `<br><span class="hinweis">${esc(e.sub)}</span>` : ""}</li>`;
-  const ausblick = (ueberfaellig.length ? `<h3 style="font-size:14px;margin:12px 0 4px;color:var(--rot)">Bereits überfällig <span class="hinweis">${ueberfaellig.length}</span></h3><ul style="margin:0 0 6px;padding-left:18px">${ueberfaellig.slice(0, 10).map(aPosten).join("")}</ul>${ueberfaellig.length > 10 ? `<div class="hinweis">und ${ueberfaellig.length - 10} weitere</div>` : ""}` : "")
-    + (naechste.length ? `<h3 style="font-size:14px;margin:12px 0 4px">Termine KW ${asNwKw(abV)} <span class="hinweis">${naechste.length}</span></h3><ul style="margin:0 0 6px;padding-left:18px">${naechste.map(aPosten).join("")}</ul>` : "");
+  const ausblick = (ueberfaellig.length ? `<h3 class="rot">Bereits überfällig <span class="hinweis">${ueberfaellig.length}</span></h3><ul class="kurzliste">${ueberfaellig.slice(0, 10).map(aPosten).join("")}</ul>${ueberfaellig.length > 10 ? `<div class="hinweis">und ${ueberfaellig.length - 10} weitere</div>` : ""}` : "")
+    + (naechste.length ? `<h3>Termine KW ${asNwKw(abV)} <span class="hinweis">${naechste.length}</span></h3><ul class="kurzliste">${naechste.map(aPosten).join("")}</ul>` : "");
   const zeitraum = asNwTag(von) + "–" + asNwTag(new Date(bis.getTime() - 86400000));
   const wochen = [0, 1, 2, 3].map(v => `<button class="btn ${v === AS_NW.woche ? "" : "sek"} klein" data-woche="${v}">${v === 0 ? "Diese Woche" : "KW " + asNwKw(asNwMontag(v))}</button>`).join(" ");
   const inhalt = `<h2>Was ${AS_NW.woche === 0 ? "diese Woche" : "in KW " + asNwKw(von)} lief</h2>

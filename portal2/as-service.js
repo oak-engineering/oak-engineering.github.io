@@ -532,7 +532,7 @@ function asSvKalender(box){
     ["unterweisung", "Unterweisungen"], ["massnahme", "Maßnahmen & Mängel"], ["ziel", "Ziele"], ["frist", "Fristen"], ["sonstiges", "Sonstiges"]];
   const f = AS_SV.filter;
   const alle = asSvEintraege().filter(e => !f || e.art === f || (f === "pruefung" && e.art === "wartung"));
-  box.innerHTML = `<div class="sv-leiste">
+  box.innerHTML = `<div class="sv-leiste filterleiste">
       <button class="btn" id="svNeu">Termin anlegen</button>
       <button class="btn sek" id="svVorlage">Aus Vorlage (UVV-Prüfungen …)</button>
       <span style="flex:1"></span>
@@ -729,7 +729,7 @@ function asSvForum(box){
   box.innerHTML = `${meld ? `<div class="karte" style="border-left:4px solid var(--gruen)">${esc(meld)}</div>` : ""}
     <div class="karte"><h2>Fragen zur Arbeitssicherheit <button class="btn klein" id="svFrageNeu">Neue Frage stellen</button></h2>
       <p class="hinweis">Fragen stellen, Antworten lesen – wie in einem Forum. Alle im Betrieb sehen die Beiträge; ${admin ? "du antwortest direkt hier." : "OAK engineering antwortet direkt hier."}</p>
-      <div class="sv-leiste"><input type="search" id="svSuche" placeholder="In Fragen und Antworten suchen" autocomplete="off" value="${esc(AS_SV.fSuche)}">
+      <div class="sv-leiste filterleiste"><input type="search" id="svSuche" placeholder="In Fragen und Antworten suchen" autocomplete="off" value="${esc(AS_SV.fSuche)}">
         ${[["", "Alle"], ["offen", "Offen" + (offen ? " (" + offen + ")" : "")], ["beantwortet", "Beantwortet"]].map(p => `<button class="sv-pill${fl === p[0] ? " an" : ""}" data-filter="${p[0]}">${esc(p[1])}</button>`).join("")}
         <span class="hinweis">${themen.length ? sicht.length + (sicht.length === 1 ? " Thema" : " Themen") : ""}</span></div>
       ${themen.length ? (sicht.map(karte).join("") || `<div class="leer">Keine Treffer.</div>`) : `<div class="leer">Noch keine Fragen. Stellen Sie die erste – ein Foto oder eine Datei können Sie anhängen.</div>`}</div>`;

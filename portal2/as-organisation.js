@@ -243,7 +243,7 @@ function asCheckErgebnis(c, nur){
   let h = `<div class="karte"><h2>Reifegrad je Kernelement <button class="btn sek klein nodruck" onclick="window.print()">Drucken</button></h2>`;
   asCheckFragen(c.art).forEach(k => { const g = k.fragen.map(q => asCheckGrad(c.antworten[q.id])).filter(x => x !== "nrel"), n = t => g.filter(x => x === t).length;
     h += `<div style="display:grid;grid-template-columns:minmax(200px,1.3fr) 2fr 170px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--linie)">
-      <b style="font-size:13px">${k.id} · ${esc(k.titel)}</b>
+      <b>${k.id} · ${esc(k.titel)}</b>
       <div class="balken">${["umfassend", "teilweise", "keine", "offen"].map(t => n(t) ? `<span style="flex:${n(t)};background:${F[t]}"></span>` : "").join("")}</div>
       <div>${rg[k.id] ? asChip("Stufe " + "I".repeat(rg[k.id]), ["", "rot", "gelb", "gruen"][rg[k.id]]) : "–"}
         <select class="nodruck" data-rg="${k.id}" ${nur ? "disabled" : ""}><option value="">auto</option>${[1, 2, 3].map(s => `<option value="${s}" ${(c.reifegrad || {})[k.id] === s ? "selected" : ""}>${"I".repeat(s)}</option>`).join("")}</select></div></div>`; });
@@ -251,7 +251,7 @@ function asCheckErgebnis(c, nur){
   const L = asCheckLuecken(c), ST = { 1: "Stufe 1 – Fundament", 2: "Stufe 2 – System", 3: "Stufe 3 – Steuerung", 4: "Stufe 4 – Kultur" };
   h += `<div class="karte"><h2>Lücken nach Dringlichkeit ${!nur || c.abgeschlossen ? `<span class="nodruck">${AS.fachkraft ? `<button class="btn adm klein" id="ckLuecken">Lücken als Maßnahmen übernehmen</button>` : ""} ${!c.abgeschlossen && AS.fachkraft ? `<button class="btn klein" id="ckAbschluss">Abschließen</button>` : ""}</span>` : ""}</h2>`;
   [1, 2, 3, 4].forEach(s => { const l = L.filter(x => x.q.stufe === s); if(!l.length) return;
-    h += `<h3 style="font-size:13px;color:var(--blau);margin:14px 0 6px">${ST[s]}</h3>` + l.map(x => `<div class="krit"><span>${asPunkt(x.g === "teilweise" ? "gelb" : x.g === "offen" ? "grau" : "rot")}</span>
+    h += `<h3>${ST[s]}</h3>` + l.map(x => `<div class="krit"><span>${asPunkt(x.g === "teilweise" ? "gelb" : x.g === "offen" ? "grau" : "rot")}</span>
       <div><b>${esc(x.q.massnahme)}</b><div class="hinweis">${x.q.id} · ${esc(x.q.text)}${(c.antworten[x.q.id] || {}).b ? " – " + esc(c.antworten[x.q.id].b) : ""}</div></div></div>`).join(""); });
   if(!L.length) h += `<div class="leer">Keine Lücken.</div>`;
   return h + `</div>`;
@@ -374,7 +374,7 @@ async function asOrgGeraete(box){
   const aktiv = geraete.filter(t => !t.gesperrt), weg = geraete.length - aktiv.length;
   box.innerHTML = `<div class="karte"><h2>Melde-Code & Aushang „Vorfall melden“</h2>
       <p class="hinweis">Beschäftigte melden über den QR-Code am Aushang – ohne Login. Wer ohne QR meldet, tippt den Code ein.</p>
-      ${melde ? `<p>Aktueller Code: <b style="font-family:Consolas,monospace;font-size:17px;letter-spacing:.03em">${esc(melde)}</b></p>` : `<div class="leer">Noch kein Melde-Code – bitte „Code erzeugen“.</div>`}
+      ${melde ? `<p>Aktueller Code: <b class="code">${esc(melde)}</b></p>` : `<div class="leer">Noch kein Melde-Code – bitte „Code erzeugen“.</div>`}
       <p style="display:flex;gap:8px;flex-wrap:wrap">${melde ? `<button class="btn klein" id="gerAushang">Aushang drucken</button>` : ""}
         <button class="btn sek klein" id="gerMeldeNeu">${melde ? "Code erneuern" : "Code erzeugen"}</button></p>
       <p class="hinweis">Code erneuern, wenn der alte missbraucht wird. Danach gilt der alte QR-Aushang nicht mehr – bitte sofort neu drucken und aushängen.</p></div>

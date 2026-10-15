@@ -87,7 +87,7 @@ function asBdaTabelle(box, s){
     ${rows || `<tr><td colspan="8" class="leer">Unter „Bearbeiten“ Tätigkeiten und Gefährdungen erfassen.</td></tr>`}</table></div>
     <p class="hinweis">* Risiko heute: 1 gering · 2 mittel · 3 hoch. Erst wenn alle Maßnahmen einer Gefährdung wirksam sind, gilt das Restrisiko.
       STOP: S Substitution · T technisch · O organisatorisch · P persönlich.</p>
-    ${res.length ? `<h3 style="font-size:14px;color:var(--blau)">Ressourcen</h3>${res.map(g => `<div class="krit"><span class="ok">+</span><div><b>${esc(g.kurz)}</b> <span class="hinweis">${esc(g.faktor || "")} ${esc(g.beschreibung || "")}</span></div></div>`).join("")}` : ""}
+    ${res.length ? `<h3>Ressourcen</h3>${res.map(g => `<div class="krit"><span class="ok">+</span><div><b>${esc(g.kurz)}</b> <span class="hinweis">${esc(g.faktor || "")} ${esc(g.beschreibung || "")}</span></div></div>`).join("")}` : ""}
     <div class="hinweis" style="margin-top:14px">Fachliche Herleitung: Bewertung nach Wahrscheinlichkeit × Schwere (je 1–4) unter „Bearbeiten“.</div></div>`;
   const fg = document.getElementById("frGeben"); if(fg) fg.onclick = () => asDialog({ titel: "BdA freigeben", inhalt: `<p>Mit der Freigabe übernimmt die Geschäftsführung die Beurteilung als verbindlich.</p>
       <div class="form">${asFeld("Datum", "freigabe_am", asHeute(), "date")}</div><p class="hinweis">Freigegeben wird unter Ihrem Namen (${esc(AS.ich)}).</p>`,

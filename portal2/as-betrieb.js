@@ -228,7 +228,7 @@ AS_SEITEN.maengel = { titel: "Mängel", icon: "!", sort: 4.4, async render(main)
     <div class="karte"><h2>${sicht.length} Mängel <span><button class="btn klein" id="mgNeu">+ Mangel melden</button>${AS.admin ? ` <button class="btn adm klein" id="mgCsv">Zusammenstellung (CSV)</button>` : ""}</span></h2>
       <div class="filterleiste">${asFilterWahl('data-f="status"', st.status, [["offen", "offen"], ["erledigt", "erledigt"], ["alle", "alle"]].concat(AS.admin ? [["uebernehmen", "erledigt, noch nicht übernommen"]] : []), "Status")}
         ${asFilterWahl('data-f="anlage"', st.anlage, [["", "alle"]].concat(anlagen), "Anlage")}</div>
-      ${Object.entries(gruppen).sort((a, b) => (AS_MG_RANG[a[0]] ?? 9) - (AS_MG_RANG[b[0]] ?? 9)).map(([th, l]) => `<h3 style="font-size:14px;color:var(--blau);margin:16px 0 6px">${esc(AS_MG_THEMA[th] || th)} · ${l.length}</h3>
+      ${Object.entries(gruppen).sort((a, b) => (AS_MG_RANG[a[0]] ?? 9) - (AS_MG_RANG[b[0]] ?? 9)).map(([th, l]) => `<h3>${esc(AS_MG_THEMA[th] || th)} · ${l.length}</h3>
         <div class="zeilen">${l.sort((a, b) => (a.prioritaet || 9999) - (b.prioritaet || 9999)).map(m => `<div class="z" data-mg="${m.id}"><div>
           <b>${asPunkt(AS_BAND_FARBE[asMgBand(m)])}${esc(asMgFeld(m, "label") || "")}</b>
           <small>${esc(m.maschine || m.maschinen_id)}${asMgFeld(m, "massnahme") ? " · Maßnahme: " + esc(asMgFeld(m, "massnahme")) : ""}${m.gemeldet_von ? " · gemeldet von " + esc(m.gemeldet_von) + (m.gemeldet_am ? " am " + asDat(m.gemeldet_am) : "") : ""}

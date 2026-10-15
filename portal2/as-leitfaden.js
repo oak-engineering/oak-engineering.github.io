@@ -377,7 +377,7 @@ async function asLfUebersicht(el){
   const erg = asLfAuswerten(); if(!erg || !document.body.contains(el)) return;
   const naechste = erg.liste.filter(x => x.s !== "ok" && x.s !== "na").sort((a, b) => (a.stufe - b.stufe) || ((b.rot ? 1 : 0) - (a.rot ? 1 : 0)) || ({ offen: 0, karenz: 1, warn: 2 }[a.s] - { offen: 0, karenz: 1, warn: 2 }[b.s])).slice(0, 5);
   el.innerHTML = `<h2>Ihr Weg <a href="#leitfaden" class="btn sek klein" style="text-decoration:none">Leitfaden öffnen</a></h2>${asLfBadgesHtml(erg)}
-    ${naechste.length ? `<div style="margin-top:6px"><b style="font-size:14px">Als Nächstes</b>${naechste.map(k => asLfZeile(k, true)).join("")}</div>` : ""}`;
+    ${naechste.length ? `<div style="margin-top:6px"><h3>Als Nächstes</h3>${naechste.map(k => asLfZeile(k, true)).join("")}</div>` : ""}`;
   asLfZeilenAktiv(el);
   asLfVerlauf(erg);
 }
