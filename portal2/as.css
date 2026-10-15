@@ -29,7 +29,7 @@ textarea{min-height:70px;resize:vertical}
 /* Kopfzeile kompakt (15.10.2026): Marke · Kontext · Lupe · Menü · Kundenlogo */
 .kopf{background:var(--blau);color:#fff;display:flex;align-items:center;gap:10px;padding:0 12px 0 16px;height:48px;position:sticky;top:0;z-index:5}
 .marke{font-weight:700;font-size:16px;white-space:nowrap}.marke span{font-weight:400;opacity:.85}
-.kopf-kontext{flex:0 1 auto;min-width:0;background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:14px;padding:4px 12px;font:inherit;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kopf-kontext{flex:0 1 auto;max-width:46vw;min-width:0;background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:14px;padding:4px 12px;font:inherit;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kopf-kontext:hover{background:rgba(255,255,255,.22)}
 .kopf-rechts{margin-left:auto;display:flex;align-items:center;gap:4px}
 .kopf-icon{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#fff;display:grid;place-items:center;cursor:pointer}
@@ -161,3 +161,4 @@ main{min-width:0;overflow-wrap:break-word}
 
 /* Suche in der Kopfzeile (15.10.2026) */
 @media print{#suchFeld{display:none}}
+@media(max-width:600px){.kopf{padding:0 6px 0 12px;gap:6px}.kopf-kontext{font-size:12px;padding:4px 10px}.kopf-logo img{height:24px;max-width:72px}}

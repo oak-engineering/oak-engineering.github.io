@@ -161,7 +161,7 @@ function asUnterleiste(){
   u.dataset.fertig = "1"; u.style.display = ""; u.classList.add("as-leiste");
   const s = document.createElement("style");
   s.textContent = "@media (max-width:900px){.unterleiste.as-leiste{display:flex!important;gap:8px}.unterleiste.as-leiste button{flex:1;width:auto}"
-    + "#menueTitel{display:none}#menueKnopf::after{content:'Mehr'}.kopf{flex-wrap:wrap;gap:8px}.kopf .kunde-wahl{order:3;width:100%}.kopf .kunde-wahl select{max-width:calc(100% - 90px)}}";
+    + "#menueTitel{display:none}#menueKnopf::after{content:'Mehr'}}";
   document.head.appendChild(s);
   const knopf = (txt, ziel) => { const b = document.createElement("button"); b.textContent = txt; b.onclick = () => asGehe(ziel); return b; };
   u.insertBefore(knopf("Melden", "vorort/melden"), u.firstChild);
