@@ -22,7 +22,7 @@ function asHsStil(){
   const s = document.createElement("style"); s.id = "hsStil";
   s.textContent = `.hs-karten{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin:8px 0 12px}
 .hs-karte{border:2px solid;border-radius:10px;padding:8px;background:#fff;cursor:default}.hs-karte.edit{cursor:pointer}
-.hs-karte img{width:100%;height:90px;object-fit:contain;background:#fff}.hs-name{font-weight:800;font-size:17px}
+.hs-karte img{width:100%;height:80px;object-fit:contain;background:#fff;padding:4px}.hs-name{font-weight:800;font-size:17px}
 .hs-modell{font-size:12px;color:var(--grau,#667085)}.hs-einsatz{font-size:13px;margin-top:4px}.hs-norm{font-size:11px;color:var(--grau,#667085);margin-top:4px}
 .hs-chip{display:inline-flex;align-items:center;gap:6px;color:#fff;font-weight:700;border-radius:20px;padding:2px 10px 2px 2px;font-size:12px;margin:1px 4px 1px 0}
 .hs-chip img{width:22px;height:22px;border-radius:50%;object-fit:cover;background:#fff}.hs-chip.ohne{padding:3px 10px}
@@ -78,7 +78,7 @@ async function asHsRender(box){
         : `<div class="leer">Für diesen Bereich ist noch kein Handschuh erfasst.</div>`}</div>
       <div class="tabwrap"><table class="tab"><thead><tr><th style="width:32%">Stoff</th><th style="width:28%">Handschuh</th><th>Hinweis</th>${edit ? `<th class="nodruck"></th>` : ""}</tr></thead>
       <tbody>${st.map(zeile).join("")}</tbody></table></div>
-      <p class="hs-sdb">Grundlage: GefStoffV § 7, TRGS 401, Sicherheitsdatenblätter Abschnitt 8.2. Handschuh vor Gebrauch auf Schäden prüfen; nach Kontakt mit dem Stoff wechseln. Stand ${esc(asHeute())}.</p></div>`;
+      <p class="hs-sdb">Grundlage: GefStoffV § 7, TRGS 401, Sicherheitsdatenblätter Abschnitt 8.2. Handschuh vor Gebrauch auf Schäden prüfen; nach Kontakt mit dem Stoff wechseln. Stand ${esc(new Date().toLocaleDateString("de-DE"))}.</p></div>`;
   };
 
   box.innerHTML = `<div class="nodruck" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 10px">
