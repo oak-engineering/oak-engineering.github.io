@@ -122,10 +122,14 @@ window.addEventListener("message", ev => {
   if(!rahmen || ev.source !== rahmen.contentWindow) return;
   const d = ev.data;
   if(!d || d.typ!=="oak-doc-state" || !LIVE_TYPEN[d.docTyp] || d.docTyp!==LIVE.docTyp) return;
+  /* erster Stand direkt nach dem Laden = Ausgangsstand, keine Änderung (Durchlauf 15.10.2026: Ansehen schrieb „bearbeitet“) */
+  const sig = JSON.stringify([d.state, d.status || null]);
+  if(LIVE.basis === undefined && Date.now() - (LIVE.geladenUm || 0) < 4000){ LIVE.basis = sig; return; }
+  if(sig === LIVE.basis) return;
   LIVE.ausstehend = d;
   clearTimeout(LIVE.timer);
   badge("Änderung erkannt …");
-  LIVE.timer = setTimeout(()=>{ const m=LIVE.ausstehend; LIVE.ausstehend=null; speichereLive(m); }, 1500);
+  LIVE.timer = setTimeout(()=>{ const m=LIVE.ausstehend; LIVE.ausstehend=null; LIVE.basis = JSON.stringify([m.state, m.status || null]); speichereLive(m); }, 1500);
 });
 async function zeigeLog(){
   const modal=document.getElementById("logModal"), liste=document.getElementById("logListe");
@@ -217,6 +221,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.getElementById("logModal").addEventListener("click", ev=>{ if(ev.target.id==="logModal") ev.target.classList.add("hidden"); });
         badge(liveState ? "Stand geladen (zuletzt gespeicherte Version)" : "Bereit – Änderungen werden automatisch gespeichert");
       }
+      LIVE.geladenUm = Date.now(); LIVE.basis = undefined;
       frame.srcdoc = mitLightbox(html, typ).replace(/<\/head>/i, (window.OAK_MARKE ? OAK_MARKE.styleBlock() : "") + "</head>");   // Kundenmarke ins Dokument
     } else if(typ==="html"){
       if(/\/(vom-betrieb|anfragen|maengel)\//.test(p)) throw new Error("Vom Betrieb hochgeladene Dateien werden nicht als Seite angezeigt.");

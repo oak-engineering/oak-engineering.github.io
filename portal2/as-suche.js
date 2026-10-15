@@ -115,7 +115,7 @@ function asSuEintraege(d){
   asT("as_arbeitssystem").forEach(s => add("bda", s.name, "Beurteilung der Arbeitsbedingungen" + (s.einheit_id ? " · " + eName(s.einheit_id) : ""), s.beschreibung,
     () => { AS.reiter.bda = s.id; asGehe("bda/" + s.id); }));
   (d.gs || []).forEach(g => add("gefahrstoff", g.bezeichnung, [g.hersteller, (g.einheit_ids || []).map(eName).filter(Boolean).join(", "), g.verwendung_status === "inaktiv" ? "nicht mehr verwendet" : ""].filter(Boolean).join(" · "),
-    g.artikelnummer, () => asGehe("gefahrstoffe/kataster"), { sdb: g.sdb_pfad, erledigt: g.verwendung_status === "inaktiv" }));
+    g.artikelnummer, () => { if(typeof AS_GS !== "undefined") AS_GS.oeffnen = g.id; asGehe("gefahrstoffe/kataster"); }, { sdb: g.sdb_pfad, erledigt: g.verwendung_status === "inaktiv" }));
   (d.pers || []).forEach(p => add("person", p.name, "Beschäftigte(r)" + (p.status && p.status !== "aktiv" ? " · " + p.status : ""), "", () => asGehe("unterweisungen")));
   (d.rollen || []).filter(r => r.status !== "archiviert").forEach(r => add("person", r.name, "Rolle / Tätigkeit", "rolle", () => asGehe("unterweisungen")));
   (d.bea || []).forEach(b => add("nachweis", b.person || "Beauftragte(r)", [b.funktion, eName(b.einheit_id), b.gueltig_bis ? "gültig bis " + b.gueltig_bis : ""].filter(Boolean).join(" · "), "", () => asGehe("nachweise")));

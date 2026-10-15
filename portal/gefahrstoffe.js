@@ -93,7 +93,8 @@ function gsSdbStand(g){
 }
 /* GBU gilt als vorhanden: hochgeladenes PDF oder mind. eine freigegebene EMKG-Taetigkeit (gefahrstoffe-emkg.js) */
 function gsGbuDa(g){ return !!g.gbu_pfad || (typeof gseStand === "function" && gseStand(g) === "frei"); }
-function gsLuecken(g){ return [gsGbuDa(g) ? "" : "GBU", g.ba_pfad ? "" : "BA"].filter(Boolean); }
+function gsLuecken(g){ const ba = g.ba_pfad || g.ba_gruppe || (typeof gseStand === "function" && gseStand(g) === "frei");
+  return [gsGbuDa(g) ? "" : "GBU", ba ? "" : "BA"].filter(Boolean); }
 /* Verwendung (Nikolai 12.10.2026): in Verwendung · Verwendung klären · nicht mehr verwendet.
    „aktiv" (bool) leitet die Datenbank daraus ab; alte Zeilen ohne Status zaehlen nach „aktiv". */
 const GS_VERWENDUNG = { aktiv: "In Verwendung", offen: "Verwendung klären", inaktiv: "Nicht mehr verwendet" };

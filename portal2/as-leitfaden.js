@@ -192,7 +192,8 @@ function asLfKriterien(){
         return f ? asLfFrist(f, 30, true, "nächste Überprüfung " + asDat(f)) : { s: "ok", info: "alle Stoffe beurteilt" }; } }),
     K("1d-8", 1, "1d", "Betriebsanweisungen für Gefahrstoffe", { warum: "Schriftliche BA in verständlicher Sprache.", recht: "§ 14 Abs. 1 GefStoffV · TRGS 555", ziel: "gefahrstoffe",
       gilt: () => asLfGsAktiv(AS_LF.d).length > 0,
-      pruef: () => { const o = asLfGsAktiv(AS_LF.d).filter(x => !x.ba_pfad && !x.ba_gruppe).length; return asLfOk(!o, "alle Stoffe mit BA", o + " Stoffe ohne BA"); } }),
+      pruef: () => { const frei = new Set((AS_LF.d.gsgbu || []).filter(b => b.status === "freigegeben").map(b => b.gefahrstoff_id));
+        const o = asLfGsAktiv(AS_LF.d).filter(x => !x.ba_pfad && !x.ba_gruppe && !frei.has(x.id)).length; return asLfOk(!o, "alle Stoffe mit BA", o + " Stoffe ohne BA"); } }),
 
     /* 1e Unterweisung, Vorsorge & besondere Personengruppen */
     K("1e-1", 1, "1e", "Erstunterweisung vor Aufnahme der Tätigkeit", { warum: "Neue Beschäftigte sind am stärksten gefährdet.", recht: "§ 12 ArbSchG · § 4 DGUV V1", ziel: "unterweisungen", rot: true,

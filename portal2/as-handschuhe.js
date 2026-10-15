@@ -10,11 +10,10 @@ const AS_HS = { bereich: "" };
 
 AS_SEITEN.gefahrstoffe = { titel: "Gefahrstoffe", icon: "◬", sort: 4.65, async render(main){
   const r = asReiter("gefahrstoffe", [["kataster", "Kataster"], ["handschuhe", "Handschuhplan"]], "kataster");
-  main.innerHTML = `<h1 class="seite nodruck">Gefahrstoffe</h1>${r.html}<div id="gsInhalt"></div>`;
+  main.innerHTML = `<h1 class="seite nodruck">Gefahrstoffe</h1><p class="unter nodruck">Gefahrstoffverzeichnis mit Sicherheitsdatenblättern, Gefährdungsbeurteilung (EMKG), Betriebsanweisungen und Handschuhplan.</p>${r.html}<div id="gsInhalt"></div>`;
   const box = document.getElementById("gsInhalt");
   if(r.akt === "handschuhe") return asHsRender(box);
-  box.innerHTML = `<p class="unter">Gefahrstoffkataster mit Sicherheitsdatenblättern, Betriebsanweisungen und Gefährdungsbeurteilung – dieselbe Seite wie im Kundenportal.</p>
-    <iframe src="../portal/index.html?eingebettet=1&k=${encodeURIComponent(AS.kunde)}#unterlagen/gefahrstoffe" style="width:100%;height:calc(100vh - 250px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
+  return asGsKataster(box);
 }};
 
 function asHsStil(){
@@ -81,8 +80,7 @@ async function asHsRender(box){
       <p class="hs-sdb">Grundlage: GefStoffV § 7, TRGS 401, Sicherheitsdatenblätter Abschnitt 8.2. Handschuh vor Gebrauch auf Schäden prüfen; nach Kontakt mit dem Stoff wechseln. Stand ${esc(new Date().toLocaleDateString("de-DE"))}.</p></div>`;
   };
 
-  box.innerHTML = `<p class="unter nodruck">Welcher Handschuh für welchen Stoff – je Bereich, direkt aus dem Gefahrstoffkataster.</p>
-    <div class="filterleiste nodruck">
+  box.innerHTML = `<div class="filterleiste nodruck">
       <select id="hsBereich" aria-label="Bereich"><option value="">Bereich: alle (${mitStoff.length})</option>${mitStoff.map(e => `<option value="${esc(e.id)}" ${e.id === AS_HS.bereich ? "selected" : ""}>Bereich: ${esc(e.name)}</option>`).join("")}</select>
       <span class="fl-zahl"><button class="btn sek klein" id="hsDruck">Drucken</button>${edit ? ` <button class="btn klein" id="hsNeu">+ Handschuh</button>` : ""}</span></div>
     ${zeigen.length ? zeigen.map(abschnitt).join("") : `<div class="karte"><div class="leer">Keine Gefahrstoffe mit Bereich erfasst.</div></div>`}`;

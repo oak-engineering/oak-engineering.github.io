@@ -420,10 +420,12 @@ const AS_SV_PA = {
 async function asSvPaLaden(){
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const hole = p => apiGet(p).then(r => Array.isArray(r) ? r : []).catch(() => []);
-  const [pa, gbu, po] = await Promise.all([
+  const [pa, gbu, po, gbuAlle] = await Promise.all([
     hole("/rest/v1/portal_pruefauftrag?select=*&erledigt_am=is.null" + k + "&order=faellig_am.asc"),
     hole("/rest/v1/portal_gefahrstoff_gbu?select=id,taetigkeit,gefahrstoff_id,naechste_pruefung,status&status=eq.freigegeben&naechste_pruefung=not.is.null" + k),
-    hole("/rest/v1/as_pruefobjekt?select=id,art,bezeichnung,ort,naechste_am,aktiv,einheit_id&naechste_am=not.is.null" + k)]);
+    hole("/rest/v1/as_pruefobjekt?select=id,art,bezeichnung,ort,naechste_am,aktiv,einheit_id&naechste_am=not.is.null" + k),
+    hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k)]);
+  AS_SV.gbuAlle = gbuAlle;
   AS_SV.pa = pa; AS_SV.gbuFrist = gbu; AS_SV.pruefFrist = po.filter(o => o.aktiv !== false);
 }
 function asSvPaText(a){ return (a.anlaesse || []).map(x => x.text).filter(Boolean); }
@@ -454,7 +456,12 @@ function asSvPaAufgaben(){
   (AS_SV.gbuFrist || []).filter(g => bald(g.naechste_pruefung)).forEach(g => l.push({
     schluessel: "gbu-frist:" + g.id + ":" + g.naechste_pruefung, stufe: asSvTage(g.naechste_pruefung) < 0 ? "kritisch" : "warnung",
     titel: "Gefahrstoff-Beurteilung regelmäßig überprüfen: " + (g.taetigkeit || ""), sub: "nächste Überprüfung " + asDat(g.naechste_pruefung),
-    frist: asSvTage(g.naechste_pruefung), aktionen: [["Öffnen", () => asGehe("gefahrstoffe")]] }));
+    frist: asSvTage(g.naechste_pruefung), aktionen: [["Öffnen", () => { AS_GS.oeffnen = g.gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] }));
+  /* Gefahrstoff-Beurteilung wartet auf die Freigabe der Geschäftsführung (Schritt 6) */
+  (AS_SV.gbuAlle || []).filter(g => g.vorgelegt_am && g.status !== "freigegeben").forEach(g => l.push({
+    schluessel: "gsgbu-freigabe:" + g.id + ":" + g.vorgelegt_am, stufe: "warnung", titel: "Gefahrstoff-Beurteilung freigeben: " + (g.taetigkeit || ""),
+    sub: "zur Freigabe vorgelegt " + asDat(g.vorgelegt_am) + (g.vorgelegt_von ? " von " + g.vorgelegt_von : "") + (AS.gf ? "" : " – gibt die Geschäftsführung frei"),
+    frist: null, aktionen: [["Öffnen", () => { AS_GS.oeffnen = g.gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] }));
   /* Prüfkataster: fällige und überfällige Prüfungen (Durchlauf 15.10.2026: standen nur im Kalender) */
   (AS_SV.pruefFrist || []).filter(o => bald(o.naechste_am)).forEach(o => l.push({
     schluessel: "pruef-frist:" + o.id + ":" + o.naechste_am, stufe: asSvTage(o.naechste_am) < 0 ? "kritisch" : "warnung",
@@ -476,7 +483,9 @@ function asSvPaKalender(){
 /* „Öffnen“ führt direkt zur Stelle: Beurteilung bzw. BA der Anlage (Reiter „Dokumente & BA“) */
 function asSvPaOeffnen(a, ziel){
   const oid = String(a.objekt_id || "");
-  if(oid.startsWith("GS:")) return asGehe("gefahrstoffe");
+  if(oid.startsWith("GS:") || a.objekt_typ === "gs_ba" || a.objekt_typ === "gs_gbu"){
+    AS_GS.oeffnen = oid.startsWith("GS:") ? oid.slice(3) : a.objekt_typ === "gs_ba" ? oid : ((AS_SV.gbuAlle || []).find(x => x.id === oid) || {}).gefahrstoff_id || null;
+    return asGehe("gefahrstoffe/kataster"); }
   const sys = a.objekt_typ === "bda_system" ? asNach("as_arbeitssystem", oid)
     : asT("as_arbeitssystem").find(x => x.art === "anlage" && asListe(x.anlagen).includes(oid)) || asT("as_arbeitssystem").find(x => asListe(x.anlagen).includes(oid));
   if(sys){ AS.reiter["bda_" + sys.id] = a.objekt_typ === "anlage_ba" ? "dokumente" : "tabelle"; AS.reiter.bda = sys.id; return asGehe("bda/" + sys.id); }

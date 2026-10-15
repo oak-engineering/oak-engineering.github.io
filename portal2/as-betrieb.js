@@ -431,13 +431,7 @@ function asHpNeuDialog(){
     knoepfe: [{ t: "Anlegen", fn: async dl => { const w = asWerte(dl); if(!w.titel){ asMeldung("Bitte benennen"); return false; } await asHpNeu(null, w.titel); } }] });
 }
 
-/* ======================= Gefahrstoffe ======================= */
-/* Das Gefahrstoffkataster wird im Kundenportal laufend weiterentwickelt (SDB-Status, Verwendung, EMKG) –
-   hier eingebettet, damit beide Apps immer denselben Stand zeigen (eine Quelle: portal_gefahrstoff*). */
-AS_SEITEN.gefahrstoffe = { titel: "Gefahrstoffe", icon: "◬", sort: 4.65, render(main){
-  main.innerHTML = `<h1 class="seite">Gefahrstoffe</h1><p class="unter">Gefahrstoffkataster mit Sicherheitsdatenblättern, Betriebsanweisungen und Gefährdungsbeurteilung – dieselbe Seite wie im Kundenportal.</p>
-    <iframe src="../portal/index.html?eingebettet=1&k=${encodeURIComponent(AS.kunde)}#unterlagen/gefahrstoffe" style="width:100%;height:calc(100vh - 210px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
-}};
+/* Gefahrstoffe: portal2/as-gefahrstoffe.js (Kataster) + as-handschuhe.js (Seite, Handschuhplan) */
 
 /* ======================= Vor Ort: prüfen, melden, Terminal ======================= */
 AS_SEITEN.vorort = { titel: "Vor Ort", icon: "⌂", sort: 4.8, async render(main){

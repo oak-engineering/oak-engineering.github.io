@@ -119,7 +119,8 @@ function gseDialog(g, gbu, danach){
     <div class="pw-akt">${gbu && typeof ADMIN !== "undefined" && ADMIN ? `<button type="button" class="btn sek" id="gseLoe">Löschen</button>` : ""}
       <button type="button" class="btn sek" id="gseAbb">Schließen</button>
       ${gbu ? `<button type="button" class="btn sek" id="gseDruck">Drucken</button>` : ""}
-      ${pflege ? `<button type="submit" class="btn sek" value="entwurf">Als Entwurf speichern</button><button type="submit" class="btn" value="freigegeben">Speichern und freigeben</button>` : ""}</div>
+      ${pflege ? `<button type="submit" class="btn sek" value="entwurf">Als Entwurf speichern</button>${(typeof ADMIN !== "undefined" && ADMIN) || window.__oakGf
+        ? `<button type="submit" class="btn" value="freigegeben">Speichern und freigeben</button>` : `<button type="submit" class="btn" value="vorlegen">Der GF zur Freigabe vorlegen</button>`}` : ""}</div>
   </form>`;
   const q = s => dlg.querySelector(s), zahl = s => { const v = q(s).value; return v === "" ? undefined : Number(v); };
   const stoffNeu = () => {
@@ -164,7 +165,7 @@ function gseDialog(g, gbu, danach){
   });
   q("form").addEventListener("submit", async ev => {
     ev.preventDefault();
-    const msg = q("#gseMsg"), status = ev.submitter && ev.submitter.value === "freigegeben" ? "freigegeben" : "entwurf";
+    const msg = q("#gseMsg"), art = ev.submitter && ev.submitter.value, status = art === "freigegeben" ? "freigegeben" : "entwurf";
     const taet = q("#gseT").value.trim();
     if(taet.length < 3){ msg.textContent = "Bitte die Tätigkeit beschreiben."; msg.className = "pw-msg fehler"; return; }
     const r = rechnen(); if(!r){ msg.textContent = "Bewertung nicht möglich – Angaben prüfen."; msg.className = "pw-msg fehler"; return; }
@@ -178,7 +179,7 @@ function gseDialog(g, gbu, danach){
       }
       const daten = { taetigkeit: taet, arbeitsbereich: q("#gseB").value.trim() || null, eingaben: eingaben(),
         stoffdaten: Object.assign(gseStoff(g), { _sdb: { pfad: g.sdb_pfad || null, ausgabe: g.sdb_ausgabe || null } }),
-        ergebnis: r, kern_version: r.version, status, geaendert_am: new Date().toISOString() };
+        ergebnis: r, kern_version: r.version, status, vorgelegt_am: art === "vorlegen" ? new Date().toISOString() : null, geaendert_am: new Date().toISOString() };
       if(gbu) await apiSend("PATCH", "/rest/v1/portal_gefahrstoff_gbu?id=eq." + encodeURIComponent(gbu.id), daten, "return=minimal");
       else await apiSend("POST", "/rest/v1/portal_gefahrstoff_gbu", Object.assign({ kunde_slug: g.kunde_slug || AKTIV, gefahrstoff_id: g.id }, daten), "return=minimal");
       GSE_FUER = null; dlg.close(); if(danach) danach();
