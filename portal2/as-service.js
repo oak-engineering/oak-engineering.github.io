@@ -429,15 +429,23 @@ function asSvPaText(a){ return (a.anlaesse || []).map(x => x.text).filter(Boolea
 function asSvPaAufgaben(){
   const l = [], fk = !!(AS.fachkraft || AS.admin);
   (AS_SV.pa || []).forEach(a => { const [t, ziel] = AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = asSvPaText(a);
-    const akt = [["Öffnen", () => asGehe(ziel)]];
-    if(fk){
+    const akt = [["Öffnen", () => asGehe(String(a.objekt_id).startsWith("GS:") ? "gefahrstoffe" : ziel)]];
+    if(a.objekt_typ === "unterweisung"){
+      if(fk || AS.gf) akt.push(["Unterwiesen …", () => asSvUwQuittieren(a)]);
+      if(fk) akt.push(["Nicht nötig", () => asSvPaErledigen(a, "unveraendert")]);
+    } else if(fk){
       akt.push(["Geprüft – unverändert", () => asSvPaErledigen(a, "unveraendert")]);
-      akt.push([a.objekt_typ === "unterweisung" ? "Unterwiesen" : "Aktualisiert", () => asSvPaErledigen(a, "aktualisiert")]);
+      akt.push(["Aktualisiert", () => asSvPaErledigen(a, "aktualisiert")]);
     }
     l.push({ schluessel: "pa:" + a.id, stufe: asSvTage(a.faellig_am) < 0 ? "kritisch" : "warnung", titel: t + ": " + (a.objekt_titel || a.objekt_id),
       sub: txt.slice(0, 2).join(" · ") + (txt.length > 2 ? " · und " + (txt.length - 2) + " weitere" : "") + (fk ? "" : " – erledigt die Fachkraft"),
       frist: asSvTage(a.faellig_am), aktionen: akt }); });
   const bald = d => { const t = asSvTage(d); return t != null && t <= 30; };
+  /* Beurteilung wartet auf die Freigabe der Geschäftsführung (Durchlauf 15.10.2026, D16) */
+  asT("as_arbeitssystem").filter(x => x.vorgelegt_am && !x.freigabe_am).forEach(x => l.push({
+    schluessel: "bda-freigabe:" + x.id + ":" + x.vorgelegt_am, stufe: "warnung", titel: "Beurteilung freigeben: " + (x.name || ""),
+    sub: "zur Freigabe vorgelegt " + asDat(x.vorgelegt_am) + (x.vorgelegt_von ? " von " + x.vorgelegt_von : "") + (AS.gf ? "" : " – gibt die Geschäftsführung frei"),
+    frist: null, aktionen: [["Öffnen", () => { AS.reiter.bda = x.id; asGehe("bda/" + x.id); }]] }));
   asT("as_arbeitssystem").filter(s => s.naechste_pruefung && bald(s.naechste_pruefung)).forEach(s => l.push({
     schluessel: "bda-frist:" + s.id + ":" + s.naechste_pruefung, stufe: asSvTage(s.naechste_pruefung) < 0 ? "kritisch" : "warnung",
     titel: "Beurteilung regelmäßig überprüfen: " + (s.name || ""), sub: "nächste Überprüfung " + asDat(s.naechste_pruefung) + " – prüfen und neu freigeben",
@@ -463,6 +471,40 @@ function asSvPaKalender(){
   (AS_SV.gbuFrist || []).forEach(g => l.push({ quelle: "gbu-frist", id: g.id, datum: g.naechste_pruefung, art: "pruefung",
     titel: "Gefahrstoff-Beurteilung überprüfen: " + (g.taetigkeit || ""), sub: "Regelfrist nach Freigabe", ziel: "gefahrstoffe", roh: g }));
   return l;
+}
+/* Neuunterweisung quittieren: betroffene Personen über Rollen des Arbeitssystems bzw. den Bereich (Anlage/Gefahrstoff) */
+async function asSvUwQuittieren(a){
+  const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde), hole = p => apiGet(p + k).catch(() => []);
+  const [pers, rollen, pr, pe] = await Promise.all([hole("/rest/v1/uw_person?select=id,name,status&status=eq.aktiv&order=name.asc"),
+    hole("/rest/v1/uw_rolle?select=id,name"), apiGet("/rest/v1/uw_person_rolle?select=person_id,rolle_id").catch(() => []),
+    apiGet("/rest/v1/uw_person_einheit?select=person_id,einheit_id").catch(() => [])]);
+  let einh = [], rollenNamen = [];
+  if(String(a.objekt_id).startsWith("GS:")){
+    const g = (await hole("/rest/v1/portal_gefahrstoff?select=einheit_ids&id=eq." + encodeURIComponent(a.objekt_id.slice(3))))[0];
+    einh = (g && g.einheit_ids) || [];
+  } else {
+    const sys = asT("as_arbeitssystem").filter(x => asListe(x.anlagen).includes(a.objekt_id));
+    rollenNamen = [...new Set(sys.flatMap(x => asListe(x.rollen)))];
+    const d = ((typeof AS_B !== "undefined" && AS_B.docs) || []).find(x => x.maschinen_id === a.objekt_id && x.einheit_id);
+    if(d) einh = [d.einheit_id];
+  }
+  const rIds = new Set(rollen.filter(r => rollenNamen.includes(r.name)).map(r => r.id));
+  const teil = typeof asBereichTeilbaum === "function" && einh.length ? asBereichTeilbaum(einh) : new Set(einh);
+  const betroffen = new Set(pr.filter(x => rIds.has(x.rolle_id)).map(x => x.person_id).concat(pe.filter(x => teil.has(x.einheit_id)).map(x => x.person_id)));
+  const liste = pers.filter(p => betroffen.has(p.id)), rest = pers.filter(p => !betroffen.has(p.id));
+  const zeile = (p, an) => `<label><input type="checkbox" data-uwp value="${esc(p.id)}"${an ? " checked" : ""}> ${esc(p.name)}</label>`;
+  asDialog({ titel: "Unterwiesen: " + (a.objekt_titel || ""), breit: true, inhalt: `<ul class="hinweis">${asSvPaText(a).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+      <p><b>Betroffen</b> ${rollenNamen.length ? `<span class="hinweis">(Rollen: ${esc(rollenNamen.join(", "))}${einh.length ? " · Bereich" : ""})</span>` : (einh.length ? `<span class="hinweis">(Personen im Bereich)</span>` : "")}</p>
+      <div class="hakenliste">${liste.map(p => zeile(p, true)).join("") || `<span class="hinweis">Keine Personen gefunden – Rollen im Arbeitssystem bzw. Bereiche der Personen pflegen (Unterweisungen → Mitarbeiter).</span>`}</div>
+      ${rest.length ? `<details style="margin-top:8px"><summary class="hinweis">weitere Personen (${rest.length})</summary><div class="hakenliste">${rest.map(p => zeile(p, false)).join("")}</div></details>` : ""}
+      <div class="form" style="margin-top:10px">${asFeld("Unterwiesen am", "am", asHeute(), "date")}${asFeld("Unterwiesen durch", "durch", AS.ich || "")}
+        ${asFeld("Notiz (optional)", "notiz", "", "textarea", "voll")}</div>
+      <p class="hinweis">Die Namen werden mit Datum am Auftrag gespeichert. Eine Unterschrift sammelt das Unterweisungs-Terminal, wenn das Thema dort als Modul läuft.</p>`,
+    knoepfe: [{ t: "Quittieren", fn: async d => { const w = asWerte(d), ids = [...d.querySelectorAll("[data-uwp]:checked")].map(x => x.value);
+      if(!ids.length){ asMeldung("Bitte die unterwiesenen Personen auswählen"); return false; }
+      try{ await apiSend("POST", "/rest/v1/rpc/portal_unterweisung_quittieren", { p_id: a.id, p_personen: ids, p_am: w.am || asHeute(), p_durch: w.durch || null, p_notiz: w.notiz || null }); }
+      catch(e){ asMeldung("Konnte nicht quittiert werden: " + asSvFehler(e)); return false; }
+      asMeldung(ids.length + " Person(en) als unterwiesen eingetragen"); await asSvPaLaden(); asZeige(); } }] });
 }
 function asSvPaErledigen(a, ergebnis){
   const t = (AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen"])[0];

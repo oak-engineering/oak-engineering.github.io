@@ -280,7 +280,7 @@ function asMangelDialog(m, vMid){
     await asMgAendern(m, { uebernommen_am: new Date().toISOString(), uebernommen_von: "OAK engineering" }, "übernommen"); } });
   if(AS.admin && m.status === "erledigt") kn.push({ t: "Wieder öffnen", klasse: "sek", fn: async () => {
     await asMgAendern(m, { status: "offen", erledigt_am: null, erledigt_von: null, notiz: null, nachweis_pfad: null }, "wieder geöffnet"); } });
-  if(AS.admin) kn.push({ t: "Bearbeiten", klasse: "sek", fn: () => { asMangelBearbeiten(m); return false; } });
+  if(AS.admin || AS.fachkraft) kn.push({ t: "Bewerten / zuordnen", klasse: "sek", fn: () => { asMangelBearbeiten(m); return false; } });
   const g = asNach("as_gefaehrdung", m.as_gefaehrdung_id);
   const dlg = asDialog({ titel: m.maschine || m.maschinen_id, inhalt: `<p>${asChip(AS_BAND_TEXT[asMgBand(m)], AS_BAND_FARBE[asMgBand(m)])} <b>${esc(asMgFeld(m, "label") || "")}</b></p>
       ${asMgFeld(m, "massnahme") ? `<p>Maßnahme: ${esc(asMgFeld(m, "massnahme"))}</p>` : ""}
@@ -308,7 +308,7 @@ function asMangelErledigt(m){
 function asMangelBearbeiten(m){
   const sysIds = new Set(asT("as_arbeitssystem").filter(s => asListe(s.anlagen).includes(m.maschinen_id)).map(s => s.id));
   const gef = asT("as_gefaehrdung").filter(g => sysIds.has(g.arbeitssystem_id));
-  asDialog({ titel: "Mangel bearbeiten (OAK)", breit: true, inhalt: `<div class="form">
+  asDialog({ titel: "Mangel bewerten und der Beurteilung zuordnen", breit: true, inhalt: `<p class="hinweis">Ordnen Sie den Befund der passenden Gefährdung zu – die Beurteilung wird dann zur Nachbewertung vorgelegt.</p><div class="form">
       ${asFeld("Befund", "label", asMgFeld(m, "label"), "textarea", "voll")}${asFeld("Maßnahme", "massnahme", asMgFeld(m, "massnahme"), "textarea", "voll")}
       ${asAuswahl("Thema", "thema", asMgFeld(m, "thema") || "sonstiges", Object.entries(AS_MG_THEMA))}
       ${asAuswahl("Bewertung", "bewertung_manuell", m.bewertung_manuell || "", [["", "wie berechnet (" + (AS_BAND_TEXT[m.band] || "–") + ")"], ["gefahr", "Gefahr"], ["besorgnis", "Besorgnis"], ["akzeptanz", "Akzeptanz"]])}

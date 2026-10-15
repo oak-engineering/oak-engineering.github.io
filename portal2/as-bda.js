@@ -29,10 +29,20 @@ AS_SEITEN.bda = { titel: "Beurteilung (BdA)", icon: "⚠", sort: 4, render(main)
   main.querySelectorAll("[data-s]").forEach(z => z.onclick = () => asGehe("bda/" + z.dataset.s));
 }};
 
-function asSystemDialog(s){
-  const neu = !s; s = s || { rollen: ["Bediener"], anlagen: [] };
+/* Rollen kommen aus der Unterweisung (uw_rolle) – dieselben Rollen bestimmen, wer nach einer Änderung neu unterwiesen wird.
+   Anlagen aus dem Anlagenkataster (Durchlauf 15.10.2026: vorher Freitext, nicht verknüpft). */
+async function asSystemDialog(s){
+  const neu = !s; s = s || { rollen: [], anlagen: [] };
+  const rollen = (await apiGet("/rest/v1/uw_rolle?select=id,name,status&kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&order=name.asc").catch(() => []) || []).filter(r => r.status !== "archiviert");
+  if(typeof asBetriebLaden === "function") await asBetriebLaden().catch(() => {});
+  const anl = (typeof asAnlagen === "function" ? asAnlagen() : []).filter(d => d.maschinen_id);
+  const gewR = new Set(asListe(s.rollen)), gewA = new Set(asListe(s.anlagen));
+  const fremdR = [...gewR].filter(n => !rollen.some(r => r.name === n)), fremdA = [...gewA].filter(m => !anl.some(d => d.maschinen_id === m));
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.name){ asMeldung("Name fehlt"); return false; }
-    w.rollen = asListe(w.rollen); w.anlagen = asListe(w.anlagen); w.einheit_id = w.einheit_id || null;
+    w.rollen = [...d.querySelectorAll("[data-sr]:checked")].map(x => x.value).concat(asListe(w.rollen_neu));
+    w.anlagen = [...d.querySelectorAll("[data-sa]:checked")].map(x => x.value); delete w.rollen_neu; w.einheit_id = w.einheit_id || null;
+    const neuR = asListe(d.querySelector('[data-f="rollen_neu"]').value);
+    for(const n of neuR) await apiSend("POST", "/rest/v1/uw_rolle", { kunde_slug: AS.kunde, name: n, typ: "eigen", status: "aktiv" }, "return=minimal").catch(() => {});
     const r = await asSpeichern("as_arbeitssystem", Object.assign({ id: s.id }, w)); asGehe("bda/" + r.id); asZeige(); } }];
   if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Arbeitssystem mit allen Tätigkeiten und Gefährdungen löschen?")) return false;
     await asLoeschen("as_arbeitssystem", s.id); await asLaden(); asGehe("bda"); } });
@@ -40,8 +50,14 @@ function asSystemDialog(s){
       ${asFeld("Name", "name", s.name, "text", "voll")}
       ${asBereichWahl("Bereich", "einheit_id", s.einheit_id || "", "", "– betriebsweit –")}
       ${asFeld("Betriebsanweisungen vorhanden und ausgehängt", "ba_vorhanden", s.ba_vorhanden, "checkbox")}
-      ${asFeld("Rollen (mit Komma), z. B. Bediener, Einrichter, Instandhaltung", "rollen", asListe(s.rollen).join(", "), "text", "voll")}
-      ${asFeld("Anlagen / Arbeitsmittel (mit Komma) – für Maßnahmen je Anlage", "anlagen", asListe(s.anlagen).join(", "), "text", "voll")}
+      <div class="voll"><b>Wer arbeitet hier? (Rollen aus der Unterweisung)</b><div class="hakenliste">
+        ${rollen.map(r => `<label><input type="checkbox" data-sr value="${esc(r.name)}"${gewR.has(r.name) ? " checked" : ""}> ${esc(r.name)}</label>`).join("")}
+        ${fremdR.map(n => `<label title="Diese Rolle gibt es in der Unterweisung noch nicht"><input type="checkbox" data-sr value="${esc(n)}" checked> ${esc(n)} ⚠</label>`).join("")}
+        ${rollen.length || fremdR.length ? "" : `<span class="hinweis">Noch keine Rollen – unter Unterweisungen → Mitarbeiter → „Bereiche &amp; Rollen“ anlegen.</span>`}</div></div>
+      ${asFeld("Weitere Rolle (wird in der Unterweisung als Rolle angelegt)", "rollen_neu", "", "text", "voll")}
+      <div class="voll"><b>Anlagen in diesem Arbeitssystem</b><div class="hakenliste">
+        ${anl.map(d => `<label><input type="checkbox" data-sa value="${esc(d.maschinen_id)}"${gewA.has(d.maschinen_id) ? " checked" : ""}> ${esc(d.maschine || d.titel)} <span class="hinweis">${esc(d.maschinen_id)}</span></label>`).join("")}
+        ${fremdA.map(m => `<label><input type="checkbox" data-sa value="${esc(m)}" checked> ${esc(m)} ⚠</label>`).join("")}</div></div>
       ${asFeld("Beschreibung", "beschreibung", s.beschreibung, "textarea", "voll")}</div>`, knoepfe: kn });
 }
 
@@ -80,7 +96,10 @@ function asBdaTabelle(box, s){
   const res = gef.filter(g => g.art === "ressource");
   box.innerHTML = `<div class="karte"><h2>Beurteilung der Arbeitsbedingungen – ${esc(s.name)}
       <span class="nodruck"><button class="btn sek klein" onclick="window.print()">Drucken</button>
-      ${s.freigabe_am ? (AS.gf ? `<button class="btn adm klein" id="frZur">Freigabe zurücknehmen</button>` : "") : (AS.gf ? `<button class="btn klein" id="frGeben">Freigeben (Geschäftsführung)</button>` : `<span class="hinweis">Freigabe durch die Geschäftsführung</span>`)}</span></h2>
+      ${s.freigabe_am ? (AS.gf ? `<button class="btn adm klein" id="frZur">Freigabe zurücknehmen</button>` : "")
+        : (AS.gf ? `<button class="btn klein" id="frGeben">Freigeben (Geschäftsführung)</button>`
+          : (AS.fachkraft ? (s.vorgelegt_am ? `<span class="hinweis">zur Freigabe vorgelegt ${asDat(s.vorgelegt_am)}</span>` : `<button class="btn klein" id="frVorlegen">Zur Freigabe vorlegen</button>`)
+            : `<span class="hinweis">Freigabe durch die Geschäftsführung</span>`))}</span></h2>
     <p class="hinweis">Arbeitsbereich: ${esc(asEinheitName(s.einheit_id))} · Beschäftigte: ${esc(asListe(s.rollen).join(", "))} · Stand ${asDat(asHeute())}
       · ${s.freigabe_am ? "freigegeben am " + asDat(s.freigabe_am) + " von " + esc(s.freigabe_von) : "<b>noch nicht freigegeben</b>"}</p>
     <div class="tabwrap"><table class="tab"><tr><th>Nr.</th><th>Tätigkeit</th><th>Gefährdung / Belastung</th><th>Risiko*</th><th colspan="4"><div class="mz mz-kopf"><div>Maßnahmen (STOP)</div><div>Wer</div><div>Bis wann</div><div>Stand</div></div></th></tr>
@@ -92,7 +111,10 @@ function asBdaTabelle(box, s){
   const fg = document.getElementById("frGeben"); if(fg) fg.onclick = () => asDialog({ titel: "BdA freigeben", inhalt: `<p>Mit der Freigabe übernimmt die Geschäftsführung die Beurteilung als verbindlich.</p>
       <div class="form">${asFeld("Datum", "freigabe_am", asHeute(), "date")}</div><p class="hinweis">Freigegeben wird unter Ihrem Namen (${esc(AS.ich)}).</p>`,
     knoepfe: [{ t: "Freigeben", fn: async d => { const w = asWerte(d); w.freigabe_von = AS.ich;
-      await asSpeichern("as_arbeitssystem", { id: s.id, ...w }); asZeige(); } }] });
+      await asSpeichern("as_arbeitssystem", { id: s.id, ...w, vorgelegt_am: null, vorgelegt_von: null }); asZeige(); } }] });
+  const fv = document.getElementById("frVorlegen"); if(fv) fv.onclick = async () => {
+    await asSpeichern("as_arbeitssystem", { id: s.id, vorgelegt_am: new Date().toISOString(), vorgelegt_von: AS.ich });
+    asMeldung("Der Geschäftsführung zur Freigabe vorgelegt – sie sieht es in ihren Aufgaben"); asZeige(); };
   const fz = document.getElementById("frZur"); if(fz) fz.onclick = async () => { await asSpeichern("as_arbeitssystem", { id: s.id, freigabe_am: null, freigabe_von: null }); asZeige(); };
 }
 

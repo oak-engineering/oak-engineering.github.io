@@ -82,7 +82,8 @@ const AS_QUELLEN = {
     neu: w => { const g = asNach("as_gefaehrdung", w.gefaehrdung_id), s = g && asNach("as_arbeitssystem", g.arbeitssystem_id);
       const anl = String(w.anlage || "").split(" ")[0] || (s && asListe(s.anlagen)[0]) || "";
       const band = asBand(g ? asRisiko(g.w_v, g.s_v) : 0);
-      return { maschinen_id: anl, maschine: s ? s.name.replace(/\s*\([^)]*\)\s*$/, "") : anl,
+      const dok = (typeof AS_B !== "undefined" && AS_B.docs || []).find(d => d.maschinen_id === anl && (d.kategorie === "anlagen" || d.kategorie === "allg-gbu"));
+      return { maschinen_id: anl, maschine: dok ? (dok.maschine || dok.titel) : (s ? s.name.replace(/\s*\([^)]*\)\s*$/, "") : anl),
         schluessel: "V2-" + Math.random().toString(36).slice(2, 10), label: w.text, massnahme: w.text, thema: "sonstiges",
         schwere: { rot: "s", gelb: "g", gruen: "a" }[band] || "g", band: { rot: "gefahr", gelb: "besorgnis", gruen: "akzeptanz" }[band] || "besorgnis",
         status: "offen", as_gefaehrdung_id: w.gefaehrdung_id, stop: w.stop || "T", verantwortlich: w.verantwortlich || null,
