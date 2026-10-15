@@ -44,6 +44,20 @@ function asBereichName(){
   return b.wurzeln.map(id => (b.einheiten.find(e => e.id === id) || {}).name || "").filter(Boolean).join(", ");
 }
 
+/* ---- Bereichsauswahl in Dialogen (Durchlauf 15.10.2026: Bereich muss überall wählbar sein) ---- */
+function asBereichListe(){
+  const b = AS.bereich, z = [];
+  const kinder = p => b.einheiten.filter(e => (e.parent_id || null) === p).sort((x, y) => (x.sort || 0) - (y.sort || 0) || String(x.name).localeCompare(y.name, "de"));
+  (function lauf(p, t){ kinder(p).forEach(e => { z.push([e, t]); lauf(e.id, t + 1); }); })(null, 0);
+  return b.fest ? z.filter(([e]) => b.schreiben.has(e.id)) : z;
+}
+function asBereichStandard(){ const b = AS.bereich; return b.aktiv && b.wurzeln.length === 1 ? b.wurzeln[0] : ""; }
+function asBereichName1(id){ return ((AS.bereich.einheiten || []).find(e => e.id === id) || {}).name || ""; }
+function asBereichWahl(label, f, wert, extra, leerText){
+  const opt = (AS.bereich.fest ? [] : [["", leerText || "– betriebsweit –"]]).concat(asBereichListe().map(([e, t]) => [e.id, " ".repeat(t) + e.name]));
+  return asAuswahl(label, f, wert == null ? asBereichStandard() : wert, opt, extra);
+}
+
 /* ---- zentraler Filter: jede Leseabfrage der App läuft hier durch ---- */
 const asApiGetRoh = apiGet;
 apiGet = async function(path, asText){

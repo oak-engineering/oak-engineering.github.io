@@ -1278,3 +1278,7 @@ body.eingebettet .btn{border-radius:16px!important;height:32px!important;min-hei
 }
 
 .gse-st-pruefen{background:#FCE1DE;color:#8E1B1B}
+
+/* Gefahrstoff-Dialog: Bereiche aus der Organisationsstruktur (16.10.2026) */
+.gs-bereiche{border:1px solid var(--rand,#D6E4DA);border-radius:8px;padding:6px 10px 8px;margin:4px 0 8px;display:flex;flex-wrap:wrap;gap:4px 16px}
+.gs-bereiche legend{font-size:13px;padding:0 4px}.gs-ber{display:inline-flex;align-items:center;gap:6px;font-size:14px;margin:0}

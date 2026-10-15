@@ -62,6 +62,9 @@ async function gsLaden(erzwingen){
   try{ GS_ROWS = await apiGet("/rest/v1/portal_gefahrstoff?select=*" + (AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "") + "&order=bezeichnung.asc", false) || []; }
   catch(e){ GS_ROWS = []; }
   GS_GELADEN_FUER = AKTIV;
+  /* Bereiche der Organisationsstruktur (uw_einheit) – Auswahl statt Freitext (Durchlauf 15.10.2026) */
+  try{ window.GS_EINHEITEN = (await apiGet("/rest/v1/uw_einheit?select=id,name,parent_id,sort,status" + (AKTIV ? "&kunde_slug=eq." + encodeURIComponent(AKTIV) : "") + "&status=eq.aktiv&order=sort.asc,name.asc", false) || []); }
+  catch(e){ window.GS_EINHEITEN = []; }
   if(typeof gseLaden === "function") await gseLaden(true);
   return GS_ROWS;
 }
@@ -227,7 +230,9 @@ function gsDialog(g, danach, fokus){
       <div class="ehs-zwei"><label>Hersteller / Lieferant<input type="text" id="gsHerst" maxlength="200" value="${esc(w("hersteller"))}"></label>
         <label>Signalwort<select id="gsSig"><option value="">–</option>${["Gefahr", "Achtung"].map(s => `<option${s === w("signalwort") ? " selected" : ""}>${s}</option>`).join("")}</select></label></div>
       <label>H-Sätze (mit Leerzeichen getrennt)<input type="text" id="gsH" value="${esc((g ? g.h_saetze || [] : []).join(" "))}" placeholder="H225 H319"></label>
-      <label>Bereiche (mit Komma getrennt)<input type="text" id="gsBer" value="${esc((g ? g.bereiche || [] : []).join(", "))}" placeholder="Produktion, Instandhaltung"></label>
+      ${(window.GS_EINHEITEN || []).length ? `<fieldset class="gs-bereiche"><legend>Bereiche, in denen der Stoff verwendet wird</legend>${(window.GS_EINHEITEN || []).map(e =>
+          `<label class="gs-ber"><input type="checkbox" value="${esc(e.id)}"${(g && (g.einheit_ids || []).includes(e.id)) ? " checked" : ""}> ${esc(e.name)}</label>`).join("")}</fieldset>`
+        : `<label>Bereiche (mit Komma getrennt)<input type="text" id="gsBer" value="${esc((g ? g.bereiche || [] : []).join(", "))}" placeholder="Produktion, Instandhaltung"></label>`}
       <label>Verwendung<input type="text" id="gsVerw" maxlength="300" value="${esc(w("verwendung"))}"></label>
       <div class="ehs-zwei"><label>Gebinde <span class="uw-leise">(z. B. 500 ml Spraydose, 25 l Kanister)</span><input type="text" id="gsGebinde" maxlength="120" value="${esc(w("gebinde"))}"></label>
         <label>Menge pro Jahr<input type="text" id="gsMenge" maxlength="100" value="${esc(w("menge"))}"></label></div>
@@ -265,7 +270,8 @@ function gsDialog(g, danach, fokus){
         .map(x => /^euh/i.test(x) ? x.toUpperCase() : "H" + x.slice(1)))].sort();
       const verwStatus = dlg.querySelector("#gsVerwStatus").value;
       const daten = { bezeichnung: name, hersteller: dlg.querySelector("#gsHerst").value.trim() || null, signalwort: dlg.querySelector("#gsSig").value || null,
-        h_saetze: h, bereiche: dlg.querySelector("#gsBer").value.split(",").map(s => s.trim()).filter(Boolean),
+        h_saetze: h, ...(dlg.querySelector(".gs-bereiche") ? { einheit_ids: [...dlg.querySelectorAll(".gs-bereiche input:checked")].map(x => x.value) }
+          : { bereiche: dlg.querySelector("#gsBer").value.split(",").map(s => s.trim()).filter(Boolean) }),
         verwendung: dlg.querySelector("#gsVerw").value.trim() || null, menge: dlg.querySelector("#gsMenge").value.trim() || null, gebinde: dlg.querySelector("#gsGebinde").value.trim() || null,
         lagerort: dlg.querySelector("#gsLager").value.trim() || null, sdb_ausgabe: dlg.querySelector("#gsAusgabe").value || null,
         ba_pfade: [...dlg.querySelectorAll(".gs-ba-wahl input:checked")].map(x => x.value), hinweis: dlg.querySelector("#gsHinweis").value.trim() || null, ba_gruppe: dlg.querySelector("#gsGruppe").value.trim() || null,

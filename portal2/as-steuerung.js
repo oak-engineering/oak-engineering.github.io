@@ -121,7 +121,7 @@ function asMeldungen(box){
     if(!neu) kn.unshift({ t: "Maßnahme ableiten", klasse: "sek", fn: () => { asMassnahmeDialog(null, { quelle: "meldung", quelle_id: m.id }); return false; } });
     asDialog({ titel: neu ? "Neue Meldung" : AS_MELDEART[m.art], inhalt: `<div class="form">
       ${asAuswahl("Art", "art", m.art, Object.entries(AS_MELDEART))}${asFeld("Datum", "datum", m.datum, "date")}
-      ${asAuswahl("Bereich", "einheit_id", m.einheit_id || "", [["", "–"]].concat(asT("as_einheit").map(e => [e.id, e.name])), "voll")}
+      ${asBereichWahl("Bereich", "einheit_id", m.einheit_id || "", "voll", "– betriebsweit –")}
       ${asFeld("Was ist passiert / was fällt auf?", "beschreibung", m.beschreibung, "textarea", "voll")}
       ${!neu ? asAuswahl("Status", "status", m.status, [["neu", "neu"], ["in_arbeit", "in Arbeit"], ["erledigt", "erledigt"]]) : ""}
       ${!neu ? asFeld("Rückmeldung an den Melder", "rueckmeldung", m.rueckmeldung, "textarea", "voll") : ""}</div>

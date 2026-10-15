@@ -624,7 +624,7 @@ function asSvTerminDialog(t, vorlage){
     if(!/^\d{4}-\d{2}-\d{2}$/.test(w.faellig_am || "")){ asMeldung("Bitte das Fälligkeitsdatum eintragen."); return false; }
     const wer = asSvNameLesen(w); if(!wer){ asMeldung("Bitte Ihren Namen eintragen."); return false; }
     const daten = { titel: w.titel.slice(0, 200), art: w.art || "pruefung", faellig_am: w.faellig_am, intervall_monate: parseInt(w.intervall_monate, 10) || null,
-      objekt: w.objekt || null, zustaendig: w.zustaendig || null, grundlage: w.grundlage || null, notiz: w.notiz || null,
+      objekt: w.objekt || null, zustaendig: w.zustaendig || null, grundlage: w.grundlage || null, notiz: w.notiz || null, einheit_id: w.einheit_id || null,
       unterlagen: [...d.querySelectorAll("[data-ul]:checked")].map(x => x.dataset.ul),
       geaendert_von: wer, geaendert_am: new Date().toISOString() };
     try{
@@ -650,6 +650,7 @@ function asSvTerminDialog(t, vorlage){
       ${vorlage && !v[2] ? `<p class="hinweis voll">Frist bitte aus der Gefährdungsbeurteilung übernehmen.</p>` : ""}
       <label class="voll">Gerät, Maschine oder Bereich<input type="text" data-f="objekt" list="svObjekte" maxlength="200" value="${esc(wert("objekt", ""))}" placeholder="z. B. Stapler 3, Halle 14"></label>
       <datalist id="svObjekte">${masch.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
+      ${asBereichWahl("Bereich", "einheit_id", t ? (t.einheit_id || "") : null, "voll", "– betriebsweit –")}
       <label class="voll">Zuständig<input type="text" data-f="zustaendig" maxlength="120" value="${esc(wert("zustaendig", ""))}" placeholder="z. B. Instandhaltung, Fa. Muster (Prüfer)"></label>
       <label class="voll">Grundlage<input type="text" data-f="grundlage" maxlength="300" value="${esc(wert("grundlage", v[3]))}"></label>
       <label class="voll">Notiz<textarea data-f="notiz" maxlength="2000">${esc(wert("notiz", ""))}</textarea></label>

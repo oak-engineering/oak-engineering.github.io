@@ -132,7 +132,7 @@ function asPfFormular(o, art, mid){
     ${asAuswahl("Prüfart", "art", o ? o.art : a.id, AS_PF_ARTEN.map(x => [x.id, x.titel]), "voll")}
     ${asFeld("Bezeichnung (z. B. „Not-Halt-Taster Bedienseite“, „Leiter Nr. 47“)", "bezeichnung", o ? o.bezeichnung : "", "text", "voll")}
     ${asAuswahl("Anlage", "maschinen_id", o ? o.maschinen_id || "" : mid || "", [["", "– keine (Bereich / allgemein) –"]].concat(anl.map(d => [d.maschinen_id, (d.maschine || d.titel) + " (" + d.maschinen_id + ")"])))}
-    ${asAuswahl("Bereich", "einheit_id", o ? o.einheit_id || "" : "", [["", "–"]].concat(asT("as_einheit").map(e => [e.id, e.name])))}
+    ${asBereichWahl("Bereich", "einheit_id", o ? o.einheit_id || "" : null, "", "– wie die Anlage / betriebsweit –")}
     ${asFeld("Standort / Ort", "ort", o ? o.ort : "")}
     ${asFeld("Inventar-/Geräte-Nr.", "inventar_nr", o ? o.inventar_nr : "")}
     ${asFeld("Prüfintervall in Monaten", "intervall_monate", o ? o.intervall_monate : a.intervall, "number")}

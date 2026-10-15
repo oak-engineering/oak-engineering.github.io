@@ -20,7 +20,7 @@ async function asBetriebLaden(neu){
   if(!neu && AS_B.kunde === AS.kunde && AS_B.docs) return;
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const [docs, kurz] = await Promise.all([
-    apiGet("/rest/v1/portal_dokumente?select=id,kunde,kunde_slug,maschine,maschinen_id,maschinentyp,storage_path,typen,status,updated_at,kategorie,titel,doc_typ,stand,url,sortierung"
+    apiGet("/rest/v1/portal_dokumente?select=id,kunde,kunde_slug,maschine,maschinen_id,maschinentyp,storage_path,typen,status,updated_at,kategorie,titel,doc_typ,stand,url,sortierung,einheit_id"
       + k + "&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc").catch(() => []),
     apiGet(storagePfad(AS.kunde + "/anlagenkataster/kurzinfo.json")).catch(() => ({}))]);
   AS_B.docs = docs || []; AS_B.kurz = kurz && typeof kurz === "object" && !Array.isArray(kurz) ? kurz : {}; AS_B.kunde = AS.kunde;
@@ -118,12 +118,13 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
       <div class="filterleiste"><input type="search" id="anlSuche" placeholder="Suchen (Name, Nr., Typ, Bereich)" value="${esc(st.q)}"></div>
       <div class="zeilen">${sicht.map(z => { const d = z.d;
         return `<div class="z" data-anl="${esc(z.mid)}"><div><b>${asPunkt(AS_BAND_FARBE[z.band])}${esc(d.maschine || d.titel)} <span class="hinweis">${esc(z.mid || "")}</span></b>
-          <small>${esc(String(d.maschinentyp || "").replace(/\s*\(.*\)\s*$/, ""))}${z.ki.bereich ? " · " + esc(z.ki.bereich) : ""}${z.ki.baujahr ? " · Bj. " + esc(z.ki.baujahr) : ""} · ${z.offen} offene Mängel${z.band === "aus" ? " · außer Betrieb" : ""}</small>
+          <small>${esc(String(d.maschinentyp || "").replace(/\s*\(.*\)\s*$/, ""))}${d.einheit_id ? " · " + esc(asBereichName1(d.einheit_id)) : (z.ki.bereich ? " · " + esc(z.ki.bereich) + " (kein Bereich zugeordnet)" : " · kein Bereich zugeordnet")}${z.ki.baujahr ? " · Bj. " + esc(z.ki.baujahr) : ""} · ${z.offen} offene Mängel${z.band === "aus" ? " · außer Betrieb" : ""}</small>
           <div class="reihe" style="margin-top:6px;gap:6px;flex-wrap:wrap">${AS_DOKTYPEN.filter(([t]) => (d.typen || []).includes(t)).map(([t, l]) => { const v = veraltet(d, t);
               return `<button class="btn sek klein" data-dok="${esc(asAnlageDokUrl(d, t, l))}" data-titel="${esc((d.maschine || d.titel) + " · " + l)}">${esc(l)}${v ? " ⚠" : ""}</button>`; }).join("")}
             ${d.maschinen_id ? `<button class="btn sek klein" data-dok="${esc("maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id))}" data-titel="${esc(d.maschine || d.titel)}">Maschine</button>
               <button class="btn sek klein" data-dok="${esc("qr.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id))}" data-titel="QR · ${esc(d.maschine || d.titel)}">QR</button>` : ""}
-            ${z.sys ? `<button class="btn klein" data-sys="${z.sys.id}">BdA in der App</button>` : ""}</div></div>
+            ${z.sys ? `<button class="btn klein" data-sys="${z.sys.id}">BdA in der App</button>` : ""}
+            ${(AS.fachkraft || AS.gf) && d.maschinen_id ? `<button class="btn sek klein" data-anlber="${esc(d.maschinen_id)}">Bereich</button>` : ""}</div></div>
           ${asChip(AS_BAND_TEXT[z.band], AS_BAND_FARBE[z.band])}</div>`; }).join("") || `<div class="leer">Keine Anlagen${st.q || st.band ? " zum Filter" : ""}.</div>`}</div>
       <p class="hinweis">⚠ = Dokument nicht mehr aktuell: ein Mangel wurde nach dem Dokumentstand behoben und ist noch nicht in die Unterlagen übernommen.</p></div>`;
   main.querySelectorAll("[data-band]").forEach(k => k.onclick = () => { st.band = st.band === k.dataset.band ? "" : k.dataset.band; AS_SEITEN.anlagen.render(main); });
@@ -131,6 +132,13 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   asDokKnoepfe(main);
   main.querySelectorAll("[data-sys]").forEach(b => b.onclick = ev => { ev.stopPropagation(); AS.reiter.bda = b.dataset.sys; asGehe("bda/" + b.dataset.sys); });
   const an = document.getElementById("anlNeu"); if(an) an.onclick = () => asAnlageNeuDialog(main);
+  main.querySelectorAll("[data-anlber]").forEach(b => b.onclick = ev => { ev.stopPropagation();
+    const d = asAnlagen().find(x => x.maschinen_id === b.dataset.anlber); if(!d) return;
+    asDialog({ titel: "Bereich: " + (d.maschine || d.titel), inhalt: `<div class="form">${asBereichWahl("Bereich (Organisation)", "einheit_id", d.einheit_id || "", "voll", "– keinem Bereich zugeordnet –")}</div>
+      <p class="hinweis">Mängel, Maßnahmen, Prüfungen und Termine dieser Anlage ziehen mit, sofern sie nicht ausdrücklich einem anderen Bereich zugeordnet sind.</p>`,
+      knoepfe: [{ t: "Speichern", fn: async dl => { const w = asWerte(dl);
+        await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: d.maschinen_id, p_einheit: w.einheit_id || null });
+        await asBetriebLaden(true); await asLaden(); asMeldung("Bereich gespeichert"); asZeige(); } }] }); });
 }};
 
 /* ---------------- Neue Anlage anlegen (Plan intern/portal-eigenstaendig.md, Schritt 4) ----------------
@@ -147,7 +155,8 @@ function asAnlageNeuDialog(main){
       ${asFeld("Maschinenart (z. B. Spritzgießmaschine)", "art", "")}
       ${asFeld("Hersteller", "hersteller", "")}${asFeld("Typ / Modell", "typ", "")}
       ${asFeld("Baujahr", "baujahr", "")}${asFeld("Serien-Nr.", "seriennr", "")}
-      ${asFeld("Bereich / Standort", "bereich", "", "text", "voll")}</div>
+      ${asBereichWahl("Bereich (Organisation)", "einheit_id", null, "voll", "– noch keinem Bereich zugeordnet –")}
+      ${asFeld("Standort / Raum (optional)", "bereich", "", "text", "voll")}</div>
       <p class="hinweis">Aus der Vorlage werden Gefährdungen, Schutzmaßnahmen und Betriebsanweisung übernommen – <b>nicht</b> Fotos, Mängel und
         Begehungsprotokoll. Prüfen und ergänzen Sie danach die Beurteilung an der neuen Anlage und geben Sie sie frei.</p>`,
     knoepfe: [{ t: "Anlegen", fn: async d => {
@@ -163,6 +172,7 @@ function asAnlageNeuDialog(main){
                   : JSON.parse(await apiGet(storagePfad(vorlage.storage_path), true));
         }catch(e){ asMeldung("Vorlage konnte nicht geladen werden: " + (e.message || e)); return false; }
       }
+      if(w.einheit_id && !w.bereich) w.bereich = asBereichName1(w.einheit_id);
       const doc = asAnlageAusVorlage(vd, vorlage, w);
       let mid;
       try{ mid = await apiSend("POST", "/rest/v1/rpc/portal_anlage_anlegen", { p_slug: AS.kunde, p_maschine: w.name, p_maschinentyp: w.art || (vorlage && vorlage.maschinentyp) || null,
@@ -174,6 +184,7 @@ function asAnlageNeuDialog(main){
         if(typeof asUwQrLib === "function" && await asUwQrLib()){ const q = qrcode(0, "M"); q.addData(url); q.make();
           await apiSend("POST", "/rest/v1/rpc/portal_anlage_qr_setzen", { p_slug: AS.kunde, p_mid: mid, p_qr_svg: q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }), p_qr_url: url }); }
       }catch(e){ console.warn("QR", e); }
+      if(w.einheit_id) await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: mid, p_einheit: w.einheit_id }).catch(e => asMeldung("Bereich nicht gesetzt: " + (e.message || e)));
       await asBetriebLaden(true);
       asMeldung("Anlage " + w.name + " (" + mid + ") angelegt – Beurteilung jetzt prüfen und ergänzen");
       AS_SEITEN.anlagen.render(main);
@@ -315,6 +326,7 @@ function asMangelNeu(){
       ${asAuswahl("Wo?", "mid", "", [["ALLG-HALLE", "Halle / allgemein"]].concat(anl.map(d => [d.maschinen_id, (d.maschine || d.titel) + " (" + d.maschinen_id + ")"])), "voll")}
       ${asFeld("Was ist der Mangel?", "label", "", "textarea", "voll")}
       ${asAuswahl("Wie gefährlich?", "band", "besorgnis", [["gefahr", "Gefahr – sofort handeln"], ["besorgnis", "Besorgnis – bald beheben"], ["akzeptanz", "gering"]])}
+      ${asBereichWahl("Bereich", "einheit_id", null, "", "– wie die Anlage –")}
       <label class="voll">Foto (optional)<input type="file" accept="image/*" capture="environment" id="mgFoto"></label></div>`,
     knoepfe: [{ t: "Melden", fn: async d => { const w = asWerte(d), f = d.querySelector("#mgFoto").files[0];
       if(!w.label){ asMeldung("Bitte den Mangel beschreiben."); return false; }
@@ -324,7 +336,7 @@ function asMangelNeu(){
       const r = await apiSend("POST", "/rest/v1/portal_maengel", { kunde_slug: AS.kunde, kunde: AS.org ? AS.org.name : null, maschinen_id: w.mid,
         maschine: dok ? dok.maschine || dok.titel : "Halle / allgemein", maschinentyp: dok ? dok.maschinentyp : "Tätigkeit / allgemein", schluessel: sl,
         thema: "betrieb_meldung", thema_rang: 0, label: w.label, band: w.band, prioritaet: { gefahr: 10, besorgnis: 3010, akzeptanz: 6010 }[w.band],
-        status: "offen", foto_pfad: foto, gemeldet_von: AS.ich, gemeldet_am: asHeute() }, "return=representation");
+        status: "offen", foto_pfad: foto, gemeldet_von: AS.ich, gemeldet_am: asHeute(), einheit_id: w.einheit_id || null }, "return=representation");
       if(r && r[0]) await asMgLog(r[0].id, "erfasst", w.label, null);
       await asLaden(); asZeige(); asMeldung("Mangel gemeldet"); } }] });
 }

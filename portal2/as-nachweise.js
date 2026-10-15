@@ -266,7 +266,7 @@ function asNwDialog(n){
       <label class="voll">Name der/des Beschäftigten<input type="text" data-f="person_name" list="asNwPersonen" maxlength="120" value="${esc(w("person_name"))}" autocomplete="off"></label>
       <datalist id="asNwPersonen">${asNwPersonen().map(p => `<option value="${esc(p)}">`).join("")}</datalist>
       ${asAuswahl("Art", "art", w("art") || "stapler", Object.entries(AS_NW_ART))}
-      ${asAuswahl("Bereich", "as_einheit_id", w("as_einheit_id"), einheiten)}
+      ${asBereichWahl("Bereich", "as_einheit_id", n ? (w("as_einheit_id") || "") : null, "", "– betriebsweit –")}
       <p class="hinweis voll" id="asNwHinweis"></p>
       <label class="voll">Bezeichnung (z. B. Frontstapler, Flurbedienter Kran)<input type="text" data-f="bezeichnung" maxlength="200" value="${esc(w("bezeichnung"))}"></label>
       ${asFeld("Ausgestellt am", "ausgestellt_am", w("ausgestellt_am"), "date")}

@@ -230,7 +230,7 @@ function asVfDatenZeilen(v){
     ["Bereich", esc(AS_VF_DOMAENE[v.domaene] || v.domaene || "—")],
     ["Wann", asVfDatum(v.ereignis_am) + (v.ereignis_zeit ? " · " + esc(v.ereignis_zeit) : "")],
     ["Wo", [v.ort, v.anlage].filter(Boolean).map(esc).join(" · ") || "—"],
-    v.as_einheit_id ? ["Organisationseinheit", esc(asEinheitName(v.as_einheit_id))] : null,
+    v.as_einheit_id ? ["Bereich", esc(asEinheitName(v.as_einheit_id))] : null,
     umwelt ? ["Stoff / Menge", [v.stoff, v.menge].filter(Boolean).map(esc).join(" · ") || "—"] : null,
     umwelt ? ["Gelangt nach", esc(v.wohin || "—")] : null,
     ["Merkmale", [v.verletzte ? "Person verletzt" : "", v.erste_hilfe ? "Erste Hilfe geleistet" : ""].filter(Boolean).join(" · ") || "—"],
@@ -260,8 +260,8 @@ function asVfDetail(id){
     <h3 style="margin:16px 0 6px">Bearbeitung${AS.admin ? " durch OAK" : ""}</h3>
     <div class="form">
       ${asAuswahl("Status", "status", v.status || "offen", Object.entries(AS_VF_STATUS))}
-      ${asAuswahl("Bereich", "domaene", v.domaene || "arbeitssicherheit", Object.entries(AS_VF_DOMAENE))}
-      ${einheiten.length ? asAuswahl("Organisationseinheit", "as_einheit_id", v.as_einheit_id || "", [["", "– keine –"]].concat(einheiten.map(e => [e.id, e.name]))) : ""}
+      ${asAuswahl("Themenfeld", "domaene", v.domaene || "arbeitssicherheit", Object.entries(AS_VF_DOMAENE))}
+      ${asBereichWahl("Bereich", "as_einheit_id", v.as_einheit_id || "", "", "– betriebsweit –")}
       ${asFeld("Bearbeitung / veranlasste Maßnahme", "bearbeitung", v.bearbeitung, "textarea", "voll")}
       ${asFeld("Rückmeldung an den Melder", "rueckmeldung", v.rueckmeldung, "textarea", "voll")}
     </div>
@@ -356,7 +356,7 @@ function asVfErfassen(umwelt){
       <label>Uhrzeit / Schicht<input type="text" data-f="ereignis_zeit" placeholder="z. B. 22:30 oder Nachtschicht"></label>
       <label>Ort<input type="text" data-f="ort" placeholder="Halle, Bereich"></label>
       ${asFeld("Maschine / Anlage", "anlage", "")}
-      ${einheiten.length ? asAuswahl("Organisationseinheit", "as_einheit_id", "", [["", "– keine –"]].concat(einheiten.map(e => [e.id, e.name]))) : ""}
+      ${asBereichWahl("Bereich", "as_einheit_id", null, "", "– betriebsweit –")}
       <label class="voll">Was ist passiert?<textarea data-f="beschreibung" rows="5"></textarea></label>
       <div class="voll vfUmwelt form" style="padding:0">
         ${asFeld("Stoff", "stoff", "")}${asFeld("Menge", "menge", "")}
@@ -393,7 +393,7 @@ function asVfErfassen(umwelt){
 /* ---------------- Maßnahme ableiten (V2-Tabelle as_massnahme, Quelle = Meldung) ---------------- */
 function asVfMassnahme(v){
   const text = v.langzeitmassnahme || v.sofortmassnahme || "";
-  const vorgabe = { quelle: "meldung", quelle_id: v.id, stop: "O", text, umsetzung: "zentral", status: "offen" };
+  const vorgabe = { quelle: "meldung", quelle_id: v.id, stop: "O", text, umsetzung: "zentral", status: "offen", einheit_id: v.as_einheit_id || null };
   if(typeof asMassnahmeDialog === "function"){ asMassnahmeDialog(null, vorgabe); return; }
   asDialog({ titel: "Maßnahme ableiten", inhalt: `<div class="form">${asFeld("Maßnahme", "text", text, "textarea", "voll")}</div>`,
     knoepfe: [{ t: "Anlegen", fn: async d => { const w = asWerte(d); if(!w.text){ asMeldung("Text fehlt"); return false; }

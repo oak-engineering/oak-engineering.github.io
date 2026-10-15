@@ -38,7 +38,7 @@ function asSystemDialog(s){
     await asLoeschen("as_arbeitssystem", s.id); await asLaden(); asGehe("bda"); } });
   asDialog({ titel: neu ? "Neues Arbeitssystem" : s.name, inhalt: `<div class="form">
       ${asFeld("Name", "name", s.name, "text", "voll")}
-      ${asAuswahl("Bereich", "einheit_id", s.einheit_id || "", [["", "–"]].concat(asT("as_einheit").map(e => [e.id, e.name])))}
+      ${asBereichWahl("Bereich", "einheit_id", s.einheit_id || "", "", "– betriebsweit –")}
       ${asFeld("Betriebsanweisungen vorhanden und ausgehängt", "ba_vorhanden", s.ba_vorhanden, "checkbox")}
       ${asFeld("Rollen (mit Komma), z. B. Bediener, Einrichter, Instandhaltung", "rollen", asListe(s.rollen).join(", "), "text", "voll")}
       ${asFeld("Anlagen / Arbeitsmittel (mit Komma) – für Maßnahmen je Anlage", "anlagen", asListe(s.anlagen).join(", "), "text", "voll")}
@@ -175,6 +175,7 @@ function asMassnahmeDialog(m, vorgabe, sys){
   const anlagen = sys ? asListe(sys.anlagen) : [];
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.text){ asMeldung("Text fehlt"); return false; }
     w.termin = w.termin || null;
+    if("einheit_id" in w) w.einheit_id = w.einheit_id || null;
     if(neu && w.umsetzung === "anlage"){
       const gew = [...d.querySelectorAll("[data-anl]:checked")].map(x => x.value);
       if(!gew.length){ asMeldung("Mindestens eine Anlage wählen"); return false; }
@@ -187,7 +188,8 @@ function asMassnahmeDialog(m, vorgabe, sys){
       ${asAuswahl("STOP-Stufe", "stop", m.stop, Object.entries(AS_STOP).map(([k, v]) => [k, k + " – " + v]))}
       ${neu ? asAuswahl("Umsetzung", "umsetzung", m.umsetzung, [["zentral", "zentral für alle"], ["anlage", "je Anlage (Zähler „x von y“)"]]) : ""}
       ${asFeld("Maßnahme", "text", m.text, "textarea", "voll")}
-      ${asFeld("Verantwortlich", "verantwortlich", m.verantwortlich)}${asFeld("Bis wann", "termin", m.termin, "date")}</div>
+      ${asFeld("Verantwortlich", "verantwortlich", m.verantwortlich)}${asFeld("Bis wann", "termin", m.termin, "date")}
+      ${m.gefaehrdung_id ? "" : asBereichWahl("Bereich", "einheit_id", neu ? null : (m.einheit_id || ""), "", "– betriebsweit –")}</div>
       ${neu && anlagen.length ? `<div style="margin-top:10px"><span class="hinweis">Anlagen (bei „je Anlage“):</span><br>${anlagen.map(a => `<label style="margin-right:12px"><input type="checkbox" data-anl value="${esc(a)}" checked> ${esc(a)}</label>`).join("")}</div>` : ""}
       <p class="hinweis">Rangfolge nach § 4 ArbSchG: erst S und T, dann O, zuletzt P (z. B. Gehörschutz ist P).</p>`, knoepfe: kn });
 }
@@ -249,7 +251,7 @@ AS_SEITEN.mitzeichnung = { titel: "Mitzeichnung", icon: "✎", sort: 6, render(m
     ${liste.map(x => `<div class="z" data-x="${x.id}"><div><b>${esc(x.titel)}</b><small>${esc((AS_KAT.mitzeichnung[x.art] || {}).titel || x.art)} · angemeldet ${asDat(x.angemeldet_am)} von ${esc(x.angemeldet_von || "–")}</small></div>${st(x)}</div>`).join("") || `<div class="leer">Noch keine Vorhaben.</div>`}</div></div>`;
   document.getElementById("mzNeu").onclick = () => asDialog({ titel: "Vorhaben anmelden", inhalt: `<div class="form">
       ${asAuswahl("Art", "art", "maschine", Object.entries(AS_KAT.mitzeichnung).map(([k, v]) => [k, v.titel]), "voll")}
-      ${asFeld("Kurzbezeichnung", "titel", "", "text", "voll")}${asAuswahl("Bereich", "einheit_id", "", [["", "–"]].concat(asT("as_einheit").map(e => [e.id, e.name])))}
+      ${asFeld("Kurzbezeichnung", "titel", "", "text", "voll")}${asBereichWahl("Bereich", "einheit_id", null, "", "– betriebsweit –")}
       ${asFeld("Angemeldet von", "angemeldet_von", AS.ich)}${asFeld("Beschreibung", "beschreibung", "", "textarea", "voll")}</div>`,
     knoepfe: [{ t: "Anmelden", fn: async d => { const w = asWerte(d); if(!w.titel){ asMeldung("Bezeichnung fehlt"); return false; }
       w.einheit_id = w.einheit_id || null; await asSpeichern("as_mitzeichnung", w); asZeige(); } }] });

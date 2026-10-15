@@ -126,7 +126,7 @@ function asBeauftragterDialog(b){
   asDialog({ titel: neu ? "Person erfassen" : b.person, inhalt: `<div class="form">
       ${asFeld("Name", "person", b.person, "text", "voll")}
       ${asAuswahl("Funktion", "funktion", b.funktion, Object.entries(AS_KAT.beauftragte).map(([k, v]) => [k, v.titel]))}
-      ${asAuswahl("Bereich", "einheit_id", b.einheit_id || "", [["", "– Betrieb gesamt –"]].concat(asT("as_einheit").map(e => [e.id, e.name])))}
+      ${asBereichWahl("Bereich", "einheit_id", b.einheit_id || "", "", "– Betrieb gesamt –")}
       ${asFeld("Schicht (leer = alle)", "schicht", b.schicht, "number")}${asFeld("Schriftlich bestellt am", "bestellt_am", b.bestellt_am, "date")}
       ${asFeld("Letzte Schulung", "schulung_am", b.schulung_am, "date")}${asFeld("Gültig bis (leer = aus Schulung berechnen)", "gueltig_bis", b.gueltig_bis, "date")}
       ${asFeld("Vertretung", "vertretung", b.vertretung, "text", "voll")}</div>`, knoepfe: kn });
