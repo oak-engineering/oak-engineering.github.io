@@ -956,7 +956,7 @@ function asSvVersionenZeigen(box){
   if(!liste){ box.innerHTML = `<div class="karte"><div class="leer">Versionshinweise konnten nicht geladen werden.</div></div>`; return; }
   box.innerHTML = liste.map((v, i) => `<div class="karte"><h2>Version ${esc(v.version)} <span>${i === 0 ? asChip("aktuell", "blau") + " " : ""}<span class="hinweis">${esc(asDat(v.datum))}</span></span></h2>
       ${v.titel ? `<p><b>${esc(v.titel)}</b></p>` : ""}
-      ${(v.gruppen || []).map(g => `<div class="frage"><div class="ft">${esc(g[0])}</div><ul style="margin:6px 0 0;padding-left:20px;font-size:14px">${(g[1] || []).map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>`).join("")}</div>`).join("")
+      ${(v.gruppen || []).map(g => `<div class="frage"><div class="ft">${esc(g[0])}</div><ul class="kurzliste" style="margin-top:6px">${(g[1] || []).map(p => `<li>${esc(p)}</li>`).join("")}</ul></div>`).join("")}</div>`).join("")
     + `<p class="hinweis">Versionshinweise des OAK EHS-Cockpits (Kundenportal) – die Arbeitsschutz-App nutzt dieselben Daten.</p>`;
 }
 

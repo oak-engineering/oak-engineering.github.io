@@ -491,7 +491,7 @@ async function asNwPflichten(box){
   const offen = punkte.filter(p => !p.ok).sort((a, b) => (b.schwer ? 1 : 0) - (a.schwer ? 1 : 0)).slice(0, 3);
   box.innerHTML = `<div class="karte"><h2>Stand der Pflichten <button class="btn sek klein nodruck" onclick="window.print()">Drucken</button></h2>
       <div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <div style="font-size:40px;font-weight:700;line-height:1">${erfuellt}<span class="hinweis" style="font-size:14px;font-weight:400"> von ${punkte.length}</span></div>
+        <div class="grosszahl">${erfuellt}<span class="hinweis"> von ${punkte.length}</span></div>
         <div style="flex:1;min-width:200px"><p class="hinweis">Was bei einer Prüfung durch Behörde oder Berufsgenossenschaft zuerst gefragt wird.</p>
           <div class="balken" role="img" aria-label="${anteil} Prozent erfüllt" style="margin-top:6px"><span style="width:${anteil}%;background:${erfuellt === punkte.length ? "var(--gruen)" : "var(--blau)"}"></span></div></div></div>
       ${punkte.map(p => link(p, `<span>${asChip(p.ok ? "erfüllt" : "offen", p.ok ? "gruen" : p.schwer ? "rot" : "gelb")}</span>
