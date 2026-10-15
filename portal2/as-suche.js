@@ -121,12 +121,11 @@ function asSuZeigen(){
   const artName = a => (AS_SU_ARTEN.find(x => x[0] === a) || [a, a])[1];
   box.innerHTML = `<div class="karte nodruck" style="padding:10px 14px">
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <input type="search" id="suFeld2" value="${esc(AS_SU.q)}" placeholder="Suchbegriff" style="flex:1 1 220px;max-width:420px" autocomplete="off">
         <span class="hinweis">${bName ? "Bereich: <b>" + esc(bName) + "</b> (oben umstellen)" : "Alle Bereiche – oben neben dem Betrieb auf einen Bereich einschränken"}</span></div>
       <div class="reiter" style="margin-top:8px"><button class="${!AS_SU.art ? "an" : ""}" data-suart="">Alle (${alle.length})</button>${AS_SU_ARTEN.filter(([a]) => zahl(a)).map(([a, t]) =>
         `<button class="${AS_SU.art === a ? "an" : ""}" data-suart="${a}">${esc(t)} (${zahl(a)})</button>`).join("")}</div></div>
     ${AS_SU.q.length < 2 ? `<div class="karte"><div class="leer">Mindestens zwei Zeichen eingeben. Gesucht wird in Funktionen, Unterlagen, Anlagen, Mängeln, Maßnahmen, Beurteilungen, Gefahrstoffen, Personen, Nachweisen, Prüfungen, Terminen und Bereichen.</div></div>`
-      : `<div class="karte"><div class="zeilen">${sicht.slice(0, 200).map((t, i) => `<div class="z" data-su="${i}" style="cursor:pointer"><div><b>${esc(t.titel)}</b><small>${esc(artName(t.art))}${t.sub ? " · " + esc(t.sub) : ""}</small></div>
+      : `<div class="karte"><div class="zeilen">${sicht.slice(0, 200).map((t, i) => `<div class="z" data-su="${i}" style="cursor:pointer"><div><b>${esc(t.titel)}</b><small>${esc(t.sub)}</small></div>
         <span class="reihe" style="gap:6px">${t.sdb ? `<button class="btn sek klein" data-susdb="${i}">SDB</button>` : ""}<span class="chip">${esc(artName(t.art))}</span></span></div>`).join("")
         || `<div class="leer">Nichts gefunden zu „${esc(AS_SU.q)}“${bName ? " im Bereich " + esc(bName) : ""}.</div>`}</div>
         ${sicht.length > 200 ? `<p class="hinweis">Die ersten 200 von ${sicht.length} Treffern – Suchbegriff genauer fassen.</p>` : ""}</div>`}`;
@@ -134,7 +133,4 @@ function asSuZeigen(){
   box.querySelectorAll("[data-su]").forEach(z => z.onclick = () => sicht[+z.dataset.su].los());
   box.querySelectorAll("[data-susdb]").forEach(b => b.onclick = ev => { ev.stopPropagation(); const t = sicht[+b.dataset.susdb];
     asDokOeffnen(asViewerUrl("pdf", t.sdb, "Sicherheitsdatenblatt · " + t.titel), "Sicherheitsdatenblatt · " + t.titel); });
-  const f2 = box.querySelector("#suFeld2");
-  if(f2){ f2.oninput = () => { clearTimeout(AS_SU.timer); AS_SU.timer = setTimeout(() => { AS_SU.q = f2.value.trim(); const f = document.getElementById("suchFeld"); if(f) f.value = AS_SU.q;
-      asSuZeigen(); const n = document.getElementById("suFeld2"); if(n){ n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 200); }; }
 }
