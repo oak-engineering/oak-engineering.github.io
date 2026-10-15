@@ -19,26 +19,60 @@ function asSuNorm(s){
     .normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[®™]/g, "");
 }
 
-/* ---- Suchfeld in der Kopfzeile ---- */
+/* ---- Kopfzeile: Lupe öffnet das Suchfeld, Menü enthält Betrieb/Bereich/Konto (Nikolai 15.10.2026) ---- */
+function asSuOeffnen(){
+  const kopf = document.querySelector(".kopf"), f = document.getElementById("suchFeld"); if(!kopf || !f) return;
+  kopf.classList.add("sucht"); asKopfMenue(false); f.value = AS_SU.q; f.focus(); f.select();
+}
+function asSuSchliessen(){
+  const kopf = document.querySelector(".kopf"); if(kopf) kopf.classList.remove("sucht");
+}
+function asKopfMenue(auf){
+  const m = document.getElementById("kopfMenue"), k = document.getElementById("kopfMenueKnopf"); if(!m) return;
+  auf = auf === undefined ? m.hidden : auf;
+  m.hidden = !auf; if(k) k.setAttribute("aria-expanded", String(auf));
+}
 function asSuFeld(){
   if(document.getElementById("suchFeld")) return;
-  const kopf = document.querySelector(".kopf"), ich = kopf && kopf.querySelector(".ich"); if(!kopf) return;
+  const kopf = document.querySelector(".kopf"); if(!kopf) return;
   const f = document.createElement("input");
-  f.type = "search"; f.id = "suchFeld"; f.placeholder = "Suchen …  ( / )"; f.autocomplete = "off"; f.setAttribute("aria-label", "Im Cockpit suchen");
-  kopf.insertBefore(f, ich || null);
+  f.type = "search"; f.id = "suchFeld"; f.placeholder = "Suchen …"; f.autocomplete = "off"; f.setAttribute("aria-label", "Im Cockpit suchen");
+  kopf.insertBefore(f, kopf.querySelector(".kopf-rechts"));
   f.oninput = () => { clearTimeout(AS_SU.timer); AS_SU.timer = setTimeout(() => {
     AS_SU.q = f.value.trim();
     if(AS.seite !== "suche"){ if(AS_SU.q.length >= 2) asGehe("suche"); }
     else asSuZeigen();
   }, 250); };
   f.onkeydown = ev => { if(ev.key === "Enter"){ AS_SU.q = f.value.trim(); AS.seite === "suche" ? asSuZeigen() : asGehe("suche"); }
-    if(ev.key === "Escape"){ f.value = ""; AS_SU.q = ""; if(AS.seite === "suche") history.back(); } };
+    if(ev.key === "Escape"){ f.value = ""; AS_SU.q = ""; asSuSchliessen(); if(AS.seite === "suche") history.back(); } };
+  f.onblur = () => { if(!f.value.trim()) setTimeout(asSuSchliessen, 150); };
+  const lupe = document.getElementById("suchKnopf");
+  if(lupe) lupe.onclick = () => kopf.classList.contains("sucht") && !f.value.trim() ? asSuSchliessen() : asSuOeffnen();
+  const mk = document.getElementById("kopfMenueKnopf"), kx = document.getElementById("kopfKontext");
+  if(mk) mk.onclick = ev => { ev.stopPropagation(); asKopfMenue(); };
+  if(kx) kx.onclick = ev => { ev.stopPropagation(); asKopfMenue(); };
+  document.addEventListener("click", ev => { const m = document.getElementById("kopfMenue");
+    if(m && !m.hidden && !m.contains(ev.target) && !(mk && mk.contains(ev.target))) asKopfMenue(false); });
   document.addEventListener("keydown", ev => {
-    if(ev.key === "/" && !/^(input|textarea|select)$/i.test((ev.target.tagName || "")) && !ev.target.isContentEditable){ ev.preventDefault(); f.focus(); f.select(); }
+    if(ev.key === "Escape") asKopfMenue(false);
+    if(ev.key === "/" && !/^(input|textarea|select)$/i.test((ev.target.tagName || "")) && !ev.target.isContentEditable){ ev.preventDefault(); asSuOeffnen(); }
   });
 }
+function asKopfKontext(){
+  const kx = document.getElementById("kopfKontext"); if(!kx) return;
+  const k = (AS.kunden || []).find(x => x.kunde_slug === AS.kunde), b = typeof asBereichName === "function" ? asBereichName() : "";
+  kx.textContent = (k ? k.name : "Kein Betrieb") + " · " + (b || "Alle Bereiche");
+  kx.hidden = !AS.kunde && !(AS.kunden || []).length;
+}
 const asSuKundeWahlRoh = asKundeWahl;
-asKundeWahl = function(){ asSuKundeWahlRoh(); asSuFeld(); if(AS_SU.kunde !== AS.kunde) AS_SU.daten = null; };
+asKundeWahl = function(){
+  asSuKundeWahlRoh(); asSuFeld(); asKopfKontext();
+  if(AS_SU.kunde !== AS.kunde) AS_SU.daten = null;
+  if(AS.seite === "suche"){ const kopf = document.querySelector(".kopf"), f = document.getElementById("suchFeld"); if(kopf && f && AS_SU.q){ kopf.classList.add("sucht"); if(f.value !== AS_SU.q) f.value = AS_SU.q; } }
+  else if(!(document.getElementById("suchFeld") || {}).value) asSuSchliessen();
+  // Auswahl im Menü: nach dem Wechsel Menü schließen
+  ["kundeSel", "bereichSel"].forEach(id => { const s = document.getElementById(id); if(s) s.addEventListener("change", () => asKopfMenue(false)); });
+};
 
 /* ---- Daten: was schon geladen ist, plus wenige Zusatzabfragen (einmal je Kunde, 2 Minuten gültig) ---- */
 async function asSuDaten(){

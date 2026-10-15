@@ -2,7 +2,7 @@
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>OAK EHS-Cockpit</title>
-<link rel="stylesheet" href="as.css?v=2026-10-15a">
+<link rel="stylesheet" href="as.css?v=2026-10-15b">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2D6A4F">
 <link rel="icon" href="../portal/icons/portal-192.png">
@@ -20,8 +20,18 @@
 <div id="appView" hidden>
   <header class="kopf">
     <div class="marke">OAK <span>EHS-Cockpit</span></div>
-    <div class="kunde-wahl" id="kundeWahl"></div>
-    <div class="ich"><span id="ichName"></span><button class="link" id="abmelden">Abmelden</button></div>
+    <button type="button" class="kopf-kontext" id="kopfKontext" title="Betrieb und Bereich wechseln"></button>
+    <div class="kopf-rechts">
+      <button type="button" class="kopf-icon" id="suchKnopf" aria-label="Suchen" title="Suchen ( / )"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></button>
+      <button type="button" class="kopf-icon" id="kopfMenueKnopf" aria-label="Menü" title="Betrieb, Bereich, Konto" aria-expanded="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <span class="kopf-logo" id="kopfLogo"></span>
+    </div>
+    <div class="kopf-menue" id="kopfMenue" hidden>
+      <div class="km-titel">Betrieb und Bereich</div>
+      <div class="kunde-wahl" id="kundeWahl"></div>
+      <div class="km-titel">Angemeldet</div>
+      <div class="ich"><span id="ichName"></span><button class="link" id="abmelden">Abmelden</button></div>
+    </div>
   </header>
   <div class="rumpf">
     <nav class="seitenleiste" id="nav"></nav>
@@ -43,7 +53,7 @@
 <script src="../portal/aktualitaet.js"></script>
 <script src="as-betrieb.js?v=2026-10-14p"></script>
 <script src="as-handschuhe.js?v=2026-10-15b"></script>
-<script src="as-suche.js?v=2026-10-15b"></script>
+<script src="as-suche.js?v=2026-10-15c"></script>
 <script src="as-verweise.js?v=2026-10-14b"></script>
 <script src="as-nachweise.js?v=2026-10-12a"></script>
 <script src="as-service.js?v=2026-10-14q"></script>
@@ -52,6 +62,6 @@
 <script src="as-pruefungen.js?v=2026-10-13a"></script>
 <script src="as-leistungen.js?v=2026-10-12b"></script>
 <script src="as-leitfaden.js?v=2026-10-14s"></script>
-<script src="as-app.js?v=2026-10-12le"></script>
+<script src="as-app.js?v=2026-10-15a"></script>
 <script>asStart();</script>
 </body></html>

@@ -18,12 +18,10 @@ function asMarkeAnwenden(){
   let meta = document.querySelector('meta[name="theme-color"]');
   if(!meta){ meta = document.createElement("meta"); meta.name = "theme-color"; document.head.appendChild(meta); }
   meta.content = m.farbe || "#2D6A4F";
-  const marke = document.querySelector(".kopf .marke"); if(!marke) return;
+  const marke = document.getElementById("kopfLogo"); if(!marke) return;
   let img = document.getElementById("asKundeLogo");
   if(m.logo){
-    if(!img){ img = document.createElement("img"); img.id = "asKundeLogo";
-      img.style.cssText = "height:30px;max-width:120px;object-fit:contain;background:#fff;border-radius:6px;padding:2px 6px;margin-left:8px;vertical-align:middle";
-      marke.appendChild(img); }
+    if(!img){ img = document.createElement("img"); img.id = "asKundeLogo"; marke.appendChild(img); }
     img.src = /^https:/.test(m.logo) ? m.logo : "../portal/" + m.logo; img.alt = (AS.kundeV1 && AS.kundeV1.name) || ""; img.hidden = false;
   } else if(img) img.hidden = true;
 }
@@ -177,7 +175,7 @@ document.addEventListener("DOMContentLoaded", asUnterleiste);
 /* ---------------- Passwort ändern (nicht beim gemeinsamen Schichtführer-Zugang, wie V1) ---------------- */
 function asPasswortKnopf(){
   const ich = document.querySelector(".kopf .ich"); if(!ich || document.getElementById("asPw") || /^Schichtf/i.test(AS.kontoName || AS.ich || "")) return;
-  const b = document.createElement("button"); b.className = "link"; b.id = "asPw"; b.textContent = "Passwort"; b.style.marginRight = "10px";
+  const b = document.createElement("button"); b.className = "link"; b.id = "asPw"; b.textContent = "Passwort ändern";
   ich.insertBefore(b, document.getElementById("abmelden"));
   b.onclick = () => asDialog({ titel: "Passwort ändern", inhalt: `<div class="form">${asFeld("Neues Passwort (mindestens 8 Zeichen)", "p1", "", "password", "voll")}${asFeld("Wiederholen", "p2", "", "password", "voll")}</div>`,
     knoepfe: [{ t: "Speichern", fn: async d => { const w = asWerte(d);
