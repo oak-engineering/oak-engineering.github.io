@@ -318,11 +318,10 @@ AS_SEITEN.bericht = { titel: "Jahresbericht", icon: "▣", sort: 9, render(main)
   const empf = (d.bericht_empfehlungen || {})[J] || "";
   const abschnitt = (t, inhalt) => `<div class="karte"><h2>${t}</h2>${inhalt}</div>`;
   const soll = asBeauftragteSoll();
-  main.innerHTML = `<div class="nodruck" style="display:flex;gap:8px;align-items:center;margin-bottom:12px">Jahr
-      <span class="filterleiste" style="display:inline-flex;margin:0"><select id="bJahr" aria-label="Jahr">${[0, 1, 2].map(i => new Date().getFullYear() - i).map(y => `<option value="${y}" ${y === jahr ? "selected" : ""}>Jahr: ${y}</option>`).join("")}</select></span>
-      <button class="btn sek klein" onclick="window.print()">Drucken / PDF</button>${AS.fachkraft ? `<button class="btn adm klein" id="bErstellt">Als erstellt vermerken</button>` : ""}</div>
-    <h1 class="seite">Jahresbericht der Fachkraft für Arbeitssicherheit ${jahr}</h1>
+  main.innerHTML = `<h1 class="seite">Jahresbericht der Fachkraft für Arbeitssicherheit ${jahr}</h1>
     <p class="unter">${esc(AS.org.name)} · erstellt ${asDat(asHeute())} von ${esc(d.sifa_name || AS.ich)} · nach DGUV Vorschrift 2</p>
+    <div class="filterleiste nodruck"><select id="bJahr" aria-label="Jahr">${[0, 1, 2].map(i => new Date().getFullYear() - i).map(y => `<option value="${y}" ${y === jahr ? "selected" : ""}>Jahr: ${y}</option>`).join("")}</select>
+      <button class="btn sek klein" onclick="window.print()">Drucken / PDF</button>${AS.fachkraft ? `<button class="btn adm klein" id="bErstellt">Als erstellt vermerken</button>` : ""}</div>
     ${abschnitt("1. Betreuung und Einsatzzeiten", `<p>Betreuungsgruppe ${esc(e.gruppe || "–")} · ${r1(e.ma)} Beschäftigte (gewichtet). Sifa: <b>${r1(e.istSifa)} von ${r1(e.sollSifa)} h</b> (${e.sollSifa ? asProz(e.istSifa, e.sollSifa) : 0} %).
       Betriebsarzt: <b>${r1(e.istBa)} von ${r1(e.sollBa)} h</b>.</p>
       <p class="hinweis">Einsätze: ${asT("as_einsatz").filter(x => imJ(x.datum)).map(x => asDat(x.datum) + " " + (x.taetigkeit || x.art)).join(" · ") || "keine erfasst"}</p>`)}
