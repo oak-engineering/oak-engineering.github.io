@@ -156,7 +156,7 @@ function asGsListe(box){
     const chips = [g.signalwort ? asChip(g.signalwort, g.signalwort === "Gefahr" ? "rot" : "gelb") : "",
       v !== "aktiv" ? asChip(AS_GS_VERW[v], v === "offen" ? "gelb" : "grau") : "", asChip(s.kurz, s.farbe),
       asGsGbuFrei(g) ? asChip("GBU freigegeben", "gruen") : vorgelegt ? asChip("GBU zur Freigabe", "gelb") : gb.length ? asChip("GBU Entwurf", "gelb") : g.gbu_pfad ? asChip("GBU (PDF)", "gruen") : asChip("GBU fehlt", "rot"),
-      asGsBaDa(g) ? asChip(g.ba_gruppe ? "Gruppen-BA" : "BA", "gruen") : asChip("BA fehlt", "rot"),
+      asGsBaDa(g) ? asChip(g.ba_gruppe ? "Gruppen-BA" : "BA", "gruen") : (g.ba_pfade || []).length ? asChip("Sammel-BA", "gelb") : asChip("BA fehlt", "rot"),
       asGsPruefen(g) ? asChip("Überprüfung fällig", "gelb") : ""].join("");
     return `<div class="z" data-gs="${esc(g.id)}"><div><b>${esc(g.bezeichnung)}</b>
       <small>${esc([g.hersteller, asGsBereiche(g).join(", "), g.verwendung].filter(Boolean).join(" · "))}</small><div class="gs-chips">${chips}</div></div>
@@ -242,6 +242,8 @@ function asGsStoff(g, box){
     <div class="gs-zeile">${g.ba_pfad ? `<button class="btn sek klein" id="gsBaPdf">Betriebsanweisung (PDF)</button>` : ""}
       ${!g.ba_pfad ? `<button class="btn sek klein" id="gsBaAuf">${g.ba_gruppe ? "Gruppen-BA: " + esc(g.ba_gruppe) + " (" + gruppe + " Stoffe)" : asGsGbuFrei(g) ? "Betriebsanweisung (aus der Beurteilung)" : "Betriebsanweisung – Entwurf"}</button>` : ""}
       ${!asGsGbuFrei(g) && !g.ba_pfad && !g.ba_gruppe ? `<span class="hinweis">Entwurf, bis eine Beurteilung freigegeben ist.</span>` : ""}</div>
+    ${!asGsBaDa(g) && (g.ba_pfade || []).length ? `<p class="hinweis">Bis dahin gelten die Sammel-Betriebsanweisungen:</p><div class="gs-zeile">${g.ba_pfade.map((p, i) =>
+      `<button class="btn sek klein" data-sba="${i}">${esc(String((AS_GS.docs.find(d => d.storage_path === p) || {}).titel || p.split("/").pop()).replace(/^Betriebsanweisung\s*–\s*/, ""))}</button>`).join("")}</div>` : ""}
 
     <div class="gs-abschnitt">Schutzhandschuh</div>
     <div class="gs-zeile"><span>${esc({ passt: "geeignet zugeordnet", spritzschutz: "nur Spritzschutz", fehlt: "passender Handschuh fehlt", nicht_noetig: "kein Schutzhandschuh nötig" }[g.handschuh_status] || "noch nicht zugeordnet")}</span>
@@ -255,6 +257,9 @@ function asGsStoff(g, box){
   auf("#gsGbuPdf", () => { d.close(); asDokOeffnen(asViewerUrl("pdf", g.gbu_pfad, "Gefährdungsbeurteilung · " + g.bezeichnung), "Gefährdungsbeurteilung · " + g.bezeichnung); });
   auf("#gsBaPdf", () => { d.close(); asDokOeffnen(asViewerUrl("pdf", g.ba_pfad, "Betriebsanweisung · " + g.bezeichnung), "Betriebsanweisung · " + g.bezeichnung); });
   auf("#gsBaAuf", () => { d.close(); asDokOeffnen(asGsBaUrl(g), "Betriebsanweisung · " + (g.ba_gruppe || g.bezeichnung)); });
+  d.querySelectorAll("[data-sba]").forEach(el => el.onclick = () => { const p = g.ba_pfade[+el.dataset.sba], t = el.textContent;
+    const dok = AS_GS.docs.find(x => x.storage_path === p) || {};
+    d.close(); asDokOeffnen(asViewerUrl(dok.doc_typ || (p.endsWith(".html") ? "html" : "pdf"), p, "Betriebsanweisung · " + t), "Betriebsanweisung · " + t); });
   auf("#gsHs", () => { d.close(); asGehe("gefahrstoffe/handschuhe"); });
   auf("#gsTzNeu", () => asGsEmkg(g, null, box));
   auf("#gsSdbNeu", () => asGsBearbeiten(g, box, true));
