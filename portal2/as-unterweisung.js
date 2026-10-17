@@ -735,7 +735,8 @@ function asUwOrgDialog(){
     nach(() => apiSend("POST", "/rest/v1/uw_einheit", { kunde_slug: AS.kunde, name: n, kst_nr: dlg.querySelector("#uwoEKst").value.trim() || null }, "return=minimal"), "Bereich angelegt."); };
   dlg.querySelector("#uwoRNeu").onclick = () => { const n = dlg.querySelector("#uwoRName").value.trim(); if(!n) return;
     nach(() => apiSend("POST", "/rest/v1/uw_rolle", { kunde_slug: AS.kunde, name: n, typ: dlg.querySelector("#uwoRTyp").value }, "return=minimal"), "Rolle angelegt."); };
-  dlg.querySelectorAll("[data-earch]").forEach(b => b.onclick = () => nach(() => apiSend("PATCH", "/rest/v1/uw_einheit?id=eq." + encodeURIComponent(b.dataset.earch), { status: "archiviert" }, "return=minimal"), "Bereich archiviert."));
+  dlg.querySelectorAll("[data-earch]").forEach(b => b.onclick = () => { const e = d.einheiten.find(x => x.id === b.dataset.earch);   // ein Weg: mit Umhängen (as-organisation.js)
+    if(e && typeof asEinheitStilllegen === "function") asEinheitStilllegen(e); });
   dlg.querySelectorAll("[data-rarch]").forEach(b => b.onclick = () => nach(() => apiSend("PATCH", "/rest/v1/uw_rolle?id=eq." + encodeURIComponent(b.dataset.rarch), { status: "archiviert" }, "return=minimal"), "Rolle archiviert."));
 }
 

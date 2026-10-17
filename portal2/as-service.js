@@ -169,7 +169,7 @@ async function asSvLaden(){
     hole("/rest/v1/portal_nachweis?select=*&archiviert=is.false" + k + "&order=person_name.asc"),
     hole("/rest/v1/portal_vorsorge?select=*" + k + "&order=person_name.asc"),
     hole("/rest/v1/v_uw_faelligkeit?select=*" + k),
-    hole("/rest/v1/portal_vorfaelle?select=id,kunde_slug,art,domaene,ereignis_am,ort,status,sofortmassnahme,langzeitmassnahme,ausgewertet_am" + k),
+    hole("/rest/v1/portal_vorfaelle?select=id,kunde_slug,art,domaene,ereignis_am,ort,status,sofortmassnahme,langzeitmassnahme,ausgewertet_am,ausfalltage,unfallanzeige_am" + k),
     hole("/rest/v1/portal_aufgabe_quittung?select=*" + k + "&order=quittiert_am.desc&limit=1000"),
     hole("/rest/v1/portal_anfrage?select=*" + k + "&order=letzte_aktivitaet.desc.nullslast,created_at.desc&limit=300"),
     hole("/rest/v1/portal_anfrage_beitrag?select=*" + k + "&order=created_at.asc&limit=3000"),
@@ -357,6 +357,31 @@ function asSvAufgaben(){
       titel: "Vorfall auswerten: " + ({ unfall: "Unfall", beinahe: "Beinahe-Unfall", mangel: "Mangel" }[v.art] || "Vorfall") + (v.ort ? " · " + v.ort : ""),
       sub: "gemeldet für " + asDat(v.ereignis_am) + " · Ausfalltage, Sofort- und Langzeitmaßnahme eintragen",
       aktionen: [["Auswerten", () => asGehe("steuerung/meldungen")]] }));
+  /* 6b. Unfallanzeige: mehr als 3 Tage arbeitsunfähig -> Anzeige an die BG binnen 3 Tagen (§ 193 SGB VII) */
+  AS_SV.vorfaelle.filter(v => v.art === "unfall" && +v.ausfalltage > 3 && !v.unfallanzeige_am).forEach(v => { const f = new Date(v.ereignis_am); f.setDate(f.getDate() + 3);
+    l.push({ schluessel: "unfallanzeige:" + v.id, stufe: "kritisch", titel: "Unfallanzeige an die Berufsgenossenschaft" + (v.ort ? " · " + v.ort : ""),
+      sub: "Unfall am " + asDat(v.ereignis_am) + ", " + v.ausfalltage + " Ausfalltage – Anzeige binnen 3 Tagen (§ 193 SGB VII)", frist: asSvTage(f.toISOString().slice(0, 10)),
+      aktionen: [["Anzeige erstattet …", () => asDialog({ titel: "Unfallanzeige erstattet", inhalt: `<div class="form">${asFeld("Datum der Anzeige", "am", asHeute(), "date")}</div>`,
+        knoepfe: [{ t: "Speichern", fn: async d => { await apiSend("PATCH", "/rest/v1/portal_vorfaelle?id=eq." + encodeURIComponent(v.id), { unfallanzeige_am: asWerte(d).am || asHeute() }, "return=minimal");
+          await asSvLaden(); asMeldung("Vermerkt"); asZeige(); } }] })]] }); });
+  /* 6c. Beauftragte: Soll nicht erfüllt (je Funktion zusammengefasst) */
+  if(typeof asBeauftragteSoll === "function"){ const fehl = {};
+    asBeauftragteSoll().filter(z => z.ist < z.soll).forEach(z => { fehl[z.funktion] = (fehl[z.funktion] || 0) + (z.soll - z.ist); });
+    Object.entries(fehl).forEach(([f, n]) => l.push({ schluessel: "bea-soll:" + f + ":" + n, stufe: "warnung",
+      titel: n + " " + ((AS_KAT.beauftragte[f] || {}).titel || f) + " fehlen", sub: "Soll je Bereich und Schicht nicht erfüllt – Personen bestellen und schulen",
+      frist: null, aktionen: [["Öffnen", () => asGehe("organisation/beauftragte")]] })); }
+  /* 6d. Gefahrstoffe in Verwendung ohne freigegebene Beurteilung (zusammengefasst) */
+  { const frei = new Set((AS_SV.gbuAlle || []).filter(g => g.status === "freigegeben").map(g => g.gefahrstoff_id));
+    const ohne = (AS_SV.gsListe || []).filter(g => g.verwendung_status !== "inaktiv" && !g.gbu_pfad && !frei.has(g.id));
+    if(ohne.length) l.push({ schluessel: "gs-ohne-gbu:" + ohne.length, stufe: "warnung", titel: ohne.length + (ohne.length === 1 ? " Gefahrstoff" : " Gefahrstoffe") + " ohne freigegebene Beurteilung",
+      sub: "Tätigkeit nach EMKG beurteilen – daraus entsteht die Betriebsanweisung (§ 6 GefStoffV)", frist: null,
+      aktionen: [["Öffnen", () => { if(typeof AS_GS !== "undefined") AS_GS.f.stand = "gbu"; asGehe("gefahrstoffe/kataster"); }]] }); }
+  /* 6e. Maßnahmen ohne Termin oder Verantwortlichen – würden nie überfällig (zusammengefasst) */
+  { const offen = asT("as_massnahme").filter(m => m.status === "offen" && (!m.termin || !m.verantwortlich));
+    if(offen.length && (AS.fachkraft || AS.gf)) l.push({ schluessel: "mn-ohne-termin:" + offen.length, stufe: "info",
+      titel: offen.length + (offen.length === 1 ? " Maßnahme" : " Maßnahmen") + " ohne Termin oder Verantwortlichen",
+      sub: "Ohne Termin wird eine Maßnahme nie überfällig – Verantwortlichen und Termin festlegen", frist: null,
+      aktionen: [["Öffnen", () => asGehe("massnahmen")]] }); }
   /* 8. Forum */
   AS_SV.anfragen.forEach(a => {
     const zuOeffnen = () => { AS_SV.fOffen = a.id; asGehe("fragen"); };
@@ -427,11 +452,12 @@ async function asSvPaLaden(){
     hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k),
     hole("/rest/v1/as_ba?select=id,titel,arbeitssystem_id,vorgelegt_am,vorgelegt_von,status&vorgelegt_am=not.is.null&status=neq.freigegeben" + k),
     hole("/rest/v1/portal_dokumente?select=maschinen_id,einheit_id&kategorie=in.(anlagen,allg-gbu)" + k),
-    hole("/rest/v1/portal_gefahrstoff?select=id,einheit_ids" + k)]);
+    hole("/rest/v1/portal_gefahrstoff?select=id,einheit_ids,verwendung_status,gbu_pfad" + k)]);
   AS_SV.gbuAlle = gbuAlle; AS_SV.baVor = baVor;
   /* Bereich je Auftragsobjekt – Bereichs-Logins sehen nur Aufträge ihres Bereichs (Durchlauf 2). Unbekannt = betriebsweit. */
   AS_SV.objEinheit = {}; (anl || []).forEach(d => { if(d.maschinen_id) AS_SV.objEinheit[d.maschinen_id] = d.einheit_id || null; });
   AS_SV.gsEinheit = {}; (gsE || []).forEach(g => { AS_SV.gsEinheit[g.id] = g.einheit_ids || []; });
+  AS_SV.gsListe = gsE || [];
   AS_SV.anlBekannt = new Set((anl || []).map(d => d.maschinen_id)); AS_SV.gsBekannt = new Set((gsE || []).map(g => g.id));
   AS_SV.pa = pa; AS_SV.gbuFrist = gbu; AS_SV.pruefFrist = po.filter(o => o.aktiv !== false);
 }

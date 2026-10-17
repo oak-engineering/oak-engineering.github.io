@@ -31,8 +31,10 @@ function asAsaTagesordnung(){
   const zi = asT("as_ziel").filter(x => x.status === "aktiv");
   z.push("7. Ziele: " + (zi.length ? zi.map(x => x.titel + " (" + asZielStand(x).text + ")").join("; ") : "keine aktiven Ziele"));
   z.push("8. Einsatzzeiten " + e.jahr + ": Sifa " + Math.round(e.istSifa) + "/" + Math.round(e.sollSifa) + " h, Betriebsarzt " + Math.round(e.istBa) + "/" + Math.round(e.sollBa) + " h");
-  z.push("9. Verschiedenes");
-  return z.join("\n");
+  if(kz.pruefungen_ueberfaellig) z.push("Prüfungen: " + kz.pruefungen_ueberfaellig + " überfällig");
+  if(kz.kultur_rot) z.push("Sicherheitskultur: " + kz.kultur_rot + " rote Handlungsfelder im KurzCheck");
+  z.push("Verschiedenes");
+  return z.map((x, i) => (i + 1) + ". " + x.replace(/^\d+\.\s*/, "")).join("\n");
 }
 function asAsa(box){
   const liste = asT("as_asa").slice().sort((a, b) => b.datum.localeCompare(a.datum)), jahr = new Date().getFullYear();
@@ -78,6 +80,8 @@ function asZielVorschlaege(){
   if(kz.prozesse_freigegeben < 100) add("prozesse_freigegeben", "Alle Prozessbeschreibungen freigegeben", 100, "Organisations-Check K2");
   if(kz.reifegrad_mittel && kz.reifegrad_mittel < 2) add("reifegrad_mittel", "Reifegrad im Mittel mindestens Stufe II", 2, "Organisations-Check");
   if(asT("as_meldung").length && kz.rueckmeldung_quote < 80) add("rueckmeldung_quote", "80 % der Melder erhalten eine Rückmeldung", 80, "Feedback-Kultur");
+  if(kz.pruefungen_ueberfaellig > 0) add("pruefungen_ueberfaellig", "Alle Prüfungen fristgerecht durchgeführt", 0, "Prüfkataster");
+  if(kz.kultur_rot > 0) add("kultur_rot", "Keine roten Handlungsfelder im KurzCheck Präventionskultur", 0, "Sicherheitskultur");
   if(kz.einsatz_sifa < 100 && asEinsatz().sollSifa) add("einsatz_sifa", "Einsatzzeit der Sifa vollständig erbracht", 100, "DGUV V2");
   return v;
 }

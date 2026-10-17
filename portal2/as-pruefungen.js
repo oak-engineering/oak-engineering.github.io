@@ -240,6 +240,8 @@ async function asPfSpeichern(ergebnisse, datum, pruefer, runde){
         schluessel: "PR-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6), thema: "pruefung", thema_rang: 0,
         label: "Prüfung " + a.titel + " (" + asDat(datum) + "): " + e.o.bezeichnung + " – " + (e.bemerkung || AS_PF_ERG[e.ergebnis][0]),
         rechtsquelle: e.o.grundlage || a.grundlage || null, band, prioritaet: band === "gefahr" ? 10 : 3010, status: "offen",
+        termin: (() => { const t = new Date(datum); t.setDate(t.getDate() + (band === "gefahr" ? 14 : 42)); return t.toISOString().slice(0, 10); })(),
+        einheit_id: e.o.einheit_id || (dok && dok.einheit_id) || null,
         gemeldet_von: pruefer || AS.ich, gemeldet_am: datum }, "return=representation").catch(err => { asMeldung("Mangel nicht angelegt: " + (err.message || err)); return null; });
       if(r && r[0]){ mangelId = r[0].id; await asMgLog(mangelId, "erfasst", "aus Prüfung " + a.titel, null); }
     }
