@@ -35,6 +35,8 @@ main,.sub-layout{max-width:var(--seite);margin:0 auto;padding:3rem var(--rand) 4
 .prose p.lead{font-size:1.05rem;color:var(--muted);}
 .prose a{color:var(--oak);font-weight:500;}
 .prose a:hover{text-decoration:underline;}
+/* Knöpfe im Fließtext behalten ihre Knopf-Farben (Nikolai 17.10.2026: „Begehung anfragen“ grün auf grün) */
+.prose a.btn{text-decoration:none;}.prose a.btn-primary,.prose a.btn-primary:hover{color:#fff;}
 .prose ul{padding-left:1.4rem;margin-bottom:1rem;}
 .prose li{margin-bottom:.3rem;color:var(--ink-2);font-weight:300;}
 .prose strong{color:var(--ink-2);font-weight:600;}
