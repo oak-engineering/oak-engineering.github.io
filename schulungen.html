@@ -7,8 +7,8 @@
 <title>Schulungen – OAK engineering</title>
 <meta name="description" content="Praxisnahe EHS-Schulungen von OAK engineering: Arbeitssicherheit & Sicherheitskultur, Umweltrecht, ISO 14001/CSRD und KI/Digitalisierung – online, vor Ort oder inhouse in Augsburg, München und ganz Bayern.">
 <link rel="canonical" href="https://www.oak-engineering.de/schulungen.html">
-<link rel="stylesheet" href="fonts.css?v=202610170931">
-<link rel="stylesheet" href="site.css?v=202610170931">
+<link rel="stylesheet" href="fonts.css?v=202610170934">
+<link rel="stylesheet" href="site.css?v=202610170934">
 <style>
 /* ── Schulungs-spezifische Komponenten (OAK-CI) ─────────────────── */
 .sched-intro{margin:0 0 1.6rem;}
@@ -76,6 +76,19 @@
 @media(max-width:600px){.anm-grid{grid-template-columns:1fr;}}
 
 .sec-head{text-align:center;margin:2.6rem 0 1.2rem;}
+/* Neu im Programm: gleich große Karten (Layout-Vorgaben: gleiche Höhe je Reihe, Text fest begrenzt) */
+.neu{margin:0 0 2.2rem}.neu h2{margin-bottom:1rem}
+.neu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1.2rem;align-items:stretch}
+.neu-k{display:flex;flex-direction:column;gap:.7rem;background:linear-gradient(135deg,var(--oak-deep),var(--oak));color:#fff;border-radius:16px;padding:1.6rem 1.7rem}
+.neu-ey{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--oak-pale);font-weight:600}
+.neu-k h3{font-family:var(--serif);font-weight:600;font-size:1.6rem;line-height:1.15;color:#fff;margin:0}
+.neu-k p{margin:0;color:rgba(255,255,255,.9);font-size:.95rem;line-height:1.55;min-height:3.1em}
+.neu-fakten{display:flex;flex-wrap:wrap;gap:.4rem}.neu-fakten span{font-size:.78rem;background:rgba(255,255,255,.14);border-radius:99px;padding:.18rem .7rem;white-space:nowrap}
+.neu-cta{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:auto}
+.neu-cta .btn{padding:.65rem 1.2rem;font-size:.86rem}
+.neu-cta .btn-primary{background:#fff;color:var(--oak-deep)}.neu-cta .btn-primary:hover{background:var(--oak-pale)}
+.neu-cta .btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}.neu-cta .btn-ghost:hover{border-color:#fff}
+@media(max-width:760px){.neu-grid{grid-template-columns:minmax(0,1fr)}}
 .sec-head .ey{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--oak);font-weight:600;}
 .sec-head h2{font-family:var(--serif);font-weight:300;font-size:clamp(1.6rem,3.5vw,2.2rem);color:var(--ink);}
 
@@ -139,7 +152,10 @@
 </header>
 
 <main class="prose">
-
+  <section class="neu" aria-labelledby="neuTitel">
+    <h2 id="neuTitel">Neu im Programm</h2>
+    <div class="neu-grid" id="neuGrid"><!-- via JS aus KURSE (Feld neu) --></div>
+  </section>
   <div class="filter-bar" id="filterBar">
     <button class="chip active" data-f="alle">Alle</button>
     <button class="chip" data-f="Umwelt">Umwelt</button>
@@ -230,8 +246,8 @@ const MODUS = "anfrage";
    kurs_id, datum (JJJJ-MM-TT), enddatum, ort, format, status, hinweis  */
 const SAMPLE_TERMINE = [
   {kurs_id:"iso14001", datum:"2026-10-20", enddatum:"2026-10-22", ort:"München",  format:"Präsenz",     status:"offen",   hinweis:""},
-  {kurs_id:"sibe",     datum:"2026-11-24", enddatum:"2026-11-25", ort:"Augsburg", format:"Präsenz",     status:"wenige",  hinweis:""},
-  {kurs_id:"kiboost",  datum:"2026-11-12", enddatum:"",           ort:"Online",   format:"Live-Online", status:"offen",   hinweis:""}
+  {kurs_id:"sibe",     datum:"2027-02-23", enddatum:"",           ort:"Online",   format:"Live-Online", status:"offen",   hinweis:"Nachtreffen nach 4–6 Wochen"},
+  {kurs_id:"kiboost",  datum:"2026-11-11", enddatum:"",           ort:"Online",   format:"Live-Online", status:"offen",   hinweis:""}
 ];
 
 /* ── Kurskatalog ────────────────────────────────────────────── */
@@ -276,13 +292,14 @@ const KURSE = [
    methodik:"2 Tage, Präsenz oder Inhouse; Workshop mit Vorlagen.",
    abschluss:"Teilnahmebescheinigung von OAK engineering."},
 
-  {id:"sibe", bereich:"Sicherheit", titel:"Fachliche Nähe für Sicherheitsbeauftragte (SiBe)", typ:"Pflicht", recht:"§ 22 SGB VII / DGUV V1", dauer:"2 Tage",
-   praxis:"Gefahren-Scouting: Begehung mit der „Sicherheits-Brille“, Kurz-Unterweisung moderieren, motivierende Gesprächsführung.",
-   ziele:["Die Rolle als Sicherheitsbeauftragte/r aktiv ausfüllen","Gefährdungen vor Ort erkennen und ansprechen","Kolleginnen und Kollegen motivierend einbinden"],
-   inhalte:["Auftrag, Stellung und Aufgaben nach § 22 SGB VII / DGUV V1","Zusammenarbeit mit SiFa, Betriebsarzt und Führung","Gefährdungen erkennen und melden","Kommunikation und Motivation","Gefahren-Scouting und Kurz-Unterweisung"],
-   zielgruppe:"Benannte und künftige Sicherheitsbeauftragte aller Branchen.",
-   methodik:"2 Tage, Präsenz oder Inhouse; viele Übungen und eine Begehung.",
-   abschluss:"Teilnahmebescheinigung von OAK engineering."},
+  {id:"sibe", bereich:"Sicherheit", titel:"Grundqualifizierung für Sicherheitsbeauftragte", typ:"Freiwillig", recht:"DGUV Grundsatz 311-004", dauer:"1 Tag + Nachtreffen",
+   neu:"Nach dem neuen Rahmenkonzept der DGUV (Mai 2025). Termine ab Februar 2027.",
+   praxis:"Nach dem neuen Rahmenkonzept der DGUV: Rolle klären, Gefährdungen im eigenen Bereich erkennen, Kolleginnen und Kollegen überzeugend ansprechen – mit virtuellem Rundgang, Rollenspielen und einem persönlichen Aktionsplan, der im eigenen Bereich umgesetzt und im Nachtreffen besprochen wird.",
+   ziele:["Die eigene Rolle kennen: unterstützen, beobachten, ansprechen – ohne zusätzliche Verantwortung oder Haftung","Gefährdungen im Arbeitsbereich erkennen, einordnen und wirksam melden","Kolleginnen und Kollegen zu sicherem Verhalten motivieren"],
+   inhalte:["Aufgaben und Stellung nach § 22 SGB VII und § 20 DGUV Vorschrift 1","Wer macht was: Unternehmer und Führung, Sifa, Betriebsarzt, Arbeitsschutzausschuss, Berufsgenossenschaft","Gefährdungen erkennen, Rangfolge der Maßnahmen (S-T-O-P), Beinaheunfälle","Virtueller Rundgang: Mängel erkennen, einordnen, melden und nachverfolgen","Gesprächsführung mit Rollenspielen aus dem DGUV-Rahmenkonzept","Aktionsplan, Praxisauftrag im eigenen Bereich und Nachtreffen"],
+   zielgruppe:"Neu bestellte Sicherheitsbeauftragte und Sicherheitsbeauftragte ohne Grundausbildung – alle Branchen.",
+   methodik:"1 Tag (8 UE) live online oder inhouse, höchstens 12 Teilnehmende; Praxisauftrag im eigenen Bereich und Nachtreffen nach 4–6 Wochen (2 UE). Auch als kompakter Tag oder als zweitägiger Intensivkurs.",
+   abschluss:"Teilnahmebescheinigung und Eintrag im Qualifizierungspass nach DGUV Grundsatz 311-004."},
 
   {id:"visionzero", bereich:"Sicherheit", titel:"Vision Zero: Aktive Gestaltung der Sicherheitskultur", typ:"Freiwillig", recht:"DGUV Strategie", dauer:"1–2 Tage",
    praxis:"Kultur-Analyse: Arbeit mit der Bradley-Kurve, Workshop zur Fehler-Lern-Kultur, Safety-Incentives entwickeln.",
@@ -308,13 +325,14 @@ const KURSE = [
    methodik:"1 Tag, Präsenz oder Online; Impuls und Roadmap-Arbeit.",
    abschluss:"Teilnahmebescheinigung von OAK engineering."},
 
-  {id:"kiboost", bereich:"Digital &amp; KI", titel:"KI-Boost für den Arbeitsschutz: LLMs &amp; Automation", typ:"Zukunft", recht:"Technologie-Trends", dauer:"1 Tag",
-   praxis:"Prompt-Engineering: KI-gestützt Unterweisungs-Folien und Gefährdungsbeurteilungen in Sekunden statt Stunden erstellen.",
-   ziele:["Den Nutzen von KI/LLMs im Arbeitsschutz verstehen","KI rechtssicher und sinnvoll einsetzen","Routineaufgaben mit KI beschleunigen"],
-   inhalte:["Wie LLMs funktionieren und wo sie helfen","Anwendungsfälle: Unterweisungen, GBU, Recherche","Grundlagen Prompt-Engineering","Datenschutz und Grenzen der KI","Hands-on am eigenen Use-Case"],
-   zielgruppe:"EHS-Fachkräfte, SiFa, alle mit Interesse an KI im Arbeitsschutz.",
-   methodik:"1 Tag, Präsenz oder Online; Hands-on.",
-   abschluss:"Teilnahmebescheinigung von OAK engineering."},
+  {id:"kiboost", bereich:"Digital &amp; KI", titel:"KI im Arbeitsschutz: sicher und sinnvoll einsetzen", typ:"Zukunft", recht:"Art. 4 KI-Verordnung", dauer:"1 Tag",
+   neu:"KI-Kompetenz ist seit Februar 2025 Pflicht für Betriebe, die KI einsetzen (Art. 4 KI-Verordnung).",
+   praxis:"Seit Februar 2025 müssen Betriebe sicherstellen, dass Beschäftigte, die KI nutzen, über ausreichende KI-Kompetenz verfügen (Art. 4 KI-Verordnung). Der Kurs zeigt am eigenen Beispiel, wo KI im Arbeitsschutz wirklich hilft – und wo Fachurteil und Begehung vor Ort unersetzlich bleiben.",
+   ziele:["Verstehen, wie Sprachmodelle arbeiten und wo ihre Grenzen liegen","KI-Ergebnisse fachlich prüfen statt ungeprüft übernehmen","KI datenschutzkonform und ohne Preisgabe von Betriebsgeheimnissen einsetzen"],
+   inhalte:["Wie Sprachmodelle funktionieren – verständlich erklärt","Anwendungsfälle: Entwürfe für Unterweisungen und Betriebsanweisungen, Recherche in Vorschriften, Auswertung von Meldungen","Grenzen: erfundene Quellen, fehlender Befund vor Ort, Verantwortung bleibt beim Menschen","Rechtsrahmen: KI-Verordnung (Art. 4 KI-Kompetenz), DSGVO und Auftragsverarbeitung","Gute Anweisungen formulieren (Prompting) und Ergebnisse prüfen","Hands-on am eigenen Anwendungsfall"],
+   zielgruppe:"Fachkräfte für Arbeitssicherheit, EHS- und HSE-Verantwortliche, Führungskräfte, die KI im Arbeitsschutz einsetzen wollen.",
+   methodik:"1 Tag, live online oder inhouse; Hands-on mit eigenen Beispielen.",
+   abschluss:"Teilnahmebescheinigung – geeignet zur Dokumentation der KI-Kompetenz nach Art. 4 KI-Verordnung."},
 
   {id:"agentic", bereich:"Digital &amp; KI", titel:"Agentic Coding: KI-Agenten für EHS-Datenanalysen", typ:"Zukunft", recht:"Python / AI Agents", dauer:"2 Tage",
    praxis:"Agent-Building: einen Agenten bauen, der autonom Messdaten visualisiert oder Gesetzestexte auf Änderungen scannt.",
@@ -562,7 +580,16 @@ function setupAnfrageUI(){
   if(sub) sub.textContent = "Anfrage absenden →";
 }
 
+function renderNeu(){
+  const l = KURSE.filter(k => k.neu);
+  $("#neuGrid").innerHTML = l.map(k => `<div class="neu-k">
+      <span class="neu-ey">Neu · ${k.bereich}</span><h3>${k.titel}</h3><p>${k.neu}</p>
+      <div class="neu-fakten"><span>${k.dauer}</span><span>${k.recht}</span></div>
+      <div class="neu-cta"><button class="btn btn-primary" data-anfrage="${k.id}">Anfragen →</button><button class="btn btn-ghost" data-detail="${k.id}">Inhalte ansehen</button></div></div>`).join("");
+  if(!l.length) document.querySelector(".neu").style.display = "none";
+}
 /* Init */
+renderNeu();
 renderKurse();
 buildKursSelect();
 if(MODUS==="buchung"){ loadTermine(); } else { setupAnfrageUI(); }
@@ -571,6 +598,9 @@ $("#filterBar").addEventListener("click", e=>{ const c=e.target.closest(".chip")
 $("#f-kurs").addEventListener("change", buildTerminSelect);
 $("#anmForm").addEventListener("submit", submitAnmeldung);
 document.addEventListener("click", e=>{
+  const de = e.target.closest("[data-detail]");
+  if(de){ const it = document.querySelector('.acc-item[data-id="' + de.dataset.detail + '"]');
+    if(it){ if(!it.classList.contains("open")) it.querySelector(".acc-head").click(); it.scrollIntoView({behavior:"smooth", block:"start"}); } return; }
   const fl = e.target.closest("[data-flyer]");
   if(fl){ printFlyer(fl.dataset.flyer); return; }
   const an = e.target.closest("[data-anfrage]");
@@ -585,6 +615,6 @@ document.addEventListener("click", e=>{
   if(t && !t.disabled){ const d=JSON.parse(t.dataset.termin); prefillKurs(d.kurs_id, d.label, d.format); }
 });
 </script>
-<script src="site.js?v=202610170931"></script>
+<script src="site.js?v=202610170934"></script>
 </body>
 </html>
