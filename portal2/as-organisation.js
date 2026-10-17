@@ -140,7 +140,8 @@ function asBeauftragterDialog(b){
     await asSpeichern("as_beauftragter", Object.assign({ id: b.id }, w)); asZeige(); } }];
   if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { await asLoeschen("as_beauftragter", b.id); asZeige(); } });
   asDialog({ titel: neu ? "Person erfassen" : b.person, inhalt: `<div class="form">
-      ${asFeld("Name", "person", b.person, "text", "voll")}
+      <label class="voll">Name<input type="text" data-f="person" list="asBeaPersonen" value="${esc(b.person || "")}" autocomplete="off"></label>
+      <datalist id="asBeaPersonen">${(AS.personen || []).map(p => `<option value="${esc(p.name)}">`).join("")}</datalist>
       ${asAuswahl("Funktion", "funktion", b.funktion, Object.entries(AS_KAT.beauftragte).map(([k, v]) => [k, v.titel]))}
       ${asBereichWahl("Bereich", "einheit_id", b.einheit_id || "", "", "– Betrieb gesamt –")}
       ${asFeld("Schicht (leer = alle)", "schicht", b.schicht, "number")}${asFeld("Schriftlich bestellt am", "bestellt_am", b.bestellt_am, "date")}

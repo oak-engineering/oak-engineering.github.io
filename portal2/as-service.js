@@ -279,7 +279,7 @@ function asSvEintraege(){
   AS_SV.nachweise.filter(n => !n.archiviert && n.gueltig_bis && !asSvNwErsetzt(n)).forEach(n => l.push({
     quelle: "nachweis", id: n.id, datum: n.gueltig_bis, art: "nachweis", titel: asSvNwLabel(n.art) + " läuft ab: " + (n.person_name || ""),
     sub: n.bezeichnung || "", ziel: "nachweise", roh: n }));
-  AS_SV.vorsorge.filter(v => v.naechste && !asSvVsErsetzt(v)).forEach(v => l.push({
+  AS_SV.vorsorge.filter(v => v.naechste && !v.abgeschlossen_am && !asSvVsErsetzt(v)).forEach(v => l.push({
     quelle: "vorsorge", id: v.id, datum: v.naechste, art: "vorsorge", titel: "Vorsorge fällig: " + (v.person_name || ""),
     sub: AS_SV_VS_ART[v.art] || v.anlass || "", ziel: "nachweise/vorsorge", roh: v }));
   asSvUwJePerson().forEach(p => l.push({
@@ -327,7 +327,7 @@ function asSvAufgaben(){
         sub: asSvNwLabel(n.art) + " vorhanden, Beauftragung nicht vermerkt", aktionen: [["Nachweis öffnen", () => asGehe("nachweise")]] });
   });
   /* 3. Vorsorge */
-  AS_SV.vorsorge.filter(v => v.naechste && !asSvVsErsetzt(v)).forEach(v => {
+  AS_SV.vorsorge.filter(v => v.naechste && !v.abgeschlossen_am && !asSvVsErsetzt(v)).forEach(v => {
     const tage = asSvTage(v.naechste); if(tage == null || tage > 60) return; const st = tage < 0 ? "ueberfaellig" : "bald";
     l.push({ schluessel: "vorsorge:" + v.id + ":" + st, stufe: tage < 0 ? "kritisch" : "warnung", quittierbar: true,
       titel: "Arbeitsmedizinische Vorsorge " + (tage < 0 ? "überfällig" : "fällig") + ": " + (v.person_name || ""),

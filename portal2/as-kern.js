@@ -55,7 +55,9 @@ const AS_QUELLEN = {
       notiz: r.notiz, _v1: true, _art: r.art }),
     zuV1: (w, alt) => { const o = {};
       if("funktion" in w) o.art = alt && (AS_FUNK_V1[alt._art] || alt._art) === w.funktion ? alt._art : (AS_FUNK_V2[w.funktion] || w.funktion);
-      if("person" in w) o.person_name = w.person; if("einheit_id" in w) o.as_einheit_id = w.einheit_id || null;
+      if("person" in w){ o.person_name = w.person;
+        const p = (AS.personen || []).find(x => String(x.name || "").trim().toLowerCase() === String(w.person || "").trim().toLowerCase()); o.person_id = p ? p.id : null; }
+      if("einheit_id" in w) o.as_einheit_id = w.einheit_id || null;
       if("schulung_am" in w) o.ausgestellt_am = w.schulung_am || null;
       Object.assign(o, asAuswahlFelder(w, ["schicht", "bestellt_am", "gueltig_bis", "vertretung", "notiz"]));
       if("bestellt_am" in w) o.beauftragt = !!w.bestellt_am; o.geaendert_von = AS.ich; return o; },
@@ -115,6 +117,7 @@ async function asLaden(){
     ...eigen.map(t => apiGet("/rest/v1/" + t + "?select=*" + k).catch(() => [])),
     ...quellen.map(([, q]) => apiGet("/rest/v1/" + q.v1 + "?select=*" + k + q.filter).catch(() => []))]);
   AS.org = (org && org[0]) || null;
+  AS.personen = ((await apiGet("/rest/v1/uw_person?select=id,name,status&status=eq.aktiv" + k).catch(() => [])) || []);   // Belegschaft (Stufe 4)
   AS.kundeV1 = ((await apiGet("/rest/v1/portal_kunde?select=slug,name,avv_abgeschlossen_am,marke&slug=eq." + encodeURIComponent(AS.kunde)).catch(() => [])) || [])[0] || null;
   AS.db = {};
   eigen.forEach((t, i) => AS.db[t] = rest[i] || []);

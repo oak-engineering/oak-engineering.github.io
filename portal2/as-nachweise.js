@@ -127,6 +127,9 @@ async function asNwUwLaden(){
     apiGet("/rest/v1/portal_belegschaft?select=*" + k).catch(() => [])]);
   AS_NW.uwNw = nw; AS_NW.beleg = (beleg || [])[0] || null;
 }
+/* Person aus der Belegschaft zum eingetragenen Namen (Stufe 4: Nachweise und Vorsorge hängen an der Person,
+   damit „Person scheidet aus“ Beauftragungen beendet und Vorsorge-Erinnerungen stoppt) */
+function asNwPersonId(name){ const n = asNwNorm(name); const p = AS_NW.uwPers.find(x => asNwNorm(x.name) === n); return p ? p.id : null; }
 function asNwPersonen(){
   const namen = new Set();
   AS_NW.uwPers.forEach(p => namen.add(p.name));
@@ -253,7 +256,7 @@ function asNwDialog(n){
     asMeldung("Wird gespeichert …");
     let pfad = n ? n.datei_pfad : null;
     if(datei) pfad = await asNwHochladen(datei, AS.kunde + "/nachweise/" + Date.now() + "-" + asNwDateiName(datei));
-    const daten = { person_name: person, art: x.art, bezeichnung: x.bezeichnung || null,
+    const daten = { person_name: person, person_id: asNwPersonId(person), art: x.art, bezeichnung: x.bezeichnung || null,
       ausgestellt_am: x.ausgestellt_am || null, gueltig_bis: x.gueltig_bis || null,
       beauftragt: AS_NW_BEAUFTRAGUNG.includes(x.art) ? !!x.beauftragt : !!(n && n.beauftragt),
       aussteller: x.aussteller || null, datei_pfad: pfad, notiz: x.notiz || null, as_einheit_id: x.as_einheit_id || null,
@@ -285,7 +288,7 @@ function asNwDialog(n){
 
 function asNwVsListe(box){
   const rang = { kritisch: 0, warnung: 1, gut: 2, grau: 3 };
-  const zeilen = AS_NW.vs.map(v => ({ v, st: asNwVsStand(v) }))
+  const zeilen = AS_NW.vs.filter(v => !v.abgeschlossen_am).map(v => ({ v, st: asNwVsStand(v) }))
     .sort((a, b) => (rang[a.st.klasse] - rang[b.st.klasse]) || String(a.v.person_name).localeCompare(String(b.v.person_name), "de"));
   box.innerHTML = `${AS_NW.fehler ? `<div class="karte"><div class="leer">Vorsorge konnte nicht vollständig geladen werden: ${esc(AS_NW.fehler)}</div></div>` : ""}
     <div class="karte"><h2>Betriebsärztliche Vorsorge <button class="btn klein nodruck" id="asNwVsNeu">Vorsorge eintragen</button></h2>
@@ -336,7 +339,7 @@ function asNwVsDialog(v){
     const wer = String(x.wer || "").replace(/\s+/g, " ");
     if(wer.length < 3){ asMeldung("Bitte Ihren Namen eintragen."); return false; }
     /* Nur diese Felder – keine Befunde, kein Freitext, keine Datei (Art. 9 DSGVO) */
-    const daten = { person_name: person, anlass: x.anlass, art: AS_NW_VS_ART[x.art] ? x.art : "pflicht", datum: x.datum || null, naechste: x.naechste || null,
+    const daten = { person_name: person, person_id: asNwPersonId(person), anlass: x.anlass, art: AS_NW_VS_ART[x.art] ? x.art : "pflicht", datum: x.datum || null, naechste: x.naechste || null,
       geaendert_von: wer, geaendert_am: new Date().toISOString() };
     if(v) await apiSend("PATCH", "/rest/v1/portal_vorsorge?id=eq." + encodeURIComponent(v.id), daten, "return=minimal");
     else await apiSend("POST", "/rest/v1/portal_vorsorge", Object.assign({ kunde_slug: AS.kunde, erfasst_von: wer }, daten), "return=minimal");
