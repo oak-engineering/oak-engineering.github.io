@@ -185,7 +185,8 @@ function asGefDialog(s, g, taetigkeitId){
     kn.unshift({ t: "+ Maßnahme", klasse: "sek", fn: () => { asMassnahmeDialog(null, { gefaehrdung_id: g.id, quelle: "bda" }, s); return false; } });
     if(AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Gefährdung löschen? Maßnahmen bleiben ohne Bezug erhalten.")) return false; await asLoeschen("as_gefaehrdung", g.id); await asLaden(); asZeige(); } });
   }
-  asDialog({ titel: neu ? "Neue Gefährdung / Belastung / Ressource" : g.kurz, breit: true, inhalt: `<div class="form">
+  asDialog({ titel: neu ? "Neue Gefährdung / Belastung / Ressource" : g.kurz, breit: true, inhalt: `${g.gefahrstoff_id ? `<p class="hinweis voll">Gefahrstoff aus dem Kataster – Beurteilung nach EMKG, Betriebsanweisung und Handschuh dort:
+      <button type="button" class="btn sek klein" onclick="document.getElementById('dlg').close(); AS_GS.oeffnen='${esc(g.gefahrstoff_id)}'; asGehe('gefahrstoffe/kataster')">Im Gefahrstoffkataster öffnen</button></p>` : ""}<div class="form">
       ${asAuswahl("Art", "art", g.art, [["gefaehrdung", "Gefährdung"], ["belastung", "Belastung (physisch/psychisch)"], ["ressource", "Ressource (stärkt die Beschäftigten)"]])}
       ${asAuswahl("Tätigkeit", "taetigkeit_id", g.taetigkeit_id || "", [["", "– ohne Tätigkeitsbezug –"]].concat(asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).map(t => [t.id, t.name])))}
       ${asAuswahl("Gefährdungsfaktor", "faktor", g.faktor || "", [["", "–"]].concat(AS_KAT.faktoren.map(f => [f, f])).concat(AS_KAT.ressourcen.map(r => [r, "Ressource: " + r])), "voll")}

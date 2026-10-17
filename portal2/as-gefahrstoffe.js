@@ -93,6 +93,13 @@ function asGsBereiche(g){
   const n = (g.einheit_ids || []).map(asBereichName1).filter(Boolean);
   return n.length ? n : (g.bereiche || []);
 }
+function asGsTaetigkeiten(){
+  const sys = Object.fromEntries(asT("as_arbeitssystem").map(s => [s.id, s]));
+  return asT("as_taetigkeit").filter(t => sys[t.arbeitssystem_id])
+    .map(t => [t.id, (sys[t.arbeitssystem_id].name || "") + " → " + t.name, t.arbeitssystem_id])
+    .sort((a, b) => a[1].localeCompare(b[1], "de", { numeric: true }));
+}
+function asGsTaetigkeitName(id){ const t = asGsTaetigkeiten().find(x => x[0] === id); return t ? t[1] : ""; }
 function asGsPflege(){ return !!(AS.fachkraft || AS.gf || AS.admin); }
 async function asGsHochladen(datei, ordner){
   const pfad = AS.kunde + "/gefahrstoffe/" + ordner + "/" + Date.now() + "-" + datei.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-{2,}/g, "-");
@@ -154,7 +161,8 @@ function asGsListe(box){
   const zeile = g => {
     const s = asGsSdb(g), v = asGsVerw(g), gb = asGsGbus(g), vorgelegt = gb.some(x => x.vorgelegt_am && x.status !== "freigegeben");
     const chips = [g.signalwort ? asChip(g.signalwort, g.signalwort === "Gefahr" ? "rot" : "gelb") : "",
-      v !== "aktiv" ? asChip(AS_GS_VERW[v], v === "offen" ? "gelb" : "grau") : "", asChip(s.kurz, s.farbe),
+      g.ersetzt_durch ? asChip("ersetzt durch " + ((AS_GS.rows.find(x => x.id === g.ersetzt_durch) || {}).bezeichnung || "Ersatzstoff"), "grau")
+        : v !== "aktiv" ? asChip(AS_GS_VERW[v], v === "offen" ? "gelb" : "grau") : "", asChip(s.kurz, s.farbe),
       asGsGbuFrei(g) ? asChip("GBU freigegeben", "gruen") : vorgelegt ? asChip("GBU zur Freigabe", "gelb") : gb.length ? asChip("GBU Entwurf", "gelb") : g.gbu_pfad ? asChip("GBU (PDF)", "gruen") : asChip("GBU fehlt", "rot"),
       asGsBaDa(g) ? asChip(g.ba_gruppe ? "Gruppen-BA" : "BA", "gruen") : (g.ba_pfade || []).length ? asChip("Sammel-BA", "gelb") : asChip("BA fehlt", "rot"),
       asGsPruefen(g) ? asChip("Überprüfung fällig", "gelb") : ""].join("");
@@ -237,6 +245,15 @@ function asGsStoff(g, box){
     ${g.gbu_pfad ? `<button class="btn sek klein" id="gsGbuPdf">Gefährdungsbeurteilung (PDF)</button>` : ""}
     ${pflege ? `<button class="btn klein" id="gsTzNeu">+ Tätigkeit beurteilen (EMKG)</button>` : ""}
 
+    <div class="gs-abschnitt">In der Beurteilung der Arbeitsbedingungen</div>
+    ${(() => { const tk = [...new Set(gb.map(x => x.taetigkeit_id).filter(Boolean))];
+      return tk.length ? `<div class="gs-zeile">${tk.map(t => { const x = asGsTaetigkeiten().find(z => z[0] === t);
+          return x ? `<button class="btn sek klein" data-bda="${esc(x[2])}">${esc(x[1])}</button>` : ""; }).join("")}</div>`
+        : `<p class="hinweis">Noch keiner Tätigkeit zugeordnet – in der EMKG-Beurteilung die Tätigkeit aus der BdA wählen.</p>`; })()}
+    ${g.ersetzt_durch ? `<p class="hinweis">Ersetzt am ${asDat(g.ersetzt_am)} durch <button class="btn sek klein" data-stoff="${esc(g.ersetzt_durch)}">${esc((AS_GS.rows.find(x => x.id === g.ersetzt_durch) || {}).bezeichnung || "Ersatzstoff")}</button></p>` : ""}
+    ${AS_GS.rows.filter(x => x.ersetzt_durch === g.id).map(x => `<p class="hinweis">Ersatz für <button class="btn sek klein" data-stoff="${esc(x.id)}">${esc(x.bezeichnung)}</button> (seit ${asDat(x.ersetzt_am)})</p>`).join("")}
+    ${pflege && asGsVerw(g) !== "inaktiv" ? `<div class="gs-zeile" style="margin-top:6px"><button class="btn sek klein" id="gsErsetzen">Durch Ersatzstoff ersetzen (Substitution)</button></div>` : ""}
+
     <div class="gs-abschnitt">Betriebsanweisung</div>
     ${paBa ? `<p class="hinweis">Überprüfung fällig bis ${asDat(paBa.faellig_am)}: ${esc((paBa.anlaesse || []).map(a => a.text).join(" · "))}</p>` : ""}
     <div class="gs-zeile">${g.ba_pfad ? `<button class="btn sek klein" id="gsBaPdf">Betriebsanweisung (PDF)</button>` : ""}
@@ -260,6 +277,9 @@ function asGsStoff(g, box){
   d.querySelectorAll("[data-sba]").forEach(el => el.onclick = () => { const p = g.ba_pfade[+el.dataset.sba], t = el.textContent;
     const dok = AS_GS.docs.find(x => x.storage_path === p) || {};
     d.close(); asDokOeffnen(asViewerUrl(dok.doc_typ || (p.endsWith(".html") ? "html" : "pdf"), p, "Betriebsanweisung · " + t), "Betriebsanweisung · " + t); });
+  d.querySelectorAll("[data-bda]").forEach(el => el.onclick = () => { d.close(); AS.reiter.bda = el.dataset.bda; asGehe("bda/" + el.dataset.bda); });
+  d.querySelectorAll("[data-stoff]").forEach(el => el.onclick = () => asGsStoff(AS_GS.rows.find(x => x.id === el.dataset.stoff), box));
+  auf("#gsErsetzen", () => asGsErsetzen(g, box));
   auf("#gsHs", () => { d.close(); asGehe("gefahrstoffe/handschuhe"); });
   auf("#gsTzNeu", () => asGsEmkg(g, null, box));
   auf("#gsSdbNeu", () => asGsBearbeiten(g, box, true));
@@ -274,6 +294,29 @@ function asGsStoff(g, box){
       geaendert_von: AS.ich, geaendert_am: new Date().toISOString() }, "return=minimal");
     asMeldung("Anforderung vermerkt"); asGsNeuLaden(box, g.id); });
   d.querySelectorAll("[data-gbu]").forEach(el => el.onclick = () => asGsEmkg(g, AS_GS.gbu.find(x => x.id === el.dataset.gbu), box));
+}
+
+/* ---------------- Substitution (TRGS 600) ---------------- */
+function asGsErsetzen(g, box){
+  const kandidaten = AS_GS.rows.filter(x => x.id !== g.id && asGsVerw(x) !== "inaktiv").sort((a, b) => a.bezeichnung.localeCompare(b.bezeichnung, "de"));
+  asDialog({ titel: "Ersetzen: " + g.bezeichnung, breit: true, inhalt: `<p>Der Ersatzstoff übernimmt die Bereiche und die Tätigkeiten (als Beurteilungs-Entwürfe) und tritt in der
+      Beurteilung der Arbeitsbedingungen an die Stelle von „${esc(g.bezeichnung)}“. Der alte Stoff wird als „nicht mehr verwendet“ archiviert,
+      seine Beurteilungen und die Betriebsanweisung gelten als überholt und bleiben als Nachweis erhalten. Danach sind die Beurteilungen
+      des Ersatzstoffs und die betroffenen BdA zu prüfen – die Aufgaben entstehen automatisch.</p>
+    <div class="form">${asAuswahl("Ersatzstoff", "ziel", "", [["", "– neuer Stoff (unten benennen) –"]].concat(kandidaten.map(x => [x.id, x.bezeichnung + (x.hersteller ? " · " + x.hersteller : "")])), "voll")}
+      ${asFeld("Neuer Stoff: Bezeichnung (Handelsname)", "neu_name", "", "text")}${asFeld("Neuer Stoff: Hersteller", "neu_hersteller", "", "text")}</div>`,
+    knoepfe: [{ t: "Ersetzen", fn: async d => {
+      const w = asWerte(d); let ziel = w.ziel;
+      if(!ziel){
+        if(!w.neu_name || w.neu_name.length < 2){ asMeldung("Bitte einen Ersatzstoff wählen oder den neuen Stoff benennen"); return false; }
+        const r = await apiSend("POST", "/rest/v1/portal_gefahrstoff", { kunde_slug: AS.kunde, bezeichnung: w.neu_name, hersteller: w.neu_hersteller || null,
+          einheit_ids: g.einheit_ids || [], verwendung_status: "aktiv", aktiv: true, quelle: "portal", geaendert_von: AS.ich, geaendert_am: new Date().toISOString() }, "return=representation");
+        ziel = r && r[0] && r[0].id;
+      }
+      const n = await apiSend("POST", "/rest/v1/rpc/portal_gefahrstoff_ersetzen", { p_alt: g.id, p_neu: ziel });
+      asMeldung("Ersetzt – " + ((n && n.taetigkeiten) || 0) + " Tätigkeit(en) neu zu beurteilen, " + ((n && n.gefaehrdungen) || 0) + " Gefährdung(en) in der BdA umgestellt");
+      if(typeof asLaden === "function") await asLaden().catch(() => {});
+      await asGsNeuLaden(box, ziel); return false; } }] });
 }
 
 /* ---------------- Stammdaten ---------------- */
@@ -387,6 +430,8 @@ function asGsEmkg(g, gbu, box){
     ${gbu ? `<div class="gs-zeile">${asGsGbuStatus(gbu)}</div>` : ""}
     <p class="hinweis">${esc((g.h_saetze || []).join(" ") || "keine H-Sätze")} – je Tätigkeit eine Beurteilung. Die Maßnahmen ergeben sich aus den Angaben und stehen laufend unten.</p>
     <div class="form">
+      <label class="voll">Tätigkeit in der Beurteilung (BdA) – hier taucht der Stoff nach der Freigabe als Gefährdung auf
+        <select id="eTk"><option value="">– noch keiner Tätigkeit zugeordnet –</option>${asGsTaetigkeiten().map(([v, t]) => `<option value="${esc(v)}"${gbu && gbu.taetigkeit_id === v ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>
       <label class="voll">Was wird gemacht?<input type="text" id="eT" maxlength="200" value="${esc(gbu ? gbu.taetigkeit : "")}" placeholder="z. B. Werkzeug reinigen mit Lappen"></label>
       <label>Bereich<input type="text" id="eB" list="eBListe" maxlength="120" value="${esc(bereichStd)}"></label>
       <datalist id="eBListe">${asBereichListe().map(([x]) => `<option value="${esc(x.name)}">`).join("")}</datalist>
@@ -453,7 +498,7 @@ function asGsEmkg(g, gbu, box){
       await apiSend("PATCH", "/rest/v1/portal_gefahrstoff?id=eq." + encodeURIComponent(g.id), { sdb_daten: sdn, geaendert_von: AS.ich, geaendert_am: new Date().toISOString() }, "return=minimal");
       g.sdb_daten = sdn;
     }
-    const daten = { taetigkeit: taet, arbeitsbereich: q("#eB").value.trim() || null, eingaben: eingaben(),
+    const daten = { taetigkeit: taet, taetigkeit_id: q("#eTk").value || null, arbeitsbereich: q("#eB").value.trim() || null, eingaben: eingaben(),
       stoffdaten: Object.assign(asGsStoffEmkg(g), { _sdb: { pfad: g.sdb_pfad || null, ausgabe: g.sdb_ausgabe || null } }),
       ergebnis: r, kern_version: r.version, status: art === "freigegeben" ? "freigegeben" : "entwurf",
       vorgelegt_am: art === "vorlegen" ? new Date().toISOString() : null };
