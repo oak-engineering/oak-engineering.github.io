@@ -317,6 +317,17 @@ AS_SEITEN.mitzeichnung = { titel: "Mitzeichnung", icon: "✎", sort: 6, render(m
       w.einheit_id = w.einheit_id || null; await asSpeichern("as_mitzeichnung", w); asZeige(); } }] });
   main.querySelectorAll("[data-x]").forEach(z => z.onclick = () => asMitzeichnungDialog(asNach("as_mitzeichnung", z.dataset.x)));
 }};
+/* Typische Folgeschritte je Vorhaben (Prozessmodell P12: BdA, BA, Unterweisung, Gefahrstoffverzeichnis, Prüfkataster ergänzen) */
+const AS_MZ_FOLGEN = {
+  maschine: ["Beurteilung der Arbeitsbedingungen für die neue Anlage erstellen", "Prüfung vor erster Verwendung durchführen (§ 14 Abs. 1 BetrSichV)", "Betriebsanweisung erstellen und vor Inbetriebnahme unterweisen"],
+  umbau: ["Beurteilung der Arbeitsbedingungen anpassen", "Prüfung nach Änderung durchführen (§ 14 Abs. 2 BetrSichV)", "Betriebsanweisung anpassen und neu unterweisen"],
+  gefahrstoff: ["Stoff ins Gefahrstoffverzeichnis aufnehmen, SDB hinterlegen und Tätigkeit nach EMKG beurteilen", "Betriebsanweisung und Unterweisung vor der ersten Verwendung"],
+  bau: ["Beurteilung der Arbeitsbedingungen für den Bereich anpassen", "Flucht- und Rettungsplan prüfen"],
+  verfahren: ["Beurteilung der Arbeitsbedingungen anpassen", "Beschäftigte unterweisen"],
+  stelle: ["Erstunterweisung und Vorsorge vor Arbeitsbeginn planen"],
+  mutterschutz: ["Schutzmaßnahmen nach § 10 MuSchG umsetzen und Gespräch anbieten", "Mitteilung an die Aufsichtsbehörde"],
+  psa: ["PSA beschaffen und Benutzung unterweisen"],
+  fremdfirma: ["Gegenseitige Gefährdungen abstimmen und Externe unterweisen"] };
 function asMitzeichnungDialog(x){
   const kat = AS_KAT.mitzeichnung[x.art] || { titel: x.art, punkte: [] };
   const cl = x.checkliste || {}, sifa = AS.fachkraft && x.status !== "entschieden";
@@ -324,8 +335,8 @@ function asMitzeichnungDialog(x){
   const kn = [];
   if(sifa) kn.push({ t: "Empfehlung speichern", klasse: "adm", fn: async d => { const w = asWerte(d), c = {};
     kat.punkte.forEach((p, i) => c[i] = w["cl" + i] || ""); if(!w.empfehlung){ asMeldung("Empfehlung wählen"); return false; }
+    c._auflagen = asListe((w.auflagen || "").replace(/\n/g, ",")).concat((cl._auflagen || []));   // werden erst mit der Freigabe zu Maßnahmen
     await asSpeichern("as_mitzeichnung", { id: x.id, checkliste: c, empfehlung: w.empfehlung, empfehlung_text: w.empfehlung_text, empfehlung_am: asHeute(), empfehlung_von: AS.ich, status: "geprueft" });
-    for(const a of asListe((w.auflagen || "").replace(/\n/g, ","))) await asSpeichern("as_massnahme", { quelle: "mitzeichnung", quelle_id: x.id, stop: "O", text: a, umsetzung: "zentral", status: "offen" });
     asZeige(); } });
   if(x.status === "geprueft") kn.push({ t: "Entscheiden (Führungskraft)", fn: () => { asDialog({ titel: "Entscheidung zu: " + x.titel, inhalt: `
       <p>Empfehlung der Sifa: <b>${esc({ ohne: "freigeben ohne Auflagen", auflagen: "freigeben mit Auflagen", nicht: "nicht empfohlen" }[x.empfehlung])}</b>${x.empfehlung_text ? " – " + esc(x.empfehlung_text) : ""}</p><div class="form">
@@ -334,7 +345,15 @@ function asMitzeichnungDialog(x){
     knoepfe: [{ t: "Speichern", fn: async d => { const w = asWerte(d);
       const abw = (x.empfehlung === "nicht" && w.freigabe === "freigegeben") || (x.empfehlung !== "nicht" && w.freigabe === "abgelehnt");
       if(abw && !w.begruendung){ asMeldung("Abweichung von der Empfehlung bitte begründen"); return false; }
-      await asSpeichern("as_mitzeichnung", Object.assign({ id: x.id, freigabe_am: asHeute(), status: "entschieden" }, w)); asZeige(); } }] }); return false; } });
+      await asSpeichern("as_mitzeichnung", Object.assign({ id: x.id, freigabe_am: asHeute(), status: "entschieden" }, w));
+      if(w.freigabe === "freigegeben"){   // Auflagen + typische Folgeschritte als Maßnahmen mit Termin (Prozessmodell P12 → P10/P20/P22/P23)
+        const term = (() => { const t = new Date(); t.setDate(t.getDate() + 28); return t.toISOString().slice(0, 10); })();
+        const folgen = (x.checkliste && x.checkliste._auflagen || []).concat(AS_MZ_FOLGEN[x.art] || []);
+        for(const t of folgen) await asSpeichern("as_massnahme", { quelle: "mitzeichnung", quelle_id: x.id, stop: "O", text: t + " – " + x.titel, umsetzung: "zentral",
+          status: "offen", termin: term, einheit_id: x.einheit_id || null });
+        if(folgen.length) asMeldung(folgen.length + " Folgeschritte als Maßnahmen angelegt");
+      }
+      asZeige(); } }] }); return false; } });
   asDialog({ titel: x.titel, breit: true, inhalt: `<p class="hinweis">${esc(kat.titel)} · angemeldet ${asDat(x.angemeldet_am)} von ${esc(x.angemeldet_von || "–")} · ${esc(asEinheitName(x.einheit_id))}</p>
     <p>${esc(x.beschreibung || "")}</p>
     <h4 style="margin:12px 0 6px">Checkliste der Sifa</h4>
@@ -342,7 +361,8 @@ function asMitzeichnungDialog(x){
       : `<div class="krit"><span class="${cl[i] === "ok" ? "ok" : "nok"}">${cl[i] === "ok" ? "✓" : cl[i] ? "!" : "–"}</span><div>${esc(p)} <span class="hinweis">${esc(cl[i] || "")}</span></div></div>`).join("")}
     ${sifa ? `<div class="form" style="margin-top:12px">${asAuswahl("Empfehlung", "empfehlung", x.empfehlung || "", [["", "– wählen –"], ["ohne", "freigeben ohne Auflagen"], ["auflagen", "freigeben mit Auflagen"], ["nicht", "nicht empfohlen"]])}
         ${asFeld("Begründung / Hinweise", "empfehlung_text", x.empfehlung_text, "textarea", "voll")}
-        ${asFeld("Neue Auflagen (je Zeile eine) – werden Maßnahmen", "auflagen", "", "textarea", "voll")}</div>`
+        ${asFeld("Neue Auflagen (je Zeile eine) – werden mit der Freigabe zu Maßnahmen", "auflagen", "", "textarea", "voll")}
+        ${(cl._auflagen || []).length ? `<p class="hinweis voll">Vorgemerkte Auflagen: ${esc(cl._auflagen.join(" · "))}</p>` : ""}</div>`
       : x.empfehlung ? `<p>Empfehlung: <b>${esc({ ohne: "freigeben ohne Auflagen", auflagen: "freigeben mit Auflagen", nicht: "nicht empfohlen" }[x.empfehlung])}</b> (${esc(x.empfehlung_von || "")}, ${asDat(x.empfehlung_am)}) ${esc(x.empfehlung_text || "")}</p>` : ""}
     ${auflagen.length ? `<h4 style="margin:12px 0 6px">Auflagen</h4>${auflagen.map(m => `<div class="krit">${asStopChip(m.stop)}<div>${esc(m.text)} ${asStatusChip(m)}</div></div>`).join("")}` : ""}
     ${x.status === "entschieden" ? `<p>Entscheidung: <b>${esc(x.freigabe)}</b> von ${esc(x.freigabe_von || "")} am ${asDat(x.freigabe_am)} ${x.begruendung ? "– " + esc(x.begruendung) : ""}</p>` : ""}`, knoepfe: kn });

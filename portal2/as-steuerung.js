@@ -46,7 +46,8 @@ function asAsa(box){
     const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); delete w.beschluesse; await asSpeichern("as_asa", Object.assign({ id: a.id }, w)); asZeige(); } },
       { t: "Protokoll abschließen", klasse: "sek", fn: async d => { const w = asWerte(d), b = asListe((w.beschluesse || "").replace(/\n/g, ",")); delete w.beschluesse;
         const r = await asSpeichern("as_asa", Object.assign({ id: a.id, abgeschlossen: true }, w));
-        for(const t of b) await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: r.id, stop: "O", text: t, umsetzung: "zentral", status: "offen" });
+        const term = (() => { const x = new Date(w.datum || asHeute()); x.setDate(x.getDate() + 28); return x.toISOString().slice(0, 10); })();
+        for(const t of b) await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: r.id, stop: "O", text: t, umsetzung: "zentral", status: "offen", termin: term });
         asMeldung(b.length ? b.length + " Beschlüsse als Maßnahmen angelegt" : "Protokoll abgeschlossen"); asZeige(); } }];
     if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { await asLoeschen("as_asa", a.id); asZeige(); } });
     const d = asDialog({ titel: neu ? "ASA-Sitzung" : "ASA " + asDat(a.datum), breit: true, inhalt: `<div class="form">${asFeld("Datum", "datum", a.datum, "date")}

@@ -24,6 +24,9 @@ async function asBetriebLaden(neu){
       + k + "&order=kategorie.asc,sortierung.asc,maschine.asc,titel.asc").catch(() => []),
     apiGet(storagePfad(AS.kunde + "/anlagenkataster/kurzinfo.json")).catch(() => ({}))]);
   AS_B.docs = docs || []; AS_B.kurz = kurz && typeof kurz === "object" && !Array.isArray(kurz) ? kurz : {}; AS_B.kunde = AS.kunde;
+  /* Betriebszustand je Anlage (Stilllegen/Wiederinbetriebnahme im Cockpit, Stufe 2) – überschreibt die Kurzinfo der Begehung */
+  AS_B.status = {};
+  ((await apiGet("/rest/v1/portal_anlage_status?select=*" + k).catch(() => [])) || []).forEach(r => { AS_B.status[r.maschinen_id] = r; });
   /* im Portal angelegte Anlagen: Kurzinfo steht in ihrer doc-data (portal_anlage_daten), nicht in kurzinfo.json */
   if(AS_B.docs.some(d => /\/portal-anlagen\//.test(d.storage_path || ""))){
     const pa = await apiGet("/rest/v1/portal_anlage_daten?select=maschinen_id,meta:docdata->meta" + k).catch(() => []);
@@ -102,7 +105,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   main.innerHTML = `<h1 class="seite">Anlagen</h1><p class="unter">Alle Anlagen mit Kurzinfo, offenen Mängeln und Dokumenten – Farbe = schlimmster offener Mangel.</p><div class="leer">wird geladen …</div>`;
   await asBetriebLaden();
   const roh = asMaengelRoh(), zeilen = asAnlagen().map(d => {
-    const mid = d.maschinen_id, ki = AS_B.kurz[mid] || {}, aus = ki.betrieb === "ausser_betrieb";
+    const mid = d.maschinen_id, ki = AS_B.kurz[mid] || {}, st0 = (AS_B.status || {})[mid], aus = st0 ? st0.betrieb === "ausser_betrieb" : ki.betrieb === "ausser_betrieb";
     const band = aus ? "aus" : asAnlagenBand(mid), offen = roh.filter(m => m.maschinen_id === mid && m.status !== "erledigt").length;
     const sys = asT("as_arbeitssystem").find(s => asListe(s.anlagen).includes(mid));
     return { d, mid, ki, band, offen, sys };
@@ -124,7 +127,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
             ${d.maschinen_id ? `<button class="btn sek klein" data-dok="${esc("maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id))}" data-titel="${esc(d.maschine || d.titel)}">Maschine</button>
               <button class="btn sek klein" data-dok="${esc("qr.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id))}" data-titel="QR · ${esc(d.maschine || d.titel)}">QR</button>` : ""}
             ${z.sys ? `<button class="btn klein" data-sys="${z.sys.id}">BdA in der App</button>` : ""}
-            ${(AS.fachkraft || AS.gf) && d.maschinen_id ? `<button class="btn sek klein" data-anlber="${esc(d.maschinen_id)}">Bereich</button>` : ""}</div></div>
+            ${(AS.fachkraft || AS.gf) && d.maschinen_id ? `<button class="btn sek klein" data-anlber="${esc(d.maschinen_id)}">Verwalten</button>` : ""}</div></div>
           ${asChip(AS_BAND_TEXT[z.band], AS_BAND_FARBE[z.band])}</div>`; }).join("") || `<div class="leer">Keine Anlagen${st.q || st.band ? " zum Filter" : ""}.</div>`}</div>
       <p class="hinweis">⚠ = Dokument nicht mehr aktuell: ein Mangel wurde nach dem Dokumentstand behoben und ist noch nicht in die Unterlagen übernommen.</p></div>`;
   main.querySelectorAll("[data-band]").forEach(k => k.onclick = () => { st.band = st.band === k.dataset.band ? "" : k.dataset.band; AS_SEITEN.anlagen.render(main); });
@@ -133,12 +136,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   main.querySelectorAll("[data-sys]").forEach(b => b.onclick = ev => { ev.stopPropagation(); AS.reiter.bda = b.dataset.sys; asGehe("bda/" + b.dataset.sys); });
   const an = document.getElementById("anlNeu"); if(an) an.onclick = () => asAnlageNeuDialog(main);
   main.querySelectorAll("[data-anlber]").forEach(b => b.onclick = ev => { ev.stopPropagation();
-    const d = asAnlagen().find(x => x.maschinen_id === b.dataset.anlber); if(!d) return;
-    asDialog({ titel: "Bereich: " + (d.maschine || d.titel), inhalt: `<div class="form">${asBereichWahl("Bereich (Organisation)", "einheit_id", d.einheit_id || "", "voll", "– keinem Bereich zugeordnet –")}</div>
-      <p class="hinweis">Mängel, Maßnahmen, Prüfungen und Termine dieser Anlage ziehen mit, sofern sie nicht ausdrücklich einem anderen Bereich zugeordnet sind.</p>`,
-      knoepfe: [{ t: "Speichern", fn: async dl => { const w = asWerte(dl);
-        await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: d.maschinen_id, p_einheit: w.einheit_id || null });
-        await asBetriebLaden(true); await asLaden(); asMeldung("Bereich gespeichert"); asZeige(); } }] }); });
+    const d = asAnlagen().find(x => x.maschinen_id === b.dataset.anlber); if(d) asAnlageVerwalten(d, main); });
 }};
 
 /* ---------------- Neue Anlage anlegen (Plan intern/portal-eigenstaendig.md, Schritt 4) ----------------
@@ -187,10 +185,50 @@ function asAnlageNeuDialog(main){
       if(typeof asAnlageBdaAnlegen === "function")
         await asAnlageBdaAnlegen(mid, w, vorlage ? vorlage.maschinen_id : null).catch(e => asMeldung("Beurteilung nicht angelegt: " + (e.message || e)));
       if(w.einheit_id) await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: mid, p_einheit: w.einheit_id }).catch(e => asMeldung("Bereich nicht gesetzt: " + (e.message || e)));
+      /* Prüfung vor erster Verwendung (§ 14 Abs. 1 BetrSichV) gleich als Prüfobjekt anlegen – sofort fällig */
+      await apiSend("POST", "/rest/v1/as_pruefobjekt", { kunde_slug: AS.kunde, art: "maschine_gesamt", bezeichnung: "Gesamtcheck " + w.name, maschinen_id: mid,
+        einheit_id: w.einheit_id || null, intervall_monate: 12, grundlage: "§ 14 Abs. 1 BetrSichV (Prüfung vor erster Verwendung)", naechste_am: asHeute(), aktiv: true,
+        notiz: "Prüfung vor erster Verwendung", erstellt_von: AS.ich }, "return=minimal").catch(e => asMeldung("Prüfobjekt nicht angelegt: " + (e.message || e)));
       await asBetriebLaden(true); await asLaden().catch(() => {});
       asMeldung("Anlage " + w.name + " (" + mid + ") angelegt – Beurteilung jetzt prüfen und ergänzen");
       AS_SEITEN.anlagen.render(main);
     } }] });
+}
+/* Anlage verwalten (Prozessmodell P10/P22): Bereich, Stilllegen bzw. Wiederinbetriebnahme, Änderung/Instandsetzung melden –
+   die Folgen (Prüfobjekte, Termine, Mängel, Beurteilung, BA) setzt die Datenbank (portal_anlage_betrieb_setzen / portal_anlage_geaendert). */
+function asAnlageVerwalten(d, main){
+  const mid = d.maschinen_id, st = (AS_B.status || {})[mid], aus = st ? st.betrieb === "ausser_betrieb" : (AS_B.kurz[mid] || {}).betrieb === "ausser_betrieb";
+  const neu = async text => { asMeldung(text); await asBetriebLaden(true); await asLaden().catch(() => {}); AS_SEITEN.anlagen.render(main); };
+  const dlg = asDialog({ titel: (d.maschine || d.titel) + " (" + mid + ")", breit: true, inhalt: `
+    <div class="form">${asBereichWahl("Bereich (Organisation)", "einheit_id", d.einheit_id || "", "voll", "– keinem Bereich zugeordnet –")}</div>
+    <p class="hinweis">Mängel, Maßnahmen, Prüfungen und Termine dieser Anlage ziehen mit, sofern sie nicht ausdrücklich einem anderen Bereich zugeordnet sind.</p>
+    <h3>Betrieb</h3>
+    <p>${aus ? `Die Anlage ist <b>außer Betrieb</b>${st && st.seit ? " seit " + asDat(st.seit) : ""}${st && st.grund ? " – " + esc(st.grund) : ""}.` : "Die Anlage ist <b>in Betrieb</b>."}</p>
+    <div class="form">${asFeld(aus ? "Anlass der Wiederinbetriebnahme" : "Grund bzw. Beschreibung", "grund", "", "text", "voll")}</div>
+    <div class="reihe" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      ${aus ? `<button class="btn sek klein" data-akt="in_betrieb">Wieder in Betrieb nehmen</button>`
+        : `<button class="btn sek klein" data-akt="ausser_betrieb">Stilllegen</button><button class="btn sek klein" data-akt="aenderung">Änderung melden</button>
+           <button class="btn sek klein" data-akt="instandsetzung">Instandsetzung melden</button>`}</div>
+    <p class="hinweis">Stilllegen: Prüfungen und Termine ruhen, offene Mängel entfallen, die Beurteilung muss nicht mehr jährlich überprüft werden.
+      Wiederinbetriebnahme, Änderung und Instandsetzung: Prüfung vor dem Weiterbetrieb wird fällig (§ 14 BetrSichV), Beurteilung und Betriebsanweisung sind zu prüfen.</p>`,
+    knoepfe: [{ t: "Bereich speichern", fn: async dl => { const w = asWerte(dl);
+      await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: mid, p_einheit: w.einheit_id || null });
+      await neu("Bereich gespeichert"); } }] });
+  dlg.querySelectorAll("[data-akt]").forEach(k => k.onclick = async () => {
+    const akt = k.dataset.akt, grund = (dlg.querySelector('[data-f="grund"]').value || "").trim();
+    try{
+      if(akt === "ausser_betrieb" || akt === "in_betrieb"){
+        if(akt === "ausser_betrieb" && !confirm("Anlage stilllegen? Prüfungen und Termine ruhen, offene Mängel entfallen.")) return;
+        const n = await apiSend("POST", "/rest/v1/rpc/portal_anlage_betrieb_setzen", { p_slug: AS.kunde, p_mid: mid, p_betrieb: akt, p_grund: grund || null });
+        dlg.close(); await neu(akt === "in_betrieb" ? "Wieder in Betrieb – Prüfung vor Wiederinbetriebnahme und Beurteilung sind fällig"
+          : "Stillgelegt – " + Object.entries(n || {}).filter(([, v]) => v).map(([k2, v]) => v + " " + k2).join(", "));
+      } else {
+        if(!grund){ asMeldung("Bitte kurz beschreiben, was geändert bzw. instandgesetzt wurde"); return; }
+        await apiSend("POST", "/rest/v1/rpc/portal_anlage_geaendert", { p_slug: AS.kunde, p_mid: mid, p_art: akt, p_text: grund });
+        dlg.close(); await neu("Gemeldet – Prüfung nach " + (akt === "aenderung" ? "Änderung" : "Instandsetzung") + " und Beurteilung sind fällig");
+      }
+    }catch(e){ asMeldung("Fehler: " + (e.message || e)); }
+  });
 }
 function asAnlageAusVorlage(vd, vorlage, w){
   const heute = asHeute(), naechste = (() => { const x = new Date(); x.setFullYear(x.getFullYear() + 1); return x.toISOString().slice(0, 10); })();
