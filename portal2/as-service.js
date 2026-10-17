@@ -445,14 +445,17 @@ const AS_SV_PA = {
 async function asSvPaLaden(){
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const hole = p => apiGet(p).then(r => Array.isArray(r) ? r : []).catch(() => []);
-  const [pa, gbu, po, gbuAlle, baVor, anl, gsE] = await Promise.all([
+  const [pa, gbu, po, gbuAlle, baVor, anl, gsE, pers, rollen] = await Promise.all([
     hole("/rest/v1/portal_pruefauftrag?select=*&erledigt_am=is.null" + k + "&order=faellig_am.asc"),
     hole("/rest/v1/portal_gefahrstoff_gbu?select=id,taetigkeit,gefahrstoff_id,naechste_pruefung,status&status=eq.freigegeben&naechste_pruefung=not.is.null" + k),
     hole("/rest/v1/as_pruefobjekt?select=id,art,bezeichnung,ort,naechste_am,aktiv,einheit_id&naechste_am=not.is.null" + k),
     hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k),
     hole("/rest/v1/as_ba?select=id,titel,arbeitssystem_id,vorgelegt_am,vorgelegt_von,status&vorgelegt_am=not.is.null&status=neq.freigegeben" + k),
     hole("/rest/v1/portal_dokumente?select=maschinen_id,einheit_id&kategorie=in.(anlagen,allg-gbu)" + k),
-    hole("/rest/v1/portal_gefahrstoff?select=id,einheit_ids,verwendung_status,gbu_pfad" + k)]);
+    hole("/rest/v1/portal_gefahrstoff?select=id,einheit_ids,verwendung_status,gbu_pfad" + k),
+    hole("/rest/v1/uw_person?select=id,name,uw_person_rolle(rolle_id)&status=eq.aktiv" + k),
+    hole("/rest/v1/uw_rolle?select=id,name" + k)]);
+  AS_SV.pers = pers; AS_SV.rollen = rollen;
   AS_SV.gbuAlle = gbuAlle; AS_SV.baVor = baVor;
   /* Bereich je Auftragsobjekt – Bereichs-Logins sehen nur Aufträge ihres Bereichs (Durchlauf 2). Unbekannt = betriebsweit. */
   AS_SV.objEinheit = {}; (anl || []).forEach(d => { if(d.maschinen_id) AS_SV.objEinheit[d.maschinen_id] = d.einheit_id || null; });
@@ -509,6 +512,21 @@ function asSvPaAufgaben(){
     schluessel: "gsgbu-freigabe:" + g.id + ":" + g.vorgelegt_am, stufe: "warnung", titel: "Gefahrstoff-Beurteilung freigeben: " + (g.taetigkeit || ""),
     sub: "zur Freigabe vorgelegt " + asDat(g.vorgelegt_am) + (g.vorgelegt_von ? " von " + g.vorgelegt_von : "") + (AS.gf ? "" : " – gibt die Geschäftsführung frei"),
     frist: null, aktionen: [["Öffnen", () => { AS_GS.oeffnen = g.gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] }));
+  /* Vorsorge aus der Beurteilung (Prozessmodell P10 → P24): Anlass an einer Gefährdung → Personen der Rollen ohne passende Vorsorge */
+  { const norm = x => String(x || "").trim().toLowerCase(), rolleName = Object.fromEntries((AS_SV.rollen || []).map(r => [r.id, norm(r.name)]));
+    const hat = (p, anlass) => (AS_SV.vorsorge || []).some(v => !v.abgeschlossen_am && norm(v.anlass) === norm(anlass) && (v.person_id === p.id || norm(v.person_name) === norm(p.name)));
+    asT("as_arbeitssystem").forEach(s => {
+      const codes = [...new Set(asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id).flatMap(g => g.vorsorge || []))]; if(!codes.length) return;
+      const rs = new Set(asListe(s.rollen).map(norm));
+      const betroffen = (AS_SV.pers || []).filter(p => (p.uw_person_rolle || []).some(r => rs.has(rolleName[r.rolle_id])));
+      codes.forEach(c => { const fehlt = betroffen.filter(p => !hat(p, c)); const art = ((typeof AS_NW_ANLAESSE !== "undefined" ? AS_NW_ANLAESSE : []).find(a => a[0] === c) || [])[1];
+        if(!betroffen.length) l.push({ schluessel: "vs-rollen:" + s.id + ":" + c, stufe: "info", titel: "Vorsorgeanlass „" + c + "“ in " + (s.name || "Beurteilung"),
+          sub: "Den Rollen dieser Beurteilung sind keine Personen zugeordnet – Personen unter Unterweisungen → Mitarbeiter zuordnen", frist: null,
+          aktionen: [["Öffnen", () => asGehe("unterweisungen")]] });
+        else if(fehlt.length) l.push({ schluessel: "vs-fehlt:" + s.id + ":" + c + ":" + fehlt.length, stufe: art === "pflicht" ? "kritisch" : "warnung",
+          titel: (art === "pflicht" ? "Pflichtvorsorge veranlassen: " : "Vorsorge anbieten: ") + c,
+          sub: fehlt.length + " Person(en) aus „" + (s.name || "") + "“: " + fehlt.slice(0, 4).map(p => p.name).join(", ") + (fehlt.length > 4 ? " …" : "") + " (ArbMedVV)",
+          frist: null, aktionen: [["Öffnen", () => asGehe("nachweise/vorsorge")]] }); }); }); }
   /* Prüfkataster: fällige und überfällige Prüfungen (Durchlauf 15.10.2026: standen nur im Kalender) */
   (AS_SV.pruefFrist || []).filter(o => bald(o.naechste_am)).forEach(o => l.push({
     schluessel: "pruef-frist:" + o.id + ":" + o.naechste_am, stufe: asSvTage(o.naechste_am) < 0 ? "kritisch" : "warnung",

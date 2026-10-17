@@ -161,6 +161,7 @@ function asGefDialog(s, g, taetigkeitId){
   const ms = g.id ? asMassnahmenZu(g.id) : [];
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.kurz){ asMeldung("Kurztext fehlt"); return false; }
     ["w_v", "s_v", "w_n", "s_n"].forEach(k => w[k] = w[k] ? +w[k] : null); w.taetigkeit_id = w.taetigkeit_id || null;
+    w.vorsorge = [...d.querySelectorAll("[data-vs]:checked")].map(x => x.dataset.vs);
     /* Schutzmaßnahmen zeilenweise „T: Text“ (S/T/O/P) – vorhandene Zusatzangaben (Priorität, Status …) bleiben erhalten */
     if("schutz_text" in w){ const alt = g.schutzmassnahmen || [];
       w.schutzmassnahmen = String(w.schutz_text || "").split(/\n/).map(z => z.trim()).filter(Boolean).map(z => {
@@ -195,6 +196,9 @@ function asGefDialog(s, g, taetigkeitId){
       ${asFeld("Schutzmaßnahmen – eine je Zeile, vorne S/T/O/P (z. B. „T: Verriegelte Schutztür“)", "schutz_text", (g.schutzmassnahmen || []).map(x => (x.stop || "T") + ": " + x.text).join(String.fromCharCode(10)), "textarea", "voll")}
       ${asFeld("Rechtsquelle / Regel (typspezifisch, z. B. DGUV Information 113-606 Abschn. 3.1.3)", "rechtsquelle", g.rechtsquelle || "", "text", "voll")}
       ${asFeld("Schutzziel", "schutzziel", g.schutzziel || "")}${asFeld("Exposition (wer, wie oft)", "exposition", g.exposition || "")}
+      <div class="voll"><b>Vorsorgeanlass (ArbMedVV)</b> <span class="hinweis">– für alle Personen der Rollen dieser Beurteilung wird die Vorsorge fällig</span>
+        <div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px">${(typeof AS_NW_ANLAESSE !== "undefined" ? AS_NW_ANLAESSE : []).map(([t, art]) =>
+          `<label style="flex-direction:row;gap:6px;align-items:center"><input type="checkbox" data-vs="${esc(t)}" ${(g.vorsorge || []).includes(t) ? "checked" : ""}> ${esc(t)} <span class="hinweis">(${art === "pflicht" ? "Pflicht" : "Angebot"})</span></label>`).join("")}</div></div>
       ${asFeld("Herleitung / Notiz", "beschreibung", g.beschreibung, "textarea", "voll")}
       <div class="voll"><b>Fotos</b><div class="hakenliste" id="gefFotoListe">${(g.fotos || []).map((f, i) =>
           `<label title="abwählen = entfernen"><input type="checkbox" data-fbeh="${i}" checked><img data-fpfad="${esc(f.pfad || "")}" alt="" style="width:64px;height:48px;object-fit:cover;border-radius:6px;background:#eef1f5"> ${esc(f.alt || "Foto " + (i + 1))}</label>`).join("")
