@@ -248,7 +248,10 @@ function asMassnahmeDialog(m, vorgabe, sys){
     } else await asSpeichern("as_massnahme", Object.assign({ id: m.id }, neu ? m : {}, w));
     asZeige(); } }];
   if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Maßnahme löschen?")) return false; await asLoeschen("as_massnahme", m.id); asZeige(); } });
-  asDialog({ titel: neu ? "Neue Maßnahme" : "Maßnahme bearbeiten", inhalt: `<div class="form">
+  const gefS = m.gefaehrdung_id ? asNach("as_gefaehrdung", m.gefaehrdung_id) : null;
+  asDialog({ titel: neu ? "Neue Maßnahme" : "Maßnahme bearbeiten", inhalt: `${!neu && m.stop === "S" && gefS && gefS.gefahrstoff_id ? `<p class="hinweis">Substitution:
+        den Stoff im Gefahrstoffkataster durch einen Ersatzstoff ersetzen – die Maßnahme gilt damit als umgesetzt.
+        <button type="button" class="btn sek klein" onclick="document.getElementById('dlg').close(); AS_GS.oeffnen='${esc(gefS.gefahrstoff_id)}'; asGehe('gefahrstoffe/kataster')">Ersatzstoff festlegen</button></p>` : ""}<div class="form">
       ${asAuswahl("STOP-Stufe", "stop", m.stop, Object.entries(AS_STOP).map(([k, v]) => [k, k + " – " + v]))}
       ${neu ? asAuswahl("Umsetzung", "umsetzung", m.umsetzung, [["zentral", "zentral für alle"], ["anlage", "je Anlage (Zähler „x von y“)"]]) : ""}
       ${asFeld("Maßnahme", "text", m.text, "textarea", "voll")}

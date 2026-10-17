@@ -119,9 +119,40 @@ async function asUwHochladen(pfad, inhalt, typ){
   if(!r.ok) throw new Error("Speichern fehlgeschlagen (" + r.status + ")");
 }
 
+/* ======================= Je Rolle: was zu unterweisen ist (aus der Beurteilung) =======================
+   Prozessmodell P20 Schritt 1: Inhalt je Rolle = Gefährdungen der Tätigkeiten mit Schutzmaßnahmen + Betriebsanweisungen
+   + Gefahrstoffe dieser Arbeitssysteme. Eine Quelle: Beurteilung (as_*), BA (Viewer anl:/gs:). */
+async function asUwJeRolle(box){
+  const rollen = AS_UW.d.rollen.filter(r => r.status !== "archiviert");
+  AS_UW.rolle = AS_UW.rolle && rollen.some(r => r.id === AS_UW.rolle) ? AS_UW.rolle : (rollen[0] || {}).id;
+  const rolle = rollen.find(r => r.id === AS_UW.rolle);
+  const norm = x => String(x || "").trim().toLowerCase();
+  const sys = rolle ? asT("as_arbeitssystem").filter(s => asListe(s.rollen).map(norm).includes(norm(rolle.name))) : [];
+  const gefs = await apiGet("/rest/v1/portal_gefahrstoff?select=id,bezeichnung,signalwort,ba_gruppe&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []) || [];
+  const personen = rolle ? AS_UW.d.pers.filter(p => p.status !== "archiviert" && (p.uw_person_rolle || []).some(x => x.rolle_id === rolle.id)) : [];
+  const block = s => { const g = asT("as_gefaehrdung").filter(x => x.arbeitssystem_id === s.id && x.art !== "ressource");
+    const stoffe = [...new Set(g.map(x => x.gefahrstoff_id).filter(Boolean))].map(id => gefs.find(x => x.id === id)).filter(Boolean);
+    const mid = asListe(s.anlagen)[0];
+    return `<div class="karte"><h2>${esc(s.name)}<span>${mid ? `<button class="btn sek klein" data-uwba="${esc(s.id)}">Betriebsanweisung</button>` : ""}
+        <button class="btn sek klein" onclick="AS.reiter.bda='${esc(s.id)}'; asGehe('bda/${esc(s.id)}')">Beurteilung</button></span></h2>
+      <div class="zeilen">${g.map(x => `<div class="z"><div><b>${esc(x.kurz || "")}</b><small>${esc((x.schutzmassnahmen || []).map(m => m.text || m).filter(Boolean).slice(0, 4).join(" · ") || x.situation || x.beschreibung || "")}</small></div>
+        ${x.gefahrstoff_id ? `<button class="btn sek klein" onclick="AS_GS.oeffnen='${esc(x.gefahrstoff_id)}'; asGehe('gefahrstoffe/kataster')">Stoff</button>` : ""}</div>`).join("") || `<div class="leer">Keine Gefährdungen erfasst.</div>`}</div>
+      ${stoffe.length ? `<p class="hinweis">Gefahrstoffe: ${stoffe.map(x => esc(x.bezeichnung) + (x.signalwort ? " (" + esc(x.signalwort) + ")" : "")).join(" · ")} – je Stoff die Gefahrstoff-BA unterweisen.</p>` : ""}</div>`; };
+  box.innerHTML = `<div class="karte"><h2>Was ist zu unterweisen? <span class="hinweis">aus den Beurteilungen der Arbeitsbedingungen</span></h2>
+      <div class="filterleiste">${asFilterWahl('id="uwRolleWahl"', AS_UW.rolle || "", rollen.map(r => [r.id, r.name]), "Rolle")}
+        <span class="fl-zahl">${sys.length} Beurteilung(en) · ${personen.length} Person(en)</span></div>
+      <p class="hinweis">Grundlage der Unterweisung nach § 12 ArbSchG: die Gefährdungen dieser Rolle mit ihren Schutzmaßnahmen, die Betriebsanweisungen und die Gefahrstoffe.
+        Welche Beurteilung zu welcher Rolle gehört, steht in der Beurteilung (Feld „Rollen“).</p>
+      ${personen.length ? `<p class="hinweis">Personen: ${personen.map(p => esc(p.name)).join(", ")}</p>` : ""}</div>
+    ${sys.map(block).join("") || `<div class="karte"><div class="leer">${rolle ? "Diese Rolle ist noch keiner Beurteilung zugeordnet – in der Beurteilung unter „Bearbeiten“ die Rolle eintragen." : "Noch keine Rollen angelegt."}</div></div>`}`;
+  const w = box.querySelector("#uwRolleWahl"); if(w) w.onchange = () => { AS_UW.rolle = w.value; asUwJeRolle(box); };
+  box.querySelectorAll("[data-uwba]").forEach(b => b.onclick = () => { const s = asNach("as_arbeitssystem", b.dataset.uwba);
+    if(s && typeof asBaVorschauUrl === "function") asDokOeffnen(asBaVorschauUrl(s, "ba"), s.name + " · BA"); });
+}
+
 /* ======================= Seite ======================= */
 AS_SEITEN.unterweisungen = { titel: "Unterweisungen", icon: "✎", sort: 5.5, async render(main){
-  const liste = [["terminal", "Terminal & fällig"], ["nachweise", "Nachweise"]];
+  const liste = [["terminal", "Terminal & fällig"], ["nachweise", "Nachweise"], ["je_rolle", "Je Rolle"]];
   if(asUwDarfPflegen()) liste.push(["module", "Module"], ["mitarbeiter", "Mitarbeiter"], ["inhalte", "Inhalte"]);
   const r = asReiter("unterweisungen", liste, "terminal");
   main.innerHTML = `<h1 class="seite">Unterweisungen</h1><p class="unter">Unterweisungs-Terminal, Fälligkeiten und Nachweise – dieselben Daten wie im Kundenportal (§ 12 ArbSchG, § 4 DGUV Vorschrift 1).</p>
@@ -130,7 +161,7 @@ AS_SEITEN.unterweisungen = { titel: "Unterweisungen", icon: "✎", sort: 5.5, as
   try{
     await asUwLaden();
     if(r.akt === "inhalte") await asUwKapLaden();
-    ({ terminal: asUwTerminal, nachweise: asUwNachweise, module: asUwModuleSeite, mitarbeiter: asUwMitarbeiter, inhalte: asUwInhalte })[r.akt](box);
+    ({ terminal: asUwTerminal, nachweise: asUwNachweise, module: asUwModuleSeite, mitarbeiter: asUwMitarbeiter, inhalte: asUwInhalte, je_rolle: asUwJeRolle })[r.akt](box);
   }catch(e){ box.innerHTML = `<div class="karte"><div class="leer">Konnte nicht geladen werden: ${esc(e.message || e)}</div></div>`; }
 }};
 
