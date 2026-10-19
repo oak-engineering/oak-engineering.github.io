@@ -84,7 +84,7 @@ function asZielStand(z){
 }
 function asZielVorschlaege(){
   const kz = asKennzahlen(), v = [];
-  const add = (kennzahl, titel, soll, quelle) => { if(!asT("as_ziel").some(z => z.kennzahl === kennzahl && z.status !== "verworfen")) v.push({ kennzahl, titel, soll, start: kz[kennzahl], quelle }); };
+  const add = (kennzahl, titel, soll, quelle) => { if(!v.some(x => x.kennzahl === kennzahl) && !asT("as_ziel").some(z => z.kennzahl === kennzahl && z.status !== "verworfen")) v.push({ kennzahl, titel, soll, start: kz[kennzahl], quelle }); };
   if(kz.massnahmen_rot_offen > 0) add("massnahmen_rot_offen", "Alle Maßnahmen zu hohen Risiken wirksam umgesetzt", 0, "BdA");
   if(kz.beauftragte_erfuellt < 100) add("beauftragte_erfuellt", "Ersthelfer, Brandschutzhelfer und SiBe in jeder Schicht vollständig", 100, "Beauftragte");
   if(kz.bda_freigegeben < 100) add("bda_freigegeben", "BdA für alle Arbeitssysteme freigegeben", 100, "Aufbaupfad");
