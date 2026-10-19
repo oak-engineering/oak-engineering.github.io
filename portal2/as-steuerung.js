@@ -29,7 +29,10 @@ function asAsaTagesordnung(){
   const mz = asT("as_mitzeichnung").filter(x => x.status !== "entschieden");
   z.push("6. Offene Mitzeichnungen: " + (mz.length ? mz.map(x => x.titel).join(", ") : "keine"));
   const zi = asT("as_ziel").filter(x => x.status === "aktiv");
-  z.push("7. Ziele: " + (zi.length ? zi.map(x => x.titel + " (" + asZielStand(x).text + ")").join("; ") : "keine aktiven Ziele"));
+  /* Prozessmodell P03 → P04: erreichte oder abgelaufene Ziele seit der letzten Sitzung bewerten */
+  const zb = asT("as_ziel").filter(x => x.status !== "verworfen" && (x.status === "erreicht" || asZielStand(x).erreicht || (x.termin && x.termin < asHeute() && x.termin > seit)));
+  z.push("7. Ziele: " + (zi.length ? zi.map(x => x.titel + " (" + asZielStand(x).text + ")").join("; ") : "keine aktiven Ziele")
+    + (zb.length ? " – zu bewerten (erreicht/Termin abgelaufen): " + zb.map(x => x.titel).join("; ") : ""));
   z.push("8. Einsatzzeiten " + e.jahr + ": Sifa " + Math.round(e.istSifa) + "/" + Math.round(e.sollSifa) + " h, Betriebsarzt " + Math.round(e.istBa) + "/" + Math.round(e.sollBa) + " h");
   if(kz.pruefungen_ueberfaellig) z.push("Prüfungen: " + kz.pruefungen_ueberfaellig + " überfällig");
   if(kz.kultur_rot) z.push("Sicherheitskultur: " + kz.kultur_rot + " rote Handlungsfelder im KurzCheck");
@@ -94,6 +97,10 @@ function asZielVorschlaege(){
   if(kz.pruefungen_ueberfaellig > 0) add("pruefungen_ueberfaellig", "Alle Prüfungen fristgerecht durchgeführt", 0, "Prüfkataster");
   if(kz.kultur_rot > 0) add("kultur_rot", "Keine roten Handlungsfelder im KurzCheck Präventionskultur", 0, "Sicherheitskultur");
   if(kz.einsatz_sifa < 100 && asEinsatz().sollSifa) add("einsatz_sifa", "Einsatzzeit der Sifa vollständig erbracht", 100, "DGUV V2");
+  /* übrige Kennzahlen im roten Bereich (Prozessmodell P05 → P03) */
+  Object.entries(AS_KAT.kennzahlen).forEach(([k, d]) => { if(kz[k] == null) return;
+    if(d.einheit === "%" && d.mehr_besser && kz[k] < 80) add(k, d.titel + ": mindestens 80 %", k === "einsatz_ba" || k === "pruefungen_aktuell" || k === "organisation_nachweise" ? 100 : 80, "Kennzahl");
+    else if(d.einheit === "Anzahl" && !d.mehr_besser && kz[k] > 0) add(k, d.titel + ": keine mehr", 0, "Kennzahl"); });
   return v;
 }
 function asZiele(box){

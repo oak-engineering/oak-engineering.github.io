@@ -493,6 +493,11 @@ function asSvAufgaben(){
     moegl.forEach(g => l.push({ schluessel: "subst-moeglich:" + g.id, stufe: "warnung", titel: "Ersatz möglich – Ersatzstoff festlegen: " + (g.taetigkeit || ""),
       sub: "Laut Substitutionsprüfung gibt es einen geeigneten Ersatz (TRGS 600) – im Kataster „Durch Ersatzstoff ersetzen“", frist: null,
       aktionen: [["Stoff öffnen", () => { AS_GS.oeffnen = g.gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] })); }
+  /* 6t. Kennzahl im roten Bereich ohne Ziel → Zielvorschlag prüfen (P05 → P03) */
+  if((AS.fachkraft || AS.gf) && typeof asZielVorschlaege === "function"){ let v = []; try{ v = asZielVorschlaege(); }catch(e){}
+    if(v.length) l.push({ schluessel: "zielvorschlag:" + v.map(x => x.kennzahl).sort().join(","), stufe: "info", quittierbar: true,
+      titel: v.length + (v.length === 1 ? " Zielvorschlag" : " Zielvorschläge") + " aus Kennzahlen im roten Bereich", sub: v.slice(0, 3).map(x => x.titel).join(" · ") + (v.length > 3 ? " …" : ""),
+      frist: null, aktionen: [["Ziele", () => asGehe("steuerung/ziele")]] }); }
   /* 8. Forum */
   AS_SV.anfragen.forEach(a => {
     const zuOeffnen = () => { AS_SV.fOffen = a.id; asGehe("fragen"); };
