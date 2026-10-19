@@ -4,8 +4,8 @@
      sieht er nur diese Einheiten samt Unterbereichen; übergeordnete und betriebsweite Einträge nur lesend.
    - Logins ohne Zuordnung (GF, Fachkraft, OAK) sehen alles und können oben auf einen Bereich einschränken.
    Gefiltert wird zentral in apiGet – jede Liste, Kachel und Suche bekommt die Einschränkung automatisch.
-   Stufe 2 (harte Sperre in der Datenbank) liegt vorbereitet in references/vorlagen/supabase/bereich_sichtbarkeit_2026-10-14.sql.
-   Eingebettete V1-Seiten (iframe) filtern noch nicht – das leistet erst Stufe 2. */
+   Stufe 2 (harte Sperre in der Datenbank) ist seit 19.10.2026 live: references/vorlagen/supabase/stufe8_bereichssperre_2026-10-19.sql
+   (RESTRICTIVE-Policies auf 30 Tabellen) – dieser Filter ist nur noch Komfort, die Datenbank lässt Fremdes gar nicht durch. */
 "use strict";
 
 AS.bereich = { aktiv: false, fest: false, meine: [], wurzeln: [], einheiten: [], lesen: new Set(), schreiben: new Set(), versteckt: new Set() };
