@@ -450,12 +450,17 @@ function asSvAufgaben(){
         titel: "Betreuungsumfang neu vereinbaren", sub: "vereinbart " + alt + " h/Jahr, heute nötig " + neu + " h/Jahr (Beschäftigte oder Gruppe geändert) – DGUV Vorschrift 2",
         frist: null, aktionen: [["Einsatzzeiten", () => asGehe("organisation/einsatz")]] }); } }catch(err){}
   /* 6o. Vorsorgeanlass prüfen (P10 → P24): Gefährdungen mit typischem Anlass, aber ohne angehakten Vorsorgeanlass */
-  { const anl = /^(3 |7 |9 )|Gefahrstoff|Lärm|Vibration|Hitze|Atemschutz|Feucht/i;
+  { const anl = /^(3 |7 |9 )|Gefahrstoff|Lärm|Vibration|Hitze|Atemschutz|Feucht/i, vsL = [];
     asT("as_arbeitssystem").filter(s => !s.stillgelegt_am).forEach(s => {
       const g = asT("as_gefaehrdung").filter(x => x.arbeitssystem_id === s.id && x.art !== "ressource" && !(x.vorsorge || []).length && anl.test((x.faktor || "") + " " + (x.kurz || "")));
-      if(g.length) l.push({ schluessel: "vs-pruefen:" + s.id + ":" + g.map(x => x.id).sort().join(",").slice(0, 60), stufe: "info", quittierbar: true, quittText: "Kein Anlass",
+      if(g.length) vsL.push({ schluessel: "vs-pruefen:" + s.id + ":" + g.map(x => x.id).sort().join(",").slice(0, 60), stufe: "info", quittierbar: true, quittText: "Kein Anlass",
         titel: "Vorsorgeanlass prüfen: " + (s.name || ""), sub: g.length + " Gefährdung(en) ohne Angabe (" + g.slice(0, 3).map(x => x.kurz).join(", ") + ") – ArbMedVV Anhang",
-        frist: null, aktionen: [["Beurteilung", () => { AS.reiter.bda = s.id; asGehe("bda/" + s.id); }]] }); }); }
+        frist: null, aktionen: [["Beurteilung", () => { AS.reiter.bda = s.id; asGehe("bda/" + s.id); }]] }); });
+    const vsOffen = vsL.filter(a => !asSvQuittiert(a.schluessel));
+    if(vsOffen.length <= 5) vsL.forEach(a => l.push(a));          // viele Beurteilungen: eine Sammelaufgabe statt einer Flut
+    else l.push({ schluessel: "vs-pruefen-sammel:" + vsOffen.length, stufe: "info", quittierbar: true, titel: "Vorsorgeanlass prüfen in " + vsOffen.length + " Beurteilungen",
+      sub: "Gefährdungen wie Lärm, Gefahrstoffe oder Lastenhandhabung ohne Angabe zur Vorsorge (ArbMedVV) – im Gefährdungsdialog ankreuzen oder bewusst leer lassen",
+      frist: null, aktionen: [["Erste öffnen", vsOffen[0].aktionen[0][1]]] }); }
   /* 6p. Beauftragung durch Ausscheiden weggefallen – Nachfolge bestellen (P20/P21), auch ohne Soll (Stapler, Kran, EFK …) */
   { const aktiv = (AS_SV.nachweise || []).filter(n => !n.archiviert);
     (AS_SV.nwAus || []).filter(n => n.archiviert && /Person ausgeschieden am (\d{2})\.(\d{2})\.(\d{4})/.test(n.notiz || "")).forEach(n => {
