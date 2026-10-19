@@ -54,7 +54,8 @@ AS_SEITEN.fremdfirmen = { titel: "Fremdfirmen", icon: "⌂", sort: 5.5, render(m
     .sort((a, b) => String(b.von || b.erstellt_am || "").localeCompare(String(a.von || a.erstellt_am || "")));
   const kachel = (farbe, lbl, zahl, hinweis) => `<div class="kachel k-${farbe}"><div class="lbl">${esc(lbl)}</div><div class="zahl">${zahl}</div><div class="hinweis">${esc(hinweis)}</div></div>`;
   const chip = f => { if(f.status !== "aktiv") return asChip(f.status === "abgeschlossen" ? "abgeschlossen" : f.status, "grau");
-    const o = asFfOffen(f); return o.length ? asChip({ abstimmen: "abstimmen", einweisen: "Einweisung offen", erlaubnisschein: "Erlaubnisschein fehlt" }[o[0]] + (o.length > 1 ? " +" + (o.length - 1) : ""), o.includes("erlaubnisschein") ? "rot" : "gelb") : asChip("bereit", "gruen"); };
+    const o = asFfOffen(f), erst = o.includes("erlaubnisschein") ? "erlaubnisschein" : o.includes("einweisen") ? "einweisen" : o[0];
+    return o.length ? asChip({ abstimmen: "abstimmen", einweisen: "Einweisung offen", erlaubnisschein: "Erlaubnisschein fehlt" }[erst] + (o.length > 1 ? " +" + (o.length - 1) : ""), erst === "abstimmen" ? "gelb" : "rot") : asChip("bereit", "gruen"); };
   main.innerHTML = `<h1 class="seite">Fremdfirmen</h1><p class="unter">Vor Arbeitsbeginn: gegenseitige Gefährdungen abstimmen, Externe einweisen, bei gefährlichen Arbeiten Erlaubnisschein (§ 8 ArbSchG, §§ 5, 6 DGUV Vorschrift 1).</p>
     <div class="kacheln k4">
       ${kachel(aktiv.length ? "blau" : "gruen", "Laufende Aufträge", aktiv.length, alle.length - aktiv.length + " abgeschlossen")}
