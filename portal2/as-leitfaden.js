@@ -1,4 +1,4 @@
-/* OAK Arbeitsschutz-App – Leitfaden „Ihr Weg“ + Stufen-Badges (Plan Schritt 8, Modell intern/portal-stufenmodell.md, 14.10.2026).
+/* OAK Arbeitsschutz-App – Leitfaden „Safety-Journey“ + Stufen-Badges (Plan Schritt 8, Modell intern/portal-stufenmodell.md, 14.10.2026).
    Alles wird automatisch aus den Cockpit-Daten berechnet – ohne OAK, ohne KI. Badge Stufe n = alle Kriterien der Stufen 1…n
    erfüllt (Startbedingungen eingeschlossen). Es erlischt automatisch, wenn ein Kriterium nicht mehr erfüllt ist:
    gelb = Vorwarnung, orange = Karenz 14 Tage (Produktregel), rote Pflichten (●) ohne Karenz.
@@ -361,7 +361,7 @@ function asLfBadgeSvg(nr, an){
   return `<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M32 3 56 13v18c0 15-10 25-24 30C18 56 8 46 8 31V13z" fill="${f}" opacity=".14" stroke="${f}" stroke-width="2.5"/>
     <text x="32" y="40" text-anchor="middle" font-size="22" font-weight="700" fill="${f}" font-family="Jost,Segoe UI,sans-serif">${nr}</text></svg>`;
 }
-/* Badge-Zeile für die Übersicht (und oben auf „Ihr Weg“) */
+/* Badge-Zeile für die Übersicht (oben auf der Safety-Journey) */
 function asLfBadgesHtml(erg){
   const b = AS_LF.d ? AS_LF.d.badge || [] : [];
   return `<div class="lf-badges">${erg.stufen.map(st => { const v = b.find(x => x.stufe === st.nr), an = st.erreicht;
@@ -372,13 +372,15 @@ function asLfBadgesHtml(erg){
       ${an && v && v.seit ? `<small>seit ${esc(asDat(v.seit))}${v.audit_am ? " · + OAK-Audit " + esc(asDat(v.audit_am)) : ""}</small>` : ""}</div>`; }).join("")}</div>
     <p class="hinweis" style="margin-top:8px">Automatische Auswertung der vom Betrieb gepflegten Angaben. Keine Zertifizierung. Ein Badge erlischt von selbst, wenn ein Kriterium nicht mehr erfüllt ist.</p>`;
 }
+/* Übersicht: Badges still im Hintergrund auswerten (keine Anzeige – die Journey hat einen eigenen Reiter) */
+async function asLfHintergrund(){ try{ await asLfLaden(); const erg = asLfAuswerten(); if(erg) asLfVerlauf(erg); }catch(e){} }
 /* Für die Übersicht: lädt nach und füllt den Platzhalter */
 async function asLfUebersicht(el){
   asLfCss();
   try{ await asLfLaden(); }catch(e){ el.innerHTML = `<div class="leer">Leitfaden konnte nicht geladen werden.</div>`; return; }
   const erg = asLfAuswerten(); if(!erg || !document.body.contains(el)) return;
   const naechste = erg.liste.filter(x => x.s !== "ok" && x.s !== "na").sort((a, b) => (a.stufe - b.stufe) || ((b.rot ? 1 : 0) - (a.rot ? 1 : 0)) || ({ offen: 0, karenz: 1, warn: 2 }[a.s] - { offen: 0, karenz: 1, warn: 2 }[b.s])).slice(0, 5);
-  el.innerHTML = `<h2>Ihr Weg <a href="#leitfaden" class="btn sek klein" style="text-decoration:none">Leitfaden öffnen</a></h2>${asLfBadgesHtml(erg)}
+  el.innerHTML = `<h2>Safety-Journey <a href="#leitfaden" class="btn sek klein" style="text-decoration:none">Öffnen</a></h2>${asLfBadgesHtml(erg)}
     ${naechste.length ? `<div style="margin-top:6px"><h3>Als Nächstes</h3>${naechste.map(k => asLfZeile(k, true)).join("")}</div>` : ""}`;
   asLfZeilenAktiv(el);
   asLfVerlauf(erg);
@@ -400,15 +402,15 @@ function asLfZeilenAktiv(el){
   });
 }
 
-/* ---------- Seite „Ihr Weg“ ---------- */
-AS_SEITEN.leitfaden = { titel: "Ihr Weg", icon: "◆", sort: 0.8, async render(main){
+/* ---------- Seite „Safety-Journey“ ---------- */
+AS_SEITEN.leitfaden = { titel: "Safety-Journey", icon: "◆", sort: 0.8, async render(main){
   asLfCss();
-  main.innerHTML = `<h1 class="seite">Ihr Weg</h1><p class="unter">Schritt für Schritt zu einer vollständigen Arbeitsschutzorganisation – automatisch aus Ihren Daten ausgewertet.</p><div class="karte"><div class="leer">wird ausgewertet …</div></div>`;
+  main.innerHTML = `<h1 class="seite">Safety-Journey</h1><p class="unter">Schritt für Schritt zu einer vollständigen Arbeitsschutzorganisation – automatisch aus Ihren Daten ausgewertet.</p><div class="karte"><div class="leer">wird ausgewertet …</div></div>`;
   try{ await asLfLaden(true); }catch(e){}
   const erg = asLfAuswerten(); if(!erg) return;
   const akt = +(AS.reiter.leitfaden || (erg.stufe >= 4 ? 4 : erg.stufe + 1)) || 1, st = erg.stufen[Math.min(4, Math.max(1, akt)) - 1];
   const etappen = [...new Set(st.krit.map(k => k.etappe))];
-  main.innerHTML = `<h1 class="seite">Ihr Weg</h1><p class="unter">Schritt für Schritt zu einer vollständigen Arbeitsschutzorganisation – automatisch aus Ihren Daten ausgewertet. Ein Klick auf ein Kriterium führt zur passenden Stelle.</p>
+  main.innerHTML = `<h1 class="seite">Safety-Journey</h1><p class="unter">Schritt für Schritt zu einer vollständigen Arbeitsschutzorganisation – automatisch aus Ihren Daten ausgewertet. Ein Klick auf ein Kriterium führt zur passenden Stelle.</p>
     <div class="karte">${asLfBadgesHtml(erg)}</div>
     <div class="reiter">${erg.stufen.map(s => `<button class="${s.nr === st.nr ? "an" : ""}" onclick="asGehe('leitfaden/${s.nr}')">Stufe ${s.nr} · ${esc(s.name)}</button>`).join("")}</div>
     <div class="karte"><h2>Stufe ${st.nr} · ${esc(st.name)} <span class="hinweis">${st.ok} von ${st.gesamt} erfüllt</span></h2>

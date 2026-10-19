@@ -1,4 +1,4 @@
-/* OAK Arbeitsschutz-App – Cockpit (P05): „Ihr Weg“ mit Stufen-Badges (as-leitfaden.js), wenige Kacheln.
+/* OAK Arbeitsschutz-App – Cockpit (P05): Kennzahl-Kacheln und Spinnennetz Reifegrad; die Safety-Journey hat einen eigenen Reiter (as-leitfaden.js).
    Alles wird aus den Daten berechnet; nichts wird hier gepflegt. */
 "use strict";
 
@@ -49,7 +49,6 @@ AS_SEITEN.cockpit = { titel: "Übersicht", icon: "◉", sort: 1, render(main){
   const kachel = (ziel, farbe, zahl, lbl, info) => `<div class="kachel k-${farbe}" onclick="asGehe('${ziel}')"><div class="lbl">${lbl}</div><div class="zahl">${zahl}</div><div class="hinweis">${info || ""}</div></div>`;
   const akt = pfad.find(s => s.nr === AS.cockpitStufe);
   main.innerHTML = `<h1 class="seite">${esc(AS.org.name)}</h1><p class="unter">Stand ${asDat(asHeute())}</p>
-    <div class="karte" id="lfUebersicht"><div class="leer">Ihr Weg wird ausgewertet …</div></div>
     ${asNetzKarte()}
     <div class="kacheln">
       ${kachel("check", rg ? (Object.values(rg).some(s => s === 1) ? "rot" : Object.values(rg).some(s => s === 2) ? "gelb" : "gruen") : "grau",
@@ -72,5 +71,5 @@ AS_SEITEN.cockpit = { titel: "Übersicht", icon: "◉", sort: 1, render(main){
           return kachel("steuerung/kultur", n("rot") ? "rot" : n("gelb") ? "gelb" : "gruen", n("rot") + " rot · " + n("gelb") + " gelb", "Präventionskultur", "KurzCheck " + asDat(kc.datum)); }
         return kachel("steuerung/kultur", "grau", k && AS_KAT.bradley[k.stufe - 1] ? esc(AS_KAT.bradley[k.stufe - 1].split(" – ")[0]) : "–", "Sicherheitskultur", "Bradley-Kurve"); })()}
     </div>`;
-  if(typeof asLfUebersicht === "function") asLfUebersicht(document.getElementById("lfUebersicht"));
+  if(typeof asLfHintergrund === "function") asLfHintergrund();   // Badges der Safety-Journey still aktuell halten (erlöschen/vergeben)
 }};
