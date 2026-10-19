@@ -324,6 +324,7 @@ function asGsBearbeiten(g, box, sdbFokus){
   const neu = !g; g = g || { verwendung_status: "aktiv", einheit_ids: asBereichStandard() ? [asBereichStandard()] : [] };
   const bereiche = asBereichListe();
   const gruppen = [...new Set(AS_GS.rows.map(x => x.ba_gruppe).filter(Boolean))].sort();
+  let sdbLese = () => null;      // SDB-Leser (as-sdb.js): liefert nach dem Auslesen sdb_daten + Handschuh 8.2
   asDialog({ titel: neu ? "Gefahrstoff aufnehmen" : "Gefahrstoff ändern", breit: true, inhalt: `<div class="form">
     ${asFeld("Bezeichnung (Handelsname)", "bezeichnung", g.bezeichnung, "text", "voll")}
     ${asFeld("Hersteller / Lieferant", "hersteller", g.hersteller)}${asFeld("Artikelnummer", "artikelnummer", g.artikelnummer)}
@@ -337,7 +338,7 @@ function asGsBearbeiten(g, box, sdbFokus){
     ${asFeld("Lagerort", "lagerort", g.lagerort)}
     ${asAuswahl("Verwendung", "verwendung_status", asGsVerw(g), Object.entries(AS_GS_VERW))}
     <div class="voll" id="gsSdbFeld"><b>Sicherheitsdatenblatt</b>${g.sdb_pfad ? ` <span class="hinweis">vorhanden – eine neue Datei ersetzt es</span>` : ""}
-      <label style="margin-top:4px">PDF<input type="file" id="gsSdbDatei" accept=".pdf"></label></div>
+      <label style="margin-top:4px">PDF – wird automatisch ausgelesen (Handelsname, Signalwort, H-Sätze, Datum, EMKG-Daten, Handschuh)<input type="file" id="gsSdbDatei" accept=".pdf"></label></div>
     ${asFeld("Überarbeitungsdatum des SDB (Seite 1)", "sdb_ausgabe", g.sdb_ausgabe, "date")}
     <label>BA-Gruppe (gleiche Gruppe = gemeinsame BA, leer = eigene)<input type="text" data-f="ba_gruppe" list="gsGruppen" value="${esc(g.ba_gruppe || "")}"></label>
     <datalist id="gsGruppen">${gruppen.map(x => `<option value="${esc(x)}">`).join("")}</datalist>
@@ -359,7 +360,8 @@ function asGsBearbeiten(g, box, sdbFokus){
       delete w.h_text;
       const daten = Object.assign(w, { h_saetze: h, einheit_ids: ein, aktiv: w.verwendung_status !== "inaktiv", quelle: "portal", geaendert_von: AS.ich, geaendert_am: new Date().toISOString() });
       if(sdb){ asMeldung("SDB wird hochgeladen …"); daten.sdb_pfad = await asGsHochladen(sdb, "sdb");
-        Object.assign(daten, { sdb_geprueft_am: null, sdb_geprueft_von: null, sdb_angefordert_am: null, sdb_angefordert_bei: null }); }
+        Object.assign(daten, { sdb_geprueft_am: null, sdb_geprueft_von: null, sdb_angefordert_am: null, sdb_angefordert_bei: null });
+        const l = sdbLese(); if(l){ daten.sdb_daten = l.sdb_daten; if(l.handschuh_sdb) daten.handschuh_sdb = l.handschuh_sdb; } }
       if(gbu) daten.gbu_pfad = await asGsHochladen(gbu, "gbu");
       if(ba) daten.ba_pfad = await asGsHochladen(ba, "ba-stoff");
       if(neu){
@@ -373,6 +375,7 @@ function asGsBearbeiten(g, box, sdbFokus){
       await apiSend("PATCH", "/rest/v1/portal_gefahrstoff?id=eq." + encodeURIComponent(g.id), daten, "return=minimal");
       asMeldung("Gespeichert"); await asGsNeuLaden(box, g.id); return false;
     } }] });
+  if(typeof asSdbAnbinden === "function") sdbLese = asSdbAnbinden(document.getElementById("dlg"), g);
   if(sdbFokus){ const f = document.getElementById("gsSdbFeld"); if(f) f.scrollIntoView({ block: "center" }); }
 }
 

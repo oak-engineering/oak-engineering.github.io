@@ -117,7 +117,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   const veraltet = (d, typ) => typeof dokVeraltetInfo === "function" ? dokVeraltetInfo(d, roh, typ) : null;
   main.innerHTML = `<h1 class="seite">Anlagen</h1><p class="unter">Alle Anlagen mit Kurzinfo, offenen Mängeln und Dokumenten – Farbe = schlimmster offener Mangel.</p>
     <div class="kacheln">${["gefahr", "besorgnis", "akzeptanz", "keine"].map(b => `<div class="kachel k-${AS_BAND_FARBE[b]}" data-band="${b}"><div class="lbl">${AS_BAND_TEXT[b]}</div><div class="zahl">${zahl(b)}</div><div class="hinweis">${st.band === b ? "Filter aktiv – erneut tippen zum Aufheben" : "Anlagen"}</div></div>`).join("")}</div>
-    <div class="karte"><h2>${sicht.length} von ${zeilen.length} Anlagen <span class="reihe" style="gap:8px">${AS.fachkraft ? `<button class="btn klein" id="anlNeu">+ Anlage anlegen</button>` : ""}</span></h2>
+    <div class="karte"><h2>${sicht.length} von ${zeilen.length} Anlagen <span class="reihe" style="gap:8px">${AS.fachkraft || AS.gf ? `<button class="btn sek klein" id="anlEtikett">Etiketten (DYMO)</button>` : ""}${AS.fachkraft ? `<button class="btn klein" id="anlNeu">+ Anlage anlegen</button>` : ""}</span></h2>
       <div class="filterleiste"><input type="search" id="anlSuche" placeholder="Suchen (Name, Nr., Typ, Bereich)" value="${esc(st.q)}"></div>
       <div class="zeilen">${sicht.map(z => { const d = z.d;
         return `<div class="z" data-anl="${esc(z.mid)}"><div><b>${asPunkt(AS_BAND_FARBE[z.band])}${esc(d.maschine || d.titel)} <span class="hinweis">${esc(z.mid || "")}</span></b>
@@ -135,6 +135,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   asDokKnoepfe(main);
   main.querySelectorAll("[data-sys]").forEach(b => b.onclick = ev => { ev.stopPropagation(); AS.reiter.bda = b.dataset.sys; asGehe("bda/" + b.dataset.sys); });
   const an = document.getElementById("anlNeu"); if(an) an.onclick = () => asAnlageNeuDialog(main);
+  const et = document.getElementById("anlEtikett"); if(et) et.onclick = () => asEtikettDialog(sicht.map(z => z.d));
   main.querySelectorAll("[data-anlber]").forEach(b => b.onclick = ev => { ev.stopPropagation();
     const d = asAnlagen().find(x => x.maschinen_id === b.dataset.anlber); if(d) asAnlageVerwalten(d, main); });
 }};
@@ -379,6 +380,68 @@ function asMangelNeu(){
         status: "offen", foto_pfad: foto, gemeldet_von: AS.ich, gemeldet_am: asHeute(), einheit_id: w.einheit_id || null }, "return=representation");
       if(r && r[0]) await asMgLog(r[0].id, "erfasst", w.label, null);
       await asLaden(); asZeige(); asMeldung("Mangel gemeldet"); } }] });
+}
+
+/* ======================= DYMO-Etiketten (QR auf die Maschinenseite) =======================
+   Gleiches Etikett wie tools/dymo_etiketten.py: DYMO LabelWriter, „Shipping S0722430“ = 54 × 101 mm quer.
+   Zwei Wege: direkt drucken (Browser, Seitengröße 101 × 54 mm, Drucker „DYMO LabelWriter“ wählen) oder je Anlage
+   eine .dymo-Datei für DYMO Connect. QR schwarz (Thermodruck), Ziel = login-geschützte Maschinenseite. */
+function asEtikettUrl(mid){ return "https://www.oak-engineering.de/portal/maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(mid); }
+async function asEtikettQrPng(url){
+  if(!(await asUwQrLib())) throw new Error("QR-Bibliothek nicht geladen");
+  const q = qrcode(0, "H"); q.addData(url); q.make();
+  const img = new Image(); img.src = q.createDataURL(12, 2); await img.decode();
+  const c = document.createElement("canvas"); c.width = img.width; c.height = img.height;
+  const g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0);
+  return c.toDataURL("image/png");
+}
+function asEtikettTyp(d){ return String(d.maschinentyp || "").replace(/\s*\(.*\)\s*$/, ""); }
+function asEtikettXml(d, png){
+  const x = v => String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const br = `<Brushes><BackgroundBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0"></Color></SolidColorBrush></BackgroundBrush><BorderBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0"></Color></SolidColorBrush></BorderBrush><StrokeBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0"></Color></SolidColorBrush></StrokeBrush><FillBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0"></Color></SolidColorBrush></FillBrush></Brushes>`;
+  const lay = (a, b, w, h) => `<ObjectLayout><DYMOPoint><X>${a}</X><Y>${b}</Y></DYMOPoint><Size><Width>${w}</Width><Height>${h}</Height></Size></ObjectLayout>`;
+  const txt = (n, t, a, b, w, h, gr, fett) => `<TextObject><Name>${n}</Name>${br}<Rotation>Rotation0</Rotation><OutlineThickness>1</OutlineThickness><IsOutlined>False</IsOutlined><BorderStyle>SolidLine</BorderStyle><Margin><DYMOThickness Left="0" Top="0" Right="0" Bottom="0" /></Margin><HorizontalAlignment>Left</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><FitMode>ShrinkToFit</FitMode><IsVertical>False</IsVertical><FormattedText><FitMode>ShrinkToFit</FitMode><HorizontalAlignment>Left</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><IsVertical>False</IsVertical><LineTextSpan><TextSpan><Text>${x(t)}</Text><FontInfo><FontName>Arial</FontName><FontSize>${gr}</FontSize><IsBold>${fett ? "True" : "False"}</IsBold><IsItalic>False</IsItalic><IsUnderline>False</IsUnderline><FontBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0"></Color></SolidColorBrush></FontBrush></FontInfo></TextSpan></LineTextSpan></FormattedText>${lay(a, b, w, h)}</TextObject>`;
+  const bild = `<ImageObject><Name>QR</Name>${br}<Rotation>Rotation0</Rotation><OutlineThickness>1</OutlineThickness><IsOutlined>False</IsOutlined><BorderStyle>SolidLine</BorderStyle><Margin><DYMOThickness Left="0" Top="0" Right="0" Bottom="0" /></Margin><Data>${png.split(",")[1]}</Data><ScaleMode>Uniform</ScaleMode><HorizontalAlignment>Center</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment>${lay(0.30, 0.34, 1.45, 1.45)}</ImageObject>`;
+  return `<?xml version="1.0" encoding="utf-8"?>
+<DesktopLabel Version="1"><DYMOLabel Version="4"><Description>Anlagen-Etikett</Description><Orientation>Landscape</Orientation><LabelName>Shipping S0722430</LabelName><InitialLength>0</InitialLength><BorderStyle>SolidLine</BorderStyle>
+<DYMORect><DYMOPoint><X>0.21333334</X><Y>0.060000002</Y></DYMOPoint><Size><Width>3.6966667</Width><Height>2.0266666</Height></Size></DYMORect>
+<BorderColor><SolidColorBrush><Color A="1" R="0" G="0" B="0"></Color></SolidColorBrush></BorderColor><BorderThickness>1</BorderThickness><Show_Border>False</Show_Border>
+<DynamicLayoutManager><RotationBehavior>ClearObjects</RotationBehavior><LabelObjects>
+${bild}
+${txt("Maschine", d.maschine || d.titel, 1.95, 0.30, 1.85, 0.55, 20, true)}
+${txt("Nr", "Nr. " + d.maschinen_id, 1.95, 0.92, 1.85, 0.30, 13)}
+${txt("Typ", asEtikettTyp(d), 1.95, 1.24, 1.85, 0.30, 12)}
+${txt("Hinweis", "Digitale Unterlagen · QR scannen · Anmeldung erforderlich", 0.30, 1.74, 3.55, 0.26, 9)}
+</LabelObjects></DynamicLayoutManager></DYMOLabel><LabelApplication>Blank</LabelApplication><DataTable><Columns></Columns><Rows></Rows></DataTable></DesktopLabel>`;
+}
+function asEtikettDialog(liste){
+  liste = liste.filter(d => d.maschinen_id);
+  const gew = d => [...d.querySelectorAll("[data-et]:checked")].map(x => liste[+x.dataset.et]);
+  const dl = asDialog({ titel: "Etiketten (DYMO LabelWriter, 54 × 101 mm)", breit: true, inhalt: `<p class="hinweis">Der QR-Code führt auf die Maschinenseite (Anmeldung nötig).
+      „Drucken“: im Druckdialog den DYMO LabelWriter wählen, Format 54 × 101 mm, keine Ränder. „.dymo-Dateien“: je Anlage eine Datei für DYMO Connect.</p>
+    <div class="filterleiste"><label style="flex-direction:row;gap:6px;align-items:center"><input type="checkbox" id="etAlle" checked> alle (${liste.length})</label></div>
+    <div class="hakenliste" style="max-height:46vh;overflow:auto">${liste.map((d, i) => `<label><input type="checkbox" data-et="${i}" checked> ${esc(d.maschine || d.titel)} <span class="hinweis">${esc(d.maschinen_id)}</span></label>`).join("")}</div>`,
+    knoepfe: [{ t: ".dymo-Dateien", klasse: "sek", fn: async d => { const w = gew(d); if(!w.length) return false;
+        for(const x of w){ const xml = asEtikettXml(x, await asEtikettQrPng(asEtikettUrl(x.maschinen_id)));
+          const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([xml], { type: "application/xml" }));
+          a.download = String(x.maschine || x.titel || "Anlage").replace(/[\\/:*?"<>|]+/g, "-") + " [" + x.maschinen_id + "].dymo"; a.click();
+          await new Promise(r => setTimeout(r, 350)); }
+        asMeldung(w.length + " Etikett(en) gespeichert"); return false; } },
+      { t: "Drucken", fn: async d => { const w = gew(d); if(!w.length) return false; await asEtikettDruck(w); return false; } }] });
+  dl.querySelector("#etAlle").onchange = e => dl.querySelectorAll("[data-et]").forEach(x => x.checked = e.target.checked);
+}
+async function asEtikettDruck(liste){
+  const seiten = [];
+  for(const d of liste) seiten.push(`<section><img src="${await asEtikettQrPng(asEtikettUrl(d.maschinen_id))}" alt=""><div><b>${esc(d.maschine || d.titel)}</b>
+    <span>Nr. ${esc(d.maschinen_id)}</span><span>${esc(asEtikettTyp(d))}</span></div><small>Digitale Unterlagen · QR scannen · Anmeldung erforderlich</small></section>`);
+  const w = window.open("", "_blank"); if(!w){ asMeldung("Bitte Pop-ups erlauben"); return; }
+  w.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Etiketten</title><style>
+    @page{size:101mm 54mm;margin:0} *{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;color:#000}
+    section{width:101mm;height:54mm;padding:2mm 4mm;display:grid;grid-template-columns:37mm 1fr;grid-template-rows:1fr auto;column-gap:4mm;page-break-after:always;overflow:hidden}
+    img{width:36mm;height:36mm;align-self:center;image-rendering:pixelated} div{display:flex;flex-direction:column;justify-content:center;gap:1.5mm;overflow:hidden}
+    b{font-size:15pt;line-height:1.1;max-height:2.3em;overflow:hidden} span{font-size:10pt} small{grid-column:1/3;font-size:7.5pt}</style></head>
+    <body>${seiten.join("")}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  w.document.close();
 }
 
 /* ======================= Hallenplan ======================= */

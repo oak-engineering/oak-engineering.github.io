@@ -164,10 +164,19 @@ function asUnterleiste(){
     + "#menueTitel{display:none}#menueKnopf::after{content:'Mehr'}}";
   document.head.appendChild(s);
   const knopf = (txt, ziel) => { const b = document.createElement("button"); b.textContent = txt; b.onclick = () => asGehe(ziel); return b; };
-  u.insertBefore(knopf("Melden", "vorort/melden"), u.firstChild);
+  const melden = document.createElement("button"); melden.textContent = "Melden"; melden.onclick = asMeldenWahl;
+  u.insertBefore(melden, u.firstChild);
   u.insertBefore(knopf("Start", "start"), u.firstChild);
 }
 document.addEventListener("DOMContentLoaded", asUnterleiste);
+/* „Melden“ (Handy): ein Knopf, zwei Wege – Mangel/unsicherer Zustand in die Mängelliste, Unfall/Beinahe-Unfall als Vorfall (Durchlauf 15.10.) */
+function asMeldenWahl(){
+  const d = asDialog({ titel: "Was soll gemeldet werden?", inhalt: `<div class="zeilen">
+      <div class="z" data-mw="mangel"><div><b>Mangel oder unsicherer Zustand</b><small>an einer Anlage, im Gebäude oder am Arbeitsplatz – kommt in die Mängelliste</small></div><span class="chip c-gelb">Mangel</span></div>
+      <div class="z" data-mw="vorfall"><div><b>Unfall oder Beinahe-Unfall</b><small>Ereignis mit oder ohne Verletzung – wird ausgewertet</small></div><span class="chip c-rot">Vorfall</span></div></div>` });
+  d.querySelector('[data-mw="mangel"]').onclick = async () => { d.close(); if(typeof asBetriebLaden === "function") await asBetriebLaden(); asMangelNeu(); };
+  d.querySelector('[data-mw="vorfall"]').onclick = () => { d.close(); asGehe("vorort/melden"); };
+}
 
 /* ---------------- Betriebskonten: Management-Werkzeuge der Fachkraft ausblenden (wie V1 „Erweiterte Funktionen“) ---------------- */
 ["check", "prozesse", "bericht"].forEach(k => { if(AS_SEITEN[k]) AS_SEITEN[k].nurFachkraft = true; });
