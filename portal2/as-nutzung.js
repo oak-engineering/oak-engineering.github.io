@@ -21,7 +21,7 @@ AS_SEITEN.nutzung = { titel: "Nutzung (OAK)", icon: "▤", sort: 9.6, get verste
     hole("/rest/v1/portal_logbuch?select=kunde_slug,am,wer,bereich&am=gte." + encodeURIComponent(seit) + "&order=am.desc&limit=20000"),
     hole("/rest/v1/portal_erfassungen?select=id,kunde_slug,anlage,eingegangen_am,status&order=eingegangen_am.desc&limit=500"),
     hole("/rest/v1/as_organisation?select=kunde_slug,name&order=name.asc")]);
-  const ereignisse = log.map(x => ({ k: x.kunde_slug, am: x.am, wer: x.wer, ber: AS_NU_TAB[x.tabelle] || "Sonstiges" }))
+  const ereignisse = log.map(x => ({ k: x.kunde_slug, am: x.am, wer: x.wer, ber: AS_NU_TAB[x.tabelle] || String(x.tabelle || "Sonstiges").replace(/^(as_|portal_|uw_)/, "").replace(/_/g, " ").replace(/^./, c => c.toUpperCase()) }))
     .concat(lb.filter(x => x.wer !== "Automatik").map(x => ({ k: x.kunde_slug, am: x.am, wer: x.wer, ber: ({ maengel: "Mängel", unterweisung: "Unterweisungen", unterlagen: "Unterlagen", bda: "Beurteilungen", pruefauftrag: "Überprüfungen", leitfaden: "Safety-Journey", vorfaelle: "Vorfälle" })[x.bereich] || "Sonstiges" })));
   const zeilen = kunden.map(k => {
     const e = ereignisse.filter(x => x.k === k.kunde_slug), e7 = e.filter(x => x.am >= seit7);
