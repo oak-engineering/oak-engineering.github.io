@@ -64,7 +64,7 @@ const AS_QUELLEN = {
     neu: w => Object.assign({ archiviert: false, erfasst_von: AS.ich }, AS_QUELLEN.as_beauftragter.zuV1(w, null)) },
   as_massnahme: { v1: "portal_maengel", filter: "&or=(ausgeblendet.is.null,ausgeblendet.is.false)", ganz: false,
     // nur Massnahmen zu einer Gefaehrdung (BdA) sind Maengel; Org-Check, Kultur, ASA … bleiben V2-eigen
-    neuV1: w => !!w.gefaehrdung_id,
+    neuV1: w => !!w.gefaehrdung_id || /^[A-ZÄÖÜ]+-\d+/.test(String(w.anlage || "")),   // Maßnahme an einer Anlage = Eintrag in deren Mängelliste
     zuV2: mg => ({ id: mg.id, kunde_slug: mg.kunde_slug, gefaehrdung_id: mg.as_gefaehrdung_id, quelle: "bda", quelle_id: null,
       stop: mg.stop || "T", text: mg.massnahme || mg.label, befund: mg.massnahme ? mg.label : "", umsetzung: "anlage",
       anlage: ((mg.maschinen_id || "") + " " + (mg.maschine || "")).trim(), gruppe: null, verantwortlich: mg.verantwortlich,

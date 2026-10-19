@@ -221,14 +221,13 @@ function asGsStoff(g, box){
   const fld = (l, x) => x ? `<div><span class="hinweis">${esc(l)}</span><div>${esc(x)}</div></div>` : "";
   const gruppe = g.ba_gruppe ? AS_GS.rows.filter(x => x.ba_gruppe === g.ba_gruppe && asGsVerw(x) !== "inaktiv").length : 0;
   const kn = [];
-  if(pflege) kn.push({ t: "Stammdaten ändern", klasse: "sek", fn: () => { asGsBearbeiten(g, box); return false; } });
   kn.push({ t: "Schließen", fn: () => {} });
   asDialog({ titel: g.bezeichnung, breit: true, knoepfe: kn, inhalt: `
     <p class="hinweis">${esc([g.hersteller, g.artikelnummer ? "Art.-Nr. " + g.artikelnummer : ""].filter(Boolean).join(" · "))}</p>
     ${asGsPiktos(g.h_saetze).length ? `<div class="gs-gross">${asGsPiktos(g.h_saetze).map(k => `<figure><img class="gs-pikto-g" src="../portal/ghs/ghs${k.slice(3)}.png" alt="${esc(k)}">${esc(AS_GS_GHS_NAME[k])}</figure>`).join("")}</div>` : ""}
     <div class="gs-zeile">${g.signalwort ? asChip("Signalwort: " + g.signalwort, g.signalwort === "Gefahr" ? "rot" : "gelb") : ""}${asChip(AS_GS_VERW[v], v === "aktiv" ? "gruen" : v === "offen" ? "gelb" : "grau")}</div>
     ${v === "offen" && g.hinweis ? `<p class="hinweis">${esc(g.hinweis)}</p>` : ""}
-    <div class="form">${fld("Bereiche", asGsBereiche(g).join(", "))}${fld("Verwendung", g.verwendung)}${fld("Gebinde", g.gebinde)}${fld("Menge", g.menge)}${fld("Lagerort", g.lagerort)}${v !== "offen" ? fld("Hinweis", g.hinweis) : ""}</div>
+    <div class="form${pflege ? " bda-klick" : ""}" id="gsStamm" ${pflege ? 'title="Stammdaten bearbeiten"' : ""}>${fld("Bereiche", asGsBereiche(g).join(", "))}${fld("Verwendung", g.verwendung)}${fld("Gebinde", g.gebinde)}${fld("Menge", g.menge)}${fld("Lagerort", g.lagerort)}${v !== "offen" ? fld("Hinweis", g.hinweis) : ""}</div>
 
     <div class="gs-abschnitt">Sicherheitsdatenblatt</div>
     <div class="gs-zeile">${asChip(s.kurz, s.farbe)}<span class="hinweis">${esc(s.text)}</span></div>
@@ -294,6 +293,7 @@ function asGsStoff(g, box){
       geaendert_von: AS.ich, geaendert_am: new Date().toISOString() }, "return=minimal");
     asMeldung("Anforderung vermerkt"); asGsNeuLaden(box, g.id); });
   d.querySelectorAll("[data-gbu]").forEach(el => el.onclick = () => asGsEmkg(g, AS_GS.gbu.find(x => x.id === el.dataset.gbu), box));
+  { const st = document.querySelector("#dlg #gsStamm"); if(st && pflege) st.onclick = () => asGsBearbeiten(g, box); }
 }
 
 /* ---------------- Substitution (TRGS 600) ---------------- */

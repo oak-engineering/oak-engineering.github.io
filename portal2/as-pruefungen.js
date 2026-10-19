@@ -192,13 +192,15 @@ function asPfObjekt(o){
   const a = asPfArt(o.art), s = asPfStand(o), verlauf = asT("as_pruefung").filter(p => p.objekt_id === o.id).sort((x, y) => String(y.datum).localeCompare(String(x.datum)));
   const dl = asDialog({ titel: o.bezeichnung, breit: true, inhalt: `
     <p>${asChip(s.text, s.farbe)} ${esc(a.titel)}${asPfOrt(o) ? " · " + esc(asPfOrt(o)) : ""}</p>
+    ${asPfFormular(o, o.art)}
     <p class="hinweis">Prüfen: ${esc(a.frage || "")}<br>Grundlage: ${esc(o.grundlage || a.grundlage || "–")} · ${o.intervall_monate ? "alle " + o.intervall_monate + " Monate" : "ohne Frist"}${o.pruefer ? " · Prüfer: " + esc(o.pruefer) : ""}${a.wer ? " · wer prüft: " + esc(a.wer) : ""}</p>
     ${o.notiz ? `<p>${esc(o.notiz)}</p>` : ""}
     <h3>Verlauf</h3><div class="zeilen">${verlauf.map(p => { const e = AS_PF_ERG[p.ergebnis] || [p.ergebnis, "grau"];
       return `<div class="z"><div><b>${asDat(p.datum)}</b><small>${esc(p.pruefer_name || "")}${p.bemerkung ? " · " + esc(p.bemerkung) : ""}${p.mangel_id ? " · Mangel angelegt" : ""}</small></div>
         <span class="reihe" style="gap:6px">${p.nachweis_pfad ? `<button class="btn sek klein" data-nw="${esc(p.nachweis_pfad)}">Nachweis</button>` : ""}${asChip(e[0], e[1])}</span></div>`; }).join("") || `<div class="leer">Noch keine Prüfung eingetragen.</div>`}</div>`,
-    knoepfe: [{ t: "Prüfung eintragen", fn: () => { setTimeout(() => asPfEintragen(o), 0); } },
-      { t: "Bearbeiten", klasse: "sek", fn: () => { setTimeout(() => asPfNeu(o.art, o), 0); } }].concat(AS.admin ? [{ t: "Löschen", klasse: "sek", fn: async () => {
+    knoepfe: [{ t: "Prüfung eintragen", klasse: "sek", fn: () => { setTimeout(() => asPfEintragen(o), 0); } },
+      { t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.bezeichnung){ asMeldung("Bitte eine Bezeichnung angeben."); return false; }
+        await asSpeichern("as_pruefobjekt", Object.assign(w, { id: o.id })); asMeldung("Gespeichert"); asZeige(); } }].concat(AS.admin ? [{ t: "Löschen", klasse: "sek", fn: async () => {
         if(!confirm("Einrichtung „" + o.bezeichnung + "“ mit allen Prüfungen löschen? Besser: außer Betrieb setzen.")) return false;
         await asLoeschen("as_pruefobjekt", o.id); AS.db.as_pruefung = asT("as_pruefung").filter(p => p.objekt_id !== o.id); asZeige(); } }] : []) });
   asPfNachweisKnoepfe(dl);

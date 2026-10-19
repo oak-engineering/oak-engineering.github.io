@@ -24,8 +24,8 @@ AS_SEITEN.organisation = { titel: "Organisation", icon: "▦", sort: 2, render(m
 
 function asOrgGrund(box){
   const d = asOrgDaten(), ma = asBeschaeftigte();
-  box.innerHTML = `<div class="karte"><h2>Grunddaten <button class="btn sek klein" id="grundEdit">Bearbeiten</button></h2>
-      <div class="zeilen">
+  box.innerHTML = `<div class="karte"><h2>Grunddaten</h2>
+      <div class="zeilen" id="grundZeilen" title="Zum Bearbeiten anklicken">
         <div class="z"><div><b>${esc(AS.org.name)}</b><small>WZ-Kode ${esc(d.wz_kode || "–")} · Schichtmodell: ${esc(d.schichtmodell || "–")}</small></div></div>
         <div class="z"><div><b>${ma.kopf} Beschäftigte</b><small>${ma.bereiche ? "Summe der Bereiche" : "Angabe der Grunddaten"} · Aufteilung ${d.ma_vz || 0} Vollzeit · ${d.ma_tz20 || 0} bis 20 h · ${d.ma_tz30 || 0} bis 30 h → ${ma.gewichtet} gewichtet (DGUV V2)${ma.personen ? " · " + ma.personen + " Personen in der Belegschaft" : ""}</small></div>
           ${ma.abweichung ? asChip("Aufteilung " + ma.angabe + " ≠ Bereiche " + ma.bereiche, "gelb") : ""}</div>
@@ -34,13 +34,13 @@ function asOrgGrund(box){
     <div class="karte"><h2>Nachweise zur Organisation</h2><div class="zeilen">${AS_NACHWEISE.map(([k, t, h, name]) => `
       <div class="z" data-n="${k}"><div><b>${asPunkt(d[k] ? "gruen" : "rot")}${esc(t)}</b><small>${esc(h)}${name && d[name] ? " · " + esc(d[name]) : ""}</small></div>
       ${d[k] ? asChip(asDat(d[k]), "gruen") : asChip("fehlt", "rot")}</div>`).join("")}</div></div>`;
-  document.getElementById("grundEdit").onclick = () => asDialog({ titel: "Grunddaten", inhalt: `<div class="form">
+  box.querySelectorAll("#grundZeilen .z").forEach(z => z.onclick = () => asDialog({ titel: "Grunddaten", inhalt: `<div class="form">
       ${asFeld("WZ-Kode (Branche)", "wz_kode", d.wz_kode)}${asFeld("Schichtmodell", "schichtmodell", d.schichtmodell)}
       ${asFeld("Vollzeit-Beschäftigte", "ma_vz", d.ma_vz, "number")}${asFeld("Teilzeit bis 20 h", "ma_tz20", d.ma_tz20, "number")}
       ${asFeld("Teilzeit bis 30 h", "ma_tz30", d.ma_tz30, "number")}${asFeld("Geschäftsführung", "gf_name", d.gf_name)}
       ${asFeld("Fachkraft vor Ort", "fkv_name", d.fkv_name)}${asFeld("Betriebsrat (falls vorhanden)", "br", d.br)}
       ${asFeld("Besondere Gefährdung für Leben und Gesundheit laut Gefährdungsbeurteilung (§ 22 Abs. 1 S. 3 SGB VII – Sicherheitsbeauftragte schon ab 21 Beschäftigten)", "sibe_besondere_gefaehrdung", d.sibe_besondere_gefaehrdung, "checkbox", "voll")}</div>`,
-    knoepfe: [{ t: "Speichern", fn: async dl => { await asOrgSpeichern(asWerte(dl)); asZeige(); } }] });
+    knoepfe: [{ t: "Speichern", fn: async dl => { await asOrgSpeichern(asWerte(dl)); asZeige(); } }] }));
   box.querySelectorAll("[data-n]").forEach(z => z.onclick = () => {
     const [k, t, h, name] = AS_NACHWEISE.find(n => n[0] === z.dataset.n);
     asDialog({ titel: t, inhalt: `<p class="hinweis">${esc(h)}</p><div class="form">
@@ -153,16 +153,16 @@ function asBeauftragterDialog(b){
 function asOrgEinsatz(box){
   const e = asEinsatz(), d = asOrgDaten(), r1 = x => Math.round(x * 10) / 10;
   const balken = (ist, soll) => `<div class="balken"><span style="width:${Math.min(100, asProz(ist, soll))}%;background:${ist >= soll ? "var(--gruen)" : "var(--blau)"}"></span></div>`;
-  box.innerHTML = `<div class="karte"><h2>Betreuungsumfang ${e.jahr} (DGUV Vorschrift 2, Anlage 2) <button class="btn sek klein" id="einsatzEdit">Berechnung anpassen</button></h2>
+  box.innerHTML = `<div class="karte"><h2>Betreuungsumfang ${e.jahr} (DGUV Vorschrift 2, Anlage 2) <span class="hinweis">Kachel anklicken zum Anpassen</span></h2>
       ${e.gruppe ? `<div class="kacheln">
         <div class="kachel"><div class="lbl">Grundbetreuung gesamt</div><div class="zahl">${r1(e.grund)} h</div><div class="hinweis">${r1(e.ma)} Beschäftigte × ${AS_KAT.betreuungsgruppen[e.gruppe].stunden} h (Gruppe ${e.gruppe})</div></div>
         <div class="kachel"><div class="lbl">Sifa: Soll / Ist</div><div class="zahl">${r1(e.istSifa)} / ${r1(e.sollSifa)} h</div>${balken(e.istSifa, e.sollSifa)}<div class="hinweis">Grund ${r1(e.sifaGrund)} h + spezifisch ${r1(e.spezSifa)} h</div></div>
         <div class="kachel"><div class="lbl">Betriebsarzt: Soll / Ist</div><div class="zahl">${r1(e.istBa)} / ${r1(e.sollBa)} h</div>${balken(e.istBa, e.sollBa)}<div class="hinweis">Grund ${r1(e.baGrund)} h + spezifisch ${r1(e.spezBa)} h</div></div>
       </div><p class="hinweis">Aufteilung der Grundbetreuung: Sifa ${e.anteil} % / Betriebsarzt ${100 - e.anteil} % – je mindestens 20 % und 0,2 h je Beschäftigtem. ${d.einsatz_vereinbart_am ? "Vereinbart am " + asDat(d.einsatz_vereinbart_am) + "." : "<b>Noch nicht vereinbart.</b>"}</p>`
-      : `<div class="leer">Betreuungsgruppe noch nicht gewählt – „Berechnung anpassen“.</div>`}</div>
+      : `<div class="leer bda-klick" data-einsatz>Betreuungsgruppe noch nicht gewählt – hier klicken und festlegen.</div>`}</div>
     <div class="karte"><h2>Erfasste Einsatzzeiten <button class="btn klein" id="eNeuZeit">+ Einsatz</button></h2><div class="zeilen">
       ${asT("as_einsatz").sort((a, b) => b.datum.localeCompare(a.datum)).slice(0, 40).map(x => `<div class="z" data-x="${x.id}"><div><b>${asDat(x.datum)} · ${x.rolle === "ba" ? "Betriebsarzt" : "Sifa"} · ${x.stunden} h</b><small>${x.art === "spezifisch" ? "betriebsspezifisch" : "Grundbetreuung"}${x.taetigkeit ? " · " + esc(x.taetigkeit) : ""}</small></div></div>`).join("") || `<div class="leer">Noch keine Einsätze erfasst.</div>`}</div></div>`;
-  document.getElementById("einsatzEdit").onclick = () => {
+  const einsatzDlg = () => {
     const sp = d.spezifisch || {};
     asDialog({ titel: "Betreuungsumfang berechnen", breit: true, inhalt: `<div class="form">
         ${asAuswahl("Betreuungsgruppe (aus WZ-Kode)", "betreuungsgruppe", d.betreuungsgruppe || "", [["", "– wählen –"]].concat(Object.entries(AS_KAT.betreuungsgruppen).map(([k, v]) => [k, v.text])), "voll")}
@@ -180,6 +180,7 @@ function asOrgEinsatz(box){
           await asOrgSpeichern({ einsatz_vereinbart_soll: Math.round((e2.sollSifa + e2.sollBa) * 10) / 10 }); }
         asZeige(); } }] });
   };
+  box.querySelectorAll(".karte:first-child .kachel, [data-einsatz]").forEach(k => { k.classList.add("bda-klick"); k.onclick = einsatzDlg; });
   const zeitDlg = x => { const neu = !x; x = x || { datum: asHeute(), rolle: "sifa", art: "grund" };
     const kn = [{ t: "Speichern", fn: async dl => { const w = asWerte(dl); if(!w.stunden){ asMeldung("Stunden fehlen"); return false; }
       await asSpeichern("as_einsatz", Object.assign({ id: x.id }, w)); asZeige(); } }];

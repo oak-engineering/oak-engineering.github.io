@@ -65,10 +65,11 @@ async function asSystemDialog(s){
 function asBdaSystem(main, s){
   const r = asReiter("bda_" + s.id, [["tabelle", "Beurteilung"], ["dokumente", "Dokumente & BA"], ["psyche", "Psychische Belastung"]], "tabelle");
   main.innerHTML = `<p class="nodruck"><a href="#bda" onclick="AS.reiter.bda=''">← alle Arbeitssysteme</a></p>
-    <h1 class="seite">${esc(s.name)}</h1><p class="unter">${esc(asEinheitName(s.einheit_id))} · Rollen: ${esc(asListe(s.rollen).join(", ") || "–")}</p>
+    <h1 class="seite">${esc(s.name)}</h1><p class="unter bda-klick" id="sysKopf" title="Bereich, Rollen und Anlagen bearbeiten">${esc(asEinheitName(s.einheit_id))} · Rollen: ${esc(asListe(s.rollen).join(", ") || "–")} · Anlagen: ${esc(asListe(s.anlagen).join(", ") || "–")}</p>
     <div class="reiter nodruck">${[["tabelle", "Beurteilung"], ["dokumente", "Dokumente & BA"], ["psyche", "Psychische Belastung"]].map(([k, t]) =>
       `<button class="${k === r.akt ? "an" : ""}" data-r="${k}">${t}</button>`).join("")}</div><div id="sysInhalt"></div>`;
   main.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { AS.reiter["bda_" + s.id] = b.dataset.r; asBdaSystem(main, s); });
+  main.querySelector("#sysKopf").onclick = () => asSystemDialog(s);
   const box = document.getElementById("sysInhalt");
   ({ tabelle: asBdaTabelle, bearbeiten: asBdaTabelle, psyche: asBdaPsyche, dokumente: typeof asBdaDokumente === "function" ? asBdaDokumente : asBdaTabelle })[r.akt](box, s);
 }
@@ -101,7 +102,7 @@ function asBdaTabelle(box, s){
         <td colspan="4" style="padding:0">${mzeilen}</td></tr>`; }); });
   const res = gef.filter(g => g.art === "ressource");
   box.innerHTML = `<div class="karte"><h2>Beurteilung der Arbeitsbedingungen – ${esc(s.name)}
-      <span class="nodruck"><button class="btn sek klein" id="tkNeu">+ Tätigkeit</button><button class="btn sek klein" id="resNeu">+ Ressource</button><button class="btn sek klein" id="sysEdit">Einstellungen</button><button class="btn sek klein" onclick="window.print()">Drucken</button>
+      <span class="nodruck"><button class="btn sek klein" id="tkNeu">+ Tätigkeit</button><button class="btn sek klein" id="resNeu">+ Ressource</button><button class="btn sek klein" onclick="window.print()">Drucken</button>
       ${s.freigabe_am ? (AS.gf ? `<button class="btn adm klein" id="frZur">Freigabe zurücknehmen</button>` : "")
         : (AS.gf ? `<button class="btn klein" id="frGeben">Freigeben (Geschäftsführung)</button>`
           : (AS.fachkraft ? (s.vorgelegt_am ? `<span class="hinweis">zur Freigabe vorgelegt ${asDat(s.vorgelegt_am)}</span>` : `<button class="btn klein" id="frVorlegen">Zur Freigabe vorlegen</button>`)
@@ -122,7 +123,7 @@ function asBdaTabelle(box, s){
   box.querySelectorAll("[data-mn]").forEach(b => b.onclick = ev => { ev.stopPropagation(); asMassnahmeDialog(null, { gefaehrdung_id: b.dataset.mn, quelle: "bda" }, s); });
   box.querySelector("#tkNeu").onclick = () => asTaetigkeitDialog(s, null);
   box.querySelector("#resNeu").onclick = () => asGefDialog(s, Object.assign({ art: "ressource" }), null);
-  box.querySelector("#sysEdit").onclick = () => asSystemDialog(s);
+
   const fg = document.getElementById("frGeben"); if(fg) fg.onclick = () => asDialog({ titel: "BdA freigeben", inhalt: `<p>Mit der Freigabe übernimmt die Geschäftsführung die Beurteilung als verbindlich.</p>
       <div class="form">${asFeld("Datum", "freigabe_am", asHeute(), "date")}</div><p class="hinweis">Freigegeben wird unter Ihrem Namen (${esc(AS.ich)}).</p>`,
     knoepfe: [{ t: "Freigeben", fn: async d => { const w = asWerte(d); w.freigabe_von = AS.ich;
@@ -254,9 +255,19 @@ function asBdaPsyche(box, s){
 function asMassnahmeDialog(m, vorgabe, sys){
   const neu = !m; m = m || Object.assign({ stop: "T", umsetzung: "zentral", status: "offen" }, vorgabe || {});
   const anlagen = sys ? asListe(sys.anlagen) : [];
+  const frei = neu && !m.gefaehrdung_id && !sys;       // aus der Maßnahmen-Seite: Anlage(n) und Gefährdung frei wählbar
+  const alleAnl = frei && typeof asAnlagen === "function" ? asAnlagen().filter(d => d.maschinen_id) : [];
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.text){ asMeldung("Text fehlt"); return false; }
     w.termin = w.termin || null;
     if("einheit_id" in w) w.einheit_id = w.einheit_id || null;
+    if(frei){
+      const gew = [...d.querySelectorAll("[data-anlw]:checked")].map(x => x.value), gef = (d.querySelector("#mnGef") || {}).value || null;
+      if(gew.length){
+        const gruppe = gew.length > 1 && crypto.randomUUID ? crypto.randomUUID() : null;
+        for(const a of gew) await asSpeichern("as_massnahme", Object.assign({}, m, w, { anlage: a, gefaehrdung_id: gef, gruppe }));
+        asMeldung(gew.length > 1 ? "Maßnahme für " + gew.length + " Anlagen angelegt (je Anlage in der Mängelliste)" : "Maßnahme angelegt – steht in der Mängelliste der Anlage");
+        asZeige(); return; }
+    }
     if(neu && w.umsetzung === "anlage"){
       const gew = [...d.querySelectorAll("[data-anl]:checked")].map(x => x.value);
       if(!gew.length){ asMeldung("Mindestens eine Anlage wählen"); return false; }
@@ -265,8 +276,17 @@ function asMassnahmeDialog(m, vorgabe, sys){
     } else await asSpeichern("as_massnahme", Object.assign({ id: m.id }, neu ? m : {}, w));
     asZeige(); } }];
   if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Maßnahme löschen?")) return false; await asLoeschen("as_massnahme", m.id); asZeige(); } });
+  if(!neu){   /* Aktionen im selben Dialog (UI-Regel § 11) */
+    if(m.status === "offen") kn.unshift({ t: "Erledigt melden", klasse: "sek", fn: () => { asErledigtDialog(m); return false; } });
+    if(m.status === "erledigt" && AS.fachkraft) kn.unshift({ t: "Wirksam bestätigen", klasse: "adm", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "wirksam" }); asZeige(); } });
+    if(m.status !== "offen" && AS.fachkraft) kn.unshift({ t: "Zurück auf offen", klasse: "sek", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "offen" }); asZeige(); } });
+  }
   const gefS = m.gefaehrdung_id ? asNach("as_gefaehrdung", m.gefaehrdung_id) : null;
-  asDialog({ titel: neu ? "Neue Maßnahme" : "Maßnahme bearbeiten", inhalt: `${!neu && m.stop === "S" && gefS && gefS.gefahrstoff_id ? `<p class="hinweis">Substitution:
+  const stand = neu ? "" : `<p>${asStatusChip(m)}${m.befund ? ` <span class="hinweis">Befund: ${esc(m.befund)}</span>` : ""}${m._v1 ? ` <span class="hinweis">· Mangel im Kundenportal – Änderungen wirken in Mängelliste, Hallenplan und Dokumenten</span>` : ""}</p>
+    ${m.erledigt_am || m.wirksam_am || m.unterwiesen_am ? `<div class="zeilen">${m.erledigt_am ? `<div class="z"><div><b>Erledigt</b><small>${asDat(m.erledigt_am)} · ${esc(m.erledigt_von || "")} · ${esc(m.erledigt_notiz || "")}</small></div></div>` : ""}
+      ${m.unterwiesen_am ? `<div class="z"><div><b>Unterwiesen</b><small>${asDat(m.unterwiesen_am)}</small></div></div>` : ""}
+      ${m.wirksam_am ? `<div class="z"><div><b>Wirksam bestätigt</b><small>${asDat(m.wirksam_am)} · ${esc(m.wirksam_von || "")}</small></div></div>` : ""}</div>` : ""}`;
+  asDialog({ titel: neu ? "Neue Maßnahme" : "Maßnahme", inhalt: `${stand}${!neu && m.stop === "S" && gefS && gefS.gefahrstoff_id ? `<p class="hinweis">Substitution:
         den Stoff im Gefahrstoffkataster durch einen Ersatzstoff ersetzen – die Maßnahme gilt damit als umgesetzt.
         <button type="button" class="btn sek klein" onclick="document.getElementById('dlg').close(); AS_GS.oeffnen='${esc(gefS.gefahrstoff_id)}'; asGehe('gefahrstoffe/kataster')">Ersatzstoff festlegen</button></p>` : ""}<div class="form">
       ${asAuswahl("STOP-Stufe", "stop", m.stop, Object.entries(AS_STOP).map(([k, v]) => [k, k + " – " + v]))}
@@ -274,11 +294,24 @@ function asMassnahmeDialog(m, vorgabe, sys){
       ${neu ? asAuswahl("Umsetzung", "umsetzung", m.umsetzung, [["zentral", "zentral für alle"], ["anlage", "je Anlage (Zähler „x von y“)"]]) : ""}
       ${asFeld("Maßnahme", "text", m.text, "textarea", "voll")}
       ${asFeld("Verantwortlich", "verantwortlich", m.verantwortlich)}${asFeld("Bis wann", "termin", m.termin, "date")}
-      ${m.gefaehrdung_id ? "" : asBereichWahl("Bereich", "einheit_id", neu && !("einheit_id" in m) ? null : (m.einheit_id || ""), "", "– betriebsweit –")}</div>
+      ${m.gefaehrdung_id ? "" : asBereichWahl("Bereich", "einheit_id", neu && !("einheit_id" in m) ? null : (m.einheit_id || ""), "", "– betriebsweit –")}
+      ${frei && alleAnl.length ? `<div class="voll"><b>An welchen Anlagen?</b> <span class="hinweis">optional – dann steht die Maßnahme in der Mängelliste der Anlage</span>
+        <div class="filterleiste" style="margin:6px 0"><input type="search" id="mnAnlSuche" placeholder="Anlage suchen"></div>
+        <div class="hakenliste" id="mnAnl" style="max-height:200px;overflow:auto">${alleAnl.map(d => `<label data-such="${esc(((d.maschine || d.titel || "") + " " + d.maschinen_id).toLowerCase())}"><input type="checkbox" data-anlw value="${esc(d.maschinen_id)}"> ${esc(d.maschine || d.titel)} <span class="hinweis">${esc(d.maschinen_id)}</span></label>`).join("")}</div></div>
+        <label class="voll">Gefährdung in der Beurteilung (optional)<select id="mnGef"><option value="">– erst Anlage wählen –</option></select></label>` : ""}</div>
       ${neu && anlagen.length ? `<div style="margin-top:10px"><span class="hinweis">Anlagen (bei „je Anlage“):</span><br>${anlagen.map(a => `<label style="margin-right:12px"><input type="checkbox" data-anl value="${esc(a)}" checked> ${esc(a)}</label>`).join("")}</div>` : ""}
       <p class="hinweis">Rangfolge nach § 4 ArbSchG: erst S und T, dann O, zuletzt P (z. B. Gehörschutz ist P). Umgesetzte O- und P-Maßnahmen werden
         automatisch zur Unterweisung fällig; P an einem Gefahrstoff zusätzlich zum Handschuh-/Hautschutzplan.</p>`, knoepfe: kn });
   const dl = document.getElementById("dlg"), st = dl.querySelector('[data-f="stop"]'), fo = dl.querySelector(".mnFolge");
+  if(frei && dl.querySelector("#mnAnl")){
+    const sel = dl.querySelector("#mnGef"), su = dl.querySelector("#mnAnlSuche");
+    const fuell = () => { const gew = [...dl.querySelectorAll("[data-anlw]:checked")].map(x => x.value);
+      const sysIds = new Set(asT("as_arbeitssystem").filter(s2 => asListe(s2.anlagen).some(a => gew.includes(a))).map(s2 => s2.id));
+      const gef = asT("as_gefaehrdung").filter(g => sysIds.has(g.arbeitssystem_id) && g.art !== "ressource");
+      sel.innerHTML = `<option value="">${gew.length ? "– keine bestimmte Gefährdung –" : "– erst Anlage wählen –"}</option>` + gef.map(g => `<option value="${esc(g.id)}">${esc(g.kurz)}</option>`).join(""); };
+    dl.querySelectorAll("[data-anlw]").forEach(c => c.onchange = fuell);
+    su.oninput = () => { const q = su.value.trim().toLowerCase(); dl.querySelectorAll("#mnAnl label").forEach(l => l.style.display = !q || l.dataset.such.includes(q) ? "" : "none"); };
+  }
   const zeig = () => { if(fo) fo.style.display = st.value === "O" ? "" : "none"; }; if(st){ st.onchange = zeig; zeig(); }
 }
 /* Prozessmodell P11 „Maßnahme O“: Unterweisung/BA (über den Unterweisungsauftrag), Frist/Prüfung, Beauftragung */
@@ -311,11 +344,12 @@ AS_SEITEN.massnahmen = { titel: "Maßnahmen", icon: "▶", sort: 5, render(main)
         ${asChip(w + " von " + alleG.length + " Anlagen wirksam", w === alleG.length ? "gruen" : "gelb")}</div>`; }));
   main.innerHTML = `<h1 class="seite">Maßnahmen</h1><p class="unter">Erledigt meldet die Führungskraft vor Ort, „wirksam“ bestätigt die Fachkraft (OAK oder vor Ort). Erst dann wirkt die Maßnahme in der BdA.</p>
     ${r.html}<div class="karte"><h2>${filt.length} Maßnahmen <button class="btn klein" id="mNeu">+ Maßnahme</button></h2><div class="zeilen">${zeilen.join("") || `<div class="leer">Keine.</div>`}</div></div>`;
-  document.getElementById("mNeu").onclick = () => asMassnahmeDialog(null, { quelle: "ziel" });
+  document.getElementById("mNeu").onclick = async () => { if(typeof asBetriebLaden === "function") await asBetriebLaden().catch(() => {}); asMassnahmeDialog(null, { quelle: "massnahme" }); };
   main.querySelectorAll("[data-m]").forEach(z => z.onclick = () => asMassnahmeStatus(asNach("as_massnahme", z.dataset.m)));
   main.querySelectorAll("[data-gr]").forEach(z => z.onclick = () => asGruppeDialog(z.dataset.gr));
 }};
-function asMassnahmeStatus(m){
+function asMassnahmeStatus(m){ return asMassnahmeDialog(m); }
+function asMassnahmeStatusAlt(m){
   const kn = [];
   if(m.status === "offen") kn.push({ t: "Erledigt melden", fn: () => { asErledigtDialog(m); return false; } });
   if(m.status === "erledigt" && AS.fachkraft) kn.push({ t: "Wirksam bestätigen", klasse: "adm", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "wirksam" }); asZeige(); } });

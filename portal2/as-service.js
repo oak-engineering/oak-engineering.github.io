@@ -1112,7 +1112,7 @@ function asSvRechtZeigen(el){
     ${stand ? `<p class="hinweis">Stand ${esc(asDat(stand))} · gepflegt von OAK engineering${darf && offen ? ` · <b>${offen} noch nicht zur Kenntnis genommen</b>` : ""}</p>` : ""}
     ${darf ? `<p class="hinweis">Mit „Zur Kenntnis nehmen“ halten Sie fest, dass Sie die Neuerung geprüft haben. Betrifft sie Ihren Betrieb, wählen Sie die Unterlagen aus – dafür entstehen Prüfaufträge.</p>` : ""}
     ${sortiert.length ? sortiert.map(x => { const q = quitt(x.id);
-      return `<div class="sv-recht"${x.sichtbar === false ? ' style="opacity:.5"' : ""}>
+      return `<div class="sv-recht" data-rid="${esc(x.id)}"${x.sichtbar === false ? ' style="opacity:.5"' : ""}>
         <div>${asChip((AS_SV_RECHT_STATUS[x.status] || x.status || "") + (x.datum ? " " + asDat(x.datum) : ""), farbe[x.status] || "grau")}
           ${neu(x) ? asChip("neu", "blau") : ""}${x.bereich === "umwelt" ? " " + asChip("Umwelt", "grau") : ""}
           ${(x.betrifft || []).map(t => " " + asChip(thema(t), "grau")).join("")}${x.sichtbar === false ? " " + asChip("ausgeblendet", "grau") : ""}
@@ -1124,9 +1124,9 @@ function asSvRechtZeigen(el){
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:6px">
           ${q ? asChip("zur Kenntnis genommen " + asDat(String(q.quittiert_am).slice(0, 10)) + (q.quittiert_von ? " · " + q.quittiert_von : "") + (q.betrifft_uns ? " · betrifft uns (" + q.pruefauftraege + " Prüfaufträge)" : ""), q.betrifft_uns ? "gelb" : "gruen") : ""}
           ${darf && x.sichtbar !== false ? `<button class="btn ${q ? "sek" : ""} klein" data-riq="${esc(x.id)}">${q ? "Erneut bewerten" : "Zur Kenntnis nehmen"}</button>` : ""}
-          ${AS.admin ? `<button class="btn adm klein" data-rie="${esc(x.id)}">Bearbeiten</button>` : ""}</div></div>`; }).join("") : `<div class="leer">Keine Einträge.</div>`}</div>`;
+          </div></div>`; }).join("") : `<div class="leer">Keine Einträge.</div>`}</div>`;
   el.querySelectorAll("[data-riq]").forEach(b => b.onclick = () => asSvRechtQuittieren(AS_SV.recht.find(x => x.id === b.dataset.riq), el));
-  el.querySelectorAll("[data-rie]").forEach(b => b.onclick = () => asSvRechtBearbeiten(AS_SV.recht.find(x => x.id === b.dataset.rie), el));
+  if(AS.admin) el.querySelectorAll("[data-rid]").forEach(k => { k.classList.add("bda-klick"); k.onclick = ev => { if(ev.target.closest("button")) return; asSvRechtBearbeiten(AS_SV.recht.find(x => x.id === k.dataset.rid), el); }; });
   const nb = el.querySelector("#riNeu"); if(nb) nb.onclick = () => asSvRechtBearbeiten(null, el);
 }
 /* Kenntnisnahme durch GF/Fachkraft; „betrifft uns“ -> Prüfaufträge für die gewählten Unterlagen (RPC portal_rechtsinfo_quittieren) */
@@ -1330,13 +1330,13 @@ async function asSvErinnerungen(box){
         (Termine, Prüfungen, Nachweise, Vorsorge, Unterweisungen, Maßnahmen, Sicherheitsdatenblätter, zu prüfende Unterlagen) –
         <b>ohne Namen aus Vorsorge, Unterweisung und Qualifikationen</b> (Titel von Terminen und Maßnahmen erscheinen so, wie sie eingetragen sind).
         Einzelheiten stehen nur hier im Cockpit. Jede Mail enthält einen Link zum Abbestellen.</p>
-      ${abos.length ? `<div class="zeilen">${abos.map((a, i) => `<div class="z" style="cursor:default"><div><b>${esc(a.name || a.email)}</b>
+      ${abos.length ? `<div class="zeilen">${abos.map((a, i) => `<div class="z" ${pflege ? `data-abo="${i}"` : 'style="cursor:default"'}><div><b>${esc(a.name || a.email)}</b>
           <small>${esc(a.email)} · ${esc(rh[a.rhythmus] || a.rhythmus)}${a.rhythmus === "woechentlich" ? " · " + esc(wt[a.wochentag] || "") : ""}
           · ${a.letzte_mail ? "zuletzt " + esc(asSvDatZeit(a.letzte_mail)) : "noch keine Mail"}</small></div>
-          ${pflege ? `<div class="sv-akt"><button class="btn sek klein" data-probe="${i}">Probe senden</button><button class="btn sek klein" data-abo="${i}">Ändern</button></div>` : ""}</div>`).join("")}</div>`
+          ${pflege ? `<div class="sv-akt"><button class="btn sek klein" data-probe="${i}">Probe senden</button></div>` : ""}</div>`).join("")}</div>`
         : `<div class="leer">Noch keine Empfänger eingetragen.${pflege ? "" : " Einrichten kann das die Fachkraft für Arbeitssicherheit oder die Geschäftsführung."}</div>`}</div>`;
   const neu = box.querySelector("#svAboNeu"); if(neu) neu.onclick = () => asSvAboDialog(null);
-  box.querySelectorAll("[data-abo]").forEach(b => b.onclick = () => asSvAboDialog(abos[+b.dataset.abo]));
+  box.querySelectorAll("[data-abo]").forEach(b => b.onclick = ev => { if(ev.target.closest("button")) return; asSvAboDialog(abos[+b.dataset.abo]); });
   box.querySelectorAll("[data-probe]").forEach(b => b.onclick = async () => {
     const a = abos[+b.dataset.probe]; b.disabled = true;
     try{
