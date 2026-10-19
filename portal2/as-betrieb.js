@@ -127,7 +127,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
             ${d.maschinen_id ? `<button class="btn sek klein" data-dok="${esc("maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id))}" data-titel="${esc(d.maschine || d.titel)}">Maschine</button>
               <button class="btn sek klein" data-dok="${esc("qr.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id))}" data-titel="QR · ${esc(d.maschine || d.titel)}">QR</button>` : ""}
             ${z.sys ? `<button class="btn klein" data-sys="${z.sys.id}">BdA in der App</button>` : ""}
-            ${(AS.fachkraft || AS.gf) && d.maschinen_id ? `<button class="btn sek klein" data-anlber="${esc(d.maschinen_id)}">Verwalten</button>` : ""}</div></div>
+            </div></div>
           ${asChip(AS_BAND_TEXT[z.band], AS_BAND_FARBE[z.band])}</div>`; }).join("") || `<div class="leer">Keine Anlagen${st.q || st.band ? " zum Filter" : ""}.</div>`}</div>
       <p class="hinweis">⚠ = Dokument nicht mehr aktuell: ein Mangel wurde nach dem Dokumentstand behoben und ist noch nicht in die Unterlagen übernommen.</p></div>`;
   main.querySelectorAll("[data-band]").forEach(k => k.onclick = () => { st.band = st.band === k.dataset.band ? "" : k.dataset.band; AS_SEITEN.anlagen.render(main); });
@@ -136,8 +136,11 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   main.querySelectorAll("[data-sys]").forEach(b => b.onclick = ev => { ev.stopPropagation(); AS.reiter.bda = b.dataset.sys; asGehe("bda/" + b.dataset.sys); });
   const an = document.getElementById("anlNeu"); if(an) an.onclick = () => asAnlageNeuDialog(main);
   const et = document.getElementById("anlEtikett"); if(et) et.onclick = () => asEtikettDialog(sicht.map(z => z.d));
-  main.querySelectorAll("[data-anlber]").forEach(b => b.onclick = ev => { ev.stopPropagation();
-    const d = asAnlagen().find(x => x.maschinen_id === b.dataset.anlber); if(d) asAnlageVerwalten(d, main); });
+  /* Klick auf die Anlage (nicht auf einen ihrer Knöpfe): Fachkraft/GF bearbeiten Bereich und Betriebszustand, alle anderen sehen die Maschinenseite */
+  main.querySelectorAll("[data-anl]").forEach(z => z.onclick = ev => { if(ev.target.closest("button")) return;
+    const d = asAnlagen().find(x => x.maschinen_id === z.dataset.anl); if(!d) return;
+    if(AS.fachkraft || AS.gf) asAnlageVerwalten(d, main);
+    else asDokOeffnen("maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id), d.maschine || d.titel); });
 }};
 
 /* ---------------- Neue Anlage anlegen (Plan intern/portal-eigenstaendig.md, Schritt 4) ----------------
@@ -321,12 +324,14 @@ function asMangelDialog(m, vMid){
     await asMgAendern(m, { uebernommen_am: new Date().toISOString(), uebernommen_von: "OAK engineering" }, "übernommen"); } });
   if(AS.admin && m.status === "erledigt") kn.push({ t: "Wieder öffnen", klasse: "sek", fn: async () => {
     await asMgAendern(m, { status: "offen", erledigt_am: null, erledigt_von: null, notiz: null, nachweis_pfad: null }, "wieder geöffnet"); } });
-  if(AS.admin || AS.fachkraft) kn.push({ t: "Bewerten / zuordnen", klasse: "sek", fn: () => { asMangelBearbeiten(m); return false; } });
+  const darf = !!(AS.admin || AS.fachkraft);
+  if(darf) kn.push({ t: "Speichern", fn: d => asMangelFormSpeichern(m, d) });
   const g = asNach("as_gefaehrdung", m.as_gefaehrdung_id);
   const dlg = asDialog({ titel: m.maschine || m.maschinen_id, inhalt: `<p>${asChip(AS_BAND_TEXT[asMgBand(m)], AS_BAND_FARBE[asMgBand(m)])} <b>${esc(asMgFeld(m, "label") || "")}</b></p>
       ${asMgFeld(m, "massnahme") ? `<p>Maßnahme: ${esc(asMgFeld(m, "massnahme"))}</p>` : ""}
+      ${darf ? asMangelFormular(m) : ""}
       <div class="zeilen">${m.rechtsquelle ? `<div class="z"><div><b>Rechtsquelle</b><small>${esc(m.rechtsquelle)}</small></div></div>` : ""}
-        <div class="z"><div><b>Gefährdung in der BdA</b><small>${g ? esc(g.kurz) : "noch nicht zugeordnet"}</small></div></div>
+        ${darf ? "" : `<div class="z"><div><b>Gefährdung in der BdA</b><small>${g ? esc(g.kurz) : "noch nicht zugeordnet"}</small></div></div>`}
         ${m.status === "erledigt" ? `<div class="z"><div><b>Erledigt</b><small>${asDat(m.erledigt_am)} · ${esc(m.erledigt_von || "")} · ${esc(m.notiz || "")}</small></div></div>` : ""}</div>
       <div class="reihe" style="gap:6px;margin-top:10px;flex-wrap:wrap">
         ${m.foto_pfad ? `<button class="btn sek klein" data-foto="${esc(m.foto_pfad)}">Foto</button>` : ""}
@@ -346,20 +351,23 @@ function asMangelErledigt(m){
       const am = !w.datum || w.datum === asHeute() ? new Date().toISOString() : w.datum + "T12:00:00";
       await asMgAendern(m, { status: "erledigt", erledigt_am: am, erledigt_von: AS.ich, notiz: w.notiz, nachweis_pfad: nachweis }, "erledigt", w.notiz, nachweis); } }] });
 }
-function asMangelBearbeiten(m){
+function asMangelBearbeiten(m){ asMangelDialog(m, new Map()); }
+function asMangelFormular(m){
   const sysIds = new Set(asT("as_arbeitssystem").filter(s => asListe(s.anlagen).includes(m.maschinen_id)).map(s => s.id));
   const gef = asT("as_gefaehrdung").filter(g => sysIds.has(g.arbeitssystem_id));
-  asDialog({ titel: "Mangel bewerten und der Beurteilung zuordnen", breit: true, inhalt: `<p class="hinweis">Ordnen Sie den Befund der passenden Gefährdung zu – die Beurteilung wird dann zur Nachbewertung vorgelegt.</p><div class="form">
+  return `<div class="form">
       ${asFeld("Befund", "label", asMgFeld(m, "label"), "textarea", "voll")}${asFeld("Maßnahme", "massnahme", asMgFeld(m, "massnahme"), "textarea", "voll")}
       ${asAuswahl("Thema", "thema", asMgFeld(m, "thema") || "sonstiges", Object.entries(AS_MG_THEMA))}
       ${asAuswahl("Bewertung", "bewertung_manuell", m.bewertung_manuell || "", [["", "wie berechnet (" + (AS_BAND_TEXT[m.band] || "–") + ")"], ["gefahr", "Gefahr"], ["besorgnis", "Besorgnis"], ["akzeptanz", "Akzeptanz"]])}
       ${asAuswahl("Gefährdung in der BdA", "as_gefaehrdung_id", m.as_gefaehrdung_id || "", [["", "– keine –"]].concat(gef.map(g => [g.id, g.kurz])), "voll")}
-      ${asFeld("Ausblenden (gilt nicht mehr)", "ausgeblendet", m.ausgeblendet, "checkbox")}</div>`,
-    knoepfe: [{ t: "Speichern", fn: async d => { const w = asWerte(d);
+      ${asFeld("Ausblenden (gilt nicht mehr)", "ausgeblendet", m.ausgeblendet, "checkbox")}</div>
+    <p class="hinweis">Mit der Zuordnung zu einer Gefährdung wird die Beurteilung zur Nachbewertung vorgelegt.</p>`;
+}
+async function asMangelFormSpeichern(m, d){ { const w = asWerte(d);
       const manuell = (w.label || "") !== (m.label || "") || (w.massnahme || "") !== (m.massnahme || "") || (w.thema || "") !== (m.thema || "")
         ? { label: w.label, massnahme: w.massnahme, thema: w.thema } : null;
       await asMgAendern(m, { manuell, bewertung_manuell: w.bewertung_manuell || null, as_gefaehrdung_id: w.as_gefaehrdung_id || null, ausgeblendet: !!w.ausgeblendet },
-        "bearbeitet", w.bewertung_manuell ? "Bewertung: " + w.bewertung_manuell : null); } }] });
+        "bearbeitet", w.bewertung_manuell ? "Bewertung: " + w.bewertung_manuell : null); }
 }
 function asMangelNeu(){
   const anl = asAnlagen().filter(d => d.maschinen_id);
