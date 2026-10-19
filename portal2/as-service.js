@@ -470,13 +470,15 @@ function asSvAufgaben(){
     if(ohne.length && (AS.fachkraft || AS.gf)) l.push({ schluessel: "gsgbu-ohne-tk:" + ohne.length, stufe: "warnung", quittierbar: true,
       titel: ohne.length + " Gefahrstoff-Beurteilung(en) keiner Tätigkeit der BdA zugeordnet", sub: "Ohne Zuordnung fehlt der Stoff in der Beurteilung der Arbeitsbedingungen – in der EMKG-Beurteilung die Tätigkeit wählen",
       frist: null, aktionen: [["Öffnen", () => { AS_GS.oeffnen = ohne[0].gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] }); }
-  /* 6r. Neuer Stoff ohne Mitzeichnung der Sifa (P23 → P12) */
+  /* 6r. Neuer Stoff ohne Mitzeichnung der Sifa (P23 → P12) – nur im Cockpit neu aufgenommene Stoffe (nicht der Erstimport), zusammengefasst */
   if(AS.fachkraft || AS.gf){ const mz = asT("as_mitzeichnung").filter(x => x.art === "gefahrstoff");
-    (AS_SV.gsListe || []).filter(g => g.verwendung_status !== "inaktiv" && g.erfasst_am && asSvTage(String(g.erfasst_am).slice(0, 10)) >= -180
-      && !mz.some(x => (x.checkliste && x.checkliste._objekt) === g.id || String(x.titel || "").toLowerCase().includes(String(g.bezeichnung || "").toLowerCase().slice(0, 12))))
-      .forEach(g => l.push({ schluessel: "gs-mz:" + g.id, stufe: "info", quittierbar: true, quittText: "Mitzeichnung nicht nötig",
-        titel: "Neuer Gefahrstoff ohne Mitzeichnung der Sifa: " + g.bezeichnung, sub: "Vor der Beschaffung: Substitution, Lagerung, Schutzmaßnahmen prüfen lassen (§ 6 ASiG)",
-        frist: null, aktionen: [["Mitzeichnung", () => asGehe("mitzeichnung")]] })); }
+    const ohne = (AS_SV.gsListe || []).filter(g => g.verwendung_status !== "inaktiv" && g.quelle === "portal" && !g.ersetzt_durch && g.erfasst_am && asSvTage(String(g.erfasst_am).slice(0, 10)) >= -90
+      && !(AS_SV.gsListe || []).some(x => x.ersetzt_durch === g.id)
+      && !mz.some(x => (x.checkliste && (x.checkliste._objekt === g.id || (x.checkliste._folgen || {}).gefahrstoff === g.id)) || String(x.titel || "").toLowerCase() === String(g.bezeichnung || "").toLowerCase()));
+    if(ohne.length) l.push({ schluessel: "gs-mz:" + ohne.map(g => g.id).sort().join(",").slice(0, 120), stufe: "info", quittierbar: true, quittText: "Mitzeichnung nicht nötig",
+      titel: ohne.length + (ohne.length === 1 ? " neuer Gefahrstoff" : " neue Gefahrstoffe") + " ohne Mitzeichnung der Sifa",
+      sub: ohne.slice(0, 3).map(g => g.bezeichnung).join(", ") + (ohne.length > 3 ? " …" : "") + " – künftig vor der Beschaffung anmelden (Substitution, Lagerung, Schutzmaßnahmen; § 6 ASiG)",
+      frist: null, aktionen: [["Mitzeichnung", () => asGehe("mitzeichnung")]] }); }
   /* 6s. Substitution nach TRGS 600: Prüfung fehlt bzw. Ersatz möglich (P23 → P11) */
   { const gb = (AS_SV.gbuAlle || []).filter(g => g.status === "freigegeben"), ohne = gb.filter(g => !(g.eingaben && g.eingaben.substitution));
     const moegl = gb.filter(g => g.eingaben && g.eingaben.substitution === "moeglich" && !((AS_SV.gsListe || []).find(x => x.id === g.gefahrstoff_id) || {}).ersetzt_durch);
@@ -556,7 +558,7 @@ async function asSvPaLaden(){
     hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,taetigkeit_id,eingaben,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k),
     hole("/rest/v1/as_ba?select=id,titel,arbeitssystem_id,vorgelegt_am,vorgelegt_von,status&vorgelegt_am=not.is.null&status=neq.freigegeben" + k),
     hole("/rest/v1/portal_dokumente?select=maschinen_id,einheit_id&kategorie=in.(anlagen,allg-gbu)" + k),
-    hole("/rest/v1/portal_gefahrstoff?select=id,bezeichnung,einheit_ids,verwendung_status,gbu_pfad,ersetzt_durch,ersetzt_am,erfasst_am" + k),
+    hole("/rest/v1/portal_gefahrstoff?select=id,bezeichnung,einheit_ids,verwendung_status,gbu_pfad,ersetzt_durch,ersetzt_am,erfasst_am,quelle" + k),
     hole("/rest/v1/uw_person?select=id,name,uw_person_rolle(rolle_id)&status=eq.aktiv" + k),
     hole("/rest/v1/uw_rolle?select=id,name" + k)]);
   AS_SV.pers = pers; AS_SV.rollen = rollen;
