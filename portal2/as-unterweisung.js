@@ -185,10 +185,10 @@ function asUwTerminal(box){
       : `<button class="btn sek klein" data-einarb="${esc(name)}" data-taet="${esc(taet || "")}">Einarbeitung bestätigen</button>`; };
   const pdf = n => n && n.id ? `<button class="btn sek klein" data-pdf="${esc(n.id)}">Nachweis (PDF)</button>` : "";
   const zeilen = pers.map(p => { const n = asUwLetzter(p.name), st = n ? asUwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" }, g = asUwGruppenName(p);
-    return { rang: AS_UW_AMPEL[st.klasse] ?? 2, html: `<tr data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(g)}" data-stand="${st.klasse}" data-ea="${asUwEinarb(p.name) ? "ja" : "nein"}">
+    return { rang: AS_UW_AMPEL[st.klasse] ?? 2, html: `<tr class="bda-klick" data-pedit="${esc(p.id)}" data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(g)}" data-stand="${st.klasse}" data-ea="${asUwEinarb(p.name) ? "ja" : "nein"}">
       <td><b>${esc(p.name)}</b>${(() => { const a = (AS_UW.d.anlass || []).find(x => x.person_id === p.id);
         return a ? `<br><small class="hinweis" title="anlassbezogene Unterweisung (Neuunterweisung)">Anlass: ${esc(a.titel || "Neuunterweisung")} · ${asDat(a.am)}${a.durch ? " · " + esc(a.durch) : ""}</small>` : ""; })()}</td><td>${esc(g || "—")}</td><td>${n ? asDat(n.created_at) : "—"}</td><td>${asChip(st.text, AS_UW_FARBE[st.klasse])}</td>
-      <td>${einarbZelle(p.name, g)}</td><td style="white-space:nowrap">${pdf(n)} <button class="btn sek klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` }; })
+      <td>${einarbZelle(p.name, g)}</td><td style="white-space:nowrap">${pdf(n)}</td></tr>` }; })
     .concat(zusatz.map(n => { const st = asUwStatus(n);
       return { rang: AS_UW_AMPEL[st.klasse] ?? 2, html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}" data-ea="${asUwEinarb(n.mitarbeiter_name) ? "ja" : "nein"}">
         <td><b>${esc(n.mitarbeiter_name)}</b></td><td>${esc(n.funktion || "—")}${n.bereich ? `<br><small class="hinweis">${esc(n.bereich)}</small>` : ""}</td><td>${asDat(n.created_at)}</td>
@@ -249,7 +249,7 @@ function asUwTerminal(box){
   if(q("#uwEinst")) q("#uwEinst").onclick = asUwEinstellungen;
   if(q("#uwCsv")) q("#uwCsv").onclick = () => asUwExport(AS_UW.d.nachweise);
   q("#uwPersNeu").onclick = () => asUwPersonKurz(null);
-  box.querySelectorAll("[data-pedit]").forEach(x => x.onclick = () => asUwPersonKurz(d.pers.find(p => p.id === x.dataset.pedit)));
+  box.querySelectorAll("[data-pedit]").forEach(x => x.onclick = ev => { if(ev.target.closest("button, a, input, select")) return; asUwPersonKurz(d.pers.find(p => p.id === x.dataset.pedit)); });
   box.querySelectorAll("[data-pdf]").forEach(x => x.onclick = () => asUwPdf(x.dataset.pdf));
   box.querySelectorAll("[data-einarb]").forEach(x => x.onclick = () => asUwEinarbDialog(x.dataset.einarb, x.dataset.taet));
   box.querySelectorAll("[data-beleg]").forEach(x => x.onclick = () => asUwBelegDialog(x.dataset.beleg));

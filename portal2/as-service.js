@@ -317,7 +317,7 @@ function asSvAufgaben(){
       aktionen: AS.bereich && AS.bereich.fest && !asBereichSchreibbar(t.einheit_id) ? [] : [["Erledigt", () => asSvErledigenDialog(t)]], unterlagen: t });
     if(asSvEntwurfOffen(t)) asSvTerminDoks(t).filter(asSvEntwurf).forEach(d => l.push({ schluessel: "entwurf:" + t.id + ":" + d.id, stufe: "warnung", quittierbar: true,
       titel: "Unterlage noch Entwurf: " + asSvDokTitel(d).replace(/^\s*ENTWURF( zur Freigabe)?\s*[–-]\s*/i, ""), sub: "gebraucht für „" + t.titel + "“ am " + asDat(t.faellig_am) + " – Freigabe einholen", frist: tage,
-      aktionen: [["Unterlage öffnen", () => asDokOeffnen(asSvDokUrl(d), asSvDokTitel(d))], ["Termin", () => asSvErledigenDialog(t, true)]] }));
+      aktionen: [["Unterlage öffnen", () => asDokOeffnen(asSvDokUrl(d), asSvDokTitel(d))], ["Termin", () => asSvTerminDialog(t)]] }));
   });
   /* 2. Nachweise */
   AS_SV.nachweise.filter(n => !n.archiviert).forEach(n => {
@@ -815,7 +815,7 @@ function asSvKalender(box){
 }
 function asSvEintragOeffnen(e){
   if(!e) return;
-  if(e.quelle === "termin") asSvErledigenDialog(e.roh, true); else asSvZiel(e.ziel);
+  if(e.quelle === "termin") asSvTerminDialog(e.roh); else asSvZiel(e.ziel);
 }
 function asSvZeile(e, i){
   const tage = asSvTage(e.datum), farbe = asSvFarbe(tage, 30);
@@ -882,6 +882,7 @@ function asSvMaschinenNamen(){
 }
 function asSvTerminDialog(t, vorlage){
   const v = vorlage || [];
+  const erledigtKnopf = t && t.id && !t.erledigt_am ? [{ t: "Erledigt melden", klasse: "sek", fn: () => { asSvErledigenDialog(t); return false; } }] : [];
   const wert = (feld, std) => t ? (t[feld] == null ? "" : t[feld]) : (std == null ? "" : std);
   const intervall = t ? (t.intervall_monate || 0) : (v[2] != null ? v[2] : 12);
   const ivOpt = AS_SV_INTERVALLE.slice(); if(intervall && !ivOpt.some(i => i[0] === intervall)) ivOpt.push([intervall, "alle " + intervall + " Monate"]);
@@ -922,7 +923,7 @@ function asSvTerminDialog(t, vorlage){
       <label class="voll">Grundlage<input type="text" data-f="grundlage" maxlength="300" value="${esc(wert("grundlage", v[3]))}"></label>
       <label class="voll">Notiz<textarea data-f="notiz" maxlength="2000">${esc(wert("notiz", ""))}</textarea></label>
       ${asSvUnterlagenWahl(t ? (t.unterlagen || []) : [])}
-      ${asSvNameFeld()}</div>`, knoepfe: kn });
+      ${asSvNameFeld()}</div>`, knoepfe: erledigtKnopf.concat(kn) });
   asSvUnterlagenWahlBinden(document.getElementById("dlg"));
 }
 function asSvErledigenDialog(t, mitAendern){
@@ -937,7 +938,6 @@ function asSvErledigenDialog(t, mitAendern){
     catch(e){ asMeldung("Konnte nicht gespeichert werden: " + asSvFehler(e)); return false; }
     asMeldung(t.intervall_monate ? "Erledigt – Folgetermin angelegt" : "Erledigt"); asZeige();
   } }];
-  if(mitAendern) kn.push({ t: "ändern", klasse: "sek", fn: () => { asSvTerminDialog(t, null); return false; } });
   kn.push({ t: "Abbrechen", klasse: "sek", fn: () => true });
   const d = asDialog({ titel: "Termin erledigt", inhalt: `<p><b>${esc(t.titel)}</b>${t.objekt ? " · " + esc(t.objekt) : ""}<br>
       <span class="hinweis">fällig ${esc(asDat(t.faellig_am))}${t.grundlage ? "<br>" + esc(t.grundlage) : ""}</span></p>

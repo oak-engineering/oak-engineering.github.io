@@ -194,12 +194,12 @@ function asNwListe(box){
         <select id="asNwStandF" aria-label="Stand"><option value="">Stand: alle</option><option value="faellig"${F.stand === "faellig" ? " selected" : ""}>Stand: abgelaufen oder läuft ab</option></select>
         <span class="fl-zahl" id="asNwZahl"></span></div>
       ${zeilen.length ? `<div class="tabwrap"><table class="tab" id="asNwTab"><thead><tr><th>Name</th><th>Nachweis</th><th>ausgestellt</th><th>gültig bis</th><th>Stand</th><th></th></tr></thead>
-        <tbody>${zeilen.map(({ n, st }) => `<tr data-name="${esc(asNwNorm(n.person_name))}" data-art="${esc(n.art)}" data-stand="${st.klasse}">
+        <tbody>${zeilen.map(({ n, st }) => `<tr class="bda-klick" data-nw="${esc(n.id)}" data-name="${esc(asNwNorm(n.person_name))}" data-art="${esc(n.art)}" data-stand="${st.klasse}">
           <td><b>${esc(n.person_name)}</b>${n.as_einheit_id ? `<div class="hinweis">${esc(asEinheitName(n.as_einheit_id))}</div>` : ""}</td>
           <td>${esc(asNwArtLabel(n.art))}${n.bezeichnung ? `<div class="hinweis">${esc(n.bezeichnung)}</div>` : ""}${AS_NW_BEAUFTRAGUNG.includes(n.art) ? `<div class="hinweis">${n.beauftragt ? "schriftlich beauftragt" : `<b style="color:var(--rot)">Beauftragung fehlt</b>`}</div>` : ""}</td>
           <td>${n.ausgestellt_am ? asDat(n.ausgestellt_am) : "–"}</td><td>${n.gueltig_bis ? asDat(n.gueltig_bis) : "–"}</td>
           <td>${asChip(st.text, AS_NW_FARBE[st.klasse])}</td>
-          <td class="nodruck" style="white-space:nowrap">${n.datei_pfad ? `<button class="btn sek klein" data-datei="${esc(n.datei_pfad)}" data-titel="${esc(asNwArtLabel(n.art) + " · " + n.person_name)}">Datei</button> ` : ""}<button class="btn sek klein" data-nw="${esc(n.id)}">ändern</button></td></tr>`).join("")}</tbody></table></div>`
+          <td class="nodruck" style="white-space:nowrap">${n.datei_pfad ? `<button class="btn sek klein" data-datei="${esc(n.datei_pfad)}" data-titel="${esc(asNwArtLabel(n.art) + " · " + n.person_name)}">Datei</button> ` : ""}</td></tr>`).join("")}</tbody></table></div>`
         : `<div class="leer">Noch keine Nachweise eingetragen. Staplerscheine, Kranscheine, Ersthelfer … mit <b>„Nachweis eintragen“</b> erfassen – Abläufe erscheinen dann im Kalender und auf der Startseite.</div>`}
       <p class="hinweis">Gleiche Einträge wie unter Organisation → Beauftragte und im Kundenportal. Ein jüngerer Nachweis derselben Person und Art ersetzt den älteren.</p></div>`;
   const filtern = () => {
@@ -226,7 +226,7 @@ function asNwListe(box){
         <td>${n.ausgestellt_am ? esc(asDat(n.ausgestellt_am)) : "–"}</td><td>${n.gueltig_bis ? esc(asDat(n.gueltig_bis)) : "–"}</td>
         <td>${AS_NW_BEAUFTRAGUNG.includes(n.art) ? (n.beauftragt ? "schriftlich beauftragt" : "fehlt") : "–"}</td><td>${esc(st.text)}</td></tr>`).join("")}</tbody></table>`);
   };
-  box.querySelectorAll("[data-nw]").forEach(b => b.onclick = () => asNwDialog(AS_NW.nw.find(n => n.id === b.dataset.nw)));
+  box.querySelectorAll("[data-nw]").forEach(b => b.onclick = ev => { if(ev.target.closest("button")) return; asNwDialog(AS_NW.nw.find(n => n.id === b.dataset.nw)); });
   box.querySelectorAll("[data-datei]").forEach(b => b.onclick = async () => {
     const u = await asSigniert(b.dataset.datei);
     if(u) asDokOeffnen(u, b.dataset.titel); else asMeldung("Datei konnte nicht geöffnet werden.");
@@ -296,11 +296,11 @@ function asNwVsListe(box){
         Keine Befunde, Diagnosen oder ärztlichen Unterlagen eintragen. Nach dem Ausscheiden löschen; die Person erhält vorher eine Kopie ihrer Angaben.</p>
       <div class="filterleiste nodruck"><input type="search" id="asNwVsSuche" placeholder="Name suchen" autocomplete="off" value="${esc(AS_NW.vsSuche)}"><span class="hinweis" id="asNwVsZahl"></span></div>
       ${zeilen.length ? `<div class="tabwrap"><table class="tab" id="asNwVsTab"><thead><tr><th>Name</th><th>Anlass</th><th>letzte Vorsorge</th><th>nächste</th><th>Stand</th><th></th></tr></thead>
-        <tbody>${zeilen.map(({ v, st }) => `<tr data-name="${esc(asNwNorm(v.person_name))}"><td><b>${esc(v.person_name)}</b></td>
+        <tbody>${zeilen.map(({ v, st }) => `<tr class="bda-klick" data-vs="${esc(v.id)}" data-name="${esc(asNwNorm(v.person_name))}"><td><b>${esc(v.person_name)}</b></td>
           <td>${esc(v.anlass)}<div class="hinweis">${esc(AS_NW_VS_ART[v.art] || "")}</div></td>
           <td>${v.datum ? asDat(v.datum) : "–"}</td><td>${v.naechste ? asDat(v.naechste) : "–"}</td>
           <td>${asChip(st.text, AS_NW_FARBE[st.klasse])}</td>
-          <td class="nodruck" style="white-space:nowrap"><button class="btn sek klein" data-kopie="${esc(v.person_name)}">Kopie</button> <button class="btn sek klein" data-vs="${esc(v.id)}">ändern</button></td></tr>`).join("")}</tbody></table></div>`
+          <td class="nodruck" style="white-space:nowrap"><button class="btn sek klein" data-kopie="${esc(v.person_name)}">Kopie</button></td></tr>`).join("")}</tbody></table></div>`
         : `<div class="leer">Noch keine Vorsorge eingetragen. Nach jedem Termin beim Betriebsarzt Anlass, Datum und den nächsten Termin aus der Vorsorgebescheinigung übernehmen.</div>`}</div>`;
   const s = box.querySelector("#asNwVsSuche");
   const filtern = () => { AS_NW.vsSuche = s.value; const q = asNwNorm(s.value); let z = 0;
@@ -308,8 +308,8 @@ function asNwVsListe(box){
     box.querySelector("#asNwVsZahl").textContent = zeilen.length ? z + " von " + zeilen.length : ""; };
   s.oninput = filtern; filtern();
   box.querySelector("#asNwVsNeu").onclick = () => asNwVsDialog(null);
-  box.querySelectorAll("[data-vs]").forEach(b => b.onclick = () => asNwVsDialog(AS_NW.vs.find(v => v.id === b.dataset.vs)));
-  box.querySelectorAll("[data-kopie]").forEach(b => b.onclick = () => asNwVsKopie(b.dataset.kopie));
+  box.querySelectorAll("tr[data-vs]").forEach(b => b.onclick = ev => { if(ev.target.closest("button")) return; asNwVsDialog(AS_NW.vs.find(v => v.id === b.dataset.vs)); });
+  box.querySelectorAll("[data-kopie]").forEach(b => b.onclick = ev => { ev.stopPropagation(); asNwVsKopie(b.dataset.kopie); });
 }
 /* Kopie der Angaben für die Person (§ 3 Abs. 4 Satz 4 ArbMedVV) */
 function asNwVsKopie(name){
