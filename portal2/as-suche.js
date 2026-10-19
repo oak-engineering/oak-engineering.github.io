@@ -61,7 +61,10 @@ function asSuFeld(){
 function asKopfKontext(){
   const kx = document.getElementById("kopfKontext"); if(!kx) return;
   const k = (AS.kunden || []).find(x => x.kunde_slug === AS.kunde), b = typeof asBereichName === "function" ? asBereichName() : "";
-  kx.textContent = (k ? k.name : "Kein Betrieb") + " · " + (b || "Alle Bereiche");
+  /* Kurzform ohne Rechtsform, auf dem Handy nur der erste Namensteil – voller Text im Tooltip (nichts abgeschnitten) */
+  const name = k ? k.name : "Kein Betrieb", kurz = name.replace(/\s+(GmbH|AG|KG|OHG|UG|e\.\s?K\.|GbR|mbH)(\s*&\s*Co\.?\s*KG)?\.?$/i, "").trim();
+  kx.title = name + " · " + (b || "Alle Bereiche") + " – Betrieb und Bereich wechseln";
+  kx.innerHTML = `<span class="kk-voll">${esc(kurz)} · ${esc(b || "Alle Bereiche")}</span><span class="kk-kurz">${esc(kurz.split(/\s+/)[0])}${b ? " · " + esc(b) : ""}</span>`;
   kx.hidden = !AS.kunde && !(AS.kunden || []).length;
 }
 const asSuKundeWahlRoh = asKundeWahl;
