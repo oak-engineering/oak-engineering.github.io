@@ -316,7 +316,7 @@ function asCheckReifegrad(check){
   return out;
 }
 /* Interne Kennungen (P12, K3.6, 1b-1) nie anzeigen – Klartext statt Kürzel (Nikolai 19.10.2026) */
-const AS_KE_KURZ = { K1: "Aufbauorganisation", K2: "Prozesse und Abläufe", K3: "Führung", K4: "Beteiligung", K5: "Beurteilung der Arbeitsbedingungen", K6: "Unterstützung", K7: "Verbesserung (KVP)" };
+const AS_KE_KURZ = { K1: "Aufbauorganisation", K2: "Prozesse und Abläufe", K3: "Führung", K4: "Beteiligung", K5: "Beurteilung", K6: "Unterstützung", K7: "Verbesserung (KVP)" };
 function asKlartext(t){
   return String(t == null ? "" : t)
     .replace(/Prozess(?:beschreibung)?\s+(P\d{2})/g, (m, id) => { const p = (typeof AS_KUNDENPROZESSE !== "undefined" ? AS_KUNDENPROZESSE : []).find(x => x.id === id); return p ? "Prozess „" + p.titel + "“" : "Prozessbeschreibung"; })

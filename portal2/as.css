@@ -197,4 +197,5 @@ h1.seite span,.karte h2 span,.karte h2 .btn,.dlg-kopf h3 span{font-family:'Jost'
 /* Spinnennetz Reifegrad (Übersicht): Netz und Liste gleich breit, auf dem Handy untereinander */
 .netz-raster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:center}
 .netz-raster .z b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.netz-raster .z>span{white-space:nowrap}
 @media(max-width:820px){.netz-raster{grid-template-columns:1fr}}
