@@ -162,7 +162,7 @@ function asFfScheinDialog(s, f){
   const kn = [];
   if(s.status === "entwurf"){
     kn.push({ t: "Speichern", klasse: "sek", fn: async d => { await asSpeichern("as_erlaubnisschein", Object.assign({ id: s.id, fremdfirma_id: s.fremdfirma_id || null }, werte(d))); asZeige(); } });
-    kn.push({ t: "Freigeben", fn: async d => { const w = werte(d);
+    if(AS.fachkraft || AS.gf) kn.push({ t: "Freigeben", fn: async d => { const w = werte(d);
       if(w.massnahmen.some(m => !m.ok)){ asMeldung("Erst alle Schutzmaßnahmen abhaken"); return false; }
       if(!w.von || !w.bis){ asMeldung("Gültigkeit von/bis angeben"); return false; }
       await asSpeichern("as_erlaubnisschein", Object.assign({ id: s.id, fremdfirma_id: s.fremdfirma_id || null, status: "freigegeben", ausgestellt_von: AS.ich, ausgestellt_am: new Date().toISOString() }, w));
@@ -182,6 +182,7 @@ function asFfScheinDialog(s, f){
       ${s.art === "heissarbeiten" || neu ? asFeld("Brandwache / Nachkontrolle bis", "brandwache_bis", dt(s.brandwache_bis), "datetime-local") : ""}</div>
       <div style="margin-top:10px"><b>Schutzmaßnahmen</b> <span class="hinweis" id="esRecht">${esc(art.recht)}</span><div class="hakenliste" id="esListe">${art.massnahmen.map(t =>
         `<label><input type="checkbox" data-esm="${esc(t)}" ${hak.has(t) ? "checked" : ""} ${nurLesen ? "disabled" : ""}> ${esc(t)}</label>`).join("")}</div></div>
+      ${s.status === "entwurf" && !(AS.fachkraft || AS.gf) ? `<p class="hinweis">Freigeben dürfen Fachkraft oder Geschäftsführung – Schein speichern und vorlegen.</p>` : ""}
       ${s.ausgestellt_am ? `<p class="hinweis">Freigegeben ${asDat(s.ausgestellt_am)} von ${esc(s.ausgestellt_von || "")}${s.abgeschlossen_am ? " · abgeschlossen " + asDat(s.abgeschlossen_am) + " von " + esc(s.abgeschlossen_von || "") : ""}</p>` : ""}`, knoepfe: kn });
   const sel = d.querySelector('[data-f="art"]');
   if(sel && !nurLesen) sel.onchange = () => { const a = asFfSchein(sel.value);
