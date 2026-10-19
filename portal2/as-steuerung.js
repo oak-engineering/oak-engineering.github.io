@@ -317,10 +317,10 @@ AS_SEITEN.prozesse = { titel: "Prozesse", icon: "☰", sort: 8, render(main){
   main.innerHTML = `<h1 class="seite">Prozesse</h1><p class="unter">${esc(AS_PROZESSE.rahmen.titel)}: ${esc(AS_PROZESSE.rahmen.zweck)} Je Prozess eine Seite – freigegeben durch die Geschäftsführung.</p>
     ${AS.fachkraft ? `<div class="karte"><h2>OAK-Vorgehen bei diesem Kunden</h2><div class="zeilen">${AS_PROZESSE.oak_vorgehen.schritte.map((s, i) => `<div class="z" data-o="${i}"><div><b>${i + 1}. ${esc(s.t)}</b><small>${esc(s.ergebnis || "")}</small></div></div>`).join("")}</div></div>` : ""}
     ${Object.entries(ART).map(([art, t]) => `<div class="karte"><h2>${t}</h2><div class="zeilen">${AS_KUNDENPROZESSE.filter(p => p.art === art).map(p =>
-      `<div class="z" data-p="${p.id}"><div><b>${p.id} · ${esc(p.titel)}</b><small>Stufe ${p.stufe} · verantwortlich: ${esc(R[p.verantwortlich] || p.verantwortlich)}</small></div>
+      `<div class="z" data-p="${p.id}"><div><b>${esc(p.titel)}</b><small>Stufe ${p.stufe} · verantwortlich: ${esc(R[p.verantwortlich] || p.verantwortlich)}</small></div>
       ${frei[p.id] && frei[p.id].freigegeben_am ? asChip("freigegeben " + asDat(frei[p.id].freigegeben_am), "gruen") : asChip("nicht freigegeben", "grau")}</div>`).join("")}</div></div>`).join("")}`;
   main.querySelectorAll("[data-p]").forEach(z => z.onclick = () => { const p = AS_KUNDENPROZESSE.find(x => x.id === z.dataset.p), f = frei[p.id];
-    asDialog({ titel: p.id + " · " + p.titel, breit: true, inhalt: `<p><b>${esc(p.zweck)}</b></p>
+    asDialog({ titel: p.titel, breit: true, inhalt: `<p><b>${esc(p.zweck)}</b></p>
       <p class="hinweis">Verantwortlich: ${esc(R[p.verantwortlich])} · durchführend: ${p.durchfuehrend.map(x => esc(R[x] || x)).join(", ")} · beteiligt: ${p.beteiligt.map(x => esc(R[x] || x)).join(", ")}</p>
       <p class="hinweis">Auslöser: ${p.ausloeser.map(esc).join(" · ")}</p>
       <ol>${p.ablauf.map(s => `<li style="margin:6px 0">${esc(s.t)} <span class="hinweis">– ${esc(s.wer === "—" ? "automatisch" : R[s.wer] || s.wer)}${s.da ? "" : " · noch nicht in der App"}</span></li>`).join("")}</ol>

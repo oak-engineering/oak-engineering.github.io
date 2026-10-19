@@ -327,9 +327,9 @@ async function asLfVerlauf(erg){
       }catch(e){ /* kein Schreibrecht oder offline – Anzeige bleibt live */ }
     } else if(!st.erreicht && aktiv){
       const ausl = st.krit.concat(erg.liste.filter(x => x.stufe < st.nr)).find(x => x.s === "offen");
-      try{ await apiSend("PATCH", "/rest/v1/as_badge?kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&stufe=eq." + st.nr, { entzogen_am: heute, ausloeser: ausl ? ausl.id + " " + ausl.titel : null, geaendert_am: new Date().toISOString() }, "return=minimal");
+      try{ await apiSend("PATCH", "/rest/v1/as_badge?kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&stufe=eq." + st.nr, { entzogen_am: heute, ausloeser: ausl ? ausl.titel : null, geaendert_am: new Date().toISOString() }, "return=minimal");
         b.entzogen_am = heute;
-        await apiSend("POST", "/rest/v1/rpc/portal_logbuch_eintragen", { p_slug: AS.kunde, p_wer: "Automatik", p_bereich: "leitfaden", p_aktion: "Badge Stufe " + st.nr + " erloschen", p_objekt: st.name, p_details: ausl ? ausl.id + " " + ausl.titel : null }).catch(() => {});
+        await apiSend("POST", "/rest/v1/rpc/portal_logbuch_eintragen", { p_slug: AS.kunde, p_wer: "Automatik", p_bereich: "leitfaden", p_aktion: "Badge Stufe " + st.nr + " erloschen", p_objekt: st.name, p_details: ausl ? ausl.titel : null }).catch(() => {});
       }catch(e){}
     }
   }
@@ -386,7 +386,7 @@ async function asLfUebersicht(el){
 function asLfZeile(k, kurz){
   const farbe = AS_LF_FARBE[k.s] || "grau";
   return `<div class="lf-k" data-lfk="${esc(k.id)}" style="cursor:pointer"><span class="lf-p ${farbe}"></span>
-    <div><b>${esc(k.id)} · ${esc(k.titel)}</b>${k.rot ? ' <span class="lf-rot" title="lebensrelevant, keine Karenz">●</span>' : ""}
+    <div><b>${esc(k.titel)}</b>${k.rot ? ' <span class="lf-rot" title="lebensrelevant, keine Karenz">●</span>' : ""}
       <small>${esc(k.info || "")}${!kurz && k.warum ? " · " + esc(k.warum) : ""}</small>
       ${!kurz && k.recht ? `<small>Grundlage: ${esc(k.recht)}</small>` : ""}${!kurz && k.hinweis ? `<small>${esc(k.hinweis())}</small>` : ""}</div>
     <span>${asChip(AS_LF_TEXT[k.s] || k.s, farbe === "orange" ? "gelb" : farbe)}</span></div>`;
@@ -423,7 +423,7 @@ AS_SEITEN.leitfaden = { titel: "Ihr Weg", icon: "◆", sort: 0.8, async render(m
 function asLfSaDialog(k){
   const x = asLfSa(AS_LF.d, k.id), darf = !!(AS.gf || AS.fachkraft);
   const verlauf = (AS_LF.d.sa || []).filter(s => s.kriterium === k.id).slice(0, 5);
-  asDialog({ titel: k.id + " · " + k.titel, inhalt: `<p class="hinweis">${esc(k.warum)} Grundlage: ${esc(k.recht)}. Gültig ${k.sa} Monate ab Datum.</p>
+  asDialog({ titel: k.titel, inhalt: `<p class="hinweis">${esc(k.warum)} Grundlage: ${esc(k.recht)}. Gültig ${k.sa} Monate ab Datum.</p>
     ${k.hinweis ? `<p class="hinweis">${esc(k.hinweis())}</p>` : ""}
     ${verlauf.length ? `<div class="zeilen">${verlauf.map(s => `<div class="z" style="cursor:default"><div><b>${s.nicht_zutreffend ? "trifft nicht zu" : "bestätigt"} am ${esc(asDat(s.datum))}</b>
       <small>${esc(s.person || "")}${s.notiz ? " · " + esc(s.notiz) : ""}${s.erfasst_von ? " · erfasst von " + esc(s.erfasst_von) : ""}</small></div>
@@ -441,7 +441,7 @@ function asLfSaDialog(k){
         if(f){ asNwDateiOk(f); pfad = AS.kunde + "/selbstauskunft/" + k.id + "-" + Date.now() + "-" + asNwDateiName(f); await asNwHochladen(f, pfad); }
         await apiSend("POST", "/rest/v1/as_selbstauskunft", { kunde_slug: AS.kunde, kriterium: k.id, datum: w.datum || asHeute(), person: w.person || null,
           notiz: w.notiz || null, datei_pfad: pfad, nicht_zutreffend: !!w.nz, erfasst_von: AS.ich || null }, "return=minimal");
-        apiSend("POST", "/rest/v1/rpc/portal_logbuch_eintragen", { p_slug: AS.kunde, p_wer: AS.ich || "Portal", p_bereich: "leitfaden", p_aktion: "Selbstauskunft " + k.id, p_objekt: k.titel, p_details: w.nz ? "trifft nicht zu" : null }).catch(() => {});
+        apiSend("POST", "/rest/v1/rpc/portal_logbuch_eintragen", { p_slug: AS.kunde, p_wer: AS.ich || "Portal", p_bereich: "leitfaden", p_aktion: "Selbstauskunft", p_objekt: k.titel, p_details: w.nz ? "trifft nicht zu" : null }).catch(() => {});
       }catch(e){ asMeldung(e.message || String(e)); return false; }
       asMeldung("Gespeichert"); await asLfLaden(true); asZeige();
     } }] : [] });
