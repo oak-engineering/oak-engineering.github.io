@@ -5,7 +5,7 @@ const AS_STOP = { S: "Substitution", T: "technisch", O: "organisatorisch", P: "p
 function asStopChip(s){ return `<span class="stop stop-${esc(s)}" title="${esc(AS_STOP[s] || "")}">${esc(s)}</span>`; }
 function asStatusChip(m){
   if(m.status === "wirksam") return asChip("wirksam", "gruen");
-  if(m.status === "erledigt" && m._v1 && (m.stop === "O" || m.stop === "P") && !m.unterwiesen_am) return asChip("Unterweisung offen", "gelb");
+  if(m.status === "erledigt" && (m.stop === "O" || m.stop === "P") && !m.unterwiesen_am && (!m.folge_art || m.folge_art === "unterweisung")) return asChip("Unterweisung offen", "gelb");
   if(m.status === "erledigt") return asChip("Wirksamkeit prüfen", "gelb");
   if(m.termin && m.termin < asHeute()) return asChip("überfällig", "rot");
   return asChip("offen", "grau");
@@ -349,16 +349,38 @@ AS_SEITEN.mitzeichnung = { titel: "Mitzeichnung", icon: "✎", sort: 6, render(m
   main.querySelectorAll("[data-x]").forEach(z => z.onclick = () => asMitzeichnungDialog(asNach("as_mitzeichnung", z.dataset.x)));
 }};
 /* Typische Folgeschritte je Vorhaben (Prozessmodell P12: BdA, BA, Unterweisung, Gefahrstoffverzeichnis, Prüfkataster ergänzen) */
+/* [Text, folge_art] – folge_art steuert die automatische Folge der Maßnahme (unterweisung → Unterweisungsauftrag,
+   pruefung → Prüfkataster). Objekte, die direkt entstehen können, legt asMzObjekte an (Stoff, Plan-Prüfung, BdA-Auftrag). */
 const AS_MZ_FOLGEN = {
-  maschine: ["Beurteilung der Arbeitsbedingungen für die neue Anlage erstellen", "Prüfung vor erster Verwendung durchführen (§ 14 Abs. 1 BetrSichV)", "Betriebsanweisung erstellen und vor Inbetriebnahme unterweisen"],
-  umbau: ["Beurteilung der Arbeitsbedingungen anpassen", "Prüfung nach Änderung durchführen (§ 14 Abs. 2 BetrSichV)", "Betriebsanweisung anpassen und neu unterweisen"],
-  gefahrstoff: ["Stoff ins Gefahrstoffverzeichnis aufnehmen, SDB hinterlegen und Tätigkeit nach EMKG beurteilen", "Betriebsanweisung und Unterweisung vor der ersten Verwendung"],
-  bau: ["Beurteilung der Arbeitsbedingungen für den Bereich anpassen", "Flucht- und Rettungsplan prüfen"],
-  verfahren: ["Beurteilung der Arbeitsbedingungen anpassen", "Beschäftigte unterweisen"],
-  stelle: ["Erstunterweisung und Vorsorge vor Arbeitsbeginn planen"],
-  mutterschutz: ["Schutzmaßnahmen nach § 10 MuSchG umsetzen und Gespräch anbieten", "Mitteilung an die Aufsichtsbehörde"],
-  psa: ["PSA beschaffen und Benutzung unterweisen"],
-  fremdfirma: ["Gegenseitige Gefährdungen abstimmen und Externe unterweisen"] };
+  maschine: [["Anlage im Cockpit anlegen (Anlagen → + Anlage): legt Beurteilung als Entwurf und die Prüfung vor erster Verwendung an", ""],
+    ["Prüfung vor erster Verwendung durchführen – vorher keine Inbetriebnahme (§ 14 Abs. 1 BetrSichV)", "pruefung"], ["Betriebsanweisung erstellen und vor Inbetriebnahme unterweisen", "unterweisung"]],
+  umbau: [["Änderung an der Anlage melden (Anlagen → Verwalten → Änderung melden): Prüfung nach § 14 Abs. 2 BetrSichV und Beurteilung werden fällig", ""],
+    ["Betriebsanweisung anpassen und neu unterweisen", "unterweisung"]],
+  gefahrstoff: [["SDB hinterlegen und Tätigkeit nach EMKG beurteilen (der Stoff steht schon im Verzeichnis)", ""], ["Betriebsanweisung und Unterweisung vor der ersten Verwendung", "unterweisung"]],
+  bau: [["Beurteilung der Arbeitsbedingungen für den Bereich anpassen (Auftrag ist angelegt)", ""], ["Flucht- und Rettungsplan aktualisieren (ist zur Aktualisierung markiert)", ""]],
+  verfahren: [["Beurteilung der Arbeitsbedingungen anpassen (Auftrag ist angelegt)", ""], ["Beschäftigte unterweisen", "unterweisung"]],
+  stelle: [["Erstunterweisung und Vorsorge vor Arbeitsbeginn planen", "unterweisung"]],
+  mutterschutz: [["Schutzmaßnahmen nach § 10 MuSchG umsetzen und Gespräch anbieten", ""], ["Mitteilung an die Aufsichtsbehörde", ""]],
+  psa: [["PSA beschaffen und Benutzung unterweisen", "unterweisung"]],
+  fremdfirma: [["Auftrag unter Personal → Fremdfirmen anlegen: Gefährdungen abstimmen, Externe einweisen", ""]] };
+/* Mit der Freigabe entstehen die Folgeobjekte selbst (Prozessmodell P12 → P10/P22/P23/P25/P26) */
+async function asMzObjekte(x){
+  const obj = {};
+  try{
+    if(x.art === "gefahrstoff"){
+      const r = await apiSend("POST", "/rest/v1/portal_gefahrstoff", { kunde_slug: AS.kunde, bezeichnung: x.titel, verwendung_status: "aktiv", aktiv: true, quelle: "portal",
+        einheit_ids: x.einheit_id ? [x.einheit_id] : [], hinweis: "aus Mitzeichnung vom " + asDat(asHeute()), geaendert_von: AS.ich }, "return=representation");
+      if(r && r[0]) obj.gefahrstoff = r[0].id;
+    }
+    if(["bau", "verfahren", "umbau"].includes(x.art) && x.einheit_id)
+      obj.bda = await apiSend("POST", "/rest/v1/rpc/portal_mitzeichnung_folgen", { p_id: x.id }).catch(() => 0) || 0;
+    if(x.art === "bau") for(const n of asT("as_notfall").filter(n => n.status !== "archiviert" && (n.art === "fluchtplan" || n.art === "alarmplan") && (!n.einheit_id || !x.einheit_id || n.einheit_id === x.einheit_id)))
+      await asSpeichern("as_notfall", { id: n.id, pruefen_ab: new Date().toISOString(), pruefen_grund: ("Bauvorhaben: " + x.titel).slice(0, 200) });
+    if(x.art === "fremdfirma"){ const r = await asSpeichern("as_fremdfirma", { name: x.titel, taetigkeit: x.beschreibung || null, einheit_id: x.einheit_id || null, gefaehrlich: true, erstellt_von: AS.ich });
+      if(r) obj.fremdfirma = r.id; }
+  }catch(e){ asMeldung("Folgeobjekt nicht angelegt: " + (e.message || e)); }
+  return obj;
+}
 function asMitzeichnungDialog(x){
   const kat = AS_KAT.mitzeichnung[x.art] || { titel: x.art, punkte: [] };
   const cl = x.checkliste || {}, sifa = AS.fachkraft && x.status !== "entschieden";
@@ -379,10 +401,12 @@ function asMitzeichnungDialog(x){
       await asSpeichern("as_mitzeichnung", Object.assign({ id: x.id, freigabe_am: asHeute(), status: "entschieden" }, w));
       if(w.freigabe === "freigegeben"){   // Auflagen + typische Folgeschritte als Maßnahmen mit Termin (Prozessmodell P12 → P10/P20/P22/P23)
         const term = (() => { const t = new Date(); t.setDate(t.getDate() + 28); return t.toISOString().slice(0, 10); })();
-        const folgen = (x.checkliste && x.checkliste._auflagen || []).concat(AS_MZ_FOLGEN[x.art] || []);
-        for(const t of folgen) await asSpeichern("as_massnahme", { quelle: "mitzeichnung", quelle_id: x.id, stop: "O", text: t + " – " + x.titel, umsetzung: "zentral",
-          status: "offen", termin: term, einheit_id: x.einheit_id || null });
-        if(folgen.length) asMeldung(folgen.length + " Folgeschritte als Maßnahmen angelegt");
+        const folgen = (x.checkliste && x.checkliste._auflagen || []).map(t => [t, ""]).concat(AS_MZ_FOLGEN[x.art] || []);
+        for(const [t, fa] of folgen) await asSpeichern("as_massnahme", { quelle: "mitzeichnung", quelle_id: x.id, stop: "O", text: t + " – " + x.titel, umsetzung: "zentral",
+          status: "offen", termin: term, einheit_id: x.einheit_id || null, folge_art: fa || null });
+        const obj = await asMzObjekte(x);
+        if(Object.keys(obj).length) await asSpeichern("as_mitzeichnung", { id: x.id, checkliste: Object.assign({}, x.checkliste || {}, { _objekt: obj.gefahrstoff || obj.fremdfirma || null, _folgen: obj }) });
+        asMeldung(folgen.length + " Folgeschritte als Maßnahmen angelegt" + (obj.gefahrstoff ? " · Stoff ins Verzeichnis aufgenommen" : "") + (obj.bda ? " · " + obj.bda + " Beurteilung(en) zur Anpassung" : "") + (obj.fremdfirma ? " · Fremdfirmen-Auftrag angelegt" : ""));
       }
       asZeige(); } }] }); return false; } });
   asDialog({ titel: x.titel, breit: true, inhalt: `<p class="hinweis">${esc(kat.titel)} · angemeldet ${asDat(x.angemeldet_am)} von ${esc(x.angemeldet_von || "–")} · ${esc(asEinheitName(x.einheit_id))}</p>

@@ -174,7 +174,11 @@ function asOrgEinsatz(box){
           <input type="number" step="0.5" placeholder="BA h" data-sp="${i}" data-r="ba" value="${esc((sp[i] || {}).ba || "")}"></span></label>`).join("")}</div>`,
       knoepfe: [{ t: "Speichern", fn: async dl => { const w = asWerte(dl); const s = {};
         dl.querySelectorAll("[data-sp]").forEach(f => { s[f.dataset.sp] = s[f.dataset.sp] || {}; s[f.dataset.sp][f.dataset.r] = +f.value || 0; });
-        w.spezifisch = s; await asOrgSpeichern(w); asZeige(); } }] });
+        w.spezifisch = s; await asOrgSpeichern(w);
+        /* vereinbartes Soll merken – weicht es später um > 10 % ab, meldet das Cockpit „neu vereinbaren“ (DGUV V2) */
+        if(w.einsatz_vereinbart_am && w.einsatz_vereinbart_am !== d.einsatz_vereinbart_am){ const e2 = asEinsatz();
+          await asOrgSpeichern({ einsatz_vereinbart_soll: Math.round((e2.sollSifa + e2.sollBa) * 10) / 10 }); }
+        asZeige(); } }] });
   };
   const zeitDlg = x => { const neu = !x; x = x || { datum: asHeute(), rolle: "sifa", art: "grund" };
     const kn = [{ t: "Speichern", fn: async dl => { const w = asWerte(dl); if(!w.stunden){ asMeldung("Stunden fehlen"); return false; }

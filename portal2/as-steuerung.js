@@ -33,6 +33,10 @@ function asAsaTagesordnung(){
   z.push("8. Einsatzzeiten " + e.jahr + ": Sifa " + Math.round(e.istSifa) + "/" + Math.round(e.sollSifa) + " h, Betriebsarzt " + Math.round(e.istBa) + "/" + Math.round(e.sollBa) + " h");
   if(kz.pruefungen_ueberfaellig) z.push("Prüfungen: " + kz.pruefungen_ueberfaellig + " überfällig");
   if(kz.kultur_rot) z.push("Sicherheitskultur: " + kz.kultur_rot + " rote Handlungsfelder im KurzCheck");
+  /* alle übrigen Kennzahlen im roten Bereich (Prozessmodell P05 → P04) */
+  const schon = ["massnahmen_rot_offen", "massnahmen_ueberfaellig", "massnahmen_wirksam", "bda_freigegeben", "beauftragte_erfuellt", "beauftragte_abgelaufen", "pruefungen_ueberfaellig", "kultur_rot", "einsatz_sifa", "einsatz_ba", "meldungen_beinahe"];
+  const rotK = Object.entries(AS_KAT.kennzahlen).filter(([k, v]) => !schon.includes(k) && kz[k] != null && (v.einheit === "%" ? v.mehr_besser && kz[k] < 80 : v.einheit === "Anzahl" ? !v.mehr_besser && kz[k] > 0 : k === "asa_jahr" ? kz[k] < 4 : k === "reifegrad_mittel" ? kz[k] < 2 : false));
+  if(rotK.length) z.push("Kennzahlen im roten Bereich: " + rotK.map(([k, v]) => v.titel + " " + kz[k] + (v.einheit === "%" ? " %" : "")).join("; "));
   z.push("Verschiedenes");
   return z.map((x, i) => (i + 1) + ". " + x.replace(/^\d+\.\s*/, "")).join("\n");
 }
@@ -42,7 +46,7 @@ function asAsa(box){
   box.innerHTML = `<div class="karte"><h2>Arbeitsschutzausschuss ${jahr}: ${n} von mindestens 4 Sitzungen <button class="btn klein" id="asaNeu">+ Sitzung</button></h2>
     <p class="hinweis">§ 11 ASiG: mindestens vierteljährlich. Die Tagesordnung wird aus dem aktuellen Stand vorgeschlagen, Beschlüsse werden Maßnahmen.</p>
     <div class="zeilen">${liste.map(a => `<div class="z" data-a="${a.id}"><div><b>${asDat(a.datum)}</b><small>${esc(a.teilnehmer || "Teilnehmende offen")}</small></div>${a.abgeschlossen ? asChip("Protokoll", "gruen") : asChip("geplant", "grau")}</div>`).join("") || `<div class="leer">Noch keine Sitzung.</div>`}</div></div>`;
-  const dlg = a => { const neu = !a; a = a || { datum: asHeute() };
+  const dlg = a => { const neu = !a; a = a || { datum: asHeute(), tagesordnung: asAsaTagesordnung() };
     const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); delete w.beschluesse; await asSpeichern("as_asa", Object.assign({ id: a.id }, w)); asZeige(); } },
       { t: "Protokoll abschließen", klasse: "sek", fn: async d => { const w = asWerte(d), b = asListe((w.beschluesse || "").replace(/\n/g, ",")); delete w.beschluesse;
         const r = await asSpeichern("as_asa", Object.assign({ id: a.id, abgeschlossen: true }, w));

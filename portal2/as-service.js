@@ -177,6 +177,7 @@ async function asSvLaden(){
     hole("/rest/v1/unterweisungsnachweise?select=id,mitarbeiter_name,funktion,created_at" + k + "&order=created_at.desc&limit=2000"),
     hole("/rest/v1/portal_einarbeitung?select=person_name,am&archiviert=is.false" + k)]);
   Object.assign(AS_SV, { kunde: AS.kunde, termine, nachweise, vorsorge, uw, vorfaelle, quitt, anfragen, beitraege, uwNw, einarb });
+  AS_SV.nwAus = await hole("/rest/v1/portal_nachweis?select=id,art,person_name,as_einheit_id,notiz,archiviert&archiviert=is.true&notiz=like.*ausgeschieden*" + k);
   await asSvPaLaden();
 }
 async function asSvQuittLaden(){
@@ -421,6 +422,70 @@ function asSvAufgaben(){
   /* 6j. Notfallorganisation (P25) und Fremdfirmen (P26) */
   if(typeof asNfAufgaben === "function") asNfAufgaben().forEach(a => l.push(a));
   if(typeof asFfAufgaben === "function") asFfAufgaben().forEach(a => l.push(a));
+  /* 6k. Meldungen, die nur im Cockpit stehen (Betriebs-Login) – auswerten und Rückmeldung geben (P13) */
+  asT("as_meldung").filter(m => !m._v1 && m.art !== "vorschlag" && m.status !== "erledigt").forEach(m => l.push({
+    schluessel: "meldung:" + m.id, stufe: m.art === "unfall" ? "kritisch" : "warnung",
+    titel: "Meldung auswerten: " + ({ unfall: "Unfall", beinahe: "Beinahe-Unfall", zustand: "Unsicherer Zustand" }[m.art] || "Meldung") + " vom " + asDat(m.datum),
+    sub: String(m.beschreibung || "").slice(0, 90) + (m.art === "unfall" ? " – mehr als 3 Tage arbeitsunfähig: Unfallanzeige binnen 3 Tagen (§ 193 SGB VII)" : " – Maßnahme ableiten, Rückmeldung geben"),
+    frist: null, aktionen: [["Auswerten", () => asGehe("steuerung/meldungen")]] }));
+  /* 6l. Führungskräfte zur Beurteilung befähigen (P01 → P20): Leitung eines Bereichs ohne Nachweis einer BdA-Schulung */
+  if(AS.fachkraft || AS.gf){ const norm = x => String(x || "").trim().toLowerCase();
+    const geschult = new Set((AS_SV.nachweise || []).filter(n => /bda|beurteilung|gefährdungsbeurteilung|führungskräfte/i.test((n.bezeichnung || "") + " " + (n.art || ""))).map(n => norm(n.person_name)));
+    [...new Set(asT("as_einheit").map(e => e.leitung).filter(Boolean))].filter(p => !geschult.has(norm(p))).forEach(p => l.push({
+      schluessel: "fk-bda:" + norm(p), stufe: "info", quittierbar: true, quittText: "Geschult",
+      titel: "Führungskraft zur Beurteilung der Arbeitsbedingungen schulen: " + p, sub: "Kurzschulung (Pflichten nach § 13 ArbSchG, BdA und BA des Bereichs) – Nachweis unter Nachweise eintragen",
+      frist: null, aktionen: [["Nachweis eintragen", () => asGehe("nachweise")]] })); }
+  /* 6m. Bereich mit Beschäftigten, aber ohne Beurteilung (P01 → P10) */
+  if(AS.fachkraft || AS.gf){ const E = asT("as_einheit"), sys = asT("as_arbeitssystem").filter(s => !s.stillgelegt_am && s.einheit_id);
+    const unter = id => { const s = new Set([id]); let neu = true; while(neu){ neu = false; E.forEach(e => { if(e.parent_id && s.has(e.parent_id) && !s.has(e.id)){ s.add(e.id); neu = true; } }); } return s; };
+    E.filter(e => +e.beschaeftigte > 0).forEach(e => { const t = unter(e.id); if(sys.some(s => t.has(s.einheit_id))) return;
+      l.push({ schluessel: "bereich-ohne-bda:" + e.id, stufe: "warnung", quittierbar: true, titel: "Bereich ohne Beurteilung: " + e.name,
+        sub: e.beschaeftigte + " Beschäftigte – Arbeitssysteme/Tätigkeiten beurteilen oder vorhandene Beurteilungen dem Bereich zuordnen (§ 5 ArbSchG)",
+        frist: null, aktionen: [["Beurteilungen", () => asGehe("bda")]] }); }); }
+  /* 6n. Betreuungsumfang neu vereinbaren, wenn das Soll sich deutlich verändert hat (P06 → P01, DGUV V2) */
+  try{ const d = asOrgDaten(), e = typeof asEinsatz === "function" ? asEinsatz() : null;
+    if(e && d.einsatz_vereinbart_am && d.einsatz_vereinbart_soll && (AS.fachkraft || AS.gf)){
+      const alt = +d.einsatz_vereinbart_soll, neu = Math.round((e.sollSifa + e.sollBa) * 10) / 10;
+      if(alt > 0 && Math.abs(neu - alt) / alt > 0.1) l.push({ schluessel: "einsatz-neu:" + neu, stufe: "warnung", quittierbar: true,
+        titel: "Betreuungsumfang neu vereinbaren", sub: "vereinbart " + alt + " h/Jahr, heute nötig " + neu + " h/Jahr (Beschäftigte oder Gruppe geändert) – DGUV Vorschrift 2",
+        frist: null, aktionen: [["Einsatzzeiten", () => asGehe("organisation/einsatz")]] }); } }catch(err){}
+  /* 6o. Vorsorgeanlass prüfen (P10 → P24): Gefährdungen mit typischem Anlass, aber ohne angehakten Vorsorgeanlass */
+  { const anl = /^(3 |7 |9 )|Gefahrstoff|Lärm|Vibration|Hitze|Atemschutz|Feucht/i;
+    asT("as_arbeitssystem").filter(s => !s.stillgelegt_am).forEach(s => {
+      const g = asT("as_gefaehrdung").filter(x => x.arbeitssystem_id === s.id && x.art !== "ressource" && !(x.vorsorge || []).length && anl.test((x.faktor || "") + " " + (x.kurz || "")));
+      if(g.length) l.push({ schluessel: "vs-pruefen:" + s.id + ":" + g.map(x => x.id).sort().join(",").slice(0, 60), stufe: "info", quittierbar: true, quittText: "Kein Anlass",
+        titel: "Vorsorgeanlass prüfen: " + (s.name || ""), sub: g.length + " Gefährdung(en) ohne Angabe (" + g.slice(0, 3).map(x => x.kurz).join(", ") + ") – ArbMedVV Anhang",
+        frist: null, aktionen: [["Beurteilung", () => { AS.reiter.bda = s.id; asGehe("bda/" + s.id); }]] }); }); }
+  /* 6p. Beauftragung durch Ausscheiden weggefallen – Nachfolge bestellen (P20/P21), auch ohne Soll (Stapler, Kran, EFK …) */
+  { const aktiv = (AS_SV.nachweise || []).filter(n => !n.archiviert);
+    (AS_SV.nwAus || []).filter(n => n.archiviert && /Person ausgeschieden am (\d{2})\.(\d{2})\.(\d{4})/.test(n.notiz || "")).forEach(n => {
+      const m = /Person ausgeschieden am (\d{2})\.(\d{2})\.(\d{4})/.exec(n.notiz), am = m[3] + "-" + m[2] + "-" + m[1];
+      if(asSvTage(am) < -90 || aktiv.some(x => x.art === n.art && (x.as_einheit_id || null) === (n.as_einheit_id || null))) return;
+      l.push({ schluessel: "nachfolge:" + n.id, stufe: "warnung", quittierbar: true, quittText: "Nicht mehr nötig",
+        titel: "Nachfolge bestellen: " + asSvNwLabel(n.art) + (n.as_einheit_id ? " · " + asEinheitName(n.as_einheit_id) : ""),
+        sub: (n.person_name || "") + " ist ausgeschieden (" + asDat(am) + ") – Person bestellen, schulen, Nachweis eintragen", frist: null,
+        aktionen: [["Beauftragte", () => asGehe("organisation/beauftragte")]] }); }); }
+  /* 6q. Gefahrstoff-Beurteilung ohne Tätigkeit der BdA (P23 → P10) */
+  { const ohne = (AS_SV.gbuAlle || []).filter(g => g.status === "freigegeben" && !g.taetigkeit_id);
+    if(ohne.length && (AS.fachkraft || AS.gf)) l.push({ schluessel: "gsgbu-ohne-tk:" + ohne.length, stufe: "warnung", quittierbar: true,
+      titel: ohne.length + " Gefahrstoff-Beurteilung(en) keiner Tätigkeit der BdA zugeordnet", sub: "Ohne Zuordnung fehlt der Stoff in der Beurteilung der Arbeitsbedingungen – in der EMKG-Beurteilung die Tätigkeit wählen",
+      frist: null, aktionen: [["Öffnen", () => { AS_GS.oeffnen = ohne[0].gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] }); }
+  /* 6r. Neuer Stoff ohne Mitzeichnung der Sifa (P23 → P12) */
+  if(AS.fachkraft || AS.gf){ const mz = asT("as_mitzeichnung").filter(x => x.art === "gefahrstoff");
+    (AS_SV.gsListe || []).filter(g => g.verwendung_status !== "inaktiv" && g.erfasst_am && asSvTage(String(g.erfasst_am).slice(0, 10)) >= -180
+      && !mz.some(x => (x.checkliste && x.checkliste._objekt) === g.id || String(x.titel || "").toLowerCase().includes(String(g.bezeichnung || "").toLowerCase().slice(0, 12))))
+      .forEach(g => l.push({ schluessel: "gs-mz:" + g.id, stufe: "info", quittierbar: true, quittText: "Mitzeichnung nicht nötig",
+        titel: "Neuer Gefahrstoff ohne Mitzeichnung der Sifa: " + g.bezeichnung, sub: "Vor der Beschaffung: Substitution, Lagerung, Schutzmaßnahmen prüfen lassen (§ 6 ASiG)",
+        frist: null, aktionen: [["Mitzeichnung", () => asGehe("mitzeichnung")]] })); }
+  /* 6s. Substitution nach TRGS 600: Prüfung fehlt bzw. Ersatz möglich (P23 → P11) */
+  { const gb = (AS_SV.gbuAlle || []).filter(g => g.status === "freigegeben"), ohne = gb.filter(g => !(g.eingaben && g.eingaben.substitution));
+    const moegl = gb.filter(g => g.eingaben && g.eingaben.substitution === "moeglich" && !((AS_SV.gsListe || []).find(x => x.id === g.gefahrstoff_id) || {}).ersetzt_durch);
+    if(ohne.length && (AS.fachkraft || AS.gf)) l.push({ schluessel: "subst-offen:" + ohne.length, stufe: "info", quittierbar: true,
+      titel: ohne.length + " Gefahrstoff-Beurteilung(en) ohne Ergebnis der Substitutionsprüfung", sub: "§ 6 Abs. 1 Nr. 4 und § 7 Abs. 3 GefStoffV, TRGS 600 – in der EMKG-Beurteilung festhalten",
+      frist: null, aktionen: [["Öffnen", () => { AS_GS.oeffnen = ohne[0].gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] });
+    moegl.forEach(g => l.push({ schluessel: "subst-moeglich:" + g.id, stufe: "warnung", titel: "Ersatz möglich – Ersatzstoff festlegen: " + (g.taetigkeit || ""),
+      sub: "Laut Substitutionsprüfung gibt es einen geeigneten Ersatz (TRGS 600) – im Kataster „Durch Ersatzstoff ersetzen“", frist: null,
+      aktionen: [["Stoff öffnen", () => { AS_GS.oeffnen = g.gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] })); }
   /* 8. Forum */
   AS_SV.anfragen.forEach(a => {
     const zuOeffnen = () => { AS_SV.fOffen = a.id; asGehe("fragen"); };
@@ -488,10 +553,10 @@ async function asSvPaLaden(){
     hole("/rest/v1/portal_pruefauftrag?select=*&erledigt_am=is.null" + k + "&order=faellig_am.asc"),
     hole("/rest/v1/portal_gefahrstoff_gbu?select=id,taetigkeit,gefahrstoff_id,naechste_pruefung,status&status=eq.freigegeben&naechste_pruefung=not.is.null" + k),
     hole("/rest/v1/as_pruefobjekt?select=id,art,bezeichnung,ort,naechste_am,aktiv,einheit_id&naechste_am=not.is.null" + k),
-    hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k),
+    hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,taetigkeit_id,eingaben,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k),
     hole("/rest/v1/as_ba?select=id,titel,arbeitssystem_id,vorgelegt_am,vorgelegt_von,status&vorgelegt_am=not.is.null&status=neq.freigegeben" + k),
     hole("/rest/v1/portal_dokumente?select=maschinen_id,einheit_id&kategorie=in.(anlagen,allg-gbu)" + k),
-    hole("/rest/v1/portal_gefahrstoff?select=id,bezeichnung,einheit_ids,verwendung_status,gbu_pfad,ersetzt_durch,ersetzt_am" + k),
+    hole("/rest/v1/portal_gefahrstoff?select=id,bezeichnung,einheit_ids,verwendung_status,gbu_pfad,ersetzt_durch,ersetzt_am,erfasst_am" + k),
     hole("/rest/v1/uw_person?select=id,name,uw_person_rolle(rolle_id)&status=eq.aktiv" + k),
     hole("/rest/v1/uw_rolle?select=id,name" + k)]);
   AS_SV.pers = pers; AS_SV.rollen = rollen;
@@ -507,6 +572,9 @@ function asSvPaSichtbar(a){
   if(!AS.bereich || !AS.bereich.aktiv) return true;
   const oid = String(a.objekt_id || ""), typ = a.objekt_typ;
   if(typ === "bda_system") return !!asNach("as_arbeitssystem", oid);
+  if(oid.startsWith("AS:")) return !!asNach("as_arbeitssystem", oid.slice(3));
+  if(oid.startsWith("MN:")){ const m = asNach("as_massnahme", oid.slice(3)); return !m || asBereichLesbar(m.einheit_id); }
+  if(oid.startsWith("FK:")) return asBereichLesbar(oid.slice(3));
   const gs = oid.startsWith("GS:") ? oid.slice(3) : (typ === "gs_ba" ? oid : typ === "gs_gbu" ? ((AS_SV.gbuAlle || []).find(x => x.id === oid) || {}).gefahrstoff_id : null);
   if(gs) return asBereichLesbar(AS_SV.gsEinheit[gs] || []) && (AS_SV.gsBekannt.has(gs) || !AS_SV.gsBekannt.size);
   if(oid in AS_SV.objEinheit) return asBereichLesbar(AS_SV.objEinheit[oid]);
@@ -590,7 +658,9 @@ function asSvPaOeffnen(a, ziel){
   if(oid.startsWith("GS:") || a.objekt_typ === "gs_ba" || a.objekt_typ === "gs_gbu"){
     AS_GS.oeffnen = oid.startsWith("GS:") ? oid.slice(3) : a.objekt_typ === "gs_ba" ? oid : ((AS_SV.gbuAlle || []).find(x => x.id === oid) || {}).gefahrstoff_id || null;
     return asGehe("gefahrstoffe/kataster"); }
-  const sys = a.objekt_typ === "bda_system" ? asNach("as_arbeitssystem", oid)
+  if(oid.startsWith("MN:")) return asGehe("massnahmen");
+  if(oid.startsWith("FK:")) return asGehe("organisation");
+  const sys = a.objekt_typ === "bda_system" ? asNach("as_arbeitssystem", oid) : oid.startsWith("AS:") ? asNach("as_arbeitssystem", oid.slice(3))
     : asT("as_arbeitssystem").find(x => x.art === "anlage" && asListe(x.anlagen).includes(oid)) || asT("as_arbeitssystem").find(x => asListe(x.anlagen).includes(oid));
   if(sys){ AS.reiter["bda_" + sys.id] = a.objekt_typ === "anlage_ba" || a.objekt_typ === "unterweisung" ? "dokumente" : "tabelle"; AS.reiter.bda = sys.id; return asGehe("bda/" + sys.id); }
   asGehe(ziel);
@@ -602,9 +672,16 @@ async function asSvUwQuittieren(a){
     hole("/rest/v1/uw_rolle?select=id,name"), apiGet("/rest/v1/uw_person_rolle?select=person_id,rolle_id").catch(() => []),
     apiGet("/rest/v1/uw_person_einheit?select=person_id,einheit_id").catch(() => [])]);
   let einh = [], rollenNamen = [];
-  if(String(a.objekt_id).startsWith("GS:")){
+  const oidQ = String(a.objekt_id || "");
+  if(oidQ.startsWith("GS:")){
     const g = (await hole("/rest/v1/portal_gefahrstoff?select=einheit_ids&id=eq." + encodeURIComponent(a.objekt_id.slice(3))))[0];
     einh = (g && g.einheit_ids) || [];
+  } else if(oidQ.startsWith("AS:")){
+    const s = asNach("as_arbeitssystem", oidQ.slice(3)); rollenNamen = s ? asListe(s.rollen) : []; if(s && s.einheit_id) einh = [s.einheit_id];
+  } else if(oidQ.startsWith("MN:")){
+    const m = asNach("as_massnahme", oidQ.slice(3)); if(m && m.einheit_id) einh = [m.einheit_id];
+  } else if(oidQ.startsWith("FK:")){
+    einh = [];      // Führungskraft: die Person selbst auswählen
   } else {
     const sys = asT("as_arbeitssystem").filter(x => asListe(x.anlagen).includes(a.objekt_id));
     rollenNamen = [...new Set(sys.flatMap(x => asListe(x.rollen)))];

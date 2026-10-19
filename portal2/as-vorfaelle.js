@@ -346,6 +346,13 @@ function asVfAuswerten(v){
         felder.ausgewertet_am = new Date().toISOString();
         try{ await asVfSpeichern(v.id, felder); }
         catch(e){ asMeldung("Konnte nicht gespeichert werden: " + asVfFehlertext(e)); return false; }
+        /* Prozessmodell P13 → P11: die Langzeitmaßnahme wird eine Maßnahme mit Termin (einmal je Vorfall) */
+        if(felder.langzeitmassnahme && felder.langzeitmassnahme !== v.langzeitmassnahme && typeof asSpeichern === "function"
+           && !asT("as_massnahme").some(m => m.quelle === "meldung" && m.quelle_id === v.id)){
+          const t = new Date(); t.setDate(t.getDate() + 28);
+          await asSpeichern("as_massnahme", { quelle: "meldung", quelle_id: v.id, stop: "O", text: felder.langzeitmassnahme.slice(0, 500), umsetzung: "zentral",
+            status: "offen", termin: t.toISOString().slice(0, 10), verantwortlich: felder.ausgewertet_von, einheit_id: v.as_einheit_id || null }).catch(() => {});
+        }
         await asVfNeu(tage > 3 ? "Gespeichert – Unfallanzeige an die BG nicht vergessen" : "Auswertung gespeichert");
       }}]});
 }

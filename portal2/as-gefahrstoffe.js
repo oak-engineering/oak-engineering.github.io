@@ -456,6 +456,8 @@ function asGsEmkg(g, gbu, box){
       ${box2("eEng", "Arbeiten in Behältern, Tanks, Gruben, engen Räumen", ja(e.enge_raeume, false))}
       ${box2("eFeuer", "ständige Feuerarbeiten in der Nähe (fester Schweißplatz)", ja(e.feuerarbeiten_dauerhaft, false))}
       ${box2("eMess", "Arbeitsplatzmessung zeigt Einhaltung des Grenzwerts", ja(e.mit_messung, false))}
+      <label>Substitutionsprüfung (TRGS 600)<select id="eSub">${opt([["", "– noch nicht geprüft –"], ["nicht_moeglich", "Ersatz nicht möglich oder nicht zumutbar"], ["moeglich", "Ersatz möglich – Ersatzstoff festlegen"]], e.substitution || "")}</select></label>
+      <label>Begründung / geprüfte Alternativen<input type="text" id="eSubT" maxlength="300" value="${esc(e.substitution_text || "")}"></label>
       <details class="voll"${!roh("aggregat") || (!roh("siedepunkt_c") && !roh("dampfdruck_hpa") && !spray) ? " open" : ""}><summary>Stoffdaten aus dem Sicherheitsdatenblatt (Abschnitt 9.1)</summary>
         <div class="form"><label>Aggregatzustand<select id="eAgg">${opt([["", "–"], ["fluessig", "flüssig"], ["aerosol", "Spraydose (Aerosol)"], ["fest", "fest"], ["gas", "Gas"]], roh("aggregat"))}</select></label>
         <label>Siedebeginn °C<input type="number" id="eSdp" step="any" value="${esc(roh("siedepunkt_c"))}"></label>
@@ -481,7 +483,8 @@ function asGsEmkg(g, gbu, box){
       hautkontakt_ausgeschlossen: h === "aus", wirkflaeche: h === "klein" || h === "gross" ? h : undefined, wirkdauer: hd,
       koerperstellen: [...d.querySelectorAll(".eK:checked")].map(x => x.value), feuchtarbeit: q("#eFeucht").checked,
       raumlueftung: q("#eL").value, enge_raeume: q("#eEng").checked, feuerarbeiten_dauerhaft: q("#eFeuer").checked,
-      mit_messung: q("#eMess").checked, lagermenge_kg: zahl("#eLag"), taetigkeitsart: q("#eArt").value || undefined };
+      mit_messung: q("#eMess").checked, lagermenge_kg: zahl("#eLag"), taetigkeitsart: q("#eArt").value || undefined,
+      substitution: q("#eSub").value || undefined, substitution_text: q("#eSubT").value.trim() || undefined };
     Object.keys(t).forEach(k => t[k] === undefined && delete t[k]);
     return t;
   };
