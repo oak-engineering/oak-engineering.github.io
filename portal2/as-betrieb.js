@@ -382,6 +382,26 @@ function asMangelNeu(){
       await asLaden(); asZeige(); asMeldung("Mangel gemeldet"); } }] });
 }
 
+/* ======================= Begehung durch den Betrieb (Selbsterfassung) =======================
+   Das Begehungstool von OAK im Kundenmodus: der Betrieb erfasst Tatsachen (Anlage, Fotos, Zustand, Sprachnotiz),
+   OAK beurteilt und erstellt die Unterlagen (references/selbsterfassung-sop.md). Zugang = Melde-Code des Betriebs,
+   Ziel = portal_erfassungen; OAK holt mit tools/erfassungen_holen.py ab. Bewertungsfunktionen sind dort ausgeblendet. */
+async function asBegehung(box, k){
+  const [t] = await apiGet("/rest/v1/portal_melde_token?select=token&aktiv=is.true" + k).catch(() => []) || [];
+  const erf = await apiGet("/rest/v1/portal_erfassungen?select=id,anlage,maschinen_id,eingegangen_am,status,fotos,notizen,bemerkung&order=eingegangen_am.desc&limit=100" + k).catch(() => []) || [];
+  const url = t ? "https://www.oak-engineering.de/oak-tools/begehung/#kt=" + encodeURIComponent(t.token) + "&kn=" + encodeURIComponent(AS.org ? AS.org.name : "") : null;
+  const st = { neu: ["eingegangen – wartet auf OAK", "gelb"], in_arbeit: ["OAK bearbeitet", "blau"], erledigt: ["Unterlagen erstellt", "gruen"] };
+  box.innerHTML = `<div class="karte"><h2>Begehung selbst durchführen <span>${url ? `<button class="btn klein" id="bgStart">Begehung starten</button>` : ""}</span></h2>
+      <p>Anlage für Anlage erfassen: Gesamtansicht und Typenschild fotografieren, Zustand angeben, Auffälligkeiten beschreiben oder diktieren.
+        Funktioniert auch offline; am Ende „Erfassung senden“. OAK engineering beurteilt die Gefährdungen und erstellt Beurteilung, Betriebsanweisung und Mängelliste.</p>
+      <p class="hinweis">Sie erfassen Tatsachen, die Bewertung macht die Fachkraft. Die Unterlagen stützen sich dann auf Ihre Aufnahmen – Prüfungen nach § 14 BetrSichV,
+        Messungen und die Wirksamkeitskontrolle ersetzt das nicht. Bitte keine Personen fotografieren.${url ? "" : " <b>Für diesen Betrieb ist noch kein Melde-Code eingerichtet (Organisation → Zugänge).</b>"}</p></div>
+    <div class="karte"><h2>Eingereichte Erfassungen <span class="hinweis">${erf.length}</span></h2><div class="zeilen">${erf.map(x => { const s = st[x.status || "neu"] || [x.status, "grau"];
+      return `<div class="z"><div><b>${esc(x.anlage)}${x.maschinen_id ? " · " + esc(x.maschinen_id) : ""}</b><small>${asDat(x.eingegangen_am)} · ${x.fotos || 0} Fotos · ${x.notizen || 0} Sprachnotizen${x.bemerkung ? " · " + esc(x.bemerkung) : ""}</small></div>${asChip(s[0], s[1])}</div>`; }).join("")
+      || `<div class="leer">Noch nichts eingereicht.</div>`}</div></div>`;
+  const b = box.querySelector("#bgStart"); if(b) b.onclick = () => window.open(url, "_blank", "noopener");
+}
+
 /* ======================= DYMO-Etiketten (QR auf die Maschinenseite) =======================
    Gleiches Etikett wie tools/dymo_etiketten.py: DYMO LabelWriter, „Shipping S0722430“ = 54 × 101 mm quer.
    Zwei Wege: direkt drucken (Browser, Seitengröße 101 × 54 mm, Drucker „DYMO LabelWriter“ wählen) oder je Anlage
@@ -536,11 +556,12 @@ function asHpNeuDialog(){
 
 /* ======================= Vor Ort: prüfen, melden, Terminal ======================= */
 AS_SEITEN.vorort = { titel: "Vor Ort", icon: "⌂", sort: 4.8, async render(main){
-  const r = asReiter("vorort", [["pruefen", "Maschine prüfen"], ["melden", "Vorfall melden"], ["terminal", "Unterweisungs-Terminal"]], "pruefen");
+  const r = asReiter("vorort", [["pruefen", "Maschine prüfen"], ["begehung", "Begehung"], ["melden", "Vorfall melden"], ["terminal", "Unterweisungs-Terminal"]], "pruefen");
   main.innerHTML = `<h1 class="seite">Vor Ort</h1><p class="unter">Die Werkzeuge für Schichtführer und Beschäftigte – dieselben Seiten wie im Kundenportal.</p>${r.html}<div id="voInhalt"><div class="leer">wird geladen …</div></div>`;
   const box = document.getElementById("voInhalt"), k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const rahmen = src => `<iframe src="${esc(src)}" allow="fullscreen; camera; microphone; geolocation" style="width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
   if(r.akt === "pruefen") box.innerHTML = rahmen("../portal/pruefen.html?eingebettet=1&k=" + encodeURIComponent(AS.kunde) + (AS.bereich && AS.bereich.aktiv ? "&e=" + encodeURIComponent([...AS.bereich.lesen].join(",")) : ""));
+  else if(r.akt === "begehung") await asBegehung(box, k);
   else if(r.akt === "melden"){
     const t = (await apiGet("/rest/v1/portal_melde_token?select=token,kunde_slug&aktiv=is.true" + k).catch(() => []))[0];
     box.innerHTML = t ? rahmen("../portal/melden.html?t=" + encodeURIComponent(t.token) + "&eingebettet=1")

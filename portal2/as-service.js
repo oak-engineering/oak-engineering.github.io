@@ -177,6 +177,12 @@ async function asSvLaden(){
     hole("/rest/v1/unterweisungsnachweise?select=id,mitarbeiter_name,funktion,created_at" + k + "&order=created_at.desc&limit=2000"),
     hole("/rest/v1/portal_einarbeitung?select=person_name,am&archiviert=is.false" + k)]);
   Object.assign(AS_SV, { kunde: AS.kunde, termine, nachweise, vorsorge, uw, vorfaelle, quitt, anfragen, beitraege, uwNw, einarb });
+  if(AS.admin){ const s7 = new Date(Date.now() - 7 * 864e5).toISOString();
+    const lg = await hole("/rest/v1/as_log?select=kunde_slug&am=gte." + encodeURIComponent(s7) + "&limit=20000");
+    const je = {}; lg.forEach(x => je[x.kunde_slug] = (je[x.kunde_slug] || 0) + 1);
+    const nm = Object.fromEntries((AS.kunden || []).map(x => [x.kunde_slug, x.name]));
+    AS_SV.nutzung = { n7: lg.length, betriebe: Object.keys(je).length, text: Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => (nm[k] || k) + " " + n).join(" · ") || "keine Änderungen" }; }
+  AS_SV.erfNeu = AS.admin ? await hole("/rest/v1/portal_erfassungen?select=id,anlage,eingegangen_am&status=eq.neu" + k) : [];
   AS_SV.nwAus = await hole("/rest/v1/portal_nachweis?select=id,art,person_name,as_einheit_id,notiz,archiviert&archiviert=is.true&notiz=like.*ausgeschieden*" + k);
   await asSvPaLaden();
 }
@@ -510,6 +516,13 @@ function asSvAufgaben(){
   });
   /* 9. Nur OAK: Mängel übernehmen / bewerten (wie V1) */
   if(admin){
+    if(AS_SV.nutzung) l.push({ schluessel: "oak-nutzung:" + asSvKw(new Date()), stufe: "info", quittierbar: true, quittText: "Gelesen",
+      titel: "Nutzung dieser Woche: " + AS_SV.nutzung.n7 + " Änderungen in " + AS_SV.nutzung.betriebe + " Betrieb(en)", sub: AS_SV.nutzung.text + " (nur für OAK sichtbar)",
+      frist: null, aktionen: [["Nutzung", () => asGehe("nutzung")]] });
+    const erfNeu = (AS_SV.erfNeu || []);
+    if(erfNeu.length) l.push({ schluessel: "oak-erfassungen:" + erfNeu.map(x => x.id).sort().join(",").slice(0, 120), stufe: "warnung",
+      titel: erfNeu.length + " Begehungs-Erfassung(en) des Betriebs eingegangen", sub: erfNeu.slice(0, 3).map(x => x.anlage).join(", ") + " – abholen: python tools/erfassungen_holen.py --kunde " + AS.kunde + " (nur für OAK sichtbar)",
+      frist: null, aktionen: [["Ansehen", () => asGehe("vorort/begehung")]] });
     const mg = asSvMaengelRoh();
     const ueb = mg.filter(m => m.status === "erledigt" && !m.uebernommen_am).length;
     const bew = mg.filter(m => /^BM-/.test(m.schluessel || "") && m.status !== "erledigt" && !m.bewertung_manuell).length;
