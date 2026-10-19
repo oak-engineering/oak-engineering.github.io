@@ -315,6 +315,14 @@ function asCheckReifegrad(check){
   });
   return out;
 }
+/* Interne Kennungen (P12, K3.6, 1b-1) nie anzeigen – Klartext statt Kürzel (Nikolai 19.10.2026) */
+const AS_KE_KURZ = { K1: "Aufbauorganisation", K2: "Prozesse und Abläufe", K3: "Führung", K4: "Beteiligung", K5: "Beurteilung der Arbeitsbedingungen", K6: "Unterstützung", K7: "Verbesserung (KVP)" };
+function asKlartext(t){
+  return String(t == null ? "" : t)
+    .replace(/Prozess(?:beschreibung)?\s+(P\d{2})/g, (m, id) => { const p = (typeof AS_KUNDENPROZESSE !== "undefined" ? AS_KUNDENPROZESSE : []).find(x => x.id === id); return p ? "Prozess „" + p.titel + "“" : "Prozessbeschreibung"; })
+    .replace(/\((P\d{2}(?:,\s*P\d{2})*)\)/g, (m, ids) => "(" + ids.split(/,\s*/).map(id => ((typeof AS_KUNDENPROZESSE !== "undefined" ? AS_KUNDENPROZESSE : []).find(x => x.id === id) || {}).titel || "Prozess").join(", ") + ")")
+    .replace(/(Reifegrad(?:instrument)?|Organisations-Check)\s+K(\d)(?:\.(\d+))?/g, (m, w, k, f) => w + " – " + (AS_KE_KURZ["K" + k] || "Kernelement " + k) + (f ? ", Frage " + f : ""));
+}
 function asLetzterCheck(art){
   return asT("as_orgcheck").filter(c => c.abgeschlossen && (!art || c.art === art)).sort((a, b) => b.datum.localeCompare(a.datum))[0] || null;
 }

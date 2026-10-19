@@ -91,7 +91,7 @@ function asZielVorschlaege(){
   if(kz.psyche_beurteilt < 100) add("psyche_beurteilt", "Psychische Belastung in allen Arbeitssystemen beurteilt", 100, "Aufbaupfad");
   if(kz.asa_jahr < 4) add("asa_jahr", "Vier ASA-Sitzungen im Jahr", 4, "ASA");
   if(kz.massnahmen_wirksam < 80) add("massnahmen_wirksam", "80 % der Maßnahmen wirksam umgesetzt", 80, "Maßnahmen");
-  if(kz.prozesse_freigegeben < 100) add("prozesse_freigegeben", "Alle Prozessbeschreibungen freigegeben", 100, "Organisations-Check K2");
+  if(kz.prozesse_freigegeben < 100) add("prozesse_freigegeben", "Alle Prozessbeschreibungen freigegeben", 100, "Organisations-Check – Prozesse und Abläufe");
   if(kz.reifegrad_mittel && kz.reifegrad_mittel < 2) add("reifegrad_mittel", "Reifegrad im Mittel mindestens Stufe II", 2, "Organisations-Check");
   if(asT("as_meldung").length && kz.rueckmeldung_quote < 80) add("rueckmeldung_quote", "80 % der Melder erhalten eine Rückmeldung", 80, "Feedback-Kultur");
   if(kz.pruefungen_ueberfaellig > 0) add("pruefungen_ueberfaellig", "Alle Prüfungen fristgerecht durchgeführt", 0, "Prüfkataster");

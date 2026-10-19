@@ -193,3 +193,7 @@ h1.seite span,.karte h2 span,.karte h2 .btn,.dlg-kopf h3 span{font-family:'Jost'
 .kacheln.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:820px){.kacheln.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.kacheln.k4{grid-template-columns:1fr}}
+
+/* Spinnennetz Reifegrad (Übersicht): Netz und Liste gleich breit, auf dem Handy untereinander */
+.netz-raster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:center}
+@media(max-width:820px){.netz-raster{grid-template-columns:1fr}}

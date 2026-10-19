@@ -387,8 +387,8 @@ function asLfZeile(k, kurz){
   const farbe = AS_LF_FARBE[k.s] || "grau";
   return `<div class="lf-k" data-lfk="${esc(k.id)}" style="cursor:pointer"><span class="lf-p ${farbe}"></span>
     <div><b>${esc(k.titel)}</b>${k.rot ? ' <span class="lf-rot" title="lebensrelevant, keine Karenz">●</span>' : ""}
-      <small>${esc(k.info || "")}${!kurz && k.warum ? " · " + esc(k.warum) : ""}</small>
-      ${!kurz && k.recht ? `<small>Grundlage: ${esc(k.recht)}</small>` : ""}${!kurz && k.hinweis ? `<small>${esc(k.hinweis())}</small>` : ""}</div>
+      <small>${esc(asKlartext(k.info || ""))}${!kurz && k.warum ? " · " + esc(asKlartext(k.warum)) : ""}</small>
+      ${!kurz && k.recht ? `<small>Grundlage: ${esc(asKlartext(k.recht))}</small>` : ""}${!kurz && k.hinweis ? `<small>${esc(k.hinweis())}</small>` : ""}</div>
     <span>${asChip(AS_LF_TEXT[k.s] || k.s, farbe === "orange" ? "gelb" : farbe)}</span></div>`;
 }
 function asLfZeilenAktiv(el){
@@ -423,7 +423,7 @@ AS_SEITEN.leitfaden = { titel: "Ihr Weg", icon: "◆", sort: 0.8, async render(m
 function asLfSaDialog(k){
   const x = asLfSa(AS_LF.d, k.id), darf = !!(AS.gf || AS.fachkraft);
   const verlauf = (AS_LF.d.sa || []).filter(s => s.kriterium === k.id).slice(0, 5);
-  asDialog({ titel: k.titel, inhalt: `<p class="hinweis">${esc(k.warum)} Grundlage: ${esc(k.recht)}. Gültig ${k.sa} Monate ab Datum.</p>
+  asDialog({ titel: k.titel, inhalt: `<p class="hinweis">${esc(asKlartext(k.warum))} Grundlage: ${esc(asKlartext(k.recht))}. Gültig ${k.sa} Monate ab Datum.</p>
     ${k.hinweis ? `<p class="hinweis">${esc(k.hinweis())}</p>` : ""}
     ${verlauf.length ? `<div class="zeilen">${verlauf.map(s => `<div class="z" style="cursor:default"><div><b>${s.nicht_zutreffend ? "trifft nicht zu" : "bestätigt"} am ${esc(asDat(s.datum))}</b>
       <small>${esc(s.person || "")}${s.notiz ? " · " + esc(s.notiz) : ""}${s.erfasst_von ? " · erfasst von " + esc(s.erfasst_von) : ""}</small></div>
