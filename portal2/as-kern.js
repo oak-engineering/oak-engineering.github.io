@@ -321,7 +321,8 @@ function asKlartext(t){
   return String(t == null ? "" : t)
     .replace(/Prozess(?:beschreibung)?\s+(P\d{2})/g, (m, id) => { const p = (typeof AS_KUNDENPROZESSE !== "undefined" ? AS_KUNDENPROZESSE : []).find(x => x.id === id); return p ? "Prozess „" + p.titel + "“" : "Prozessbeschreibung"; })
     .replace(/\((P\d{2}(?:,\s*P\d{2})*)\)/g, (m, ids) => "(" + ids.split(/,\s*/).map(id => ((typeof AS_KUNDENPROZESSE !== "undefined" ? AS_KUNDENPROZESSE : []).find(x => x.id === id) || {}).titel || "Prozess").join(", ") + ")")
-    .replace(/(Reifegrad(?:instrument)?|Organisations-Check)\s+K(\d)(?:\.(\d+))?/g, (m, w, k, f) => w + " – " + (AS_KE_KURZ["K" + k] || "Kernelement " + k) + (f ? ", Frage " + f : ""));
+    .replace(/(Reifegrad(?:instrument)?|Organisations-Check)\s+K(\d)(?:\.(\d+))?/g, (m, w, k, f) => w + " – " + (AS_KE_KURZ["K" + k] || "Kernelement " + k) + (f ? ", Frage " + f : ""))
+    .replace(/K([1-7])(?:\.(\d+))?/g, (m, k, f) => AS_KE_KURZ["K" + k] + (f ? " (Frage " + f + ")" : ""));
 }
 function asLetzterCheck(art){
   return asT("as_orgcheck").filter(c => c.abgeschlossen && (!art || c.art === art)).sort((a, b) => b.datum.localeCompare(a.datum))[0] || null;
