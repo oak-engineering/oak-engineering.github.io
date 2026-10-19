@@ -63,14 +63,14 @@ async function asSystemDialog(s){
 }
 
 function asBdaSystem(main, s){
-  const r = asReiter("bda_" + s.id, [["tabelle", "Beurteilung"], ["bearbeiten", "Bearbeiten"], ["dokumente", "Dokumente & BA"], ["psyche", "Psychische Belastung"]], "tabelle");
+  const r = asReiter("bda_" + s.id, [["tabelle", "Beurteilung"], ["dokumente", "Dokumente & BA"], ["psyche", "Psychische Belastung"]], "tabelle");
   main.innerHTML = `<p class="nodruck"><a href="#bda" onclick="AS.reiter.bda=''">← alle Arbeitssysteme</a></p>
     <h1 class="seite">${esc(s.name)}</h1><p class="unter">${esc(asEinheitName(s.einheit_id))} · Rollen: ${esc(asListe(s.rollen).join(", ") || "–")}</p>
-    <div class="reiter nodruck">${[["tabelle", "Beurteilung"], ["bearbeiten", "Bearbeiten"], ["dokumente", "Dokumente & BA"], ["psyche", "Psychische Belastung"]].map(([k, t]) =>
+    <div class="reiter nodruck">${[["tabelle", "Beurteilung"], ["dokumente", "Dokumente & BA"], ["psyche", "Psychische Belastung"]].map(([k, t]) =>
       `<button class="${k === r.akt ? "an" : ""}" data-r="${k}">${t}</button>`).join("")}</div><div id="sysInhalt"></div>`;
   main.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { AS.reiter["bda_" + s.id] = b.dataset.r; asBdaSystem(main, s); });
   const box = document.getElementById("sysInhalt");
-  ({ tabelle: asBdaTabelle, bearbeiten: asBdaBearbeiten, psyche: asBdaPsyche, dokumente: typeof asBdaDokumente === "function" ? asBdaDokumente : asBdaTabelle })[r.akt](box, s);
+  ({ tabelle: asBdaTabelle, bearbeiten: asBdaTabelle, psyche: asBdaPsyche, dokumente: typeof asBdaDokumente === "function" ? asBdaDokumente : asBdaTabelle })[r.akt](box, s);
 }
 
 /* Kundenansicht wie die klassische taetigkeitsbezogene GBU: Taetigkeit | Gefaehrdung | Risiko 1-2-3 | Massnahmen | Wer | Bis wann | Stand */
@@ -83,7 +83,9 @@ function asBdaTabelle(box, s){
   const gruppen = tk.concat(gef.some(g => !g.taetigkeit_id && g.art !== "ressource")
     ? [{ id: null, name: tk.length ? "Anlage gesamt (alle Betriebszustände)" : "Arbeitsplatz / Anlage gesamt", rollen: s.rollen }] : []);
   gruppen.forEach(t => { const gg = gef.filter(g => (g.taetigkeit_id || null) === t.id && g.art !== "ressource");
-    if(!gg.length){ rows += `<tr><td>${++nr}</td><td><b>${esc(t.name)}</b><div class="hinweis">${esc(asListe(t.rollen).join(", "))}</div></td><td colspan="5" class="hinweis">noch keine Gefährdung erfasst</td></tr>`; return; }
+    const tkZelle = rs => `<td${rs ? ` rowspan="${rs}"` : ""}${t.id ? ` class="bda-klick" data-tk="${t.id}" title="Tätigkeit bearbeiten"` : ""}><b>${esc(t.name)}</b><div class="hinweis">${esc(asListe(t.rollen).join(", "))}</div>
+      <button class="btn sek klein nodruck" data-gn="${t.id || ""}" style="margin-top:6px">+ Gefährdung</button></td>`;
+    if(!gg.length){ rows += `<tr><td>${++nr}</td>${tkZelle(0)}<td colspan="5" class="hinweis">noch keine Gefährdung erfasst</td></tr>`; return; }
     gg.forEach((g, i) => {
       // Massnahmen je Anlage zu einer Zeile buendeln: „x von y Anlagen wirksam"
       const ms = [], gesehen = new Set();
@@ -91,14 +93,15 @@ function asBdaTabelle(box, s){
         const alle = asT("as_massnahme").filter(x => x.gruppe === m.gruppe); ms.push({ m, alle }); });
       const stand = e => { if(!e.alle) return asStatusChip(e.m); const w = e.alle.filter(x => x.status === "wirksam").length;
         return asChip(w + " von " + e.alle.length + " Anlagen wirksam", w === e.alle.length ? "gruen" : "gelb"); };
-      const mzeilen = ms.map(e => `<div class="mz"><div>${asStopChip(e.m.stop)}${esc(e.m.text)}</div><div>${esc(e.m.verantwortlich || "–")}</div><div>${asDat(e.m.termin)}</div><div>${stand(e)}</div></div>`).join("")
-        || `<div class="mz"><div class="hinweis">keine Maßnahme</div><div></div><div></div><div></div></div>`;
-      rows += `<tr>${i === 0 ? `<td rowspan="${gg.length}">${++nr}</td><td rowspan="${gg.length}"><b>${esc(t.name)}</b><div class="hinweis">${esc(asListe(t.rollen).join(", "))}</div></td>` : ""}
-        <td>${esc(g.kurz)}<div class="hinweis">${esc(g.faktor || "")}${g.art === "belastung" ? " · Belastung" : ""}</div></td><td>${ampel(asGefRisiko(g))}</td>
+      const mzeilen = ms.map(e => `<div class="mz bda-klick" ${e.alle ? `data-mg="${e.m.gruppe}"` : `data-mk="${e.m.id}"`} title="Maßnahme öffnen"><div>${asStopChip(e.m.stop)}${esc(e.m.text)}</div><div>${esc(e.m.verantwortlich || "–")}</div><div>${asDat(e.m.termin)}</div><div>${stand(e)}</div></div>`).join("")
+        + `<div class="mz nodruck"><div><button class="btn sek klein" data-mn="${g.id}">+ Maßnahme</button></div><div></div><div></div><div></div></div>`;
+      rows += `<tr>${i === 0 ? `<td rowspan="${gg.length}">${++nr}</td>${tkZelle(gg.length)}` : ""}
+        <td class="bda-klick" data-gk="${g.id}" title="Gefährdung bearbeiten">${esc(g.kurz)}<div class="hinweis">${esc(g.faktor || "")}${g.art === "belastung" ? " · Belastung" : ""}</div></td>
+        <td class="bda-klick" data-gk="${g.id}" title="Bewertung ändern">${ampel(asGefRisiko(g))}</td>
         <td colspan="4" style="padding:0">${mzeilen}</td></tr>`; }); });
   const res = gef.filter(g => g.art === "ressource");
   box.innerHTML = `<div class="karte"><h2>Beurteilung der Arbeitsbedingungen – ${esc(s.name)}
-      <span class="nodruck"><button class="btn sek klein" onclick="window.print()">Drucken</button>
+      <span class="nodruck"><button class="btn sek klein" id="tkNeu">+ Tätigkeit</button><button class="btn sek klein" id="resNeu">+ Ressource</button><button class="btn sek klein" id="sysEdit">Einstellungen</button><button class="btn sek klein" onclick="window.print()">Drucken</button>
       ${s.freigabe_am ? (AS.gf ? `<button class="btn adm klein" id="frZur">Freigabe zurücknehmen</button>` : "")
         : (AS.gf ? `<button class="btn klein" id="frGeben">Freigeben (Geschäftsführung)</button>`
           : (AS.fachkraft ? (s.vorgelegt_am ? `<span class="hinweis">zur Freigabe vorgelegt ${asDat(s.vorgelegt_am)}</span>` : `<button class="btn klein" id="frVorlegen">Zur Freigabe vorlegen</button>`)
@@ -106,11 +109,20 @@ function asBdaTabelle(box, s){
     <p class="hinweis">Arbeitsbereich: ${esc(asEinheitName(s.einheit_id))} · Beschäftigte: ${esc(asListe(s.rollen).join(", "))} · Stand ${asDat(asHeute())}
       · ${s.freigabe_am ? "freigegeben am " + asDat(s.freigabe_am) + " von " + esc(s.freigabe_von) : "<b>noch nicht freigegeben</b>"}</p>
     <div class="tabwrap"><table class="tab"><tr><th>Nr.</th><th>Tätigkeit</th><th>Gefährdung / Belastung</th><th>Risiko*</th><th colspan="4"><div class="mz mz-kopf"><div>Maßnahmen (STOP)</div><div>Wer</div><div>Bis wann</div><div>Stand</div></div></th></tr>
-    ${rows || `<tr><td colspan="8" class="leer">Unter „Bearbeiten“ Tätigkeiten und Gefährdungen erfassen.</td></tr>`}</table></div>
+    ${rows || `<tr><td colspan="8" class="leer">Mit „+ Tätigkeit“ beginnen, dann je Tätigkeit „+ Gefährdung“.</td></tr>`}</table></div>
     <p class="hinweis">* Risiko heute: 1 gering · 2 mittel · 3 hoch. Erst wenn alle Maßnahmen einer Gefährdung wirksam sind, gilt das Restrisiko.
       STOP: S Substitution · T technisch · O organisatorisch · P persönlich.</p>
-    ${res.length ? `<h3>Ressourcen</h3>${res.map(g => `<div class="krit"><span class="ok">+</span><div><b>${esc(g.kurz)}</b> <span class="hinweis">${esc(g.faktor || "")} ${esc(g.beschreibung || "")}</span></div></div>`).join("")}` : ""}
-    <div class="hinweis" style="margin-top:14px">Fachliche Herleitung: Bewertung nach Wahrscheinlichkeit × Schwere (je 1–4) unter „Bearbeiten“.</div></div>`;
+    ${res.length ? `<h3>Ressourcen</h3>${res.map(g => `<div class="krit bda-klick" data-gk="${g.id}"><span class="ok">+</span><div><b>${esc(g.kurz)}</b> <span class="hinweis">${esc(g.faktor || "")} ${esc(g.beschreibung || "")}</span></div></div>`).join("")}` : ""}
+    <div class="hinweis nodruck" style="margin-top:14px">Zum Bearbeiten auf Tätigkeit, Gefährdung, Risiko oder Maßnahme klicken. Bewertung nach Wahrscheinlichkeit × Schwere (je 1–4).</div></div>`;
+  box.querySelectorAll("[data-tk]").forEach(el => el.onclick = ev => { if(ev.target.closest("button")) return; asTaetigkeitDialog(s, asNach("as_taetigkeit", el.dataset.tk)); });
+  box.querySelectorAll("[data-gn]").forEach(b => b.onclick = ev => { ev.stopPropagation(); asGefDialog(s, null, b.dataset.gn || null); });
+  box.querySelectorAll("[data-gk]").forEach(el => el.onclick = () => asGefDialog(s, asNach("as_gefaehrdung", el.dataset.gk)));
+  box.querySelectorAll("[data-mk]").forEach(el => el.onclick = () => asMassnahmeStatus(asNach("as_massnahme", el.dataset.mk)));
+  box.querySelectorAll("[data-mg]").forEach(el => el.onclick = () => asGruppeDialog(el.dataset.mg));
+  box.querySelectorAll("[data-mn]").forEach(b => b.onclick = ev => { ev.stopPropagation(); asMassnahmeDialog(null, { gefaehrdung_id: b.dataset.mn, quelle: "bda" }, s); });
+  box.querySelector("#tkNeu").onclick = () => asTaetigkeitDialog(s, null);
+  box.querySelector("#resNeu").onclick = () => asGefDialog(s, Object.assign({ art: "ressource" }), null);
+  box.querySelector("#sysEdit").onclick = () => asSystemDialog(s);
   const fg = document.getElementById("frGeben"); if(fg) fg.onclick = () => asDialog({ titel: "BdA freigeben", inhalt: `<p>Mit der Freigabe übernimmt die Geschäftsführung die Beurteilung als verbindlich.</p>
       <div class="form">${asFeld("Datum", "freigabe_am", asHeute(), "date")}</div><p class="hinweis">Freigegeben wird unter Ihrem Namen (${esc(AS.ich)}).</p>`,
     knoepfe: [{ t: "Freigeben", fn: async d => { const w = asWerte(d); w.freigabe_von = AS.ich;
@@ -157,7 +169,7 @@ async function asGefFotosZeigen(){
   }
 }
 function asGefDialog(s, g, taetigkeitId){
-  const neu = !g; g = g || { art: "gefaehrdung", taetigkeit_id: taetigkeitId, w_v: 2, s_v: 2, w_n: 1, s_n: 2 };
+  const neu = !g || !g.id; g = Object.assign({ art: "gefaehrdung", taetigkeit_id: taetigkeitId, w_v: 2, s_v: 2, w_n: 1, s_n: 2 }, g || {});
   const ws = (f, v) => asAuswahl(f.startsWith("w") ? "Wahrscheinlichkeit " + (f.endsWith("v") ? "vorher" : "nachher") : "Schwere " + (f.endsWith("v") ? "vorher" : "nachher"), f, v || "", [["", "–"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"]]);
   const ms = g.id ? asMassnahmenZu(g.id) : [];
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.kurz){ asMeldung("Kurztext fehlt"); return false; }
