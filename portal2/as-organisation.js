@@ -203,7 +203,7 @@ AS_SEITEN.check = { titel: "Organisations-Check", icon: "✓", sort: 3, render(m
       ${faellig ? `<p>${asChip("Jährlicher Reifegrad-Check fällig", "gelb")}</p>` : ""}
       <div class="zeilen">${liste.map(c => { const rg = asCheckReifegrad(c);
         return `<div class="z" data-c="${c.id}"><div><b>${c.art === "voll" ? "Reifegrad-Check (Vollfassung)" : "Erstaufnahme (Kurzfassung)"} · ${asDat(c.datum)}</b>
-          <small>${Object.entries(rg).map(([k, s]) => k + " " + (s ? "I".repeat(s) : "–")).join(" · ")}</small></div>${c.abgeschlossen ? asChip("abgeschlossen", "gruen") : asChip("in Arbeit", "gelb")}</div>`; }).join("") || `<div class="leer">Noch kein Check. Bei einem neuen Kunden mit der Erstaufnahme beginnen.</div>`}</div></div>`;
+          <small>${Object.entries(rg).map(([k, s]) => (AS_KE_KURZ[k] || k) + " " + (s ? "I".repeat(s) : "–")).join(" · ")}</small></div>${c.abgeschlossen ? asChip("abgeschlossen", "gruen") : asChip("in Arbeit", "gelb")}</div>`; }).join("") || `<div class="leer">Noch kein Check. Bei einem neuen Kunden mit der Erstaufnahme beginnen.</div>`}</div></div>`;
   const start = async art => { const c = await asSpeichern("as_orgcheck", { art, datum: asHeute(), antworten: {}, reifegrad: {}, erstellt_von: AS.ich }); asGehe("check/" + c.id); };
   const k = document.getElementById("ckKurz"); if(k) k.onclick = () => start("kurz");
   const v = document.getElementById("ckVoll"); if(v) v.onclick = () => start("voll");
@@ -226,10 +226,10 @@ function asCheckEditor(main, c){
         <button class="${AS.ckKe === "erg" ? "an" : ""}" data-ke="erg">Ergebnis</button></div>`;
     if(AS.ckKe !== "erg"){
       const k = kes.find(x => x.id === AS.ckKe);
-      h += `<div class="karte"><h2>${k.id} · ${esc(k.titel)}</h2><p class="hinweis">ISO 45001: ${esc(k.iso)}</p>
+      h += `<div class="karte"><h2>${esc(k.titel)}</h2><p class="hinweis">ISO 45001: ${esc(k.iso)}</p>
         ${k.fragen.map(q => { const a = c.antworten[q.id] || {}, g = asCheckGrad(a);
           const seg = (f, werte) => `<span class="seg">${werte.map((w, i) => `<button class="${a[f] === i ? "an" : ""}" data-q="${q.id}" data-feld="${f}" data-w="${i}" ${nur ? "disabled" : ""}>${w}</button>`).join("")}</span>`;
-          return `<div class="frage"><div style="display:flex;justify-content:space-between;gap:10px"><div class="ft">${q.id} ${esc(q.text)}</div>${asChip(TXT[g][0], TXT[g][1])}</div>
+          return `<div class="frage"><div style="display:flex;justify-content:space-between;gap:10px"><div class="ft">${q.id.split(".")[1]}. ${esc(q.text)}</div>${asChip(TXT[g][0], TXT[g][1])}</div>
             ${q.hinweis ? `<div class="hw">Prüfen: ${esc(q.hinweis)}</div>` : ""}
             <div class="reihe">Regelung ${seg("r", ["nein", "teilweise", "ja"])} Gelebte Praxis ${seg("p", ["punktuell", "überwiegend", "umfassend"])}
               <label><input type="checkbox" data-nr="${q.id}" ${a.nr ? "checked" : ""} ${nur ? "disabled" : ""}> nicht relevant</label></div>
@@ -246,10 +246,10 @@ function asCheckEditor(main, c){
     main.querySelectorAll("[data-rg]").forEach(s => s.onchange = () => { c.reifegrad[s.dataset.rg] = +s.value || null; if(!c.reifegrad[s.dataset.rg]) delete c.reifegrad[s.dataset.rg]; speichernSpaeter(); zeichnen(); });
     const ab = document.getElementById("ckAbschluss"); if(ab) ab.onclick = async () => { c.abgeschlossen = true; await asSpeichern("as_orgcheck", { id: c.id, abgeschlossen: true, antworten: c.antworten, reifegrad: c.reifegrad }); asMeldung("Check abgeschlossen"); zeichnen(); };
     const lu = document.getElementById("ckLuecken"); if(lu) lu.onclick = async () => {
-      const vorh = new Set(asT("as_massnahme").filter(m => m.quelle === "orgcheck" && m.quelle_id === c.id).map(m => m.text));
+      const vorh = new Set(asT("as_massnahme").filter(m => m.quelle === "orgcheck" && m.quelle_id === c.id).map(m => m.text)); const mt = q => asKlartext(q.massnahme);
       let n = 0;
-      for(const l of asCheckLuecken(c)){ if(vorh.has(l.q.massnahme)) continue;
-        await asSpeichern("as_massnahme", { quelle: "orgcheck", quelle_id: c.id, stop: "O", text: l.q.massnahme, umsetzung: "zentral", status: "offen" }); vorh.add(l.q.massnahme); n++; }
+      for(const l of asCheckLuecken(c)){ if(vorh.has(l.q.massnahme) || vorh.has(mt(l.q))) continue;
+        await asSpeichern("as_massnahme", { quelle: "orgcheck", quelle_id: c.id, stop: "O", text: mt(l.q), umsetzung: "zentral", status: "offen" }); vorh.add(mt(l.q)); n++; }
       asMeldung(n + " Maßnahmen angelegt"); };
   };
   zeichnen();
@@ -265,7 +265,7 @@ function asCheckErgebnis(c, nur){
   let h = `<div class="karte"><h2>Reifegrad je Kernelement <button class="btn sek klein nodruck" onclick="window.print()">Drucken</button></h2>`;
   asCheckFragen(c.art).forEach(k => { const g = k.fragen.map(q => asCheckGrad(c.antworten[q.id])).filter(x => x !== "nrel"), n = t => g.filter(x => x === t).length;
     h += `<div style="display:grid;grid-template-columns:minmax(200px,1.3fr) 2fr 170px;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--linie)">
-      <b>${k.id} · ${esc(k.titel)}</b>
+      <b>${esc(k.titel)}</b>
       <div class="balken">${["umfassend", "teilweise", "keine", "offen"].map(t => n(t) ? `<span style="flex:${n(t)};background:${F[t]}"></span>` : "").join("")}</div>
       <div>${rg[k.id] ? asChip("Stufe " + "I".repeat(rg[k.id]), ["", "rot", "gelb", "gruen"][rg[k.id]]) : "–"}
         <select class="nodruck" data-rg="${k.id}" ${nur ? "disabled" : ""}><option value="">auto</option>${[1, 2, 3].map(s => `<option value="${s}" ${(c.reifegrad || {})[k.id] === s ? "selected" : ""}>${"I".repeat(s)}</option>`).join("")}</select></div></div>`; });
@@ -274,7 +274,7 @@ function asCheckErgebnis(c, nur){
   h += `<div class="karte"><h2>Lücken nach Dringlichkeit ${!nur || c.abgeschlossen ? `<span class="nodruck">${AS.fachkraft ? `<button class="btn adm klein" id="ckLuecken">Lücken als Maßnahmen übernehmen</button>` : ""} ${!c.abgeschlossen && AS.fachkraft ? `<button class="btn klein" id="ckAbschluss">Abschließen</button>` : ""}</span>` : ""}</h2>`;
   [1, 2, 3, 4].forEach(s => { const l = L.filter(x => x.q.stufe === s); if(!l.length) return;
     h += `<h3>${ST[s]}</h3>` + l.map(x => `<div class="krit"><span>${asPunkt(x.g === "teilweise" ? "gelb" : x.g === "offen" ? "grau" : "rot")}</span>
-      <div><b>${esc(x.q.massnahme)}</b><div class="hinweis">${x.q.id} · ${esc(x.q.text)}${(c.antworten[x.q.id] || {}).b ? " – " + esc(c.antworten[x.q.id].b) : ""}</div></div></div>`).join(""); });
+      <div><b>${esc(asKlartext(x.q.massnahme))}</b><div class="hinweis">${esc(AS_KE_KURZ[x.q.id.split(".")[0]] || "")}, Frage ${x.q.id.split(".")[1]} · ${esc(x.q.text)}${(c.antworten[x.q.id] || {}).b ? " – " + esc(c.antworten[x.q.id].b) : ""}</div></div></div>`).join(""); });
   if(!L.length) h += `<div class="leer">Keine Lücken.</div>`;
   return h + `</div>`;
 }
