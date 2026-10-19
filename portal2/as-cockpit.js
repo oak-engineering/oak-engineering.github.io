@@ -5,10 +5,10 @@
 /* Spinnennetz: Reifegrad der Arbeitsschutzorganisation je Kernelement (BGHM-Reifegradinstrument, Stufe I–III)
    aus dem Organisations-Check – aktueller Check gefüllt, vorheriger gestrichelt zum Vergleich. */
 function asNetzSvg(reihen){
-  const ke = AS_CHECK.kernelemente, n = ke.length, cx = 210, cy = 190, R = 130, max = 3;
+  const ke = AS_CHECK.kernelemente, n = ke.length, cx = 280, cy = 185, R = 125, max = 3;
   const pt = (i, v) => { const a = -Math.PI / 2 + i * 2 * Math.PI / n; return [cx + Math.cos(a) * R * v / max, cy + Math.sin(a) * R * v / max]; };
   const poly = vals => vals.map((v, i) => pt(i, v || 0).map(x => x.toFixed(1)).join(",")).join(" ");
-  let s = `<svg viewBox="0 0 420 380" role="img" aria-label="Reifegrad je Kernelement" style="width:100%;height:auto;max-height:380px;display:block">`;
+  let s = `<svg viewBox="0 0 560 370" role="img" aria-label="Reifegrad je Kernelement" style="width:100%;height:auto;max-height:380px;display:block">`;
   for(let r = 1; r <= max; r++) s += `<polygon points="${poly(ke.map(() => r))}" fill="none" stroke="#d5dde3" stroke-width="1"/>`;
   ke.forEach((k, i) => { const [x, y] = pt(i, max); s += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#d5dde3" stroke-width="1"/>`;
     const [lx, ly] = pt(i, max + 0.42), anker = Math.abs(lx - cx) < 8 ? "middle" : lx > cx ? "start" : "end";
@@ -27,7 +27,7 @@ function asNetzKarte(){
   const akt = rg(checks[0]), vor = checks[1] ? rg(checks[1]) : null;
   const reihen = (vor ? [{ werte: vor, farbe: "#9aa7b1", fuell: "none", strich: true }] : []).concat([{ werte: akt, farbe: "#2D6A4F", fuell: "rgba(82,183,136,.25)" }]);
   const zeile = (k, i) => { const v = akt[i], d = vor ? v - vor[i] : 0;
-    return `<div class="z" onclick="asGehe('check')"><div><b>${esc(AS_KE_KURZ[k.id])}</b><small>${esc(k.titel)}</small></div>
+    return `<div class="z" onclick="asGehe('check')" title="${esc(k.titel)}"><div><b>${esc(AS_KE_KURZ[k.id])}</b></div>
       <span>${d ? asChip((d > 0 ? "+" : "−") + Math.abs(d), d > 0 ? "gruen" : "rot") + " " : ""}${asChip(v ? "Stufe " + "I".repeat(v) : "nicht bewertet", v === 3 ? "gruen" : v === 2 ? "gelb" : v === 1 ? "rot" : "grau")}</span></div>`; };
   return `<div class="karte"><h2>Reifegrad der Arbeitsschutzorganisation <span class="hinweis">Check vom ${asDat(checks[0].datum)}${vor ? " · gestrichelt: " + asDat(checks[1].datum) : ""}</span></h2>
     <div class="netz-raster"><div>${asNetzSvg(reihen)}</div><div class="zeilen">${ke.map(zeile).join("")}</div></div>
