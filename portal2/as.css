@@ -188,3 +188,8 @@ h1.seite span,.karte h2 span,.karte h2 .btn,.dlg-kopf h3 span{font-family:'Jost'
 .grosszahl{font-size:40px;font-weight:700;line-height:1}.grosszahl .hinweis{font-size:14px;font-weight:400}
 @media(max-width:600px){.filterleiste select,.filterleiste input:not([type=checkbox]){flex:1 1 100%;max-width:none;width:100%}}
 .hakenliste{display:flex;flex-wrap:wrap;gap:4px 16px;margin-top:6px}.hakenliste label{display:inline-flex;flex-direction:row;align-items:center;gap:6px;font-size:14px}
+
+/* Vier gleich breite Kacheln (volle Breite, keine leere Spalte) – PC 4, Tablet 2, Handy 1 */
+.kacheln.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:820px){.kacheln.k4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.kacheln.k4{grid-template-columns:1fr}}

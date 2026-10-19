@@ -382,6 +382,45 @@ function asSvAufgaben(){
       titel: offen.length + (offen.length === 1 ? " Maßnahme" : " Maßnahmen") + " ohne Termin oder Verantwortlichen",
       sub: "Ohne Termin wird eine Maßnahme nie überfällig – Verantwortlichen und Termin festlegen", frist: null,
       aktionen: [["Öffnen", () => asGehe("massnahmen")]] }); }
+  /* 6f. Beschäftigtenzahl – eine Quelle (Bereiche); abweichende Aufteilung VZ/TZ melden */
+  if(typeof asBeschaeftigte === "function" && (AS.fachkraft || AS.gf)){ const b = asBeschaeftigte();
+    if(b.abweichung) l.push({ schluessel: "ma-abweichung:" + b.bereiche + ":" + b.angabe, stufe: "info", quittierbar: true,
+      titel: "Beschäftigtenzahl abgleichen: Bereiche " + b.bereiche + ", Aufteilung Vollzeit/Teilzeit " + b.angabe,
+      sub: "Maßgeblich ist die Summe der Bereiche (Ersthelfer, Sicherheitsbeauftragte, Einsatzzeit) – Aufteilung in den Grunddaten anpassen",
+      frist: null, aktionen: [["Öffnen", () => asGehe("organisation")]] }); }
+  /* 6g. Prozessmodell P11: Maßnahme P an einem Gefahrstoff → Handschuh-/Hautschutzplan; O mit Folge Prüfung/Beauftragung */
+  asT("as_massnahme").filter(m => m.status !== "offen" && m.stop === "P" && m.gefaehrdung_id).forEach(m => {
+    const g = asNach("as_gefaehrdung", m.gefaehrdung_id); if(!g || !g.gefahrstoff_id) return;
+    l.push({ schluessel: "mn-handschuh:" + m.id, stufe: "warnung", quittierbar: true, quittText: "Plan angepasst",
+      titel: "Handschuh-/Hautschutzplan anpassen: " + (m.text || ""), sub: "PSA-Maßnahme an „" + (g.kurz || "") + "“ umgesetzt (TRGS 401)",
+      frist: null, aktionen: [["Handschuhplan", () => asGehe("gefahrstoffe/handschuhe")]] }); });
+  asT("as_massnahme").filter(m => m.status !== "offen" && m.stop === "O" && m.folge_art === "pruefung"
+    && !asT("as_pruefobjekt").some(o => String(o.notiz || "").includes(m.id))).forEach(m => l.push({
+      schluessel: "mn-pruefung:" + m.id, stufe: "warnung", quittierbar: true, titel: "Prüfung oder Frist zur Maßnahme festlegen: " + (m.text || ""),
+      sub: "organisatorische Maßnahme umgesetzt – Einrichtung mit Frist im Prüfkataster anlegen", frist: null,
+      aktionen: [["Festlegen", () => typeof asMnFolge === "function" ? asMnFolge(m) : asGehe("pruefungen")]] }));
+  asT("as_massnahme").filter(m => m.status !== "offen" && m.stop === "O" && m.folge_art === "beauftragung").forEach(m => l.push({
+    schluessel: "mn-beauftragung:" + m.id, stufe: "warnung", quittierbar: true, quittText: "Beauftragung geregelt", titel: "Beauftragung zur Maßnahme regeln: " + (m.text || ""),
+    sub: "Person schriftlich beauftragen und unter Organisation → Beauftragte eintragen", frist: null,
+    aktionen: [["Beauftragte", () => asGehe("organisation/beauftragte")]] }));
+  /* 6h. Prozessmodell P23: Stoff ersetzt → Handschuhplan und Vorsorgeanlass für den Ersatzstoff prüfen */
+  (AS_SV.gsListe || []).filter(g => g.ersetzt_durch && g.ersetzt_am && asSvTage(g.ersetzt_am) >= -180).forEach(g => {
+    const n = (AS_SV.gsListe || []).find(x => x.id === g.ersetzt_durch);
+    l.push({ schluessel: "gs-ersatz:" + g.id, stufe: "warnung", quittierbar: true, quittText: "Geprüft",
+      titel: "Handschuhplan und Vorsorge für den Ersatzstoff prüfen: " + (n ? n.bezeichnung : "Ersatzstoff"),
+      sub: "ersetzt „" + (g.bezeichnung || "") + "“ am " + asDat(g.ersetzt_am) + " – Handschuh/Hautschutz (TRGS 401) und Vorsorgeanlass (ArbMedVV) anpassen",
+      frist: null, aktionen: [["Ersatzstoff öffnen", () => { AS_GS.oeffnen = g.ersetzt_durch; asGehe("gefahrstoffe/kataster"); }], ["Handschuhplan", () => asGehe("gefahrstoffe/handschuhe")]] }); });
+  /* 6i. Prozessmodell P10 → P22: Prüfung laut Beurteilung, aber keine Einrichtung im Prüfkataster */
+  if(typeof asPfArt === "function") asT("as_arbeitssystem").filter(s => !s.stillgelegt_am).forEach(s => {
+    const arten = [...new Set(asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id).flatMap(g => g.pruefarten || []))]; if(!arten.length) return;
+    const anl = asListe(s.anlagen);
+    arten.forEach(a => { const da = asT("as_pruefobjekt").some(o => o.aktiv !== false && o.art === a && (!anl.length || anl.includes(o.maschinen_id) || (s.einheit_id && o.einheit_id === s.einheit_id)));
+      if(!da) l.push({ schluessel: "bda-pruefart:" + s.id + ":" + a, stufe: "warnung", quittierbar: true, titel: "Prüfung laut Beurteilung fehlt im Prüfkataster: " + asPfArt(a).titel,
+        sub: (s.name || "") + " · " + (asPfArt(a).grundlage || "§ 3 Abs. 6 BetrSichV"), frist: null,
+        aktionen: [["Erfassen", () => { asGehe("pruefungen"); setTimeout(() => asPfNeu(a, null, anl[0]), 400); }]] }); }); });
+  /* 6j. Notfallorganisation (P25) und Fremdfirmen (P26) */
+  if(typeof asNfAufgaben === "function") asNfAufgaben().forEach(a => l.push(a));
+  if(typeof asFfAufgaben === "function") asFfAufgaben().forEach(a => l.push(a));
   /* 8. Forum */
   AS_SV.anfragen.forEach(a => {
     const zuOeffnen = () => { AS_SV.fOffen = a.id; asGehe("fragen"); };
@@ -452,7 +491,7 @@ async function asSvPaLaden(){
     hole("/rest/v1/portal_gefahrstoff_gbu?select=id,gefahrstoff_id,taetigkeit,status,vorgelegt_am,vorgelegt_von&status=neq.ueberholt" + k),
     hole("/rest/v1/as_ba?select=id,titel,arbeitssystem_id,vorgelegt_am,vorgelegt_von,status&vorgelegt_am=not.is.null&status=neq.freigegeben" + k),
     hole("/rest/v1/portal_dokumente?select=maschinen_id,einheit_id&kategorie=in.(anlagen,allg-gbu)" + k),
-    hole("/rest/v1/portal_gefahrstoff?select=id,einheit_ids,verwendung_status,gbu_pfad" + k),
+    hole("/rest/v1/portal_gefahrstoff?select=id,bezeichnung,einheit_ids,verwendung_status,gbu_pfad,ersetzt_durch,ersetzt_am" + k),
     hole("/rest/v1/uw_person?select=id,name,uw_person_rolle(rolle_id)&status=eq.aktiv" + k),
     hole("/rest/v1/uw_rolle?select=id,name" + k)]);
   AS_SV.pers = pers; AS_SV.rollen = rollen;

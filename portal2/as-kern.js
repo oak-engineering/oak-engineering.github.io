@@ -7,7 +7,7 @@ const AS = { kunde: null, kunden: [], org: null, admin: false, fachkraft: false,
   db: {}, seite: "cockpit", reiter: {} };
 const AS_TABELLEN = ["as_einheit", "as_beauftragter", "as_einsatz", "as_orgcheck", "as_arbeitssystem", "as_taetigkeit",
   "as_gefaehrdung", "as_massnahme", "as_mitzeichnung", "as_asa", "as_ziel", "as_psyche", "as_meldung", "as_thema",
-  "as_kultur", "as_prozess", "as_pruefobjekt", "as_pruefung"];
+  "as_kultur", "as_prozess", "as_pruefobjekt", "as_pruefung", "as_notfall", "as_fremdfirma", "as_erlaubnisschein"];
 const AS_SEITEN = {};            // von den Modulen befuellt: { titel, icon, sort, render(main) }
 const AS_KUNDENPROZESSE = AS_PROZESSE.prozesse;
 
@@ -70,8 +70,9 @@ const AS_QUELLEN = {
       anlage: ((mg.maschinen_id || "") + " " + (mg.maschine || "")).trim(), gruppe: null, verantwortlich: mg.verantwortlich,
       termin: mg.termin, status: asMgStatus(mg), erledigt_am: (mg.erledigt_am || "").slice(0, 10) || null, erledigt_von: mg.erledigt_von,
       erledigt_notiz: mg.notiz, wirksam_am: mg.wirksam_am, wirksam_von: mg.wirksam_von, angelegt_am: mg.updated_at,
-      foto_pfad: mg.foto_pfad, nachweis_pfad: mg.nachweis_pfad, maschinen_id: mg.maschinen_id, _v1: true, _mg: mg }),
-    zuV1: (w, alt) => { const o = asAuswahlFelder(w, ["stop", "verantwortlich", "termin", "erledigt_von"]);
+      foto_pfad: mg.foto_pfad, nachweis_pfad: mg.nachweis_pfad, maschinen_id: mg.maschinen_id, unterwiesen_am: mg.unterwiesen_am, folge_art: mg.folge_art,
+      einheit_id: mg.einheit_id, _v1: true, _mg: mg }),
+    zuV1: (w, alt) => { const o = asAuswahlFelder(w, ["stop", "verantwortlich", "termin", "erledigt_von", "folge_art"]);
       if("text" in w && w.text !== alt.text) o.massnahme = w.text;
       if("gefaehrdung_id" in w) o.as_gefaehrdung_id = w.gefaehrdung_id || null;
       if("erledigt_notiz" in w) o.notiz = w.erledigt_notiz;
@@ -88,7 +89,7 @@ const AS_QUELLEN = {
       return { maschinen_id: anl, maschine: dok ? (dok.maschine || dok.titel) : (s ? s.name.replace(/\s*\([^)]*\)\s*$/, "") : anl),
         schluessel: "V2-" + Math.random().toString(36).slice(2, 10), label: w.text, massnahme: w.text, thema: "sonstiges",
         schwere: { rot: "s", gelb: "g", gruen: "a" }[band] || "g", band: { rot: "gefahr", gelb: "besorgnis", gruen: "akzeptanz" }[band] || "besorgnis",
-        status: "offen", as_gefaehrdung_id: w.gefaehrdung_id, stop: w.stop || "T", verantwortlich: w.verantwortlich || null,
+        status: "offen", as_gefaehrdung_id: w.gefaehrdung_id, stop: w.stop || "T", verantwortlich: w.verantwortlich || null, folge_art: w.folge_art || null,
         termin: w.termin || null, gemeldet_von: AS.ich, gemeldet_am: asHeute(), kunde: AS.org ? AS.org.name : null }; } },
   as_meldung: { v1: "portal_vorfaelle", filter: "&domaene=neq.umwelt", ganz: false,
     // Verbesserungsvorschlaege kennt V1 nicht – sie bleiben V2-eigen
@@ -221,12 +222,16 @@ function asAuswahl(label, f, wert, optionen, extra){
 /* ---------------- Organisation / Einheiten ---------------- */
 function asEinheitName(id){ const e = asNach("as_einheit", id); return e ? e.name : "–"; }
 function asKinder(pid){ return asT("as_einheit").filter(e => (e.parent_id || null) === (pid || null)); }
+/* Beschäftigtenzahl – EINE Quelle: die Bereiche der Organisation (Summe der Einheiten). Die Angabe Vollzeit/Teilzeit
+   in den Grunddaten liefert nur die Gewichtung nach DGUV V2; weicht ihre Summe ab, meldet das Cockpit eine Aufgabe.
+   Ohne Bereiche mit Zahlen gilt die Angabe der Grunddaten. */
 function asBeschaeftigte(){
   const d = asOrgDaten();
-  const vz = +d.ma_vz || 0, t20 = +d.ma_tz20 || 0, t30 = +d.ma_tz30 || 0;
-  const gewichtet = vz + 0.5 * t20 + 0.75 * t30;
-  const kopf = vz + t20 + t30 || asT("as_einheit").reduce((n, e) => n + (+e.beschaeftigte || 0), 0);
-  return { gewichtet: gewichtet || kopf, kopf };
+  const vz = +d.ma_vz || 0, t20 = +d.ma_tz20 || 0, t30 = +d.ma_tz30 || 0, angabe = vz + t20 + t30;
+  const bereiche = asT("as_einheit").reduce((n, e) => n + (+e.beschaeftigte || 0), 0);
+  const kopf = bereiche || angabe, faktor = angabe ? (vz + 0.5 * t20 + 0.75 * t30) / angabe : 1;
+  return { gewichtet: Math.round(kopf * faktor * 10) / 10, kopf, bereiche, angabe,
+    abweichung: !!(bereiche && angabe && bereiche !== angabe), personen: (AS.personen || []).length };
 }
 
 /* Beauftragte: Soll je Einheit und Schicht aus den Regeln (DGUV V1 § 26, ASR A2.2), SiBe betriebsweit als Richtwert */
@@ -443,10 +448,10 @@ function asHashLesen(){
    plus die, die man selbst aufgeklappt hat (gemerkt im Gerät). Seiten ohne Gruppe landen unter „Service“. */
 const AS_NAV_GRUPPEN = [
   ["ueberblick", "Überblick", ["start", "cockpit", "leitfaden", "pflichten"]],
-  ["organisation", "Organisation", ["organisation", "check", "nachweise", "prozesse"]],
+  ["organisation", "Organisation", ["organisation", "check", "nachweise", "notfall", "prozesse"]],
   ["gefaehrdungen", "Gefährdungen", ["bda", "massnahmen", "mitzeichnung", "gefahrstoffe"]],
   ["anlagen", "Anlagen & Betrieb", ["anlagen", "pruefungen", "maengel", "hallenplan", "vorort"]],
-  ["personal", "Personal", ["unterweisungen", "vorfaelle"]],
+  ["personal", "Personal", ["unterweisungen", "fremdfirmen", "vorfaelle"]],
   ["steuerung", "Steuerung", ["steuerung", "kalender", "bericht", "energie"]],
   ["service", "Service", ["fragen", "aktuelles", "unterlagen", "leistungen", "datenschutz"]],
 ];

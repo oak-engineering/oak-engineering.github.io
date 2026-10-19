@@ -47,14 +47,19 @@ function asAsa(box){
       { t: "Protokoll abschließen", klasse: "sek", fn: async d => { const w = asWerte(d), b = asListe((w.beschluesse || "").replace(/\n/g, ",")); delete w.beschluesse;
         const r = await asSpeichern("as_asa", Object.assign({ id: a.id, abgeschlossen: true }, w));
         const term = (() => { const x = new Date(w.datum || asHeute()); x.setDate(x.getDate() + 28); return x.toISOString().slice(0, 10); })();
-        for(const t of b) await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: r.id, stop: "O", text: t, umsetzung: "zentral", status: "offen", termin: term });
-        asMeldung(b.length ? b.length + " Beschlüsse als Maßnahmen angelegt" : "Protokoll abgeschlossen"); asZeige(); } }];
+        /* Prozessmodell P04: Beschlüsse werden Maßnahmen oder – mit „Ziel:“ davor – Ziele (P03), Termin Jahresende */
+        let nm = 0, nz = 0;
+        for(const t of b){ const z = /^\s*ziel\s*:\s*(.+)$/i.exec(t);
+          if(z){ await asSpeichern("as_ziel", { titel: z[1].trim(), kennzahl: null, quelle: "ASA " + asDat(w.datum || asHeute()), status: "entwurf",
+            termin: String(w.datum || asHeute()).slice(0, 4) + "-12-31" }); nz++; }
+          else { await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: r.id, stop: "O", text: t, umsetzung: "zentral", status: "offen", termin: term }); nm++; } }
+        asMeldung(nm || nz ? [nm ? nm + " Maßnahme(n)" : "", nz ? nz + " Ziel(e)" : ""].filter(Boolean).join(" und ") + " angelegt" : "Protokoll abgeschlossen"); asZeige(); } }];
     if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { await asLoeschen("as_asa", a.id); asZeige(); } });
     const d = asDialog({ titel: neu ? "ASA-Sitzung" : "ASA " + asDat(a.datum), breit: true, inhalt: `<div class="form">${asFeld("Datum", "datum", a.datum, "date")}
       ${asFeld("Teilnehmende (GF, Sifa, Betriebsarzt, SiBe, Betriebsrat)", "teilnehmer", a.teilnehmer)}
       <label class="voll">Tagesordnung <span><button type="button" class="btn sek klein" id="toVorschlag">aus aktuellem Stand vorschlagen</button></span><textarea data-f="tagesordnung" rows="9">${esc(a.tagesordnung || "")}</textarea></label>
       ${asFeld("Protokoll", "protokoll", a.protokoll, "textarea", "voll")}
-      ${!a.abgeschlossen ? asFeld("Beschlüsse (je Zeile einer – werden beim Abschließen Maßnahmen)", "beschluesse", "", "textarea", "voll") : ""}</div>`, knoepfe: kn });
+      ${!a.abgeschlossen ? asFeld("Beschlüsse (je Zeile einer – werden beim Abschließen Maßnahmen; mit „Ziel:“ davor ein Ziel)", "beschluesse", "", "textarea", "voll") : ""}</div>`, knoepfe: kn });
     d.querySelector("#toVorschlag").onclick = () => d.querySelector('[data-f="tagesordnung"]').value = asAsaTagesordnung(); };
   document.getElementById("asaNeu").onclick = () => dlg(null);
   box.querySelectorAll("[data-a]").forEach(z => z.onclick = () => dlg(asNach("as_asa", z.dataset.a)));
@@ -62,6 +67,7 @@ function asAsa(box){
 
 /* ---------- Ziele ---------- */
 function asZielStand(z){
+  if(!z.kennzahl){ const e = z.status === "erreicht"; return { ist: null, proz: e ? 100 : 0, erreicht: e, text: e ? "erreicht" : "ohne Kennzahl – in der ASA bewerten" }; }
   const k = AS_KAT.kennzahlen[z.kennzahl] || { mehr_besser: true, einheit: "" };
   const ist = asKennzahlen()[z.kennzahl];
   const start = +z.start || 0, soll = +z.soll;
@@ -96,12 +102,14 @@ function asZiele(box){
         ${s.erreicht ? asChip("erreicht", "gruen") : x.status === "entwurf" ? asChip("Entwurf", "grau") : asChip(s.proz + " %", "blau")}</div>`; }).join("") || `<div class="leer">Noch keine Ziele.</div>`}</div></div>
     ${v.length ? `<div class="karte"><h2>Vorschläge aus dem aktuellen Stand</h2><div class="zeilen">${v.map((x, i) => `<div class="z"><div><b>${esc(x.titel)}</b><small>heute ${x.start} · Ziel ${x.soll} · Quelle: ${esc(x.quelle)}</small></div><button class="btn sek klein" data-v="${i}">übernehmen</button></div>`).join("")}</div></div>` : ""}`;
   const dlg = x => { const neu = !x; x = x || { kennzahl: "massnahmen_wirksam", status: "entwurf" };
-    const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.titel || w.soll == null){ asMeldung("Titel und Zielwert angeben"); return false; }
-      if(neu) w.start = asKennzahlen()[w.kennzahl]; w.termin = w.termin || null; await asSpeichern("as_ziel", Object.assign({ id: x.id }, w)); asZeige(); } }];
+    const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.titel || (w.kennzahl && w.soll == null)){ asMeldung("Titel und Zielwert angeben"); return false; }
+      w.kennzahl = w.kennzahl || null; if(neu || (w.kennzahl && !x.kennzahl)) w.start = w.kennzahl ? asKennzahlen()[w.kennzahl] : null;
+      w.termin = w.termin || null; await asSpeichern("as_ziel", Object.assign({ id: x.id }, w)); asZeige(); } }];
+    if(!neu && !x.kennzahl && x.status !== "erreicht") kn.push({ t: "Erreicht", klasse: "sek", fn: async () => { await asSpeichern("as_ziel", { id: x.id, status: "erreicht" }); asZeige(); } });
     if(!neu && !x.freigegeben_am) kn.push({ t: "Freigeben (Geschäftsführung)", klasse: "sek", fn: async () => { await asSpeichern("as_ziel", { id: x.id, freigegeben_am: asHeute(), freigegeben_von: AS.ich, status: "aktiv" }); asZeige(); } });
     if(!neu) kn.push({ t: "Verwerfen", klasse: "gefahr", fn: async () => { await asSpeichern("as_ziel", { id: x.id, status: "verworfen" }); asZeige(); } });
     asDialog({ titel: neu ? "Neues Ziel" : x.titel, inhalt: `<div class="form">${asFeld("Ziel", "titel", x.titel, "text", "voll")}
-      ${asAuswahl("Messgröße (Kennzahl aus der App)", "kennzahl", x.kennzahl, Object.entries(AS_KAT.kennzahlen).map(([k, v]) => [k, v.titel + " (" + v.einheit + ")"]), "voll")}
+      ${asAuswahl("Messgröße (Kennzahl aus der App)", "kennzahl", x.kennzahl || "", [["", "– ohne Kennzahl (Ergebnis in der ASA bewerten) –"]].concat(Object.entries(AS_KAT.kennzahlen).map(([k, v]) => [k, v.titel + " (" + v.einheit + ")"])), "voll")}
       ${asFeld("Zielwert", "soll", x.soll, "number")}${asFeld("Bis wann", "termin", x.termin, "date")}
       ${asFeld("Verantwortlich", "verantwortlich", x.verantwortlich)}${asFeld("Quelle", "quelle", x.quelle)}</div>
       ${!neu ? `<p class="hinweis">Stand: ${esc(asZielStand(x).text)} · Ausgangswert ${x.start}</p>` : ""}`, knoepfe: kn }); };

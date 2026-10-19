@@ -27,7 +27,8 @@ function asOrgGrund(box){
   box.innerHTML = `<div class="karte"><h2>Grunddaten <button class="btn sek klein" id="grundEdit">Bearbeiten</button></h2>
       <div class="zeilen">
         <div class="z"><div><b>${esc(AS.org.name)}</b><small>WZ-Kode ${esc(d.wz_kode || "–")} · Schichtmodell: ${esc(d.schichtmodell || "–")}</small></div></div>
-        <div class="z"><div><b>${ma.kopf} Beschäftigte</b><small>${d.ma_vz || 0} Vollzeit · ${d.ma_tz20 || 0} Teilzeit bis 20 h · ${d.ma_tz30 || 0} Teilzeit bis 30 h → ${Math.round(ma.gewichtet * 10) / 10} gewichtet (DGUV V2)</small></div></div>
+        <div class="z"><div><b>${ma.kopf} Beschäftigte</b><small>${ma.bereiche ? "Summe der Bereiche" : "Angabe der Grunddaten"} · Aufteilung ${d.ma_vz || 0} Vollzeit · ${d.ma_tz20 || 0} bis 20 h · ${d.ma_tz30 || 0} bis 30 h → ${ma.gewichtet} gewichtet (DGUV V2)${ma.personen ? " · " + ma.personen + " Personen in der Belegschaft" : ""}</small></div>
+          ${ma.abweichung ? asChip("Aufteilung " + ma.angabe + " ≠ Bereiche " + ma.bereiche, "gelb") : ""}</div>
         <div class="z"><div><b>Geschäftsführung: ${esc(d.gf_name || "–")}</b><small>Fachkraft vor Ort: ${esc(d.fkv_name || "–")} · Betriebsrat: ${esc(d.br || "–")}</small></div></div>
       </div></div>
     <div class="karte"><h2>Nachweise zur Organisation</h2><div class="zeilen">${AS_NACHWEISE.map(([k, t, h, name]) => `

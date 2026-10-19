@@ -5,6 +5,7 @@ const AS_STOP = { S: "Substitution", T: "technisch", O: "organisatorisch", P: "p
 function asStopChip(s){ return `<span class="stop stop-${esc(s)}" title="${esc(AS_STOP[s] || "")}">${esc(s)}</span>`; }
 function asStatusChip(m){
   if(m.status === "wirksam") return asChip("wirksam", "gruen");
+  if(m.status === "erledigt" && m._v1 && (m.stop === "O" || m.stop === "P") && !m.unterwiesen_am) return asChip("Unterweisung offen", "gelb");
   if(m.status === "erledigt") return asChip("Wirksamkeit prüfen", "gelb");
   if(m.termin && m.termin < asHeute()) return asChip("überfällig", "rot");
   return asChip("offen", "grau");
@@ -162,6 +163,7 @@ function asGefDialog(s, g, taetigkeitId){
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.kurz){ asMeldung("Kurztext fehlt"); return false; }
     ["w_v", "s_v", "w_n", "s_n"].forEach(k => w[k] = w[k] ? +w[k] : null); w.taetigkeit_id = w.taetigkeit_id || null;
     w.vorsorge = [...d.querySelectorAll("[data-vs]:checked")].map(x => x.dataset.vs);
+    w.pruefarten = [...d.querySelectorAll("[data-pa]:checked")].map(x => x.dataset.pa);
     /* Schutzmaßnahmen zeilenweise „T: Text“ (S/T/O/P) – vorhandene Zusatzangaben (Priorität, Status …) bleiben erhalten */
     if("schutz_text" in w){ const alt = g.schutzmassnahmen || [];
       w.schutzmassnahmen = String(w.schutz_text || "").split(/\n/).map(z => z.trim()).filter(Boolean).map(z => {
@@ -199,6 +201,9 @@ function asGefDialog(s, g, taetigkeitId){
       <div class="voll"><b>Vorsorgeanlass (ArbMedVV)</b> <span class="hinweis">– für alle Personen der Rollen dieser Beurteilung wird die Vorsorge fällig</span>
         <div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px">${(typeof AS_NW_ANLAESSE !== "undefined" ? AS_NW_ANLAESSE : []).map(([t, art]) =>
           `<label style="flex-direction:row;gap:6px;align-items:center"><input type="checkbox" data-vs="${esc(t)}" ${(g.vorsorge || []).includes(t) ? "checked" : ""}> ${esc(t)} <span class="hinweis">(${art === "pflicht" ? "Pflicht" : "Angebot"})</span></label>`).join("")}</div></div>
+      <div class="voll"><b>Prüfung erforderlich (BetrSichV)</b> <span class="hinweis">– fehlt die Einrichtung im Prüfkataster, wird das eine Aufgabe</span>
+        <div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px">${(typeof AS_PF_ARTEN !== "undefined" ? AS_PF_ARTEN : []).map(a =>
+          `<label style="flex-direction:row;gap:6px;align-items:center" title="${esc(a.grundlage || "")}"><input type="checkbox" data-pa="${esc(a.id)}" ${(g.pruefarten || []).includes(a.id) ? "checked" : ""}> ${esc(a.titel)}</label>`).join("")}</div></div>
       ${asFeld("Herleitung / Notiz", "beschreibung", g.beschreibung, "textarea", "voll")}
       <div class="voll"><b>Fotos</b><div class="hakenliste" id="gefFotoListe">${(g.fotos || []).map((f, i) =>
           `<label title="abwählen = entfernen"><input type="checkbox" data-fbeh="${i}" checked><img data-fpfad="${esc(f.pfad || "")}" alt="" style="width:64px;height:48px;object-fit:cover;border-radius:6px;background:#eef1f5"> ${esc(f.alt || "Foto " + (i + 1))}</label>`).join("")
@@ -253,12 +258,28 @@ function asMassnahmeDialog(m, vorgabe, sys){
         den Stoff im Gefahrstoffkataster durch einen Ersatzstoff ersetzen – die Maßnahme gilt damit als umgesetzt.
         <button type="button" class="btn sek klein" onclick="document.getElementById('dlg').close(); AS_GS.oeffnen='${esc(gefS.gefahrstoff_id)}'; asGehe('gefahrstoffe/kataster')">Ersatzstoff festlegen</button></p>` : ""}<div class="form">
       ${asAuswahl("STOP-Stufe", "stop", m.stop, Object.entries(AS_STOP).map(([k, v]) => [k, k + " – " + v]))}
+      ${asAuswahl("Folge bei O (was die Maßnahme regelt)", "folge_art", m.folge_art || "", Object.entries(AS_MN_FOLGE), "mnFolge")}
       ${neu ? asAuswahl("Umsetzung", "umsetzung", m.umsetzung, [["zentral", "zentral für alle"], ["anlage", "je Anlage (Zähler „x von y“)"]]) : ""}
       ${asFeld("Maßnahme", "text", m.text, "textarea", "voll")}
       ${asFeld("Verantwortlich", "verantwortlich", m.verantwortlich)}${asFeld("Bis wann", "termin", m.termin, "date")}
       ${m.gefaehrdung_id ? "" : asBereichWahl("Bereich", "einheit_id", neu && !("einheit_id" in m) ? null : (m.einheit_id || ""), "", "– betriebsweit –")}</div>
       ${neu && anlagen.length ? `<div style="margin-top:10px"><span class="hinweis">Anlagen (bei „je Anlage“):</span><br>${anlagen.map(a => `<label style="margin-right:12px"><input type="checkbox" data-anl value="${esc(a)}" checked> ${esc(a)}</label>`).join("")}</div>` : ""}
-      <p class="hinweis">Rangfolge nach § 4 ArbSchG: erst S und T, dann O, zuletzt P (z. B. Gehörschutz ist P).</p>`, knoepfe: kn });
+      <p class="hinweis">Rangfolge nach § 4 ArbSchG: erst S und T, dann O, zuletzt P (z. B. Gehörschutz ist P). Umgesetzte O- und P-Maßnahmen werden
+        automatisch zur Unterweisung fällig; P an einem Gefahrstoff zusätzlich zum Handschuh-/Hautschutzplan.</p>`, knoepfe: kn });
+  const dl = document.getElementById("dlg"), st = dl.querySelector('[data-f="stop"]'), fo = dl.querySelector(".mnFolge");
+  const zeig = () => { if(fo) fo.style.display = st.value === "O" ? "" : "none"; }; if(st){ st.onchange = zeig; zeig(); }
+}
+/* Prozessmodell P11 „Maßnahme O“: Unterweisung/BA (über den Unterweisungsauftrag), Frist/Prüfung, Beauftragung */
+const AS_MN_FOLGE = { "": "– nur Regelung/Anweisung –", unterweisung: "Unterweisung / Betriebsanweisung anpassen", pruefung: "Prüfung oder Frist festlegen", beauftragung: "Beauftragung / Zuständigkeit regeln" };
+function asMnFolgeAnlage(m){ return (m.maschinen_id || String(m.anlage || "").split(" ")[0] || "").trim(); }
+function asMnFolge(m){
+  if(m.stop !== "O" || !m.folge_art) return;
+  if(m.folge_art === "pruefung" && typeof asPfNeu === "function"){
+    asPfNeu("sonstiges", null, asMnFolgeAnlage(m) || undefined);
+    const n = document.querySelector('#dlg [data-f="notiz"]'); if(n) n.value = "aus Maßnahme " + m.id + ": " + (m.text || "");
+    const b = document.querySelector('#dlg [data-f="bezeichnung"]'); if(b && !b.value) b.value = String(m.text || "").slice(0, 80);
+    asMeldung("Prüfung bzw. Frist zur Maßnahme im Prüfkataster festlegen"); }
+  else if(m.folge_art === "beauftragung"){ asMeldung("Beauftragung regeln: Person bestellen und Nachweis eintragen"); asGehe("organisation/beauftragte"); }
 }
 
 AS_SEITEN.massnahmen = { titel: "Maßnahmen", icon: "▶", sort: 5, render(main){
@@ -291,6 +312,8 @@ function asMassnahmeStatus(m){
   asDialog({ titel: "Maßnahme", inhalt: `<p>${asStopChip(m.stop)}<b>${esc(m.text)}</b></p>${m.befund ? `<p class="hinweis">Befund: ${esc(m.befund)}</p>` : ""}<p>${asStatusChip(m)}${m._v1 ? ` <span class="hinweis">· Mangel im Kundenportal – Änderungen wirken in Mängelliste, Hallenplan und Dokumenten</span>` : ""}</p>
     <div class="zeilen"><div class="z"><div><b>Verantwortlich</b><small>${esc(m.verantwortlich || "–")} · bis ${asDat(m.termin)}${m.anlage ? " · Anlage " + esc(m.anlage) : ""}</small></div></div>
     ${m.erledigt_am ? `<div class="z"><div><b>Erledigt</b><small>${asDat(m.erledigt_am)} · ${esc(m.erledigt_von || "")} · ${esc(m.erledigt_notiz || "")}</small></div></div>` : ""}
+    ${m.unterwiesen_am ? `<div class="z"><div><b>Unterwiesen</b><small>${asDat(m.unterwiesen_am)} – Nachweis unter Unterweisungen</small></div></div>` : ""}
+    ${m.folge_art ? `<div class="z"><div><b>Folge</b><small>${esc(AS_MN_FOLGE[m.folge_art] || m.folge_art)}</small></div></div>` : ""}
     ${m.wirksam_am ? `<div class="z"><div><b>Wirksam bestätigt</b><small>${asDat(m.wirksam_am)} · ${esc(m.wirksam_von || "")}</small></div></div>` : ""}</div>`, knoepfe: kn });
 }
 function asErledigtDialog(m){
@@ -298,7 +321,8 @@ function asErledigtDialog(m){
       ${asFeld("Wer hat es erledigt?", "erledigt_von", AS.ich)}${asFeld("Erledigt am", "erledigt_am", asHeute(), "date")}
       ${asFeld("Was wurde gemacht?", "erledigt_notiz", "", "textarea", "voll")}</div>`,
     knoepfe: [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.erledigt_von || !w.erledigt_notiz){ asMeldung("Wer und was ausfüllen"); return false; }
-      await asSpeichern("as_massnahme", Object.assign({ id: m.id, status: "erledigt" }, w)); asZeige(); } }] });
+      await asSpeichern("as_massnahme", Object.assign({ id: m.id, status: "erledigt" }, w)); asZeige();
+      if(m.stop === "O" && m.folge_art && m.folge_art !== "unterweisung"){ setTimeout(() => asMnFolge(m), 50); } } }] });
 }
 function asGruppeDialog(gid){
   const g = asT("as_massnahme").filter(m => m.gruppe === gid).sort((a, b) => (a.anlage || "").localeCompare(b.anlage || ""));
