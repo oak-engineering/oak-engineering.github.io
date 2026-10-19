@@ -24,7 +24,7 @@ AS_SEITEN.bda = { titel: "Beurteilung (BdA)", icon: "⚠", sort: 4, render(main)
       const nT = asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).length;
       return `<div class="z" data-s="${s.id}"><div><b>${asPunkt(b)}${esc(s.name)}</b><small>${esc(asEinheitName(s.einheit_id))} · ${nT} Tätigkeiten · Risiko heute: ${asBandText(b)}
         · ${psy ? "Psyche beurteilt" : "Psyche offen"} · ${s.ba_vorhanden ? "BA vorhanden" : "BA fehlt"}</small></div>
-        ${s.freigabe_am ? asChip("freigegeben " + asDat(s.freigabe_am), "gruen") : asChip("nicht freigegeben", "gelb")}</div>`; }).join("") || `<div class="leer">Noch kein Arbeitssystem. Beispiel: „Spritzgießen“, „Lager und Versand“, „Verwaltung“.</div>`}</div></div>`;
+        ${s.stillgelegt_am ? asChip("ruht – Anlage stillgelegt " + asDat(s.stillgelegt_am), "grau") : s.freigabe_am ? asChip("freigegeben " + asDat(s.freigabe_am), "gruen") : asChip("nicht freigegeben", "gelb")}</div>`; }).join("") || `<div class="leer">Noch kein Arbeitssystem. Beispiel: „Spritzgießen“, „Lager und Versand“, „Verwaltung“.</div>`}</div></div>`;
   const n = document.getElementById("sysNeu"); if(n) n.onclick = () => asSystemDialog(null);
   main.querySelectorAll("[data-s]").forEach(z => z.onclick = () => asGehe("bda/" + z.dataset.s));
 }};

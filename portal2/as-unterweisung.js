@@ -127,7 +127,7 @@ async function asUwJeRolle(box){
   AS_UW.rolle = AS_UW.rolle && rollen.some(r => r.id === AS_UW.rolle) ? AS_UW.rolle : (rollen[0] || {}).id;
   const rolle = rollen.find(r => r.id === AS_UW.rolle);
   const norm = x => String(x || "").trim().toLowerCase();
-  const sys = rolle ? asT("as_arbeitssystem").filter(s => asListe(s.rollen).map(norm).includes(norm(rolle.name))) : [];
+  const sys = rolle ? asT("as_arbeitssystem").filter(s => !s.stillgelegt_am && asListe(s.rollen).map(norm).includes(norm(rolle.name))) : [];
   const gefs = await apiGet("/rest/v1/portal_gefahrstoff?select=id,bezeichnung,signalwort,ba_gruppe&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []) || [];
   const personen = rolle ? AS_UW.d.pers.filter(p => p.status !== "archiviert" && (p.uw_person_rolle || []).some(x => x.rolle_id === rolle.id)) : [];
   const block = s => { const g = asT("as_gefaehrdung").filter(x => x.arbeitssystem_id === s.id && x.art !== "ressource");

@@ -515,7 +515,7 @@ function asSvPaAufgaben(){
   /* Vorsorge aus der Beurteilung (Prozessmodell P10 → P24): Anlass an einer Gefährdung → Personen der Rollen ohne passende Vorsorge */
   { const norm = x => String(x || "").trim().toLowerCase(), rolleName = Object.fromEntries((AS_SV.rollen || []).map(r => [r.id, norm(r.name)]));
     const hat = (p, anlass) => (AS_SV.vorsorge || []).some(v => !v.abgeschlossen_am && norm(v.anlass) === norm(anlass) && (v.person_id === p.id || norm(v.person_name) === norm(p.name)));
-    asT("as_arbeitssystem").forEach(s => {
+    asT("as_arbeitssystem").filter(s => !s.stillgelegt_am).forEach(s => {
       const codes = [...new Set(asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id).flatMap(g => g.vorsorge || []))]; if(!codes.length) return;
       const rs = new Set(asListe(s.rollen).map(norm));
       const betroffen = (AS_SV.pers || []).filter(p => (p.uw_person_rolle || []).some(r => rs.has(rolleName[r.rolle_id])));

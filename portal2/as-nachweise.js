@@ -339,7 +339,7 @@ function asNwVsDialog(v){
     const wer = String(x.wer || "").replace(/\s+/g, " ");
     if(wer.length < 3){ asMeldung("Bitte Ihren Namen eintragen."); return false; }
     /* Nur diese Felder – keine Befunde, kein Freitext, keine Datei (Art. 9 DSGVO) */
-    const daten = { person_name: person, person_id: asNwPersonId(person), anlass: x.anlass, art: AS_NW_VS_ART[x.art] ? x.art : "pflicht", datum: x.datum || null, naechste: x.naechste || null,
+    const daten = { person_name: person, person_id: asNwPersonId(person), erkenntnis_bda: !!x.erkenntnis_bda, anlass: x.anlass, art: AS_NW_VS_ART[x.art] ? x.art : "pflicht", datum: x.datum || null, naechste: x.naechste || null,
       geaendert_von: wer, geaendert_am: new Date().toISOString() };
     if(v) await apiSend("PATCH", "/rest/v1/portal_vorsorge?id=eq." + encodeURIComponent(v.id), daten, "return=minimal");
     else await apiSend("POST", "/rest/v1/portal_vorsorge", Object.assign({ kunde_slug: AS.kunde, erfasst_von: wer }, daten), "return=minimal");
@@ -353,6 +353,7 @@ function asNwVsDialog(v){
       ${asAuswahl("Art", "art", w("art") || "pflicht", Object.entries(AS_NW_VS_ART), "voll")}
       <label>Vorsorge am<input type="date" data-f="datum" value="${esc(w("datum"))}" max="${asNwIso(new Date())}"></label>
       ${asFeld("Nächste Vorsorge (laut Bescheinigung)", "naechste", w("naechste"), "date")}
+      ${asFeld("Betriebsarzt gibt einen Hinweis für die Beurteilung (anonym, ohne Befund) – Beurteilung wird zur Prüfung fällig", "erkenntnis_bda", v ? v.erkenntnis_bda : false, "checkbox", "voll")}
       ${asFeld("Eingetragen von", "wer", AS.ich, "text", "voll")}</div>` });
   const anlass = d.querySelector('[data-f="anlass"]');
   anlass.onchange = () => { const a = AS_NW_ANLAESSE.find(x => x[0] === anlass.value); if(a) d.querySelector('[data-f="art"]').value = a[1]; };

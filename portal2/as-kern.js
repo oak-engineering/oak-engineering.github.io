@@ -319,7 +319,7 @@ function asKennzahlen(){
   const heute = asHeute(), m = asT("as_massnahme");
   const rotGef = new Set(asT("as_gefaehrdung").filter(g => asBand(asRisiko(g.w_v, g.s_v)) === "rot").map(g => g.id));
   const soll = asBeauftragteSoll();
-  const sys = asT("as_arbeitssystem");
+  const sys = asT("as_arbeitssystem").filter(s => !s.stillgelegt_am);   // ruhende Beurteilungen (Anlage stillgelegt) zählen nicht
   const mz = asT("as_mitzeichnung");
   const meld = asT("as_meldung");
   const e = asEinsatz();
@@ -351,7 +351,7 @@ function asKennzahlen(){
 
 /* ---------------- Aufbaupfad (OAK-Vorgehen Schritte 5–7, Ziele je Stufe) ---------------- */
 function asPfad(){
-  const d = asOrgDaten(), sys = asT("as_arbeitssystem"), soll = asBeauftragteSoll();
+  const d = asOrgDaten(), sys = asT("as_arbeitssystem").filter(s => !s.stillgelegt_am), soll = asBeauftragteSoll();
   const rotOhne = asT("as_massnahme").filter(m => { const g = asNach("as_gefaehrdung", m.gefaehrdung_id);
     return g && asBand(asRisiko(g.w_v, g.s_v)) === "rot" && m.status === "offen" && (!m.verantwortlich || !m.termin); }).length;
   const helfer = soll.filter(z => z.funktion !== "sibe");
