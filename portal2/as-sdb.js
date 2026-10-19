@@ -51,12 +51,16 @@ function asSdbAuswerten(seiten){
   const s1 = t[1] || "", s2 = t[2] || "", s3 = t[3] || "", s7 = t[7] || "", s8 = t[8] || "", s9 = t[9] || "", d = erg.daten, f = erg.formular;
   const zeileNach = (re, block) => { const m = re.exec(block); if(!m) return null; const r = block.slice(m.index + m[0].length).split("\n").map(x => x.trim()).find(x => x.length > 1); return r ? r.replace(/^[:\-–\s]+/, "").slice(0, 120) : null; };
   /* Abschnitt 1 */
-  const name = zeileNach(/(?:Handelsname|Produktname|Produktbezeichnung|Bezeichnung des (?:Stoffes|Gemisches)|Produktidentifikator)\s*:?/i, s1);
-  if(name && !/^1\.\d/.test(name)) f.bezeichnung = name;
-  const herst = zeileNach(/(?:Hersteller|Lieferant|Firma|Unternehmen)(?:\s*\/\s*Lieferant)?\s*:?/i, (s1.split(/1\.3/)[1] || s1));
-  if(herst && !/^1\.\d|Einzelheiten|Telefon/i.test(herst)) f.hersteller = herst;
+  /* Wert hinter einem Etikett „Name: Wert“ (gleiche Zeile, sonst nächste Zeile) – Überschriften wie „Einzelheiten zum Lieferanten, der …“ zählen nicht */
+  const wertNach = (etiketten, block) => { const m = new RegExp("(?:^|\\n)[\\s·•\\-]*(?:" + etiketten + ")\\s*(?:\\([^)\\n]{0,20}\\))?\\s*:\\s*([^\\n]*)", "i").exec(block); if(!m) return null;
+    let v = m[1].trim(); if(!v){ const rest = block.slice(m.index + m[0].length).split("\n").map(x => x.trim()).filter(Boolean); v = rest[0] || ""; }
+    v = v.replace(/^[·•:\-–\s]+/, "").trim(); return v.length > 1 && !/^\d\.\d/.test(v) ? v.slice(0, 120) : null; };
+  const name = wertNach("Handelsname|Produktname|Produktbezeichnung|Handelsbezeichnung|Bezeichnung des (?:Stoffes|Gemisches)", s1);
+  if(name) f.bezeichnung = name;
+  const herst = wertNach("Hersteller(?:\\s*\\/\\s*Lieferant)?|Lieferant|Firma|Firmenname|Unternehmen", s1.split(/1\.3/).slice(1).join("1.3") || s1);
+  if(herst && !/Einzelheiten|Telefon|E-?Mail|Straße|Notruf/i.test(herst)) f.hersteller = herst;
   /* Abschnitt 2: Signalwort und H-Sätze (nur aus 2, nicht aus den Bestandteilen in 3) */
-  const sw = /Signalwort\s*:?\s*(Gefahr|Achtung|Danger|Warning)/i.exec(s2);
+  const sw = /Signalwort[^\n:]{0,25}:?\s*\n?\s*[·•]?\s*(Gefahr|Achtung|Danger|Warning)/i.exec(s2);
   if(sw) f.signalwort = /gefahr|danger/i.test(sw[1]) ? "Gefahr" : "Achtung";
   const h = [...new Set((s2.match(/EUH\s?\d{3}A?|\bH\s?\d{3}[A-Za-z]{0,2}\b/g) || []).map(x => x.replace(/\s/g, "")).map(x => /^euh/i.test(x) ? x.toUpperCase() : "H" + x.slice(1)))].sort();
   if(h.length) f.h_saetze = h;
