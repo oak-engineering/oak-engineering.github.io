@@ -9,7 +9,13 @@ const AS_UW = { kunde: null, d: {}, kap: null, detail: null, kapThema: null, mob
   pf: { einheit: "", status: "aktiv", suche: "" }, nf: { q: "", jahr: "", best: "" } };
 /* DGUV Vorschrift 1 § 4: mindestens jährlich – Warnung ab 11 Monaten */
 const AS_UW_FAELLIG_TAGE = 365, AS_UW_WARN_TAGE = 335;
-const AS_UW_SPALTEN = "id,kunde_slug,mitarbeiter_name,funktion,bereich,module,unterweisung,bestanden,bestaetigung,config_version,created_at";
+const AS_UW_SPALTEN = "id,kunde_slug,mitarbeiter_name,funktion,bereich,module,unterweisung,bestanden,bestaetigung,config_version,created_at,geraet,quelle,bestaetigt_von";
+/* Wo wurde unterwiesen? Kurzform für die Liste (Gerätename kommt aus dem Terminal-Zugang) */
+function asUwGeraet(n){
+  if(n.quelle === "nachtrag") return "Nachtrag";
+  const g = String(n.geraet || "");
+  return /handy|qr/i.test(g) ? "Handy" : /tablet/i.test(g) ? "Tablet" : /terminal|surface/i.test(g) ? "Terminal" : (g || "—");
+}
 const AS_UW_RANG = { ueberfaellig: 3, erstunterweisung: 2, bald: 1, ok: 0 };
 const AS_UW_AMPEL = { kritisch: 0, warnung: 1, grau: 2, gut: 3 };
 const AS_UW_FARBE = { kritisch: "rot", warnung: "gelb", gut: "gruen", grau: "grau" };
@@ -435,8 +441,8 @@ function asUwNachweise(box){
       <input type="search" id="uwnQ" value="${esc(f.q)}" placeholder="Suchen (Name, Rolle, Modul)" autocomplete="off">
       ${asFilterWahl('data-f="jahr"', f.jahr, [["", "alle"]].concat(jahre), "Jahr")}
       ${asFilterWahl('data-f="best"', f.best, [["", "alle"], ["ja", "bestanden"], ["nein", "nicht bestanden"]], "Verständnisfragen")}</div>
-    ${sicht.length ? `<div class="tabwrap"><table class="tab"><tr><th>Datum</th><th>Name</th><th>Rolle</th><th>Module</th><th>bestanden</th><th>Stand</th><th>Fassung</th><th></th></tr>
-      ${sicht.map(n => { const st = asUwStatus(n); return `<tr><td>${asDat(n.created_at)}</td><td><b>${esc(n.mitarbeiter_name || "")}</b></td>
+    ${sicht.length ? `<div class="tabwrap"><table class="tab"><tr><th>Datum</th><th>Name</th><th>Gerät</th><th>Rolle</th><th>Module</th><th>bestanden</th><th>Stand</th><th>Fassung</th><th></th></tr>
+      ${sicht.map(n => { const st = asUwStatus(n); return `<tr class="${AS.admin || AS.fachkraft ? "bda-klick" : ""}" data-nwname="${esc(n.id)}" title="${esc(n.geraet || "")}"><td>${asDat(n.created_at)}</td><td><b>${esc(n.mitarbeiter_name || "")}</b></td><td>${esc(asUwGeraet(n))}</td>
         <td>${esc(n.funktion || "—")}${n.bereich ? `<br><small class="hinweis">${esc(n.bereich)}</small>` : ""}</td><td>${asUwModule(n).map(esc).join("<br>") || "—"}</td>
         <td>${n.bestanden ? asChip("ja", "gruen") : asChip("nein", "rot")}${n.bestaetigung ? "" : " " + asChip("nicht bestätigt", "gelb")}</td>
         <td>${asChip(st.text, AS_UW_FARBE[st.klasse])}</td><td>${esc(n.config_version || "")}</td>
@@ -447,7 +453,18 @@ function asUwNachweise(box){
   q.oninput = () => { f.q = q.value; clearTimeout(AS_UW.nt); AS_UW.nt = setTimeout(() => { asUwNachweise(box); const n = box.querySelector("#uwnQ"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 300); };
   box.querySelectorAll("select[data-f]").forEach(s => s.onchange = () => { f[s.dataset.f] = s.value; asUwNachweise(box); });
   if(box.querySelector("#uwCsvN")) box.querySelector("#uwCsvN").onclick = () => asUwExport(sicht);
-  box.querySelectorAll("[data-pdf]").forEach(x => x.onclick = () => asUwPdf(x.dataset.pdf));
+  box.querySelectorAll("[data-pdf]").forEach(x => x.onclick = ev => { ev.stopPropagation(); asUwPdf(x.dataset.pdf); });
+  /* Klick auf den Eintrag: Name korrigieren (z. B. Nachname nachtragen) – Fachkraft und OAK */
+  if(AS.admin || AS.fachkraft) box.querySelectorAll("tr[data-nwname]").forEach(z => z.onclick = ev => { if(ev.target.closest("button")) return;
+    const n = AS_UW.d.nachweise.find(x => x.id === z.dataset.nwname); if(!n) return;
+    asDialog({ titel: "Nachweis – Name", inhalt: `<div class="form">${asFeld("Vollständiger Name", "mitarbeiter_name", n.mitarbeiter_name || "")}</div>
+      <p class="hinweis">${esc(asDat(n.created_at))} · ${esc(asUwModule(n).join(", "))} · ${esc(n.geraet || asUwGeraet(n))}</p>`,
+      knoepfe: [{ t: "Speichern", fn: async d => { const w = asWerte(d); const name = String(w.mitarbeiter_name || "").trim().replace(/\s+/g, " ");
+        if(name.length < 3){ asMeldung("Bitte den vollständigen Namen eintragen."); return false; }
+        const gross = name.split(" ").map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(" ");
+        await apiSend("PATCH", "/rest/v1/unterweisungsnachweise?id=eq." + encodeURIComponent(n.id), { mitarbeiter_name: gross }, "return=minimal");
+        n.mitarbeiter_name = gross; asMeldung("Name gespeichert"); asUwNachweise(box); } }] });
+  });
 }
 
 /* Nachweis als PDF: Druckansicht im Layout des Betriebs mit Unterschrift aus dem Terminal */
@@ -457,7 +474,8 @@ async function asUwPdf(id){
   if(!w){ asMeldung("Bitte Pop-up-Fenster für die App erlauben."); return; }
   w.document.write('<p style="font-family:sans-serif;padding:20px">Nachweis wird geladen …</p>');
   let voll = {};
-  try{ const r = await apiGet("/rest/v1/unterweisungsnachweise?select=unterschrift,nachfrage,praxis_von,praxis_am&id=eq." + encodeURIComponent(id)); voll = (r && r[0]) || {}; }catch(e){}
+  try{ const r = await apiGet("/rest/v1/unterweisungsnachweise?select=unterschrift,nachfrage,praxis_von,praxis_am,bestaetigt_von,bestaetigt_unterschrift&id=eq." + encodeURIComponent(id)); voll = (r && r[0]) || {}; }catch(e){}
+  const bsig = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(voll.bestaetigt_unterschrift || "") ? voll.bestaetigt_unterschrift : "";
   const m = (AS.kundeV1 && AS.kundeV1.marke) || {};
   const farbe = /^#[0-9a-fA-F]{3,8}$/.test(m.farbe || "") ? m.farbe : "#2D6A4F";
   const logo = typeof m.logo === "string" && /^(marken\/[\w.-]+|https:\/\/[\w./%-]+)$/.test(m.logo)
@@ -483,9 +501,11 @@ ${n.bereich ? `<tr><td class="k">Bereich</td><td>${esc(n.bereich)}</td></tr>` : 
 <tr><td class="k">Unterweisungsinhalte</td><td>${module.length ? "<ul>" + module.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "—"}</td></tr>
 <tr><td class="k">Verständnisfragen</td><td>${n.bestanden ? '<span class="ok">bestanden</span>' : '<span class="nein">nicht bestanden</span>'}</td></tr>
 <tr><td class="k">Bestätigung</td><td>${n.bestaetigung ? "Die unterwiesene Person hat bestätigt, die Inhalte verstanden zu haben und sie zu beachten." : "nicht bestätigt"}</td></tr>
-${voll.nachfrage ? `<tr><td class="k">Rückfrage</td><td>${esc(voll.nachfrage)}</td></tr>` : ""}
+<tr><td class="k">Durchgeführt an</td><td>${esc(n.geraet || asUwGeraet(n))}</td></tr>
+${voll.nachfrage ? `<tr><td class="k">${n.quelle === "nachtrag" ? "Vermerk" : "Rückfrage"}</td><td>${esc(voll.nachfrage)}</td></tr>` : ""}
 ${voll.praxis_von ? `<tr><td class="k">Praktische Unterweisung</td><td>${esc(voll.praxis_von)}${voll.praxis_am ? " am " + esc(asDat(voll.praxis_am)) : ""}</td></tr>` : ""}</table>
 <div class="sig">${sig ? `<img src="${sig}" alt="Unterschrift">` : '<div style="height:110px"></div>'}<div class="linie">Unterschrift der unterwiesenen Person${sig ? " (elektronisch am Terminal geleistet)" : ""}</div></div>
+${voll.bestaetigt_von ? `<div class="sig">${bsig ? `<img src="${bsig}" alt="Bestätigung">` : '<div style="height:110px"></div>'}<div class="linie">Nachtrag bestätigt: ${esc(voll.bestaetigt_von)}</div></div>` : ""}
 <div class="fuss">Rechtsgrundlage: § 12 Arbeitsschutzgesetz, § 4 DGUV Vorschrift 1 (Unterweisung vor Aufnahme der Tätigkeit und mindestens einmal jährlich).<br>
 Erfasst am Unterweisungs-Terminal, gespeichert im OAK EHS-Cockpit${n.config_version ? " · Fassung " + esc(n.config_version) : ""} · Druck am ${esc(new Date().toLocaleDateString("de-DE"))}.</div></body></html>`;
   w.document.open(); w.document.write(html); w.document.close();

@@ -22,7 +22,14 @@ const UW_FAELLIG_TAGE = 365, UW_WARNUNG_TAGE = 335;
    und den User-Agent mit, obwohl beides hier nie gezeigt wird. Was nicht gebraucht wird,
    soll auch nicht über die Leitung gehen. */
 const UW_SPALTEN = "id,kunde_slug,mitarbeiter_name,funktion,bereich,module,unterweisung," +
-                   "bestanden,bestaetigung,config_version,created_at";
+                   "bestanden,bestaetigung,config_version,created_at,geraet,quelle";
+/* Wo wurde unterwiesen? (Gerätename aus dem Terminal-Zugang; 21.10.2026) */
+function uwGeraet(n){
+  if(!n) return "";
+  if(n.quelle === "nachtrag") return "Nachtrag";
+  const g = String(n.geraet || "");
+  return /handy|qr/i.test(g) ? "Handy" : /tablet/i.test(g) ? "Tablet" : /terminal|surface/i.test(g) ? "Terminal" : g;
+}
 
 /* Pflichtteil fuer die Startseite (Nachweise, Beschaeftigte, Geraetecode) – der Rest kommt im Hintergrund. */
 async function ladeNachweiseStart(){
@@ -249,15 +256,15 @@ function renderUnterweisungen(wrap){
     const st = n ? uwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" };
     return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(uwGruppenName(p) || "")}" data-stand="${n ? st.klasse : "kritisch"}" data-einarb="${uwEinarbeitung(p.name) ? "ja" : "nein"}">
       <td><b>${esc(p.name)}</b></td><td>${esc(uwGruppenName(p) || "—")}</td>
-      <td>${n ? uwDatum(n.created_at) : "—"}</td>
+      <td>${n ? uwDatum(n.created_at) + (uwGeraet(n) ? `<div class="uw-leise">${esc(uwGeraet(n))}</div>` : "") : "—"}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
       <td>${uwEinarbZelle(p.name, uwGruppenName(p))}</td>
       <td class="uw-knoepfe">${pdfKnopf(n)}<button class="btn-klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` };
   }).concat(zusatz.map(n => {
     const st = uwStatus(n);
     return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}" data-einarb="${uwEinarbeitung(n.mitarbeiter_name) ? "ja" : "nein"}">
-      <td><b>${esc(n.mitarbeiter_name)}</b></td>
-      <td>${esc(n.funktion || "—")}${n.bereich ? `<div class="uw-leise">${esc(n.bereich)}</div>` : ""}</td><td>${uwDatum(n.created_at)}</td>
+      <td><b class="uw-namelink" data-nwname="${esc(n.id)}" title="Name korrigieren" style="cursor:pointer">${esc(n.mitarbeiter_name)}</b></td>
+      <td>${esc(n.funktion || "—")}${n.bereich ? `<div class="uw-leise">${esc(n.bereich)}</div>` : ""}</td><td>${uwDatum(n.created_at)}${uwGeraet(n) ? `<div class="uw-leise">${esc(uwGeraet(n))}</div>` : ""}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
       <td>${uwEinarbZelle(n.mitarbeiter_name, n.funktion)}</td>
       <td class="uw-knoepfe">${pdfKnopf(n)}</td></tr>` };
@@ -285,6 +292,21 @@ function renderUnterweisungen(wrap){
   sekPers.querySelector("#uwPersNeu").addEventListener("click", () => uwPersonForm(null));
   sekPers.querySelectorAll("[data-pedit]").forEach(b => b.addEventListener("click", () => uwPersonForm(UW_P.find(p => p.id === b.dataset.pedit))));
   sekPers.querySelectorAll("[data-uwpdf]").forEach(b => b.addEventListener("click", () => uwNachweisPdf(b.dataset.uwpdf)));
+  /* Name im Nachweis korrigieren (Tippfehler, fehlender Nachname) – alle Nachweise dieser Schreibweise */
+  sekPers.querySelectorAll("[data-nwname]").forEach(b => b.addEventListener("click", async () => {
+    const n = NACHWEISE.find(x => x.id === b.dataset.nwname); if(!n) return;
+    const alt = n.mitarbeiter_name || "";
+    const neu = (prompt("Name korrigieren (gilt für alle Nachweise von „" + alt + "“):", alt) || "").trim().replace(/\s+/g, " ");
+    if(!neu || neu === alt) return;
+    if(neu.length < 3){ alert("Bitte den vollständigen Namen eintragen."); return; }
+    const gross = neu.split(" ").map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(" ");
+    const ids = NACHWEISE.filter(x => uwNorm(x.mitarbeiter_name) === uwNorm(alt)).map(x => x.id);
+    try{
+      await apiSend("PATCH", "/rest/v1/unterweisungsnachweise?id=in.(" + ids.map(encodeURIComponent).join(",") + ")", { mitarbeiter_name: gross }, "return=minimal");
+      NACHWEISE.forEach(x => { if(ids.includes(x.id)) x.mitarbeiter_name = gross; });
+      renderSektionen();
+    }catch(e){ alert("Speichern nicht möglich: " + (e.message || e)); }
+  }));
   sekPers.querySelectorAll("[data-einarb-name]").forEach(b => b.addEventListener("click", () => uwEinarbeitungDialog(b.dataset.einarbName, b.dataset.einarbTaet, renderSektionen)));
   const btnAlle = sekPers.querySelector("#uwCsvAlle"); if(btnAlle) btnAlle.addEventListener("click", uwExport);
   /* Filter: Name, Gruppe, Stand – direkt in der Liste, ohne Neuladen */
@@ -431,7 +453,8 @@ async function uwNachweisPdf(id){
   if(!w){ alert("Bitte Pop-up-Fenster für das EHS-Cockpit erlauben."); return; }
   w.document.write('<p style="font-family:sans-serif;padding:20px">Nachweis wird geladen …</p>');
   let voll = {};
-  try{ const r = await apiGet("/rest/v1/unterweisungsnachweise?select=unterschrift,nachfrage,praxis_von,praxis_am&id=eq." + encodeURIComponent(id), false); voll = (r && r[0]) || {}; }catch(e){}
+  try{ const r = await apiGet("/rest/v1/unterweisungsnachweise?select=unterschrift,nachfrage,praxis_von,praxis_am,bestaetigt_von,bestaetigt_unterschrift&id=eq." + encodeURIComponent(id), false); voll = (r && r[0]) || {}; }catch(e){}
+  const bsig = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(voll.bestaetigt_unterschrift || "") ? voll.bestaetigt_unterschrift : "";
   const m = (window.OAK_MARKE && OAK_MARKE.aktuell) || {};
   const farbe = /^#[0-9a-fA-F]{3,8}$/.test(m.farbe || "") ? m.farbe : "#2D6A4F";
   const logo = m.logo ? new URL(m.logo, location.href).href : new URL("../assets/oak-logo.png", location.href).href;
@@ -467,10 +490,12 @@ ${n.bereich ? `<tr><td class="k">Bereich</td><td>${esc(n.bereich)}</td></tr>` : 
 <tr><td class="k">Unterweisungsinhalte</td><td>${module.length ? "<ul>" + module.map(x => "<li>" + esc(x) + "</li>").join("") + "</ul>" : "—"}</td></tr>
 <tr><td class="k">Verständnisfragen</td><td>${n.bestanden ? '<span class="ok">bestanden</span>' : '<span class="nein">nicht bestanden</span>'}</td></tr>
 <tr><td class="k">Bestätigung</td><td>${n.bestaetigung ? "Die unterwiesene Person hat bestätigt, die Inhalte verstanden zu haben und sie zu beachten." : "nicht bestätigt"}</td></tr>
-${voll.nachfrage ? `<tr><td class="k">Rückfrage</td><td>${esc(voll.nachfrage)}</td></tr>` : ""}
+${n.geraet || n.quelle === "nachtrag" ? `<tr><td class="k">Durchgeführt an</td><td>${esc(n.geraet || uwGeraet(n))}</td></tr>` : ""}
+${voll.nachfrage ? `<tr><td class="k">${n.quelle === "nachtrag" ? "Vermerk" : "Rückfrage"}</td><td>${esc(voll.nachfrage)}</td></tr>` : ""}
 ${voll.praxis_von ? `<tr><td class="k">Praktische Unterweisung</td><td>${esc(voll.praxis_von)}${voll.praxis_am ? " am " + esc(uwDatum(voll.praxis_am)) : ""}</td></tr>` : ""}
 </table>
 <div class="sig">${sig ? `<img src="${sig}" alt="Unterschrift">` : '<div style="height:110px"></div>'}<div class="linie">Unterschrift der unterwiesenen Person${sig ? " (elektronisch am Terminal geleistet)" : ""}</div></div>
+${voll.bestaetigt_von ? `<div class="sig">${bsig ? `<img src="${bsig}" alt="Bestätigung">` : '<div style="height:110px"></div>'}<div class="linie">Nachtrag bestätigt: ${esc(voll.bestaetigt_von)}</div></div>` : ""}
 <div class="fuss">Rechtsgrundlage: § 12 Arbeitsschutzgesetz, § 4 DGUV Vorschrift 1 (Unterweisung vor Aufnahme der Tätigkeit und mindestens einmal jährlich).<br>
 Erfasst am Unterweisungs-Terminal, gespeichert im OAK EHS-Cockpit${n.config_version ? " · Fassung " + esc(n.config_version) : ""} · Druck am ${esc(new Date().toLocaleDateString("de-DE"))}.</div>
 </body></html>`;
