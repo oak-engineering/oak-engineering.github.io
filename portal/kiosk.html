@@ -1206,7 +1206,9 @@ async function warteschlangeAbarbeiten(){
   let ok=0;
   for(const n of q.slice()){
     try{ await nachweisAnsPortal(n); q.shift(); ok++; warteschlangeSetzen(q); }
-    catch(e){ break; }   // Reihenfolge halten: beim ersten Fehler abbrechen
+    catch(e){   // Reihenfolge halten: beim ersten Fehler abbrechen – und OAK Bescheid geben
+      if(window.OAK_FEHLER) window.OAK_FEHLER('terminal', 'Warteschlange hängt (' + q.length + ' Nachweis(e) im Gerät): ' + (e && e.message || e), { name: n.name });
+      break; }
   }
   return ok;
 }
@@ -1324,6 +1326,7 @@ async function saveNachweisLocal(){
         warteschlangeAbarbeiten();                       // Liegengebliebenes gleich mitnehmen
         return {ok:true, fn:fn, main:true, backup:false, dl:false, hasMain:true, hasBackup:false, errors:[]};
       }catch(e){
+        if(navigator.onLine !== false && window.OAK_FEHLER) window.OAK_FEHLER('terminal', 'Nachweis nicht übermittelt: ' + (e && e.message || e), { name: n.name, rolle: n.rolle });
         /* Ausgeschaltet oder Link gesperrt: NICHT in die Warteschlange – sonst kaeme der Nachweis beim naechsten Einschalten doch an */
         if(/gesperrt|unbekannt/i.test(String(e&&e.message||e)))
           return {ok:false, fn:fn, main:false, backup:false, dl:false, hasMain:true, hasBackup:false,
@@ -1848,6 +1851,7 @@ setTimeout(()=>{ if(!portalModus()) laufFortsetzen(); }, 1500);
 })();
 </script>
 <div id="printDoc"></div>
+<script src="uw/nachreichen.js?v=2026-10-21b"></script>
 <script>if("serviceWorker" in navigator){ navigator.serviceWorker.register("sw.js").catch(function(){}); }</script>
 </body>
 </html>

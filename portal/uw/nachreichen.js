@@ -7,6 +7,24 @@
   var URL_ = "https://ayieotppxrjrzdpeofkx.supabase.co", ANON = "sb_publishable_fz1o6tjpwa7gjiNb17uuEg_-ZwNdFcS";
   function lies(k){ try{ return JSON.parse(localStorage.getItem(k) || "null"); }catch(e){ return null; } }
   function schreib(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+  /* Fehler an OAK melden (portal_fehler → Mail an OAK). Für alle Seiten nutzbar: window.OAK_FEHLER(quelle, meldung, details) */
+  var gemeldet = 0, schon = {};
+  window.OAK_FEHLER = function(quelle, meldung, details){
+    try{
+      var k = quelle + "|" + meldung; if(schon[k] || gemeldet >= 8) return; schon[k] = 1; gemeldet++;
+      var tz = lies("oak-uw-terminal");
+      fetch(URL_ + "/rest/v1/rpc/portal_fehler_melden", { method: "POST", keepalive: true,
+        headers: { "Content-Type": "application/json", apikey: ANON, Authorization: "Bearer " + ANON },
+        body: JSON.stringify({ p_quelle: quelle, p_meldung: String(meldung).slice(0, 1500),
+          p_details: Object.assign({ seite: location.pathname + location.hash, geraet: navigator.userAgent.slice(0, 160) }, details || {}),
+          p_token: tz && tz.token || null }) }).catch(function(){});
+    }catch(e){}
+  };
+  var quelleSeite = /portal2/.test(location.pathname) ? "cockpit" : /kiosk/.test(location.pathname) ? "terminal" : "portal";
+  window.addEventListener("error", function(e){ if(e && e.message && !/Script error|ResizeObserver/i.test(e.message))
+    window.OAK_FEHLER(quelleSeite, "Programmfehler: " + e.message, { datei: (e.filename || "").split("/").pop(), zeile: e.lineno }); });
+  window.addEventListener("unhandledrejection", function(e){ var m = e && e.reason && (e.reason.message || String(e.reason));
+    if(m && !/AUTH|Failed to fetch|NetworkError|Load failed|abort/i.test(m)) window.OAK_FEHLER(quelleSeite, "Programmfehler: " + m); });
   var z = lies("oak-uw-terminal");
   if(!z || !z.token || navigator.onLine === false) return;
   function senden(b){
@@ -25,11 +43,13 @@
     var q = lies(key) || []; var ok = 0;
     function weiter(){
       if(!q.length) return Promise.resolve(ok);
-      return senden(map(q[0])).then(function(){ q.shift(); ok++; schreib(key, q); return weiter(); }).catch(function(){ return ok; });
+      return senden(map(q[0])).then(function(){ q.shift(); ok++; schreib(key, q); return weiter(); }).catch(function(e){
+        window.OAK_FEHLER(quelleSeite, "Liegengebliebener Nachweis lässt sich nicht nachsenden (" + q.length + " im Gerät): " + (e && e.message || e), { name: q[0] && q[0].name });
+        return ok; });
     }
     return weiter();
   }
-  if(location.pathname.indexOf("kiosk.html") >= 0) return;   // das Terminal leert selbst
+  if(location.pathname.indexOf("kiosk.html") >= 0) return;   // das Terminal leert selbst (Fehlermelder oben gilt trotzdem)
   setTimeout(function(){
     leeren("oak-uw-warteschlange", kiosk).then(function(a){
       return leeren("oak-uw-warteschlange-neu", neu).then(function(b){

@@ -183,6 +183,8 @@ async function asSvLaden(){
     const nm = Object.fromEntries((AS.kunden || []).map(x => [x.kunde_slug, x.name]));
     AS_SV.nutzung = { n7: lg.length, betriebe: Object.keys(je).length, text: Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => (nm[k] || k) + " " + n).join(" · ") || "keine Änderungen" }; }
   AS_SV.erfNeu = AS.admin ? await hole("/rest/v1/portal_erfassungen?select=id,anlage,eingegangen_am&status=eq.neu" + k) : [];
+  /* Systemfehler aller Betriebe (portal_fehler, nur OAK) – Nikolai 21.10.2026: Fehler müssen bei OAK ankommen, nicht beim Endnutzer */
+  AS_SV.fehler = AS.admin ? await hole("/rest/v1/portal_fehler?select=id,am,kunde_slug,quelle,meldung&erledigt_am=is.null&order=am.desc&limit=50") : [];
   AS_SV.nwAus = await hole("/rest/v1/portal_nachweis?select=id,art,person_name,as_einheit_id,notiz,archiviert&archiviert=is.true&notiz=like.*ausgeschieden*" + k);
   await asSvPaLaden();
 }
@@ -519,6 +521,10 @@ function asSvAufgaben(){
     if(AS_SV.nutzung) l.push({ schluessel: "oak-nutzung:" + asSvKw(new Date()), stufe: "info", quittierbar: true, quittText: "Gelesen",
       titel: "Nutzung dieser Woche: " + AS_SV.nutzung.n7 + " Änderungen in " + AS_SV.nutzung.betriebe + " Betrieb(en)", sub: AS_SV.nutzung.text + " (nur für OAK sichtbar)",
       frist: null, aktionen: [["Nutzung", () => asGehe("nutzung")]] });
+    const fe = (AS_SV.fehler || []);
+    if(fe.length) l.push({ schluessel: "oak-fehler:" + fe.map(x => x.id).sort().join(",").slice(0, 120), stufe: "kritisch",
+      titel: fe.length + " Systemfehler – bitte prüfen", sub: fe.slice(0, 2).map(x => (x.kunde_slug || "–") + ": " + String(x.meldung || x.quelle).slice(0, 70)).join(" · ") + " (nur für OAK sichtbar)",
+      frist: null, aktionen: [["Ansehen", () => asSvFehlerDialog()]] });
     const erfNeu = (AS_SV.erfNeu || []);
     if(erfNeu.length) l.push({ schluessel: "oak-erfassungen:" + erfNeu.map(x => x.id).sort().join(",").slice(0, 120), stufe: "warnung",
       titel: erfNeu.length + " Begehungs-Erfassung(en) des Betriebs eingegangen", sub: erfNeu.slice(0, 3).map(x => x.anlage).join(", ") + " – abholen: python tools/erfassungen_holen.py --kunde " + AS.kunde + " (nur für OAK sichtbar)",
@@ -880,6 +886,27 @@ function asSvMaschinenNamen(){
   try{ if(typeof asAnlagen === "function") return asAnlagen().map(d => d.maschine || d.titel).filter(Boolean); }catch(e){}
   return [];
 }
+/* Systemfehler (nur OAK): ansehen, gesicherte Unterweisungsnachweise übernehmen, erledigen */
+async function asSvFehlerDialog(){
+  const fe = await apiGet("/rest/v1/portal_fehler?select=*&erledigt_am=is.null&order=am.desc&limit=50").catch(() => []) || [];
+  const gesichert = f => f.quelle === "unterweisung_nachweis" && f.details && f.details.name;
+  const dl = asDialog({ titel: fe.length + " offene Systemfehler", breit: true, inhalt: fe.length ? `<div class="zeilen">${fe.map(f => `<div class="z" style="cursor:default"><div>
+      <b>${esc(f.kunde_slug || "–")} · ${esc(f.quelle)}${gesichert(f) ? " · " + esc(f.details.name) : ""}</b>
+      <small>${esc(new Date(f.am).toLocaleString("de-DE"))} · ${esc(String(f.meldung || "").slice(0, 300))}</small></div>
+      <div>${gesichert(f) ? `<button class="btn sek klein" data-fuebernehmen="${esc(f.id)}">Als Nachweis übernehmen</button> ` : ""}<button class="btn sek klein" data-ferledigt="${esc(f.id)}">Erledigt</button></div></div>`).join("")}</div>`
+    : `<div class="leer">Keine offenen Fehler.</div>`, knoepfe: [] });
+  const fertig = async id => { await apiSend("PATCH", "/rest/v1/portal_fehler?id=eq." + encodeURIComponent(id), { erledigt_am: new Date().toISOString(), erledigt_von: AS.ich || "OAK" }, "return=minimal"); };
+  dl.querySelectorAll("[data-ferledigt]").forEach(b => b.onclick = async () => { await fertig(b.dataset.ferledigt); b.closest(".z").remove(); });
+  dl.querySelectorAll("[data-fuebernehmen]").forEach(b => b.onclick = async () => {
+    const f = fe.find(x => x.id === b.dataset.fuebernehmen), d = f.details || {};
+    await apiSend("POST", "/rest/v1/unterweisungsnachweise", { kunde_slug: f.kunde_slug, mitarbeiter_name: d.name, funktion: d.rolle || null, bereich: d.bereich || null,
+      module: d.module || [], unterweisung: (d.module || []).join(", "), bestanden: !!d.bestanden, bestaetigung: !!d.bestaetigung, nachfrage: d.nachfrage || null,
+      unterschrift: d.unterschrift || null, config_version: d.version || null, quelle: "terminal", geraet: d.geraet || null, bausteine: d.bausteine || null,
+      kapitel: d.kapitel || null, created_at: f.am }, "return=minimal");
+    await fertig(f.id); asMeldung("Nachweis von " + d.name + " übernommen"); b.closest(".z").remove();
+  });
+}
+
 function asSvTerminDialog(t, vorlage){
   const v = vorlage || [];
   const erledigtKnopf = t && t.id && !t.erledigt_am ? [{ t: "Erledigt melden", klasse: "sek", fn: () => { asSvErledigenDialog(t); return false; } }] : [];
