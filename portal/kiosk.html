@@ -1181,7 +1181,14 @@ async function portalConfigHolen(){
   return {neu:false, version:erg.version};
 }
 function warteschlange(){ try{ return JSON.parse(localStorage.getItem(QKEY)||'[]'); }catch(e){ return []; } }
-function warteschlangeSetzen(l){ try{ localStorage.setItem(QKEY, JSON.stringify(l)); }catch(e){} }
+/* Gibt zurück, ob die Warteschlange wirklich im Gerät liegt. Bis 21.10.2026 schluckte ein voller
+   Speicher den Fehler stumm – bei Wibo gingen so zwei Nachweise verloren. Notfalls Platz schaffen. */
+function warteschlangeSetzen(l){
+  const v=JSON.stringify(l);
+  try{ localStorage.setItem(QKEY, v); return true; }catch(e){}
+  try{ localStorage.removeItem(FOLIENKEY); localStorage.removeItem('oak-uw-lauf'); localStorage.setItem(QKEY, v); return true; }catch(e){}
+  return false;
+}
 async function nachweisAnsPortal(n){
   const z=terminalZugang(); if(!z) throw new Error('kein Terminal-Zugang');
   await portalRpc('unterweisung_nachweis',{
@@ -1321,9 +1328,12 @@ async function saveNachweisLocal(){
         if(/gesperrt|unbekannt/i.test(String(e&&e.message||e)))
           return {ok:false, fn:fn, main:false, backup:false, dl:false, hasMain:true, hasBackup:false,
                   errors:['Die Unterweisung am Handy/Tablet ist ausgeschaltet – bitte beim Schichtführer melden.']};
-        const q=warteschlange(); q.push(n); warteschlangeSetzen(q);
+        const q=warteschlange(); q.push(n);
+        if(!warteschlangeSetzen(q))
+          return {ok:false, fn:fn, main:false, backup:false, dl:false, hasMain:true, hasBackup:false,
+                  errors:['Der Nachweis konnte weder übermittelt noch auf dem Gerät gesichert werden. Bitte NICHT weitergehen und sofort die Sicherheitsfachkraft informieren.']};
         return {ok:true, fn:fn, main:false, backup:false, dl:false, hasMain:true, hasBackup:false,
-                queued:true, errors:[String(e.message||e)]};
+                queued:true, offline:navigator.onLine===false, errors:[String(e.message||e)]};
       }
     }
     if(SRV){   // Terminal: der lokale Server speichert – keine Ordner-Freigabe, kein Neustart-Problem
@@ -1367,9 +1377,11 @@ async function _doFinish(){
     if(r.busy){ btn.disabled=false; btn.textContent=old; return; }
     /* Warteschlange: ehrlich benennen - abgeschlossen ja, uebermittelt noch nicht. */
     if(r.queued){
-      $('#saveMsg').innerHTML='<span style="color:#8a5a00;font-weight:700">✓ Abgeschlossen – Übermittlung folgt,'
-        +' sobald das Gerät wieder online ist.</span> <span class="small">Der Nachweis ist auf dem Gerät gesichert.</span>';
-      setTimeout(resetForNext,1800);
+      /* Ehrlich unterscheiden: offline = kommt von selbst; online + Fehler = jemand muss Bescheid wissen. */
+      $('#saveMsg').innerHTML = r.offline
+        ? '<span style="color:#8a5a00;font-weight:700">✓ Abgeschlossen – Übermittlung folgt, sobald das Gerät wieder online ist.</span> <span class="small">Der Nachweis ist auf dem Gerät gesichert.</span>'
+        : '<span style="color:var(--bad);font-weight:700">⚠ Abgeschlossen, aber noch NICHT im Cockpit angekommen.</span> <span class="small">Der Nachweis ist auf dem Gerät gesichert und wird automatisch nachgesendet. Bitte kurz der Sicherheitsfachkraft Bescheid geben.</span>';
+      setTimeout(resetForNext, r.offline ? 1800 : 7000);
       return;
     }
     const fullOk = r.hasMain ? (r.main && (!r.hasBackup || r.backup)) : r.ok;
