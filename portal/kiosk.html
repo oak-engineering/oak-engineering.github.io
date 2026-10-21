@@ -640,6 +640,7 @@ $('#startBtn').onclick=async()=>{
   if(!mods.length){ $('#startErr').textContent=ex?'Für Externe ist noch kein Modul hinterlegt. Bitte an OAK/Admin wenden.':'Für diese Rolle sind keine Module hinterlegt. Bitte an OAK/Admin wenden.'; return; }
   participant.name=name; participant.role=role; participant.moduleIds=mods.map(m=>m.id); $('#startErr').textContent='';
   runMods=mods.map(m=>Object.assign({},m,{_doc:null,_numPages:0}));
+  mi=0; modResults=[]; laufSichern();   // ab der Namenseingabe gesichert
   showIntro();
 };
 function showIntro(){ $('#introWho').textContent=participant.name+' · '+(participant.role||'');
@@ -757,7 +758,7 @@ function updateStatus(){
   renderStrip();
 }
 async function showModule(i,toLast){
-  mi=i; pg=1; videoEnded=false; reachedEnd=false; _activeModFrame=null; const m=runMods[i];
+  mi=i; laufSichern(); pg=1; videoEnded=false; reachedEnd=false; _activeModFrame=null; const m=runMods[i];
   // Immersiv: interaktive Module füllen den ganzen Bildschirm (Chrome ausblenden)
   document.body.classList.toggle('imm', m.type==='interaktiv');
   try{ $('#modDoneOv').classList.add('hidden'); $('#nextChip').classList.add('hidden'); }catch(e){}
@@ -987,7 +988,7 @@ $('#quizSubmit').onclick=()=>{
   if(pct>=(CONTENT.meta.passPct||80)) afterModulePassed(c,qs.length,pct); else renderModuleFail(c,qs.length,pct);
 };
 function afterModulePassed(correct,total,pct){
-  modResults=modResults.filter(r=>r.i!==mi); modResults.push({i:mi,title:runMods[mi].title,correct,total,pct});
+  modResults=modResults.filter(r=>r.i!==mi); modResults.push({i:mi,title:runMods[mi].title,correct,total,pct}); laufSichern();
   if(mi<runMods.length-1){ show('#screen-present'); showModule(mi+1,false); } else finalize();
 }
 function renderModuleFail(c,total,pct){
@@ -1412,7 +1413,7 @@ async function updateFolderBar(){
     const fb=$('#freeFolders'); if(fb) fb.onclick=async()=>{ if(mainDir)await ensurePerm(mainDir); if(backupDir)await ensurePerm(backupDir); updateFolderBar(); }; }
 }
 function standLoeschen(){ try{ const weg=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&k.indexOf('oak-uw-stand-')===0) weg.push(k); } weg.forEach(k=>localStorage.removeItem(k)); }catch(e){} }
-function resetForNext(){ standLoeschen(); participant.name=''; participant.bereich=''; try{ const ag=$('#pArbeitgeber'); if(ag) ag.value=''; }catch(e){} participant.role=''; participant.moduleIds=[]; participant.score=0; participant.company=''; participant.address=''; participant.host=''; participant.reason='';
+function resetForNext(){ standLoeschen(); laufLoeschen(); participant.name=''; participant.bereich=''; try{ const ag=$('#pArbeitgeber'); if(ag) ag.value=''; }catch(e){} participant.role=''; participant.moduleIds=[]; participant.score=0; participant.company=''; participant.address=''; participant.host=''; participant.reason='';
   try{ $('#pName').value=''; ['pFirma','pAddr','pHost'].forEach(id=>{ const el=$('#'+id); if(el)el.value=''; }); const rs=$('#pReason'); if(rs)rs.value=''; const rl=$('#pRole'); if(rl){ rl.value=''; updateRoleModules(); } }catch(e){}
   try{ if(_sig.ctx){ const cv=$('#sigCanvas'); _sig.ctx.clearRect(0,0,cv.width,cv.height);} _sig.drawn=false; }catch(e){}
   try{ $('#confirmChk').checked=false; }catch(e){} $('#saveMsg').textContent=''; $('#signErr').textContent='';
@@ -1435,6 +1436,7 @@ window.addEventListener('message',bumpIdle);   // Modul-Meldungen (z. B. Abschlu
 function _idleLimitMs(){ return ($('#screen-present').classList.contains('hidden')?IDLE_MIN:IDLE_PRES_MIN)*60*1000; }
 function _idleRelevant(){
   if(!CONTENT.meta.terminal) return false;
+  if(eigenesGeraet()) return false;   // eigenes Handy/Tablet: kein Zurücksetzen nach Pause (21.10.2026: Mitarbeiter flogen raus)
   if(!$('#screen-cockpit').classList.contains('hidden') || !$('#screen-admin').classList.contains('hidden')) return false;
   if(!$('#screen-start').classList.contains('hidden') && !$('#pName').value.trim()) return false;   // leerer Startbildschirm: nichts zu verlieren
   const v=document.querySelector('#viewer video'); if(v && !v.paused && !v.ended) return false;     // laufendes Video = aktiv
@@ -1766,6 +1768,39 @@ _ensureCertLogo();
   else if(auto==='extern') enterMode(true,true);
   else goCockpit();
 })();
+/* ===== Unterbrechungsschutz (Nikolai 21.10.2026: Mitarbeiter am Handy flogen raus, der Fortschritt war weg) =====
+   1) Zurück-Taste/Wischgeste verlässt die Unterweisung nicht mehr, sondern fragt nach.
+   2) Ab der Namenseingabe wird der Stand im Gerät gesichert; nach Neuladen geht es an derselben Stelle weiter. */
+const LAUFKEY='oak-uw-lauf';
+function eigenesGeraet(){ try{ return matchMedia('(pointer:coarse)').matches && Math.min(screen.width, screen.height) < 820; }catch(e){ return false; } }
+function laufSichern(){ try{ if(!participant.name) return;
+  localStorage.setItem(LAUFKEY, JSON.stringify({ts:Date.now(), ext:!!CONTENT.meta.extern, term:!!CONTENT.meta.terminal,
+    p:{name:participant.name, role:participant.role, bereich:participant.bereich||'', company:participant.company||'', address:participant.address||'',
+       host:participant.host||'', reason:participant.reason||'', moduleIds:(participant.moduleIds||[]).slice()},
+    mi:mi, modResults:modResults, preDone:preDone, baus:bausteineQuittiert}));
+}catch(e){} }
+function laufLoeschen(){ try{ localStorage.removeItem(LAUFKEY); }catch(e){} }
+let _laufGeprueft=false;
+function laufFortsetzen(){
+  if(_laufGeprueft) return; _laufGeprueft=true;
+  let s=null; try{ s=JSON.parse(localStorage.getItem(LAUFKEY)||'null'); }catch(e){}
+  if(!s || !s.p || !s.p.name || Date.now()-(s.ts||0) > 12*3600*1000){ laufLoeschen(); return; }
+  const mods=(s.p.moduleIds||[]).map(id=>(CONTENT.modules||[]).find(m=>m.id===id)).filter(Boolean);
+  if(!mods.length){ laufLoeschen(); return; }
+  const stelle=Math.min(s.mi||0, mods.length-1);
+  showModal({titel:'Unterweisung fortsetzen?', text:esc(s.p.name)+' – Modul '+(stelle+1)+' von '+mods.length+'. Es geht an dieser Stelle weiter.',
+    okText:'▶ Weitermachen', cancelText:'Neu beginnen', onCancel:laufLoeschen,
+    onOk:()=>{ CONTENT.meta.terminal=!!s.term; CONTENT.meta.extern=!!s.ext; applyTheme(); applyMeta(); applyAudience(); updateGear();
+      Object.assign(participant, s.p); runMods=mods.map(m=>Object.assign({},m,{_doc:null,_numPages:0}));
+      modResults=s.modResults||[]; preDone=s.preDone||{}; interaktivDone={}; bausteineQuittiert=s.baus||[];
+      if(modResults.length>=runMods.length){ mi=runMods.length-1; finalize(); return; }
+      show('#screen-present'); showModule(stelle,false); }});
+}
+try{ history.pushState({uw:1},''); }catch(e){}
+window.addEventListener('popstate',()=>{ try{ history.pushState({uw:1},''); }catch(e){}
+  const amStart=['#screen-cockpit','#screen-gate','#screen-start'].some(s=>!$(s).classList.contains('hidden'));
+  if(!amStart && !document.querySelector('.modal-ov')) showAbortDialog(); });
+setTimeout(()=>{ if(!portalModus()) laufFortsetzen(); }, 1500);
 /* ===== Portal-Modus: Stand holen und Liegengebliebenes nachreichen =====
    Erst NACH dem Start, damit das Terminal ohne Netz sofort benutzbar ist. Eine neue
    freigegebene Fassung wird nur uebernommen, solange niemand mitten in der Unterweisung
@@ -1778,7 +1813,7 @@ _ensureCertLogo();
     warteschlangeAbarbeiten().then(n=>{ if(n) _toast(n+' Nachweis(e) nachträglich übermittelt.'); });
     /* Foliensaetze aus dem Portal einhaengen. Still: gibt es keine oder ist gerade kein
        Netz, bleibt es bei den lokalen Modulen - die Unterweisung laeuft in jedem Fall. */
-    folienHolen().then(l=>{ folienEinhaengen(l); }).catch(()=>{});
+    folienHolen().then(l=>{ folienEinhaengen(l); laufFortsetzen(); }).catch(()=>{ laufFortsetzen(); });
     portalConfigHolen().then(r=>{
       if(!r || !r.neu) return;
       const aufStart=!!document.querySelector('#screen-start:not(.hidden), #screen-cockpit:not(.hidden)');
