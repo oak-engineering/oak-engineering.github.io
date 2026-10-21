@@ -889,7 +889,7 @@ function asSvMaschinenNamen(){
 /* Systemfehler (nur OAK): ansehen, gesicherte Unterweisungsnachweise übernehmen, erledigen */
 async function asSvFehlerDialog(){
   const fe = await apiGet("/rest/v1/portal_fehler?select=*&erledigt_am=is.null&order=am.desc&limit=50").catch(() => []) || [];
-  const gesichert = f => f.quelle === "unterweisung_nachweis" && f.details && f.details.name;
+  const gesichert = f => f.vertrauenswuerdig === true && f.quelle === "unterweisung_nachweis" && f.details && f.details.name;   // nur vom Server gesicherte Daten
   const dl = asDialog({ titel: fe.length + " offene Systemfehler", breit: true, inhalt: fe.length ? `<div class="zeilen">${fe.map(f => `<div class="z" style="cursor:default"><div>
       <b>${esc(f.kunde_slug || "–")} · ${esc(f.quelle)}${gesichert(f) ? " · " + esc(f.details.name) : ""}</b>
       <small>${esc(new Date(f.am).toLocaleString("de-DE"))} · ${esc(String(f.meldung || "").slice(0, 300))}</small></div>
