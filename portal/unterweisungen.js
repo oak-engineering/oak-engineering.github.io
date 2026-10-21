@@ -276,7 +276,8 @@ function renderUnterweisungen(wrap){
     <div class="sek-kopf"><h2>Wer ist fällig</h2>
       <span class="zaehler">${zeilen.length ? (faellig ? faellig + " fällig" : "alle aktuell") : ""}</span>
       <span class="uw-kopf-knoepfe">${rows.length ? '<button class="btn sek" id="uwCsvAlle">Excel-Export</button>' : ""}
-        <button class="btn sek" id="uwPersNeu">Mitarbeiter anlegen</button></span></div>
+        <button class="btn sek" id="uwPersNeu">Mitarbeiter anlegen</button>
+        <button class="btn sek" id="uwNachtrag">Nachweis nachtragen</button></span></div>
     <div id="uwPersForm"></div>
     ${zeilen.length ? `<div class="mg-filter uw-filter">
         <input type="search" class="uw-suche" id="uwfName" placeholder="Name suchen" autocomplete="off">
@@ -290,6 +291,7 @@ function renderUnterweisungen(wrap){
         Terminal selbst ein und erscheinen dann hier.</div>`}`;
   wrap.appendChild(sekPers);
   sekPers.querySelector("#uwPersNeu").addEventListener("click", () => uwPersonForm(null));
+  sekPers.querySelector("#uwNachtrag").addEventListener("click", () => uwNachtragForm());
   sekPers.querySelectorAll("[data-pedit]").forEach(b => b.addEventListener("click", () => uwPersonForm(UW_P.find(p => p.id === b.dataset.pedit))));
   sekPers.querySelectorAll("[data-uwpdf]").forEach(b => b.addEventListener("click", () => uwNachweisPdf(b.dataset.uwpdf)));
   /* Name im Nachweis korrigieren (Tippfehler, fehlender Nachname) – alle Nachweise dieser Schreibweise */
@@ -495,7 +497,7 @@ ${voll.nachfrage ? `<tr><td class="k">${n.quelle === "nachtrag" ? "Vermerk" : "R
 ${voll.praxis_von ? `<tr><td class="k">Praktische Unterweisung</td><td>${esc(voll.praxis_von)}${voll.praxis_am ? " am " + esc(uwDatum(voll.praxis_am)) : ""}</td></tr>` : ""}
 </table>
 <div class="sig">${sig ? `<img src="${sig}" alt="Unterschrift">` : '<div style="height:110px"></div>'}<div class="linie">Unterschrift der unterwiesenen Person${sig ? " (elektronisch am Terminal geleistet)" : ""}</div></div>
-${voll.bestaetigt_von ? `<div class="sig">${bsig ? `<img src="${bsig}" alt="Bestätigung">` : '<div style="height:110px"></div>'}<div class="linie">Nachtrag bestätigt: ${esc(voll.bestaetigt_von)}</div></div>` : ""}
+${voll.bestaetigt_von ? `<div class="sig">${bsig ? `<img src="${bsig}" alt="Bestätigung">` : '<div style="height:110px"></div>'}<div class="linie">${esc(voll.bestaetigt_von)} (Nachtrag zur Unterweisung)</div></div>` : ""}
 <div class="fuss">Rechtsgrundlage: § 12 Arbeitsschutzgesetz, § 4 DGUV Vorschrift 1 (Unterweisung vor Aufnahme der Tätigkeit und mindestens einmal jährlich).<br>
 Erfasst am Unterweisungs-Terminal, gespeichert im OAK EHS-Cockpit${n.config_version ? " · Fassung " + esc(n.config_version) : ""} · Druck am ${esc(new Date().toLocaleDateString("de-DE"))}.</div>
 </body></html>`;
@@ -585,6 +587,54 @@ async function uwTextDialog(pfad, titel){
 /* Formular „Mitarbeiter anlegen / ändern": Name + Gruppe, sonst nichts. Speichern schreibt
    uw_person (+ uw_person_rolle); jedes angemeldete Konto des Betriebs darf das – die
    Datenbank grenzt auf den eigenen Betrieb ein (RLS). */
+/* Nachweis von Hand eintragen (21.10.2026): Unterweisung auf Papier, in der Schulung oder ein verlorener Terminal-Nachweis. */
+function uwNachtragForm(){
+  const box = document.getElementById("uwPersForm"); if(!box) return;
+  const gruppen = uwGruppen();
+  const heute = new Date().toISOString().slice(0, 10);
+  box.innerHTML = `<div class="uw-form">
+    <h3 class="uw-h3" style="margin-top:0">Nachweis nachtragen</h3>
+    <label class="uw-lab" for="uwNName">Vor- und Nachname</label>
+    <input type="text" id="uwNName" placeholder="z. B. Max Müller" autocomplete="off">
+    <label class="uw-lab" for="uwNGruppe">Gruppe</label>
+    <select id="uwNGruppe"><option value="">– wählen –</option>${gruppen.map(g => `<option>${esc(g.name)}</option>`).join("")}</select>
+    <label class="uw-lab" for="uwNArbeitgeber">Arbeitgeber / Bereich</label>
+    <input type="text" id="uwNArbeitgeber" placeholder="z. B. WIBO oder Zeitarbeitsfirma" autocomplete="off">
+    <label class="uw-lab" for="uwNDatum">Unterwiesen am</label>
+    <input type="date" id="uwNDatum" value="${heute}" max="${heute}">
+    <label class="uw-lab" for="uwNInhalt">Inhalte (Module)</label>
+    <input type="text" id="uwNInhalt" placeholder="z. B. Grundunterweisung, Spritzguss, Leitern" autocomplete="off">
+    <label class="uw-lab" for="uwNVermerk">Vermerk</label>
+    <input type="text" id="uwNVermerk" placeholder="z. B. Unterweisung auf Papier, Unterschriftenliste liegt vor" autocomplete="off">
+    <div class="uw-form-knoepfe">
+      <button class="btn sek" id="uwNSpeichern">Nachweis eintragen</button>
+      <button class="btn-klein" id="uwNAbbruch">Abbrechen</button>
+      <span class="uw-leise" id="uwNMeld"></span>
+    </div></div>`;
+  box.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  document.getElementById("uwNName").focus();
+  document.getElementById("uwNAbbruch").addEventListener("click", () => { box.innerHTML = ""; });
+  document.getElementById("uwNSpeichern").addEventListener("click", async () => {
+    const meld = document.getElementById("uwNMeld"), v = id => document.getElementById(id).value.trim();
+    const name = v("uwNName").replace(/\s+/g, " ");
+    if(name.length < 3){ meld.textContent = "Bitte den vollständigen Namen eintragen."; return; }
+    const inhalt = v("uwNInhalt"); if(!inhalt){ meld.textContent = "Bitte die Inhalte angeben."; return; }
+    const datum = v("uwNDatum") || heute;
+    const module = inhalt.split(/\s*,\s*/).filter(Boolean);
+    const wer = (typeof SESSION_NAME === "string" && SESSION_NAME) || ((getSession() || {}).user || {}).email || "";
+    meld.textContent = "Speichere …";
+    try{
+      await apiSend("POST", "/rest/v1/unterweisungsnachweise", {
+        kunde_slug: AKTIV, mitarbeiter_name: name.split(" ").map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(" "),
+        funktion: v("uwNGruppe") || null, bereich: v("uwNArbeitgeber") || null, module, unterweisung: module.join(", "),
+        bestanden: true, bestaetigung: true, quelle: "nachtrag", geraet: "Nachtrag",
+        nachfrage: "Nachgetragen am " + new Date().toLocaleDateString("de-DE") + (v("uwNVermerk") ? ": " + v("uwNVermerk") : "."),
+        bestaetigt_von: wer, created_at: new Date(datum + "T12:00:00").toISOString() }, "return=minimal");
+      box.innerHTML = ""; UW_MELDUNG = "Nachweis für " + name + " eingetragen."; await ladeNachweise(); renderSektionen();
+    }catch(e){ meld.textContent = "Speichern nicht möglich: " + (e.message || e); }
+  });
+}
+
 function uwPersonForm(p, vorName, vorGruppe){
   const box = document.getElementById("uwPersForm"); if(!box) return;
   const gruppen = uwGruppen();

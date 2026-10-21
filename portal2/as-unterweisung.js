@@ -436,7 +436,7 @@ function asUwNachweise(box){
   const jahre = [...new Set(alle.map(n => String(n.created_at || "").slice(0, 4)).filter(Boolean))].sort().reverse();
   const sicht = alle.filter(n => (!f.q || (n.mitarbeiter_name + " " + (n.funktion || "") + " " + asUwModule(n).join(" ")).toLowerCase().includes(f.q.toLowerCase()))
     && (!f.jahr || String(n.created_at).startsWith(f.jahr)) && (!f.best || (f.best === "ja") === !!n.bestanden));
-  box.innerHTML = `<div class="karte"><h2>${sicht.length} von ${alle.length} Nachweisen ${sicht.length ? `<button class="btn sek klein" id="uwCsvN">Excel-Export</button>` : ""}</h2>
+  box.innerHTML = `<div class="karte"><h2>${sicht.length} von ${alle.length} Nachweisen <span>${AS.admin || AS.fachkraft || AS.gf ? `<button class="btn sek klein" id="uwNachtrag">+ Nachweis nachtragen</button> ` : ""}${sicht.length ? `<button class="btn sek klein" id="uwCsvN">Excel-Export</button>` : ""}</span></h2>
     <div class="filterleiste">
       <input type="search" id="uwnQ" value="${esc(f.q)}" placeholder="Suchen (Name, Rolle, Modul)" autocomplete="off">
       ${asFilterWahl('data-f="jahr"', f.jahr, [["", "alle"]].concat(jahre), "Jahr")}
@@ -453,6 +453,29 @@ function asUwNachweise(box){
   q.oninput = () => { f.q = q.value; clearTimeout(AS_UW.nt); AS_UW.nt = setTimeout(() => { asUwNachweise(box); const n = box.querySelector("#uwnQ"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 300); };
   box.querySelectorAll("select[data-f]").forEach(s => s.onchange = () => { f[s.dataset.f] = s.value; asUwNachweise(box); });
   if(box.querySelector("#uwCsvN")) box.querySelector("#uwCsvN").onclick = () => asUwExport(sicht);
+  /* Nachweis von Hand: Unterweisung auf Papier, in der Schulung oder verlorener Terminal-Nachweis */
+  if(box.querySelector("#uwNachtrag")) box.querySelector("#uwNachtrag").onclick = () => {
+    const heute = asHeute(), gruppen = (AS_UW.d.rollen || []).map(r => r.name);
+    asDialog({ titel: "Nachweis nachtragen", inhalt: `<div class="form">
+        ${asFeld("Vor- und Nachname", "mitarbeiter_name", "")}
+        <label>Gruppe<select data-f="funktion"><option value="">– wählen –</option>${gruppen.map(g => `<option>${esc(g)}</option>`).join("")}</select></label>
+        ${asFeld("Arbeitgeber / Bereich", "bereich", "")}
+        ${asFeld("Unterwiesen am", "datum", heute, "date")}
+        ${asFeld("Inhalte (Module, mit Komma getrennt)", "inhalt", "")}
+        ${asFeld("Vermerk", "vermerk", "")}</div>`,
+      knoepfe: [{ t: "Nachweis eintragen", fn: async d => { const w = asWerte(d);
+        const name = String(w.mitarbeiter_name || "").trim().replace(/\s+/g, " ");
+        if(name.length < 3){ asMeldung("Bitte den vollständigen Namen eintragen."); return false; }
+        const module = String(w.inhalt || "").split(/\s*,\s*/).filter(Boolean);
+        if(!module.length){ asMeldung("Bitte die Inhalte angeben."); return false; }
+        await apiSend("POST", "/rest/v1/unterweisungsnachweise", { kunde_slug: AS.kunde,
+          mitarbeiter_name: name.split(" ").map(t => t.charAt(0).toUpperCase() + t.slice(1)).join(" "),
+          funktion: w.funktion || null, bereich: w.bereich || null, module, unterweisung: module.join(", "),
+          bestanden: true, bestaetigung: true, quelle: "nachtrag", geraet: "Nachtrag", bestaetigt_von: AS.ichName || AS.ich || "",
+          nachfrage: "Nachgetragen am " + new Date().toLocaleDateString("de-DE") + (w.vermerk ? ": " + w.vermerk : "."),
+          created_at: new Date((w.datum || heute) + "T12:00:00").toISOString() }, "return=minimal");
+        asMeldung("Nachweis eingetragen"); await asUwLaden(true); asZeige(); } }] });
+  };
   box.querySelectorAll("[data-pdf]").forEach(x => x.onclick = ev => { ev.stopPropagation(); asUwPdf(x.dataset.pdf); });
   /* Klick auf den Eintrag: Name korrigieren (z. B. Nachname nachtragen) – Fachkraft und OAK */
   if(AS.admin || AS.fachkraft) box.querySelectorAll("tr[data-nwname]").forEach(z => z.onclick = ev => { if(ev.target.closest("button")) return;
@@ -505,7 +528,7 @@ ${n.bereich ? `<tr><td class="k">Bereich</td><td>${esc(n.bereich)}</td></tr>` : 
 ${voll.nachfrage ? `<tr><td class="k">${n.quelle === "nachtrag" ? "Vermerk" : "Rückfrage"}</td><td>${esc(voll.nachfrage)}</td></tr>` : ""}
 ${voll.praxis_von ? `<tr><td class="k">Praktische Unterweisung</td><td>${esc(voll.praxis_von)}${voll.praxis_am ? " am " + esc(asDat(voll.praxis_am)) : ""}</td></tr>` : ""}</table>
 <div class="sig">${sig ? `<img src="${sig}" alt="Unterschrift">` : '<div style="height:110px"></div>'}<div class="linie">Unterschrift der unterwiesenen Person${sig ? " (elektronisch am Terminal geleistet)" : ""}</div></div>
-${voll.bestaetigt_von ? `<div class="sig">${bsig ? `<img src="${bsig}" alt="Bestätigung">` : '<div style="height:110px"></div>'}<div class="linie">Nachtrag bestätigt: ${esc(voll.bestaetigt_von)}</div></div>` : ""}
+${voll.bestaetigt_von ? `<div class="sig">${bsig ? `<img src="${bsig}" alt="Bestätigung">` : '<div style="height:110px"></div>'}<div class="linie">${esc(voll.bestaetigt_von)} (Nachtrag zur Unterweisung)</div></div>` : ""}
 <div class="fuss">Rechtsgrundlage: § 12 Arbeitsschutzgesetz, § 4 DGUV Vorschrift 1 (Unterweisung vor Aufnahme der Tätigkeit und mindestens einmal jährlich).<br>
 Erfasst am Unterweisungs-Terminal, gespeichert im OAK EHS-Cockpit${n.config_version ? " · Fassung " + esc(n.config_version) : ""} · Druck am ${esc(new Date().toLocaleDateString("de-DE"))}.</div></body></html>`;
   w.document.open(); w.document.write(html); w.document.close();
