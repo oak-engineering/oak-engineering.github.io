@@ -270,8 +270,8 @@ function asMpBeschluesse(main){
         <td><textarea data-b="${i}" data-k="wer" placeholder="Name">${esc(b.wer)}</textarea></td><td><textarea data-b="${i}" data-k="bis" placeholder="TT.MM.JJJJ oder MM/JJJJ">${esc(b.bis)}</textarea></td>
         <td class="mitte">${letzte(b, i)}</td></tr>`).join("")}</table></div>
       <div class="mp-zeile"><button class="btn sek klein" id="mpBNeu">${asMpI("plus", 16)} Beschluss</button><span class="mp-hinweis">Beschlossene Punkte stehen im Protokoll unter „Maßnahmen“ und werden beim Abschließen Maßnahmen; mit Datum zusätzlich ein Termin im Kalender.</span></div>
-      <div class="mp-felder zwei"><label>Beschlüsse und Notizen (je Zeile ein Punkt)<textarea id="mpProt">${esc(a.protokoll || "")}</textarea></label>
-        <label>Offene Punkte (je Zeile einer)<textarea data-m="offen">${esc(m.offen || "")}</textarea></label></div>
+      <div class="mp-felder zwei"><label>Beschlüsse und Notizen<textarea id="mpProt" placeholder="je Zeile ein Punkt">${esc(a.protokoll || "")}</textarea></label>
+        <label>Offene Punkte<textarea data-m="offen" placeholder="je Zeile ein Punkt">${esc(m.offen || "")}</textarea></label></div>
       <div class="mp-zeile ende"><div class="mp-naechste-wrap"><label class="mp-naechste">Nächste Sitzung<input type="date" id="mpNaechste" value="${esc(m.naechste || "")}"></label>
         <input type="text" data-m="naechste_text" value="${esc(m.naechste_text || "")}" placeholder="oder z. B. KW 49, Termin folgt"></div>
         ${!a.abgeschlossen ? `<button class="btn" id="mpAbschluss">Sitzung abschließen</button>`

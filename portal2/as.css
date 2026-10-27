@@ -303,7 +303,7 @@ html.mp-offen,html.mp-offen body{overflow:hidden;height:100%}
   .mp-start{grid-template-columns:1fr;grid-template-rows:minmax(0,1.4fr) minmax(0,1fr);gap:10px}
   .mp-beschl,.mp-beschl tbody{display:block}
   .mp-beschl colgroup,.mp-beschl tr:first-child{display:none}
-  .mp-beschl tr{display:grid;grid-template-columns:24px 52px 1fr 1fr 76px;gap:4px;padding:5px 0;border-bottom:1px solid var(--linie);align-items:center}
+  .mp-beschl tr{display:grid;grid-template-columns:24px 52px 1fr 1fr 92px;gap:4px;padding:5px 0;border-bottom:1px solid var(--linie);align-items:center}
   .mp-beschl td{border:0;padding:0}
   .mp-beschl td:nth-child(2){grid-column:2/6}
   .mp-beschl td:nth-child(1){grid-row:span 2;align-self:center}
