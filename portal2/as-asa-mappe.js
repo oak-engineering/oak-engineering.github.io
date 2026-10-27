@@ -19,7 +19,10 @@ const AS_MP_ICON = {
   undo: '<path d="M9 7H4V2"/><path d="M4 7a9 9 0 1 1-1 7"/>', datei: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/>'
 };
 function asMpI(n, g){ return `<svg viewBox="0 0 24 24" width="${g || 18}" height="${g || 18}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${AS_MP_ICON[n]}</svg>`; }
-function asMpLeer(){ return { folien: [], unterlagen: [], anno: {}, teilnehmende: [], beschluesse: [], log: [] }; }
+/* Protokollfelder (für „Protokoll drucken“): zeit, ort, vorsitz, protokollfuehrer, offen (je Zeile ein Punkt), naechste (Datum), naechste_text,
+   naechste_termin_id; je Beschluss zusätzlich prio (1–3) und nach dem Abschluss massnahme_id bzw. ziel_id (Verweis Sitzung → Maßnahme/Ziel). */
+function asMpLeer(){ return { folien: [], unterlagen: [], anno: {}, teilnehmende: [], beschluesse: [], log: [],
+  zeit: "", ort: "", vorsitz: "", protokollfuehrer: "", offen: "", naechste: "", naechste_text: "" }; }
 function asMpJetzt(){ const d = new Date(); return d.toLocaleDateString("de-DE") + " " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }
 
 /* ---------- Anlegen, Öffnen, Speichern ---------- */
@@ -27,7 +30,7 @@ async function asMpNeu(){
   const m = asMpLeer();
   m.teilnehmende = [["", "Geschäftsführung"], ["", "Fachkraft für Arbeitssicherheit"], ["", "Betriebsarzt"], ["", "Sicherheitsbeauftragte"], ["", "Betriebsrat"], ["", ""]]
     .map(([name, funktion]) => ({ name, funktion, anwesend: false }));
-  m.beschluesse = [1, 2, 3].map(() => ({ text: "", wer: "", bis: "", ok: false }));
+  m.beschluesse = [1, 2, 3].map(() => ({ text: "", prio: "", wer: "", bis: "", ok: false }));
   const r = await asSpeichern("as_asa", { datum: asHeute(), tagesordnung: asAsaTagesordnung(), mappe: m });
   if(r) asMpOeffnen(r.id); else asMeldung("Sitzung konnte nicht angelegt werden");
 }
@@ -35,7 +38,7 @@ async function asMpOeffnen(id){
   const a = asNach("as_asa", id); if(!a) return;
   AS_MP.a = a; AS_MP.m = Object.assign(asMpLeer(), a.mappe || {}); AS_MP.akt = 0; AS_MP.werkzeug = null; AS_MP.verlauf = [];
   if(!AS_MP.m.teilnehmende.length && a.teilnehmer) AS_MP.m.teilnehmende = String(a.teilnehmer).split(/[,;\n]/).map(s => s.trim()).filter(Boolean).map(name => ({ name, funktion: "", anwesend: true }));
-  if(!AS_MP.m.beschluesse.length) AS_MP.m.beschluesse = [{ text: "", wer: "", bis: "", ok: false }];
+  if(!AS_MP.m.beschluesse.length) AS_MP.m.beschluesse = [{ text: "", prio: "", wer: "", bis: "", ok: false }];
   document.getElementById("asaMappe")?.remove();
   const el = document.createElement("div"); el.id = "asaMappe"; el.className = "mp";
   document.body.appendChild(el); document.body.classList.add("mp-offen"); document.documentElement.classList.add("mp-offen");
@@ -204,16 +207,21 @@ function asMpKopf(nr, titel, rechts){ return `<header class="mp-kopf"><span clas
 function asMpStart(main){
   const a = AS_MP.a, m = AS_MP.m;
   main.innerHTML = `<section class="mp-screen">${asMpKopf("Start", "Sitzung und Teilnehmende", a.abgeschlossen ? asChip("abgeschlossen", "gruen") : asChip("geplant", "grau"))}
-    <div class="mp-start"><div class="mp-spalte"><label>Datum<input type="date" id="mpDatum" value="${esc(a.datum || "")}"></label>
+    <div class="mp-start"><div class="mp-spalte"><div class="mp-felder drei"><label>Datum<input type="date" id="mpDatum" value="${esc(a.datum || "")}"></label>
+        <label>Uhrzeit<input type="text" data-m="zeit" value="${esc(m.zeit || "")}" placeholder="08:00–09:30"></label>
+        <label class="ort">Ort<input type="text" data-m="ort" value="${esc(m.ort || "")}" placeholder="${esc((AS.kundeV1 && AS.kundeV1.name) || "Ort")}"></label></div>
       <div class="mp-block grow"><h4>Teilnehmende</h4><div class="mp-tabwrap"><table class="mp-tab"><colgroup><col style="width:42%"><col style="width:42%"><col style="width:16%"></colgroup>
         <tr><th>Name</th><th>Funktion</th><th class="mitte">anwesend</th></tr>
         ${m.teilnehmende.map((t, i) => `<tr><td><input type="text" data-t="${i}" data-k="name" value="${esc(t.name)}" placeholder="Name"></td><td><input type="text" data-t="${i}" data-k="funktion" value="${esc(t.funktion)}" placeholder="Funktion"></td><td class="mitte"><input type="checkbox" data-t="${i}" data-k="anwesend" ${t.anwesend ? "checked" : ""}></td></tr>`).join("")}
       </table></div><button class="btn sek klein" id="mpTnNeu">${asMpI("plus", 16)} Person</button></div></div>
-      <div class="mp-spalte"><label class="grow">Tagesordnung <textarea id="mpTo">${esc(a.tagesordnung || "")}</textarea></label>
+      <div class="mp-spalte"><div class="mp-felder zwei"><label>Vorsitz<input type="text" data-m="vorsitz" value="${esc(m.vorsitz || "")}" placeholder="Name"></label>
+        <label>Protokoll<input type="text" data-m="protokollfuehrer" value="${esc(m.protokollfuehrer || "")}" placeholder="Name"></label></div>
+      <label class="grow">Tagesordnung <textarea id="mpTo">${esc(a.tagesordnung || "")}</textarea></label>
       <div class="mp-zeile"><button class="btn sek klein" id="mpToVorschlag">aus aktuellem Stand vorschlagen</button>${AS.admin ? `<button class="btn gefahr klein" id="mpLoeschen">Sitzung löschen</button>` : ""}</div></div></div></section>`;
   main.querySelector("#mpDatum").onchange = e => { asMpVermerk("Datum", a.datum, e.target.value); a.datum = e.target.value; document.querySelector(".mp-titel").textContent = "ASA " + asDat(a.datum); };
   main.querySelectorAll("[data-t]").forEach(f => f.onchange = () => { const t = m.teilnehmende[+f.dataset.t], k = f.dataset.k, v = f.type === "checkbox" ? f.checked : f.value.trim();
     asMpVermerk("Teilnehmende " + (+f.dataset.t + 1) + " · " + k, t[k], v); t[k] = v; });
+  asMpFelderBinden(main);
   main.querySelector("#mpTnNeu").onclick = () => { m.teilnehmende.push({ name: "", funktion: "", anwesend: false }); asMpSpeichern(); asMpStart(main); };
   const to = main.querySelector("#mpTo"); to.onchange = () => { asMpVermerk("Tagesordnung", a.tagesordnung, to.value); a.tagesordnung = to.value; };
   main.querySelector("#mpToVorschlag").onclick = () => { to.value = asAsaTagesordnung(); to.onchange(); };
@@ -242,24 +250,60 @@ function asMpFolie(main, s){
   asMpWerkzeug(AS_MP.werkzeug, true);
   requestAnimationFrame(asMpPassen);
 }
+const AS_MP_FELD = { zeit: "Uhrzeit", ort: "Ort", vorsitz: "Vorsitz", protokollfuehrer: "Protokoll", offen: "Offene Punkte", naechste_text: "Nächste Sitzung · Hinweis" };
+function asMpFelderBinden(main){
+  main.querySelectorAll("[data-m]").forEach(f => f.onchange = () => { const k = f.dataset.m, v = f.value.trim();
+    asMpVermerk(AS_MP_FELD[k] || k, AS_MP.m[k], v); AS_MP.m[k] = v; });
+}
 function asMpBeschluesse(main){
   const a = AS_MP.a, m = AS_MP.m;
-  main.innerHTML = `<section class="mp-screen">${asMpKopf("Ergebnis", "Beschlüsse und Protokoll", a.abgeschlossen ? asChip("abgeschlossen", "gruen") : "")}
-    <div class="mp-besch"><div class="mp-tabwrap"><table class="mp-tab mp-beschl"><colgroup><col style="width:4%"><col style="width:52%"><col style="width:18%"><col style="width:16%"><col style="width:10%"></colgroup>
-      <tr><th class="mitte">Nr.</th><th>Beschluss / Maßnahme</th><th>Wer</th><th>Bis wann</th><th class="mitte">beschlossen</th></tr>
+  const offenNeu = m.beschluesse.filter(b => b.ok && b.text && !asMpVerknuepft(b)).length;
+  const rechts = `<span class="mp-rechts">${a.abgeschlossen ? asChip("abgeschlossen", "gruen") : ""}<button class="btn sek klein" id="mpDruck" title="Protokoll als A4-Seite drucken oder als PDF speichern">Protokoll drucken</button></span>`;
+  const letzte = (b, i) => { const v = asMpVerknuepft(b);
+    return v ? `<button class="mp-mn" data-v="${i}" title="${v.art === "ziel" ? "Ziel öffnen" : "Maßnahme öffnen"}">${v.art === "ziel" ? "Ziel" : "Maßnahme"}</button>`
+      : `<input type="checkbox" data-b="${i}" data-k="ok" ${b.ok ? "checked" : ""} title="beschlossen">`; };
+  main.innerHTML = `<section class="mp-screen">${asMpKopf("Ergebnis", "Beschlüsse und Protokoll", rechts)}
+    <div class="mp-besch"><div class="mp-tabwrap"><table class="mp-tab mp-beschl"><colgroup><col style="width:4%"><col style="width:44%"><col style="width:8%"><col style="width:17%"><col style="width:15%"><col style="width:12%"></colgroup>
+      <tr><th class="mitte">Nr.</th><th>Beschluss / Maßnahme</th><th class="mitte" title="Priorität: 1 = sofort beginnen · 2 = danach · 3 = laufend">Prio</th><th>Wer</th><th>Bis wann</th><th class="mitte">beschlossen</th></tr>
       ${m.beschluesse.map((b, i) => `<tr><td class="mitte">${i + 1}</td><td><textarea data-b="${i}" data-k="text" placeholder="Beschluss (mit „Ziel:“ davor wird es ein Ziel)">${esc(b.text)}</textarea></td>
+        <td><select data-b="${i}" data-k="prio" title="1 = sofort beginnen · 2 = danach · 3 = laufend">${["", "1", "2", "3"].map(p => `<option value="${p}" ${String(b.prio || "") === p ? "selected" : ""}>${p || "–"}</option>`).join("")}</select></td>
         <td><textarea data-b="${i}" data-k="wer" placeholder="Name">${esc(b.wer)}</textarea></td><td><textarea data-b="${i}" data-k="bis" placeholder="TT.MM.JJJJ oder MM/JJJJ">${esc(b.bis)}</textarea></td>
-        <td class="mitte"><input type="checkbox" data-b="${i}" data-k="ok" ${b.ok ? "checked" : ""}></td></tr>`).join("")}</table></div>
-      <div class="mp-zeile"><button class="btn sek klein" id="mpBNeu">${asMpI("plus", 16)} Beschluss</button><span class="mp-hinweis">Beim Abschließen werden beschlossene Punkte Maßnahmen; mit Datum zusätzlich ein Termin im Kalender.</span></div>
-      <label>Protokoll (Sonstiges, Hinweise)<textarea id="mpProt" rows="3">${esc(a.protokoll || "")}</textarea></label>
-      <div class="mp-zeile ende"><label class="mp-naechste">Nächste Sitzung<input type="date" id="mpNaechste" value="${esc(m.naechste || "")}"></label>
-        ${a.abgeschlossen ? `<span class="mp-hinweis">Abgeschlossen – Maßnahmen und Termine sind angelegt.</span>` : `<button class="btn" id="mpAbschluss">Sitzung abschließen</button>`}</div></div></section>`;
+        <td class="mitte">${letzte(b, i)}</td></tr>`).join("")}</table></div>
+      <div class="mp-zeile"><button class="btn sek klein" id="mpBNeu">${asMpI("plus", 16)} Beschluss</button><span class="mp-hinweis">Beschlossene Punkte stehen im Protokoll unter „Maßnahmen“ und werden beim Abschließen Maßnahmen; mit Datum zusätzlich ein Termin im Kalender.</span></div>
+      <div class="mp-felder zwei"><label>Beschlüsse und Notizen (je Zeile ein Punkt)<textarea id="mpProt">${esc(a.protokoll || "")}</textarea></label>
+        <label>Offene Punkte (je Zeile einer)<textarea data-m="offen">${esc(m.offen || "")}</textarea></label></div>
+      <div class="mp-zeile ende"><div class="mp-naechste-wrap"><label class="mp-naechste">Nächste Sitzung<input type="date" id="mpNaechste" value="${esc(m.naechste || "")}"></label>
+        <input type="text" data-m="naechste_text" value="${esc(m.naechste_text || "")}" placeholder="oder z. B. KW 49, Termin folgt"></div>
+        ${!a.abgeschlossen ? `<button class="btn" id="mpAbschluss">Sitzung abschließen</button>`
+          : offenNeu ? `<button class="btn" id="mpAbschluss">${offenNeu} neue Beschlüsse übernehmen</button>` : `<span class="mp-hinweis">Abgeschlossen – Maßnahmen und Termine sind angelegt.</span>`}</div></div></section>`;
   main.querySelectorAll("[data-b]").forEach(f => f.onchange = () => { const b = m.beschluesse[+f.dataset.b], k = f.dataset.k, v = f.type === "checkbox" ? f.checked : f.value.trim();
-    asMpVermerk("Beschluss " + (+f.dataset.b + 1) + " · " + ({ text: "Maßnahme", wer: "Wer", bis: "Bis", ok: "beschlossen" })[k], b[k], v); b[k] = v; });
-  main.querySelector("#mpBNeu").onclick = () => { m.beschluesse.push({ text: "", wer: "", bis: "", ok: false }); asMpSpeichern(); asMpBeschluesse(main); };
-  const pr = main.querySelector("#mpProt"); pr.onchange = () => { asMpVermerk("Protokoll", a.protokoll, pr.value); a.protokoll = pr.value; };
+    asMpVermerk("Beschluss " + (+f.dataset.b + 1) + " · " + ({ text: "Maßnahme", prio: "Prio", wer: "Wer", bis: "Bis", ok: "beschlossen" })[k], b[k], v); b[k] = v;
+    if(k === "ok" && a.abgeschlossen) asMpBeschluesse(main); });
+  main.querySelectorAll("[data-v]").forEach(x => x.onclick = () => { const v = asMpVerknuepft(m.beschluesse[+x.dataset.v]); if(!v) return;
+    if(v.art === "massnahme") asMassnahmeDialog(v.x); else { asMpSchliessen().then(() => asGehe("steuerung/ziele")); } });
+  asMpFelderBinden(main);
+  main.querySelector("#mpBNeu").onclick = () => { m.beschluesse.push({ text: "", prio: "", wer: "", bis: "", ok: false }); asMpSpeichern(); asMpBeschluesse(main); };
+  const pr = main.querySelector("#mpProt"); pr.onchange = () => { asMpVermerk("Beschlüsse und Notizen", a.protokoll, pr.value); a.protokoll = pr.value; };
   const nx = main.querySelector("#mpNaechste"); nx.onchange = () => { asMpVermerk("Nächste Sitzung", m.naechste, nx.value); m.naechste = nx.value; };
   const ab = main.querySelector("#mpAbschluss"); if(ab) ab.onclick = asMpAbschliessen;
+  main.querySelector("#mpDruck").onclick = asMpDrucken;
+}
+/* Verweis Beschluss → Maßnahme/Ziel; ältere abgeschlossene Sitzungen (ohne gespeicherte Kennung) über Quelle und Text */
+function asMpVerknuepft(b){
+  const a = AS_MP.a; if(!a || !b) return null;
+  if(b.massnahme_id){ const x = asNach("as_massnahme", b.massnahme_id); if(x) return { art: "massnahme", x }; }
+  if(b.ziel_id){ const x = asNach("as_ziel", b.ziel_id); if(x) return { art: "ziel", x }; }
+  if(!a.abgeschlossen || !b.ok || !b.text || b.massnahme_id || b.ziel_id) return null;
+  const z = /^\s*ziel\s*:\s*(.+)$/i.exec(b.text);
+  if(z){ const x = asT("as_ziel").find(y => y.titel === z[1].trim() && y.quelle === "ASA " + asDat(a.datum)); return x ? { art: "ziel", x } : null; }
+  const x = asT("as_massnahme").find(y => y.quelle === "asa" && y.quelle_id === a.id && y.text === b.text); return x ? { art: "massnahme", x } : null;
+}
+/* aus einer Maßnahme zurück in die Sitzung (Verweis Maßnahme → Sitzung, as-bda.js) */
+async function asMpZurSitzung(id){
+  document.getElementById("dlg")?.close();
+  if(AS_MP.a && AS_MP.a.id === id){ asMpZeige(AS_MP.screens.length - 1); return; }
+  if(AS_MP.a) await asMpSchliessen();
+  asMpOeffnen(id);
 }
 
 /* ---------- Abschließen: Maßnahmen, Ziele, Termine ---------- */
@@ -272,23 +316,27 @@ function asMpDatum(t){
   return null;
 }
 async function asMpAbschliessen(){
-  const a = AS_MP.a, m = AS_MP.m, ok = m.beschluesse.filter(b => b.ok && b.text);
-  if(!confirm("Sitzung abschließen? " + ok.length + " beschlossene Punkte werden Maßnahmen bzw. Ziele, mit Datum zusätzlich Termine im Kalender.")) return;
+  const a = AS_MP.a, m = AS_MP.m, nach = !!a.abgeschlossen, ok = m.beschluesse.filter(b => b.ok && b.text && !asMpVerknuepft(b));
+  if(nach && !ok.length) return;
+  if(!confirm((nach ? "Neue Beschlüsse übernehmen? " : "Sitzung abschließen? ") + ok.length + " beschlossene Punkte werden Maßnahmen bzw. Ziele, mit Datum zusätzlich Termine im Kalender.")) return;
   await asMpSpeichernJetzt();
   const datum = a.datum || asHeute(), plus28 = (() => { const x = new Date(datum); x.setDate(x.getDate() + 28); return x.toISOString().slice(0, 10); })();
   let nm = 0, nz = 0, nt = 0;
   try{
     for(const b of ok){
       const z = /^\s*ziel\s*:\s*(.+)$/i.exec(b.text), termin = asMpDatum(b.bis);
-      if(z){ await asSpeichern("as_ziel", { titel: z[1].trim(), kennzahl: null, quelle: "ASA " + asDat(datum), status: "entwurf", termin: termin || datum.slice(0, 4) + "-12-31" }); nz++; continue; }
-      await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: a.id, stop: "O", text: b.text, umsetzung: "zentral", status: "offen", termin: termin || plus28, verantwortlich: b.wer || null }); nm++;
+      if(z){ const r = await asSpeichern("as_ziel", { titel: z[1].trim(), kennzahl: null, quelle: "ASA " + asDat(datum), status: "entwurf", termin: termin || datum.slice(0, 4) + "-12-31" });
+        if(r) b.ziel_id = r.id; nz++; continue; }
+      const r = await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: a.id, stop: "O", text: b.text, umsetzung: "zentral", status: "offen", termin: termin || plus28, verantwortlich: b.wer || null });
+      if(r) b.massnahme_id = r.id; nm++;
       if(termin){ await apiSend("POST", "/rest/v1/portal_termin", { kunde_slug: AS.kunde, titel: ("ASA: " + b.text).slice(0, 200), art: "frist", faellig_am: termin,
         zustaendig: (b.wer || "").slice(0, 120) || null, grundlage: "ASA-Beschluss vom " + asDat(datum), erstellt_von: AS.ich || null }, "return=minimal"); nt++; }
     }
-    if(m.naechste){ await apiSend("POST", "/rest/v1/portal_termin", { kunde_slug: AS.kunde, titel: "Sitzung Arbeitsschutzausschuss (ASA)", art: "sonstiges", faellig_am: m.naechste,
-      grundlage: "§ 11 ASiG", erstellt_von: AS.ich || null }, "return=minimal"); nt++; }
-    a.abgeschlossen = true; asMpVermerk("Sitzung abgeschlossen", "", nm + " Maßnahmen, " + nz + " Ziele, " + nt + " Termine");
-    await asSpeichern("as_asa", { id: a.id, abgeschlossen: true });
+    if(m.naechste && !m.naechste_termin_id){ const r = await apiSend("POST", "/rest/v1/portal_termin", { kunde_slug: AS.kunde, titel: "Sitzung Arbeitsschutzausschuss (ASA)", art: "sonstiges", faellig_am: m.naechste,
+      grundlage: "§ 11 ASiG", notiz: m.naechste_text || null, erstellt_von: AS.ich || null }, "return=representation");
+      if(r && r[0]) m.naechste_termin_id = r[0].id; nt++; }
+    asMpVermerk(nach ? "Beschlüsse übernommen" : "Sitzung abgeschlossen", "", nm + " Maßnahmen, " + nz + " Ziele, " + nt + " Termine");
+    if(!nach){ a.abgeschlossen = true; await asSpeichern("as_asa", { id: a.id, abgeschlossen: true }); }
     await asMpSpeichernJetzt();
     asMeldung([nm ? nm + " Maßnahme(n)" : "", nz ? nz + " Ziel(e)" : "", nt ? nt + " Termin(e)" : ""].filter(Boolean).join(", ") + " angelegt" || "Sitzung abgeschlossen");
     asMpZeige(AS_MP.akt);
@@ -393,4 +441,109 @@ function asMpUndo(){
   asMpVermerk(asMpFolieNr() + " · rückgängig", "", "");
   AS_MP.m.log.pop(); asMpLogAnz(); asMpSpeichern();
   const r = document.querySelector("#asaMappe .mp-rahmen"); if(r && r.dataset.key === v.key){ asMpZeichne(r); asMpNotizen(r); }
+}
+
+/* ---------- Protokoll drucken (1 Seite A4, Layout-Standard § 1: Kopf · Sitzungsdaten · 1.–4. · Unterschriften) ----------
+   Farbe und Logo = Kundenmarke (portal_kunde.marke, wie as-app.js), kein OAK-Logo. Keine internen Schlüssel im Druck. */
+function asMpOhneSchluessel(t){
+  return String(t == null ? "" : t)
+    .replace(/\s*[\[(]?\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b[\])]?/gi, "")
+    .replace(/\s*[\[(]\s*[A-ZÄÖÜ]{1,5}-\d{1,3}\s*[\])]/g, "")
+    .replace(/\b[A-ZÄÖÜ]{1,5}-\d{2,3}\b\s*[·:–]?\s*/g, "")
+    .replace(/\s{2,}/g, " ").trim();
+}
+function asMpPunkte(t){ return String(t || "").split(/\n/).map(s => asMpOhneSchluessel(s.replace(/^\s*(?:[-•*]|\d+[.)])\s*/, ""))).filter(Boolean); }
+function asMpDruckDaten(){
+  const a = AS_MP.a, m = AS_MP.m, marke = typeof asMarkePruefen === "function" ? asMarkePruefen(AS.kundeV1 && AS.kundeV1.marke) : {};
+  const jahr = String(a.datum || "").slice(0, 4);
+  const gleich = asT("as_asa").filter(x => String(x.datum || "").slice(0, 4) === jahr)
+    .sort((x, y) => String(x.datum).localeCompare(String(y.datum)) || String(x.id).localeCompare(String(y.id)));
+  const nr = gleich.findIndex(x => x.id === a.id) + 1;
+  const anw = m.teilnehmende.filter(t => t.anwesend && t.name);
+  const gf = anw.find(t => /geschäftsf/i.test(t.funktion || ""));
+  const zeit = (m.zeit || "").trim();
+  const besch = m.beschluesse.filter(b => b.ok && (b.text || "").trim());
+  const ziel = t => /^\s*ziel\s*:/i.test(t);
+  return {
+    farbe: marke.farbe || "#2D6A4F",
+    logo: marke.logo ? new URL(/^https:/.test(marke.logo) ? marke.logo : "../portal/" + marke.logo, location.href).href : null,
+    firma: (AS.kundeV1 && AS.kundeV1.name) || "",
+    sitzung: [nr ? nr + ". Sitzung" : "", asDat(a.datum) + (zeit ? ", " + zeit + (/uhr/i.test(zeit) ? "" : " Uhr") : ""), (m.ort || "").trim() || (AS.kundeV1 && AS.kundeV1.name) || ""].filter(Boolean).join(" · "),
+    vorsitz: (m.vorsitz || "").trim() || (gf ? gf.name : ""),
+    protokoll: (m.protokollfuehrer || "").trim(),
+    teilnehmende: anw.map(t => asMpOhneSchluessel(t.name) + (t.funktion ? " (" + asMpOhneSchluessel(t.funktion) + ")" : "")).join(" · "),
+    notizen: asMpPunkte(a.protokoll).concat(besch.filter(b => ziel(b.text)).map(b => "Ziel: " + asMpOhneSchluessel(b.text.replace(/^\s*ziel\s*:\s*/i, "")))),
+    massnahmen: besch.filter(b => !ziel(b.text)).map(b => ({ text: asMpOhneSchluessel(b.text), prio: b.prio || "", wer: asMpOhneSchluessel(b.wer), bis: asMpOhneSchluessel(b.bis) })),
+    offen: asMpPunkte(m.offen),
+    naechste: [m.naechste ? asDat(m.naechste) : "", (m.naechste_text || "").trim()].filter(Boolean).join(" · ") || "Termin folgt.",
+    ohneHaken: m.beschluesse.filter(b => !b.ok && (b.text || "").trim()).length,
+    datum: asDat(a.datum)
+  };
+}
+function asMpDruckHtml(d){
+  const f = n => new URL("../assets/fonts/" + n, location.href).href;
+  const liste = p => p.length ? `<table>${p.map((x, i) => `<tr><td class="nr">${i + 1}</td><td>${esc(x)}</td></tr>`).join("")}</table>` : `<p class="leer">Keine.</p>`;
+  const mn = d.massnahmen.length ? `<table><colgroup><col style="width:24px"><col><col style="width:42px"><col style="width:130px"><col style="width:110px"></colgroup>
+      <tr><th></th><th>Maßnahme</th><th class="m">Prio</th><th>Wer</th><th>Bis</th></tr>
+      ${d.massnahmen.map((x, i) => `<tr><td class="nr">${i + 1}</td><td>${esc(x.text)}</td><td class="m">${esc(x.prio || "–")}</td><td>${esc(x.wer || "–")}</td><td>${esc(x.bis || "–")}</td></tr>`).join("")}</table>
+      ${d.massnahmen.some(x => x.prio) ? `<p class="hinweis">Prio 1 = sofort beginnen · 2 = danach · 3 = laufend</p>` : ""}` : `<p class="leer">Keine.</p>`;
+  return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASA-Protokoll ${esc(d.datum)}</title><style>
+@font-face{font-family:'Cormorant Garamond';font-weight:600 700;src:url(${f("cormorant-garamond-600-normal.woff2")}) format('woff2')}
+@font-face{font-family:'Jost';font-weight:400;src:url(${f("jost-400-normal.woff2")}) format('woff2')}
+@font-face{font-family:'Jost';font-weight:600;src:url(${f("jost-600-normal.woff2")}) format('woff2')}
+:root{--p:${d.farbe};--text:#1E2A3A;--grau:#5B6675;--linie:#D6DEE8}
+@page{size:A4;margin:12mm 15mm 10mm}
+*{box-sizing:border-box}
+html{background:#E9EDF2}
+body{font:10pt/1.3 Jost,"Segoe UI",Arial,sans-serif;color:var(--text);margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.leiste{position:sticky;top:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:1px solid var(--linie);font-size:13px}
+.leiste button{font:inherit;height:32px;padding:0 14px;border-radius:16px;border:1px solid var(--p);background:var(--p);color:#fff;cursor:pointer}
+.leiste button.sek{background:#fff;color:var(--p)}
+.leiste span{color:var(--grau)}
+.blatt{background:#fff;width:210mm;max-width:100%;min-height:297mm;margin:16px auto;padding:12mm 15mm 10mm;box-shadow:0 2px 12px rgba(0,0,0,.12)}
+.kopf{display:flex;justify-content:space-between;align-items:center;gap:16px;border-bottom:2px solid var(--p);padding-bottom:6px}
+.kopf img{max-width:120px;max-height:48px;width:auto;height:auto}
+.kopf .firma{font-weight:600;color:var(--p);text-align:right}
+h1{font:700 19pt 'Cormorant Garamond',Georgia,serif;color:var(--p);margin:0}
+h2{font:700 13pt 'Cormorant Garamond',Georgia,serif;color:var(--p);margin:12px 0 4px;break-after:avoid}
+table{width:100%;border-collapse:collapse;break-inside:avoid;table-layout:fixed}
+th{background:var(--p);color:#fff;text-align:left;padding:3px 6px;font-weight:600}
+td{border-bottom:1px solid var(--linie);padding:3px 6px;vertical-align:top;overflow-wrap:anywhere}
+td.nr{width:24px;color:var(--p);font-weight:600}
+.m{text-align:center}
+.meta{margin-top:6px}.meta td{border:none;padding:1px 6px 1px 0}.meta td:first-child{color:var(--grau);width:100px}
+.hinweis{font-size:9pt;color:var(--grau);margin:4px 0 0}
+.leer,.naechste{margin:0}
+.leer{color:var(--grau)}
+.abschnitt{break-inside:avoid}
+.unt{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:26px;break-inside:avoid}
+.unt div{border-top:1px solid var(--text);padding-top:3px;font-size:9.5pt;color:var(--grau)}
+@media print{html{background:#fff}.leiste{display:none}.blatt{width:auto;min-height:0;margin:0;padding:0;box-shadow:none}}
+@media (max-width:820px){.blatt{margin:0;padding:16px;min-height:0;box-shadow:none}}
+</style></head><body>
+<div class="leiste"><button id="drucken">Drucken / als PDF speichern</button><button class="sek" id="zu">Schließen</button>
+${d.ohneHaken ? `<span>${d.ohneHaken} Punkt(e) nicht als beschlossen markiert – stehen nicht im Protokoll.</span>` : ""}</div>
+<div class="blatt">
+<div class="kopf"><h1>Protokoll Arbeitsschutzausschuss</h1>${d.logo ? `<img src="${esc(d.logo)}" alt="${esc(d.firma)}">` : `<span class="firma">${esc(d.firma)}</span>`}</div>
+<table class="meta"><tr><td>Sitzung</td><td>${esc(d.sitzung)}</td></tr>
+<tr><td>Vorsitz</td><td>${esc(d.vorsitz || "–")}</td></tr><tr><td>Protokoll</td><td>${esc(d.protokoll || "–")}</td></tr>
+<tr><td>Teilnehmende</td><td>${esc(d.teilnehmende || "–")}</td></tr></table>
+<div class="abschnitt"><h2>1. Beschlüsse und Notizen</h2>${liste(d.notizen)}</div>
+<div class="abschnitt"><h2>2. Maßnahmen</h2>${mn}</div>
+<div class="abschnitt"><h2>3. Offene Punkte</h2>${liste(d.offen)}</div>
+<div class="abschnitt"><h2>4. Nächste Sitzung</h2><p class="naechste">${esc(d.naechste)}</p></div>
+<div class="unt"><div>Datum, Unterschrift Vorsitz${d.vorsitz ? " (" + esc(d.vorsitz) + ")" : ""}</div><div>Datum, Unterschrift Protokoll${d.protokoll ? " (" + esc(d.protokoll) + ")" : ""}</div></div>
+</div>
+<script>
+document.getElementById("drucken").onclick=function(){window.print();};
+document.getElementById("zu").onclick=function(){window.close();};
+window.addEventListener("load",function(){(document.fonts?document.fonts.ready:Promise.resolve()).then(function(){if(!navigator.webdriver)setTimeout(function(){window.print();},200);});});
+<\/script></body></html>`;
+}
+async function asMpDrucken(){
+  const w = window.open("", "_blank");
+  if(!w){ asMeldung("Druckansicht blockiert – bitte Pop-ups für das Cockpit erlauben"); return; }
+  await asMpSpeichernJetzt();
+  w.document.open(); w.document.write(asMpDruckHtml(asMpDruckDaten())); w.document.close();
 }

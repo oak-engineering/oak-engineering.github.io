@@ -282,7 +282,8 @@ function asMassnahmeDialog(m, vorgabe, sys){
     if(m.status !== "offen" && AS.fachkraft) kn.unshift({ t: "Zurück auf offen", klasse: "sek", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "offen" }); asZeige(); } });
   }
   const gefS = m.gefaehrdung_id ? asNach("as_gefaehrdung", m.gefaehrdung_id) : null;
-  const stand = neu ? "" : `<p>${asStatusChip(m)}${m.befund ? ` <span class="hinweis">Befund: ${esc(m.befund)}</span>` : ""}${m._v1 ? ` <span class="hinweis">· Mangel im Kundenportal – Änderungen wirken in Mängelliste, Hallenplan und Dokumenten</span>` : ""}</p>
+  const asaS = !neu && m.quelle === "asa" && m.quelle_id ? asNach("as_asa", m.quelle_id) : null;   // Verweis Maßnahme → ASA-Sitzung
+  const stand = neu ? "" : `${asaS && typeof asMpZurSitzung === "function" ? `<p class="hinweis">Beschluss der ASA-Sitzung vom ${asDat(asaS.datum)} · <a href="#" onclick="asMpZurSitzung('${esc(asaS.id)}'); return false;">Sitzung öffnen</a></p>` : ""}<p>${asStatusChip(m)}${m.befund ? ` <span class="hinweis">Befund: ${esc(m.befund)}</span>` : ""}${m._v1 ? ` <span class="hinweis">· Mangel im Kundenportal – Änderungen wirken in Mängelliste, Hallenplan und Dokumenten</span>` : ""}</p>
     ${m.erledigt_am || m.wirksam_am || m.unterwiesen_am ? `<div class="zeilen">${m.erledigt_am ? `<div class="z"><div><b>Erledigt</b><small>${asDat(m.erledigt_am)} · ${esc(m.erledigt_von || "")} · ${esc(m.erledigt_notiz || "")}</small></div></div>` : ""}
       ${m.unterwiesen_am ? `<div class="z"><div><b>Unterwiesen</b><small>${asDat(m.unterwiesen_am)}</small></div></div>` : ""}
       ${m.wirksam_am ? `<div class="z"><div><b>Wirksam bestätigt</b><small>${asDat(m.wirksam_am)} · ${esc(m.wirksam_von || "")}</small></div></div>` : ""}</div>` : ""}`;
@@ -336,6 +337,7 @@ AS_SEITEN.massnahmen = { titel: "Maßnahmen", icon: "▶", sort: 5, render(main)
   filt.forEach(m => { if(m.gruppe){ (gruppen[m.gruppe] = gruppen[m.gruppe] || []).push(m); } else einzeln.push(m); });
   const herkunft = m => { const g = asNach("as_gefaehrdung", m.gefaehrdung_id); if(g){ const s = asNach("as_arbeitssystem", g.arbeitssystem_id); return (s ? s.name + " · " : "") + g.kurz; }
     if(m._v1) return "Mangel " + (m.anlage || "") + " · noch keiner Gefährdung zugeordnet";
+    if(m.quelle === "asa"){ const s = asNach("as_asa", m.quelle_id); return "ASA-Beschluss" + (s ? " vom " + asDat(s.datum) : ""); }
     return { orgcheck: "Organisations-Check", asa: "ASA-Beschluss", mitzeichnung: "Mitzeichnung", meldung: "Meldung", ziel: "Ziel", kultur: "Präventionskultur" }[m.quelle] || m.quelle; };
   const zeilen = einzeln.sort((a, b) => (a.termin || "9").localeCompare(b.termin || "9")).map(m => `<div class="z" data-m="${m.id}"><div><b>${asStopChip(m.stop)}${esc(m.text)}</b>
       <small>${esc(herkunft(m))} · ${esc(m.verantwortlich || "Verantwortlich offen")} · bis ${asDat(m.termin)}</small></div>${asStatusChip(m)}</div>`)
