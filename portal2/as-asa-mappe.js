@@ -210,7 +210,7 @@ function asMpStart(main){
     <div class="mp-start"><div class="mp-spalte"><div class="mp-felder drei"><label>Datum<input type="date" id="mpDatum" value="${esc(a.datum || "")}"></label>
         <label>Uhrzeit<input type="text" data-m="zeit" value="${esc(m.zeit || "")}" placeholder="08:00–09:30"></label>
         <label class="ort">Ort<input type="text" data-m="ort" value="${esc(m.ort || "")}" placeholder="${esc((AS.kundeV1 && AS.kundeV1.name) || "Ort")}"></label></div>
-      <div class="mp-block grow"><h4>Teilnehmende</h4><div class="mp-tabwrap"><table class="mp-tab"><colgroup><col style="width:42%"><col style="width:42%"><col style="width:16%"></colgroup>
+      <div class="mp-block grow"><h4>Teilnehmende</h4><div class="mp-tabwrap"><table class="mp-tab"><colgroup><col style="width:40%"><col style="width:40%"><col style="width:20%"></colgroup>
         <tr><th>Name</th><th>Funktion</th><th class="mitte">anwesend</th></tr>
         ${m.teilnehmende.map((t, i) => `<tr><td><input type="text" data-t="${i}" data-k="name" value="${esc(t.name)}" placeholder="Name"></td><td><input type="text" data-t="${i}" data-k="funktion" value="${esc(t.funktion)}" placeholder="Funktion"></td><td class="mitte"><input type="checkbox" data-t="${i}" data-k="anwesend" ${t.anwesend ? "checked" : ""}></td></tr>`).join("")}
       </table></div><button class="btn sek klein" id="mpTnNeu">${asMpI("plus", 16)} Person</button></div></div>
