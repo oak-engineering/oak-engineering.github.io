@@ -103,13 +103,15 @@ function ckPflichtPunkte(d){
     return !isNaN(t) && (Date.now() - t.getTime()) / 864e5 <= tage;
   };
   return [
-    /* Bewusst „erfasste Anlagen": Das Portal kennt nur die dokumentierten Anlagen, nicht den
-       gesamten Maschinenpark des Betriebs (Nikolai, 23.09.2026 – bei Wibo sind erst 43 bewertet).
-       Eine Aussage „alle Anlagen beurteilt" waere darum falsch. */
-    { label: "Erfasste Anlagen beurteilt", tun: "Fehlende Anlagen beurteilen lassen",
-      ok: d.z.anlagen > 0 && d.z.ohne === 0,
-      sub: d.z.anlagen ? `${d.z.anlagen - d.z.ohne} von ${d.z.anlagen} erfassten Anlagen beurteilt`
-                       : "noch keine Anlage erfasst",
+    /* Nikolai, 27.10.2026: „43 von 43 beurteilt = erfüllt" war doppelt falsch – der Maschinenpark ist
+       nicht vollständig erfasst, und ein Entwurf ist keine geltende Beurteilung. Gezählt wird darum nur,
+       was die Sifa freigegeben hat (portal_freigabe); erfüllt erst, wenn zusätzlich OAK den Bestand als
+       vollständig bestätigt hat (portal_kunde.rechte.bestand_vollstaendig = true). */
+    { label: "Beurteilungen geprüft und freigegeben", tun: "Beurteilungen prüfen und freigeben",
+      ok: d.bestandVoll && d.z.anlagen > 0 && d.z.freigegeben === d.z.anlagen,
+      sub: !d.z.anlagen ? "noch keine Anlage erfasst"
+         : `${d.z.freigegeben} von ${d.z.anlagen} erfassten Anlagen freigegeben`
+           + (d.bestandVoll ? "" : " · Maschinenpark noch nicht vollständig erfasst"),
       ziel: "unterlagen/anlagen" },
     { label: "Keine offenen Mängel im Gefahrbereich", tun: "Mängel im Gefahrbereich abarbeiten",
       ok: d.mgGeladen && d.mgGefahr === 0, schwer: d.mgGefahr > 0,
@@ -196,8 +198,10 @@ function ckLage(){
   const mg = mgGeladen ? mgSichtbar().filter(m => m.status !== "erledigt") : [];
   const vf = vSichtbar().filter(v => v.domaene !== "umwelt");
   const begehungen = sichtbar().filter(r => r.kategorie === "begehungen");
+  const kd = (typeof MARKEN !== "undefined" ? MARKEN : []).find(k => k.slug === AKTIV) || {};
   return {
     z, mgGeladen, mgOffen: mg.length,
+    bestandVoll: !!(kd.rechte && kd.rechte.bestand_vollstaendig === true),
     mgGefahr: mg.filter(m => (m.bewertung_manuell || m.band) === "gefahr").length,
     letzteBeg: begehungen.map(r => r.stand).filter(Boolean).sort().slice(-1)[0] || "",
     vOffen: vf.filter(v => v.status !== "erledigt").length,

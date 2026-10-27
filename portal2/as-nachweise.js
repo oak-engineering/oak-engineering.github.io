@@ -469,9 +469,21 @@ async function asNwPflichten(box){
   const uw = asNwUwZahlen();
   const baN = kat("ba-sammel").length, gsN = kat("gefahrstoffe").length;
   const V1 = "../portal/#";
+  /* Wie V1 (Nikolai, 27.10.2026): nur von der Sifa freigegebene Beurteilungen zählen (portal_freigabe), ein Entwurf
+     ist keine geltende Beurteilung; erfüllt erst, wenn OAK zusätzlich den Bestand als vollständig bestätigt hat
+     (portal_kunde.rechte.bestand_vollstaendig) – das Cockpit kennt sonst nur die erfassten Anlagen. */
+  const q = encodeURIComponent(AS.kunde);
+  const [kd, fg] = await Promise.all([
+    apiGet("/rest/v1/portal_kunde?select=rechte&slug=eq." + q, false).catch(() => []),
+    apiGet("/rest/v1/portal_freigabe?select=maschinen_id&freigegeben=eq.true&kunde_slug=eq." + q, false).catch(() => [])]);
+  if(AS.seite !== "pflichten" || !document.body.contains(box)) return;
+  const bestandVoll = !!(kd && kd[0] && kd[0].rechte && kd[0].rechte.bestand_vollstaendig === true);
+  const fgIds = new Set((fg || []).map(f => f.maschinen_id));
+  const frei = anl.filter(d => fgIds.has(d.maschinen_id)).length;
   const punkte = [
-    { label: "Erfasste Anlagen beurteilt", tun: "Fehlende Anlagen beurteilen lassen", ok: anl.length > 0 && ohne === 0,
-      sub: anl.length ? `${anl.length - ohne} von ${anl.length} erfassten Anlagen beurteilt` : "noch keine Anlage erfasst", ziel: "anlagen" },
+    { label: "Beurteilungen geprüft und freigegeben", tun: "Beurteilungen prüfen und freigeben", ok: bestandVoll && anl.length > 0 && frei === anl.length,
+      sub: !anl.length ? "noch keine Anlage erfasst"
+         : `${frei} von ${anl.length} erfassten Anlagen freigegeben` + (bestandVoll ? "" : " · Maschinenpark noch nicht vollständig erfasst"), ziel: "anlagen" },
     { label: "Keine offenen Mängel im Gefahrbereich", tun: "Mängel im Gefahrbereich abarbeiten", ok: mgGefahr === 0, schwer: mgGefahr > 0,
       sub: mgGefahr ? `${mgGefahr} im Gefahrbereich · ${mg.length} offen insgesamt` : `${mg.length} offene Mängel, keiner im Gefahrbereich`, ziel: "maengel" },
     { label: "Begehung in den letzten 12 Monaten", tun: "Begehungstermin vereinbaren", ok: jung(letzteBeg, 365),

@@ -346,7 +346,7 @@ function setKundeName(){
 /* ---- Marke je Kunde (portal_kunde.marke) – gesetzt wird zentral in marke.js (auch Zwischenspeicher) ---- */
 let MARKEN = [];
 async function markeLaden(){
-  try{ MARKEN = await apiGet("/rest/v1/portal_kunde?select=slug,name,marke,avv_abgeschlossen_am,datenschutz_kontakt", false) || []; }catch(e){ MARKEN = []; }
+  try{ MARKEN = await apiGet("/rest/v1/portal_kunde?select=slug,name,marke,avv_abgeschlossen_am,datenschutz_kontakt,rechte", false) || []; }catch(e){ MARKEN = []; }
 }
 function markeAnwenden(){
   const k = MARKEN.find(x => x.slug === AKTIV);
