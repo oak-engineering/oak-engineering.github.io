@@ -246,7 +246,7 @@ document.addEventListener('click', e => {
   const imPortal = /\/portal\//.test(location.pathname);
   /* Unterseiten (z. B. /tools/) liegen eine Ebene tiefer: relative Ziele der Leiste
      sonst ins Leere (tools/index.html). */
-  const BASIS = /\/tools\//.test(location.pathname) ? '../' : '';
+  const BASIS = /\/(tools|spiele)\//.test(location.pathname) ? '../' : '';
   const zielUrl = h => (!h || /^([a-z]+:|#|\/|\.\.\/)/i.test(h)) ? h : BASIS + h;
   const datei = location.pathname.split('/').pop() || 'index.html';
   const LEISTUNGSSEITEN = ['arbeitssicherheit.html','umweltschutz.html','auditierung.html','ki-digitalisierung.html','schulungen.html'];

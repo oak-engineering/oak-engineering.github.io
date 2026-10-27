@@ -47,8 +47,8 @@ function asAsa(box){
   const liste = asT("as_asa").slice().sort((a, b) => b.datum.localeCompare(a.datum)), jahr = new Date().getFullYear();
   const n = liste.filter(a => a.abgeschlossen && String(a.datum).startsWith(String(jahr))).length;
   box.innerHTML = `<div class="karte"><h2>Arbeitsschutzausschuss ${jahr}: ${n} von mindestens 4 Sitzungen <button class="btn klein" id="asaNeu">+ Sitzung</button></h2>
-    <p class="hinweis">§ 11 ASiG: mindestens vierteljährlich. Die Tagesordnung wird aus dem aktuellen Stand vorgeschlagen, Beschlüsse werden Maßnahmen.</p>
-    <div class="zeilen">${liste.map(a => `<div class="z" data-a="${a.id}"><div><b>${asDat(a.datum)}</b><small>${esc(a.teilnehmer || "Teilnehmende offen")}</small></div>${a.abgeschlossen ? asChip("Protokoll", "gruen") : asChip("geplant", "grau")}</div>`).join("") || `<div class="leer">Noch keine Sitzung.</div>`}</div></div>`;
+    <p class="hinweis">§ 11 ASiG: mindestens vierteljährlich. Je Sitzung eine Mappe: Folien und Unterlagen hochladen, präsentieren, auf den Folien notieren. Beschlüsse werden Maßnahmen und Termine im Kalender.</p>
+    <div class="zeilen">${liste.map(a => `<div class="z" data-a="${a.id}"><div><b>${asDat(a.datum)}</b><small>${esc(a.teilnehmer || "Teilnehmende offen")}</small></div><span style="display:flex;gap:6px;flex:none">${(a.mappe && (a.mappe.folien || []).length) ? asChip("Mappe", "blau") : ""}${a.abgeschlossen ? asChip("Protokoll", "gruen") : asChip("geplant", "grau")}</span></div>`).join("") || `<div class="leer">Noch keine Sitzung.</div>`}</div></div>`;
   const dlg = a => { const neu = !a; a = a || { datum: asHeute(), tagesordnung: asAsaTagesordnung() };
     const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); delete w.beschluesse; await asSpeichern("as_asa", Object.assign({ id: a.id }, w)); asZeige(); } },
       { t: "Protokoll abschließen", klasse: "sek", fn: async d => { const w = asWerte(d), b = asListe((w.beschluesse || "").replace(/\n/g, ",")); delete w.beschluesse;
@@ -68,8 +68,9 @@ function asAsa(box){
       ${asFeld("Protokoll", "protokoll", a.protokoll, "textarea", "voll")}
       ${!a.abgeschlossen ? asFeld("Beschlüsse (je Zeile einer – werden beim Abschließen Maßnahmen; mit „Ziel:“ davor ein Ziel)", "beschluesse", "", "textarea", "voll") : ""}</div>`, knoepfe: kn });
     d.querySelector("#toVorschlag").onclick = () => d.querySelector('[data-f="tagesordnung"]').value = asAsaTagesordnung(); };
-  document.getElementById("asaNeu").onclick = () => dlg(null);
-  box.querySelectorAll("[data-a]").forEach(z => z.onclick = () => dlg(asNach("as_asa", z.dataset.a)));
+  /* Sitzungsmappe (as-asa-mappe.js); der frühere Textdialog bleibt als Rückfall, falls das Modul fehlt */
+  document.getElementById("asaNeu").onclick = () => typeof asMpNeu === "function" ? asMpNeu() : dlg(null);
+  box.querySelectorAll("[data-a]").forEach(z => z.onclick = () => typeof asMpOeffnen === "function" ? asMpOeffnen(z.dataset.a) : dlg(asNach("as_asa", z.dataset.a)));
 }
 
 /* ---------- Ziele ---------- */

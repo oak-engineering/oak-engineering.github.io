@@ -1,0 +1,116 @@
+/* Duell-Modus (gemeinsam für alle Educational Mini Games) – nutzt die Farb-Variablen der Spielseite */
+.du-seite { display: flex; flex-direction: column; gap: 16px; }
+.du-wahl { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.du-kachel { background: var(--flaeche); border: 2px solid var(--linie); border-radius: 14px; height: 130px; padding: 16px 22px; text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 6px; color: var(--text); }
+.du-kachel:hover { border-color: var(--gruen); }
+.du-kachel b { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 30px; font-weight: 600; color: var(--dunkel); }
+.du-kachel span { color: var(--grau); }
+.du-zurueck { width: 240px; height: 52px; }
+.du-form { display: grid; grid-template-columns: 1fr 1.4fr 220px; gap: 16px; align-items: end; }
+.du-form label { display: flex; flex-direction: column; gap: 6px; color: var(--grau); font-size: 13px; text-transform: uppercase; letter-spacing: .06em; }
+.du-form input { height: 64px; border: 2px solid var(--linie); border-radius: 10px; padding: 0 16px; font: 500 24px 'Jost', sans-serif; color: var(--text); background: var(--flaeche); text-transform: none; letter-spacing: 0; min-width: 0; }
+.du-form input:focus { outline: none; border-color: var(--gruen); }
+.du-form .du-fehler { grid-column: 1 / -1; margin: 0; }
+.du-fehler { color: var(--rot); }
+.du-hinweis, .du-leer { color: var(--grau); font-size: 14px; margin: 0; }
+.du-trainer { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(320px, 0.9fr) 1.1fr; gap: 16px; }
+.du-karte { background: var(--flaeche); border: 1px solid var(--linie); border-radius: 14px; padding: 20px 24px; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.du-qr { align-items: center; justify-content: center; gap: 10px; text-align: center; }
+.du-qr small, .du-rang h2 small { color: var(--grau); font: 400 13px 'Jost', sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+.du-qrbild { flex: 1; min-height: 0; width: 100%; display: flex; justify-content: center; }
+.du-qrbild svg { height: 100%; max-height: 520px; width: auto; aspect-ratio: 1; }
+.du-code { font: 600 64px/1 'Jost', sans-serif; color: var(--dunkel); letter-spacing: .06em; }
+.du-link { margin: 0; color: var(--grau); font-size: 14px; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.du-knoepfe { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
+.du-knoepfe .knopf { height: 52px; font-size: 16px; }
+.du-rang h2 { font-size: 30px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.du-liste { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 6px; }
+.du-zeile { flex: none; height: 46px; display: grid; grid-template-columns: 40px 1fr auto 72px; align-items: center; gap: 12px; padding: 0 14px; border: 1px solid var(--linie); border-radius: 10px; }
+.du-zeile b { font-size: 18px; color: var(--grau); }
+.du-zeile span { font-size: 18px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.du-zeile small { color: var(--grau); font-size: 13px; white-space: nowrap; }
+.du-zeile em { font-style: normal; font-size: 20px; font-weight: 600; text-align: right; color: var(--dunkel); }
+.du-zeile.p1 { background: var(--akzent); border-color: var(--hell); }
+.du-zeile.p1 b, .du-zeile.p2 b, .du-zeile.p3 b { color: var(--gruen); }
+.du-zeile.ich { border: 2px solid var(--gruen); }
+.du-ende .du-qr h2 { font-size: 34px; }
+@media (max-width: 600px) {
+  .du-seite { gap: 12px; }
+  .du-wahl { grid-template-columns: 1fr; gap: 10px; }
+  .du-kachel { height: 104px; padding: 12px 16px; }
+  .du-kachel b { font-size: 24px; }
+  .du-kachel span { font-size: 14px; }
+  .du-zurueck { width: 100%; height: 48px; }
+  .du-form { grid-template-columns: 1fr; gap: 10px; }
+  .du-form input { height: 52px; font-size: 20px; }
+  .du-form .knopf { height: 52px; }
+  .du-hinweis { font-size: 12px; }
+  .du-trainer { grid-template-columns: 1fr; grid-template-rows: auto 1fr; gap: 8px; }
+  .du-karte { padding: 12px; }
+  .du-qr { gap: 6px; }
+  .du-qrbild { flex: none; height: 150px; }
+  .du-code { font-size: 40px; }
+  .du-link { font-size: 12px; }
+  .du-knoepfe .knopf { height: 44px; font-size: 15px; }
+  .du-rang h2 { font-size: 22px; margin-bottom: 6px; }
+  .du-zeile { height: 40px; grid-template-columns: 26px 1fr auto 48px; gap: 8px; padding: 0 10px; }
+  .du-zeile span { font-size: 15px; }
+  .du-zeile small { font-size: 11px; }
+  .du-zeile em { font-size: 17px; }
+  .du-ende .du-qr h2 { font-size: 24px; }
+}
+
+/* ---------- Lobby auf der Übersichtsseite ---------- */
+.du-zeile { grid-template-columns: 40px 1fr auto 64px 64px; }
+.du-zeile .du-gesamt { color: var(--grau); font-size: 16px; }
+.du-warten { margin: 0; color: var(--gruen); font-weight: 500; text-align: center; }
+.bereich { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; gap: 12px; }
+.bereich.trainer { grid-template-columns: 360px 1fr; }
+.bereich.warten .spiele { display: none; }
+.bereich .lobby { display: none; }
+.bereich.trainer .lobby, .bereich.warten .lobby { display: flex; }
+.lobby { background: var(--flaeche); border: 1px solid var(--linie); border-radius: 14px; padding: 16px 18px; flex-direction: column; gap: 10px; min-height: 0; overflow: hidden; }
+.lobby h2 { font-size: 26px; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.lobby h2 small, .lobby .lb-kopf small { color: var(--grau); font: 400 12px 'Jost', sans-serif; text-transform: uppercase; letter-spacing: .06em; }
+.lb-kopf { display: grid; grid-template-columns: 150px 1fr; gap: 14px; align-items: center; }
+.lb-kopf.lb-ich { grid-template-columns: 1fr; }
+.lb-qr svg { width: 150px; height: 150px; display: block; }
+.lb-kopf .du-code { font-size: 40px; }
+.lb-zahl { margin: 4px 0 0; color: var(--gruen); font-weight: 600; }
+.lb-status { margin: 0; color: var(--grau); font-size: 14px; }
+.lb-liste { flex: 1; }
+.lb-raus { height: 44px; font-size: 15px; flex: none; }
+.bereich.warten .lobby { padding: 20px 24px; }
+.bereich.warten .lobby h2 { font-size: 32px; }
+.spiel.laeuft { border-color: var(--gruen); box-shadow: 0 0 0 3px var(--akzent); }
+#lobby-dialog { position: fixed; inset: 0; z-index: 50; background: rgba(27, 67, 50, .45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+#lobby-dialog[hidden] { display: none; }
+.ld-karte { position: relative; background: var(--grund); border-radius: 16px; padding: 24px 28px; width: min(820px, 100%); display: flex; flex-direction: column; gap: 14px; }
+.ld-karte h2 { font-size: 34px; }
+.ld-karte p { margin: 0; color: var(--grau); }
+.ld-zurueck { height: 52px; }
+.ld-schliessen { position: absolute; top: 10px; right: 14px; border: 0; background: none; font-size: 30px; color: var(--grau); cursor: pointer; }
+@media (max-width: 700px) {
+  .du-zeile { grid-template-columns: 26px 1fr auto 44px 40px; }
+  .du-zeile .du-gesamt { font-size: 13px; }
+  .bereich.trainer { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .bereich.trainer .lobby { max-height: 46vh; }
+  .lobby { padding: 10px 12px; gap: 6px; }
+  .lobby h2 { font-size: 20px; }
+  .lb-kopf { grid-template-columns: 96px 1fr; gap: 10px; }
+  .lb-qr svg { width: 96px; height: 96px; }
+  .lb-kopf .du-code { font-size: 30px; }
+  .bereich.warten .lobby h2 { font-size: 24px; }
+  .ld-karte { padding: 16px; gap: 10px; }
+  .ld-karte h2 { font-size: 26px; }
+}
+/* Knöpfe der Lobby auch auf der Übersichtsseite (dort gibt es keine Spiel-Knopfklassen) */
+.lobby .knopf, .ld-karte .knopf { border: 0; border-radius: 10px; background: var(--gruen); color: #fff; font: 500 16px 'Jost', sans-serif; cursor: pointer; }
+.lobby .knopf.zwei, .ld-karte .knopf.zwei { background: var(--flaeche); color: var(--gruen); border: 2px solid var(--gruen); }
+.lobby .knopf:hover, .ld-karte .knopf:hover { background: var(--dunkel); color: #fff; }
+.ld-karte .du-form .knopf { height: 64px; }
+.bereich.trainer { grid-template-columns: 430px 1fr; }
+.lobby .du-zeile { grid-template-columns: 30px 1fr auto 52px 52px; gap: 8px; padding: 0 10px; height: 42px; }
+.lobby .du-zeile span { font-size: 16px; }
+.lobby .du-zeile em { font-size: 17px; }
+@media (max-width: 700px) { .bereich.trainer { grid-template-columns: 1fr; } .lobby .du-zeile { grid-template-columns: 24px 1fr auto 40px 40px; } }
