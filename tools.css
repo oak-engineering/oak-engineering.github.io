@@ -127,7 +127,7 @@ nav .nav-logo img{height:38px;width:auto;}
 /* Site-Footer */
 .site-footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 5vw;display:flex;justify-content:space-between;align-items:center;font-size:.78rem;flex-wrap:wrap;gap:1rem;}
 .site-footer .footer-brand{font-family:var(--serif);font-size:1rem;color:rgba(255,255,255,.7);}
-.site-footer .footer-links{display:flex;gap:1.5rem;}
+.site-footer .footer-links{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;}
 .site-footer a{color:inherit;}
 .site-footer .footer-links a:hover{color:var(--oak-light);}
 
