@@ -483,7 +483,7 @@ function asMpDruckDaten(){
 function asMpDruckHtml(d){
   const f = n => new URL("../assets/fonts/" + n, location.href).href;
   const liste = p => p.length ? `<table>${p.map((x, i) => `<tr><td class="nr">${i + 1}</td><td>${esc(x)}</td></tr>`).join("")}</table>` : `<p class="leer">Keine.</p>`;
-  const mn = d.massnahmen.length ? `<table><colgroup><col style="width:30px"><col><col style="width:42px"><col style="width:140px"><col style="width:150px"></colgroup>
+  const mn = d.massnahmen.length ? `<table><colgroup><col style="width:30px"><col><col style="width:40px"><col style="width:120px"><col style="width:132px"></colgroup>
       <tr><th></th><th>Maßnahme</th><th class="m">Prio</th><th>Wer</th><th>Bis</th></tr>
       ${d.massnahmen.map((x, i) => `<tr><td class="nr">${i + 1}</td><td>${esc(x.text)}</td><td class="m">${esc(x.prio || "–")}</td><td>${esc(x.wer || "–")}</td><td>${esc(x.bis || "–")}</td></tr>`).join("")}</table>
       ${d.massnahmen.some(x => x.prio) ? `<p class="hinweis">Prio 1 = sofort beginnen · 2 = danach · 3 = laufend</p>` : ""}` : `<p class="leer">Keine.</p>`;
@@ -519,7 +519,7 @@ td.nr{width:30px;color:var(--p);font-weight:600;white-space:nowrap}
 .abschnitt{break-inside:avoid}
 .unt{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:26px;break-inside:avoid}
 /* passt der Inhalt nicht auf eine A4-Seite (275 mm Satzspiegel), engere Abstände statt Seitenumbruch */
-.eng td,.eng th{padding:2px 6px}.eng h2{margin:8px 0 3px}.eng .unt{margin-top:16px}
+.eng td,.eng th{padding:2px 6px}.eng h2{margin:8px 0 3px}.eng .unt{margin-top:16px}.eng{font-size:9.5pt}
 .unt div{border-top:1px solid var(--text);padding-top:3px;font-size:9.5pt;color:var(--grau)}
 @media print{html{background:#fff}.leiste{display:none}.blatt{width:auto;min-height:0;margin:0;padding:0;box-shadow:none}}
 @media (max-width:820px){.blatt{margin:0;padding:16px;min-height:0;box-shadow:none}}
@@ -540,7 +540,7 @@ ${d.ohneHaken ? `<span>${d.ohneHaken} Punkt(e) nicht als beschlossen markiert �
 <script>
 document.getElementById("drucken").onclick=function(){window.print();};
 document.getElementById("zu").onclick=function(){window.close();};
-window.addEventListener("load",function(){(document.fonts?document.fonts.ready:Promise.resolve()).then(function(){var bl=document.querySelector(".blatt"),k=bl.children,h=k.length?k[k.length-1].getBoundingClientRect().bottom-k[0].getBoundingClientRect().top:0;if(h/3.78>272)bl.classList.add("eng");if(!navigator.webdriver)setTimeout(function(){window.print();},200);});});
+window.addEventListener("load",function(){(document.fonts?document.fonts.ready:Promise.resolve()).then(function(){var bl=document.querySelector(".blatt"),k=bl.children,h=k.length?k[k.length-1].getBoundingClientRect().bottom-k[0].getBoundingClientRect().top:0;if(h/3.78>250)bl.classList.add("eng");if(!navigator.webdriver)setTimeout(function(){window.print();},200);});});
 <\/script></body></html>`;
 }
 async function asMpDrucken(){
