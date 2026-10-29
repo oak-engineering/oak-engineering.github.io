@@ -70,12 +70,12 @@
     const slf = [];
     basis.forEach(x => { const m = (x.ergebnis && x.ergebnis.module) || {};
       Object.keys(m).forEach(k => (m[k] && m[k].schutzleitfaeden || []).forEach(s => { if(s && s.nr && !slf.includes(String(s.nr))) slf.push(String(s.nr)); })); });
-    /* noch keine Beurteilung: Grundregeln + PSA nach Einstufung (Haut → Handschuhe, Augen → Schutzbrille) */
-    if(!slf.length){
-      ["100", "110", "120"].forEach(n => slf.push(n));
-      if(hs.some(h => /^H31[0-7]$|^EUH066$|^H314$/.test(h))) slf.push("2110");
-      if(hs.some(h => ["H314", "H318", "H319"].includes(h))) slf.push("2200");
-    }
+    /* noch keine Beurteilung: Grundregeln */
+    if(!slf.length) ["100", "110", "120"].forEach(n => slf.push(n));
+    /* PSA nach Einstufung (Haut → Handschuhe, Augen → Schutzbrille) immer als Mindeststand, auch wenn das EMKG nur
+       Stufe 1 ergibt – sonst fehlt z. B. bei H318/H319 die Schutzbrille in der BA (SDB Abschnitt 8.2, 29.10.2026) */
+    if(hs.some(h => /^H31[0-7]$|^EUH066$|^H314$/.test(h)) && !slf.includes("2110")) slf.push("2110");
+    if(hs.some(h => ["H314", "H318", "H319"].includes(h)) && !slf.includes("2200")) slf.push("2200");
     /* Eine BA muss auf eine Seite passen (Nikolai): je Abschnitt höchstens MAX Sätze. Reihenfolge: tätigkeitsbezogene
        Leitfäden (24xx, 3xx) vor Stufe 2 (2xxx) vor Grundregeln (1xx, La-, pc-); erst der wichtigste Satz jedes Leitfadens,
        dann die zweiten usw. */

@@ -386,7 +386,7 @@ function asGsStoffEmkg(g){
   let agg = w("aggregat"); if(agg === "aerosol") agg = "fluessig";
   if(!agg && (g.h_saetze || []).some(h => h === "H222" || h === "H223" || h === "H229")) agg = "fluessig";
   const s = { h_saetze: g.h_saetze || [], aggregat: agg, siedepunkt_c: w("siedepunkt_c"), dampfdruck_hpa: w("dampfdruck_hpa"),
-    flammpunkt_c: w("flammpunkt_c"), lagerklasse: w("lagerklasse"), ist_gemisch: w("ist_gemisch") };
+    flammpunkt_c: w("flammpunkt_c"), lagerklasse: w("lagerklasse"), ist_gemisch: w("ist_gemisch"), staubung: w("staubung") };   // staubung: Feststoffe (LF22 Tab. 3.2)
   const agw = w("agw_bestandteile");
   if(s.ist_gemisch === false && Array.isArray(agw) && agw.length === 1) s.agw = { wert: agw[0].wert, einheit: agw[0].einheit };
   Object.keys(s).forEach(k => s[k] === undefined && delete s[k]);
