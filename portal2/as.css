@@ -327,3 +327,4 @@ html.mp-offen,html.mp-offen body{overflow:hidden;height:100%}
 .bg-fotos{display:grid;grid-template-columns:repeat(auto-fill,88px);gap:8px}.bg-foto{display:block;width:88px;height:88px;border-radius:8px;background:var(--linie);overflow:hidden}.bg-foto img{width:100%;height:100%;object-fit:cover}
 @media(max-width:820px){.bg-raster{grid-template-columns:1fr;height:auto}.bg-links{max-height:30vh}.bg-rechts{min-height:360px}}
 .bg-antwort{margin-top:10px;white-space:normal}
+@media(max-width:820px){.bg-rechts .bg-knoepfe{order:-1}.bg-rechts h2{margin-bottom:0}}
