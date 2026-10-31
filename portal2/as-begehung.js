@@ -97,14 +97,14 @@ async function asBgDetail(box, k){
 }
 function asBgZeichnen(box){
   const liste = box.querySelector("#bgPunkte"), rechts = box.querySelector("#bgRechts"), p = AS_BG.punkte.find(x => x.id === AS_BG.punkt), zu = AS_BG.b.status !== "offen";
-  liste.innerHTML = AS_BG.punkte.map(x => `<div class="z${x.id === AS_BG.punkt ? " bg-akt" : ""}" data-p="${x.id}"><div><b title="${esc(x.maschine)}">${esc(x.maschine)}</b><small>${asListe(x.fotos).length} Fotos · ${asListe(x.mangel_ids).length} Mängel</small></div></div>`).join("") || `<div class="leer">Maschine wählen, um zu beginnen.</div>`;
+  liste.innerHTML = AS_BG.punkte.map(x => `<div class="z${x.id === AS_BG.punkt ? " bg-akt" : ""}" data-p="${x.id}"><div><b title="${esc(x.maschine)}">${esc(x.maschine)}</b><small>${asListe(x.fotos).length} Fotos · ${asListe(x.mangel_ids).length} Mängel${x.signiert_am ? " · unterschrieben" : x.arbeitssystem_id ? " · BdA gespeichert" : ""}</small></div></div>`).join("") || `<div class="leer">Maschine wählen, um zu beginnen.</div>`;
   liste.querySelectorAll("[data-p]").forEach(z => z.onclick = () => { AS_BG.punkt = z.dataset.p; asBgZeichnen(box); });
   if(!p){ rechts.innerHTML = `<div class="leer">Links eine Maschine wählen.</div>`; return; }
   const ki = AS_BG.ki && AS_BG.ki.aktiv;
   rechts.innerHTML = `<h2>${esc(p.maschine)}</h2><textarea id="bgNotiz" class="bg-notiz" placeholder="Beobachtungen mittippen …" ${zu ? "readonly" : ""}>${esc(p.notiz || "")}</textarea>
     <div class="bg-fotos" id="bgFotos"></div>
     ${zu ? "" : `<div class="bg-knoepfe"><label class="btn sek klein">Foto<input type="file" id="bgFoto" accept="image/*" capture="environment" multiple hidden></label>
-      <button class="btn sek klein" id="bgMangel">Mangel erfassen</button>${ki ? `<button class="btn klein" id="bgKi">KI-Vorschlag</button><button class="btn sek klein" id="bgFrage">KI fragen</button>` : AS.admin ? `<button class="btn sek klein" id="bgKiAn">KI einschalten</button>` : ""}</div>`}`;
+      <button class="btn klein" id="bgFertigM">Maschine fertig</button>${p.arbeitssystem_id ? `<button class="btn sek klein" id="bgBda">BdA öffnen</button><button class="btn sek klein" id="bgSign">${p.signiert_am ? "Erneut unterschreiben" : "Unterschreiben"}</button>` : ""}<button class="btn sek klein" id="bgMangel">Mangel erfassen</button>${ki ? `<button class="btn klein" id="bgKi">KI-Vorschlag</button><button class="btn sek klein" id="bgFrage">KI fragen</button>` : AS.admin ? `<button class="btn sek klein" id="bgKiAn">KI einschalten</button>` : ""}</div>`}`;
   const n = rechts.querySelector("#bgNotiz");
   n.oninput = () => { clearTimeout(AS_BG.tippt); AS_BG.tippt = setTimeout(() => { AS_BG.tippt = null; asBgNotiz(p, n.value); }, 800); };
   n.onblur = () => { if(AS_BG.tippt){ clearTimeout(AS_BG.tippt); AS_BG.tippt = null; asBgNotiz(p, n.value); } };
@@ -116,6 +116,9 @@ function asBgZeichnen(box){
       p.fotos = asListe(p.fotos).concat([URL.createObjectURL(blob)]); await asBgSchreiben({ typ: "foto", id: p.id, pfad, blob }); }
     asBgZeichnen(box); };
   const mg = rechts.querySelector("#bgMangel"); if(mg) mg.onclick = () => asBgMangel(box, p, { befund: n.value });
+  const fm = rechts.querySelector("#bgFertigM"); if(fm) fm.onclick = () => { if(AS_BG.tippt){ clearTimeout(AS_BG.tippt); AS_BG.tippt = null; } asBgNotiz(p, n.value); asBgFertig(box, p); };
+  const bd = rechts.querySelector("#bgBda"); if(bd) bd.onclick = () => { AS.reiter.bda = p.arbeitssystem_id; asGehe("bda/" + p.arbeitssystem_id); };
+  const sg = rechts.querySelector("#bgSign"); if(sg) sg.onclick = () => asBgSignieren(box, p);
   const fr = rechts.querySelector("#bgFrage"); if(fr) fr.onclick = asBgFrage;
   const kb = rechts.querySelector("#bgKi"); if(kb) kb.onclick = async () => { kb.disabled = true; kb.textContent = "KI arbeitet …";
     try{ const v = await asBgKi("mangel", "Maschine: " + p.maschine + "\nNotiz: " + (n.value || "(keine)"), asListe(p.fotos).filter(x => !x.startsWith("blob:")).slice(-3)); asBgMangel(box, p, v, true); }
@@ -177,16 +180,18 @@ async function asBgProtokoll(){
   const teile = [];
   for(const p of AS_BG.punkte){
     const urls = await Promise.all(asListe(p.fotos).filter(x => !x.startsWith("blob:")).map(asSigniert));
-    const m = mg.filter(x => asListe(p.mangel_ids).includes(x.id));
+    const m = mg.filter(x => asListe(p.mangel_ids).includes(x.id)), sig = p.signatur_pfad ? await asSigniert(p.signatur_pfad) : null;
     teile.push(`<section><h2>${esc(p.maschine)}</h2>${p.notiz ? `<p>${esc(p.notiz).replace(/\n/g, "<br>")}</p>` : ""}
       ${m.length ? `<table><tr><th>Mangel</th><th>Maßnahme</th><th>Einstufung</th></tr>${m.map(x => `<tr><td>${esc(x.label)}</td><td>${esc(x.massnahme || "–")}</td><td>${esc(x.band || "–")}</td></tr>`).join("")}</table>` : ""}
+      ${asListe(p.entwurf).length ? `<table><tr><th>Gefährdung</th><th>Situation</th><th>W×S vorher</th><th>W×S nachher</th></tr>${p.entwurf.map(g => `<tr><td>${esc(g.kurz)}</td><td>${esc(g.situation || "")}</td><td>${esc(g.w_v)}×${esc(g.s_v)}</td><td>${esc(g.w_n)}×${esc(g.s_n)}</td></tr>`).join("")}</table>` : ""}
+      ${p.signiert_am ? `<p>Durchgesprochen und unterschrieben: ${esc(p.signiert_von)}, ${asDat(p.signiert_am)}</p>${sig ? `<img class="sig" src="${esc(sig)}" alt="Unterschrift">` : ""}` : ""}
       <div class="fotos">${urls.filter(Boolean).map(u => `<img src="${esc(u)}" alt="Foto">`).join("")}</div></section>`);
   }
   w.document.open();
   w.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><title>${esc(b.titel)}</title><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Jost:wght@400;500&display=swap" rel="stylesheet"><style>
     @page{size:A4;margin:16mm}body{font:11pt/1.4 Jost,Arial,sans-serif;color:#222;margin:0}h1,h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;color:#1a3a5c;margin:0 0 6px}h1{font-size:24pt}h2{font-size:15pt}
     section{break-inside:avoid;margin-top:16px}table{width:100%;border-collapse:collapse;break-inside:avoid;margin:6px 0}th,td{border:1px solid #ccd;padding:4px 6px;text-align:left;vertical-align:top;font-size:10pt}
-    .fotos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.fotos img{width:100%;height:110px;object-fit:cover}.kopf{color:#555}.nodruck{margin:12px 0}@media print{.nodruck{display:none}}
+    .fotos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.fotos img{width:100%;height:110px;object-fit:cover}.kopf{color:#555}.sig{height:60px;display:block}.nodruck{margin:12px 0}@media print{.nodruck{display:none}}
     </style></head><body><div class="nodruck"><button onclick="print()">Drucken oder als PDF speichern</button></div><h1>${esc(b.titel)}</h1>
     <p class="kopf">${esc(AS.org ? AS.org.name : "")} · ${asDat(b.datum)}${b.teilnehmer ? " · Teilnehmer: " + esc(b.teilnehmer) : ""}</p>
     ${b.zusammenfassung ? `<section><h2>Zusammenfassung</h2><p>${esc(b.zusammenfassung)}</p></section>` : ""}${teile.join("") || "<p>Noch keine Punkte erfasst.</p>"}</body></html>`);
