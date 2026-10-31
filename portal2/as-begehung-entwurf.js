@@ -15,7 +15,7 @@ async function asBgFertig(box, p){
       <p class="hinweis">Fehlt der Typ, gibt es noch keine Vorlage und deshalb keinen Entwurf.</p>${AS.admin ? `<label class="btn sek klein">Vorlage hochladen (JSON)<input type="file" id="bgVorlage" accept=".json" hidden></label>` : ""}`,
     knoepfe: [{ t: "Entwurf erstellen", fn: async d => { const w = asWerte(d), typ = typen.find(t => t.slug === w.typ);
       if(!typ){ asMeldung("Bitte einen Maschinentyp wählen"); return false; }
-      asBgLaeuft(box, p, typ, ""); } }] });
+      asBgLaeuft(box, p, typ, ""); return false; } }] });
   const up = dl.querySelector("#bgVorlage"); if(up) up.onchange = async () => { try{
       const v = JSON.parse(await up.files[0].text()); if(!Array.isArray(v.hazards) || !v.hazards.length) throw new Error("Datei enthält keine Gefährdungen");
       const titel = (v.meta && (v.meta.maschinenart || v.meta.typ)) || v._typ || up.files[0].name.replace(/\.json$/, "");
@@ -45,7 +45,7 @@ function asBgKiTyp(p, slug, antworten){
 function asBgFragen(box, p, typ, fragen){
   asDialog({ titel: "Rückfragen der KI", breit: true, inhalt: `<div class="form">${fragen.map((f, i) => asFeld(f, "f" + i, "", "textarea", "voll")).join("")}</div>`,
     knoepfe: [{ t: "Weiter", fn: async d => { const w = asWerte(d), a = fragen.map((f, i) => f + " → " + (w["f" + i] || "keine Angabe")).join("\n");
-      p.notiz = (p.notiz || "") + "\n" + a; asBgNotiz(p, p.notiz); asBgLaeuft(box, p, typ, a); } }] });
+      p.notiz = (p.notiz || "") + "\n" + a; asBgNotiz(p, p.notiz); asBgLaeuft(box, p, typ, a); return false; } }] });
 }
 
 /* Durchsprechen und korrigieren: eine Zeile je Gefährdung */
@@ -79,7 +79,7 @@ async function asBgSpeichern(box, p, typ, e, d, signieren){
   p.typ_slug = typ.slug; p.arbeitssystem_id = s.id; p.entwurf = neu;
   await apiSend("PATCH", "/rest/v1/as_begehung_punkt?id=eq." + p.id, { typ_slug: typ.slug, arbeitssystem_id: s.id, entwurf: neu }, "return=minimal");
   asMeldung("BdA und BA gespeichert, BA ist Entwurf"); asBgZeichnen(box);
-  if(signieren) asBgSignieren(box, p);
+  if(signieren){ asBgSignieren(box, p); return false; }
 }
 
 /* Unterschrift am Gerät: bestätigt das Durchsprechen der BdA mit dem Vorgesetzten */
