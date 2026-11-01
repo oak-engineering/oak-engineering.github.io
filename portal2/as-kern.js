@@ -456,7 +456,7 @@ function asHashLesen(){
 /* Seitenleiste in Gruppen (Nikolai 14.10.2026: „zu lang, gliedern wie in V1“). Offen ist die Gruppe der aktiven Seite
    plus die, die man selbst aufgeklappt hat (gemerkt im Gerät). Seiten ohne Gruppe landen unter „Service“. */
 const AS_NAV_GRUPPEN = [
-  ["ueberblick", "Überblick", ["start", "cockpit", "leitfaden", "pflichten"]],
+  ["ueberblick", "Überblick", ["start", "cockpit", "assistent", "leitfaden", "pflichten"]],
   ["organisation", "Organisation", ["organisation", "check", "nachweise", "notfall", "prozesse"]],
   ["gefaehrdungen", "Gefährdungen", ["bda", "massnahmen", "mitzeichnung", "gefahrstoffe"]],
   ["anlagen", "Anlagen & Betrieb", ["anlagen", "pruefungen", "maengel", "hallenplan", "vorort"]],
