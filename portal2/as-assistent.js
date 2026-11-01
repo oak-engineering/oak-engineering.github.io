@@ -45,7 +45,7 @@ AS_SEITEN.assistent = { titel: "Assistent", icon: "?", sort: 1.2, async render(m
   main.innerHTML = `<div class="ki-seite"><div class="karte ki-verlauf" id="kiVerlauf"></div>
     <div class="karte ki-eingabe"><div class="ki-anh" id="kiAnh"></div>
       <label class="btn sek klein">Anhang<input type="file" id="kiDatei" multiple hidden></label>
-      <textarea id="kiText" aria-label="Eingabe an den Assistenten" placeholder="Frage stellen oder Sachverhalt beschreiben …"></textarea>
+      <textarea id="kiText" aria-label="Eingabe an den Assistenten" placeholder="Frage oder Sachverhalt …"></textarea>
       <button class="btn klein" id="kiSenden">Senden</button></div></div>`;
   const box = main;
   box.querySelector("#kiDatei").onchange = e => { for(const f of e.target.files){ if(f.size > AS_KI_MAX_MB * 1048576) asMeldung(f.name + " ist größer als " + AS_KI_MAX_MB + " MB"); else AS_KI.anhaenge.push(f); } AS_KI.anhaenge = AS_KI.anhaenge.slice(0, 5); e.target.value = ""; asKiZeichnen(box); };
