@@ -2,7 +2,7 @@
    Eine Begehung, ein Punkt je Maschine: Notiz und Fotos liegen zusammen, egal ob am Laptop oder Handy erfasst.
    Fällt das Netz aus, bleiben Änderungen im Gerät (IndexedDB) und gehen automatisch nach. Die KI (Edge Function oak-ki)
    macht nur Vorschläge; der Mangel entsteht erst, wenn die Fachkraft ihn bestätigt. Tabellen: as_begehung, as_begehung_punkt. */
-const AS_BG = { id: null, punkt: null, punkte: [], ki: null, warte: 0, abfrage: null, tippt: null, lokal: {} };
+const AS_BG = { id: null, punkt: null, punkte: [], ki: null, warte: 0, abfrage: null, tippt: null, lokal: {}, laeufe: [] };
 
 /* ---------------- Warteschlange fürs Funkloch ---------------- */
 function asBgDb(){
@@ -61,6 +61,7 @@ async function asBgLaden(k){
   const [b] = await apiGet("/rest/v1/as_begehung?select=*&id=eq." + AS_BG.id);
   const p = await apiGet("/rest/v1/as_begehung_punkt?select=*&order=erstellt_am&begehung_id=eq." + AS_BG.id) || [];
   const [ki] = await apiGet("/rest/v1/as_ki_einstellung?select=aktiv&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []) || [];
+  AS_BG.laeufe = await apiGet("/rest/v1/as_begehung_lauf?select=*&begehung_id=eq." + AS_BG.id).catch(() => []) || [];
   AS_BG.ki = ki || null; AS_BG.punkte = p.concat(Object.values(AS_BG.lokal).filter(x => !p.some(y => y.id === x.id)));
   return b;
 }
@@ -92,7 +93,7 @@ async function asBgDetail(box, k){
   AS_BG.abfrage = setInterval(async () => {   // Fotos vom Handy erscheinen von selbst am Laptop
     if(!document.getElementById("bgRechts")){ clearInterval(AS_BG.abfrage); return; }
     if(AS_BG.tippt || document.querySelector("dialog[open]") || AS_BG.warte) return;
-    const alt = JSON.stringify(AS_BG.punkte); await asBgLaden(k).catch(() => {}); if(alt !== JSON.stringify(AS_BG.punkte)) asBgZeichnen(box);
+    const alt = JSON.stringify([AS_BG.punkte, AS_BG.laeufe]); await asBgLaden(k).catch(() => {}); if(alt !== JSON.stringify([AS_BG.punkte, AS_BG.laeufe])) asBgZeichnen(box);
   }, 10000);
 }
 function asBgZeichnen(box){
@@ -101,11 +102,12 @@ function asBgZeichnen(box){
   liste.querySelectorAll("[data-p]").forEach(z => z.onclick = () => { AS_BG.punkt = z.dataset.p; asBgZeichnen(box); });
   if(!p){ rechts.innerHTML = `<div class="leer">Links eine Maschine wählen.</div>`; return; }
   const ki = AS_BG.ki && AS_BG.ki.aktiv;
-  rechts.innerHTML = `<h2>${esc(p.maschine)}</h2><textarea id="bgNotiz" class="bg-notiz" placeholder="Beobachtungen mittippen …" ${zu ? "readonly" : ""}>${esc(p.notiz || "")}</textarea>
+  rechts.innerHTML = `<h2>${esc(p.maschine)}</h2>${asBgLaufZeile(p)}<textarea id="bgNotiz" class="bg-notiz" placeholder="Beobachtungen mittippen …" ${zu ? "readonly" : ""}>${esc(p.notiz || "")}</textarea>
     <div class="bg-fotos" id="bgFotos"></div>
     ${zu ? "" : `<div class="bg-knoepfe"><label class="btn sek klein">Foto<input type="file" id="bgFoto" accept="image/*" capture="environment" multiple hidden></label>
       <button class="btn klein" id="bgFertigM">Maschine fertig</button>${p.arbeitssystem_id ? `<button class="btn sek klein" id="bgBda">BdA öffnen</button><button class="btn sek klein" id="bgSign">${p.signiert_am ? "Erneut unterschreiben" : "Unterschreiben"}</button>` : ""}<button class="btn sek klein" id="bgMangel">Mangel erfassen</button>${ki ? `<button class="btn klein" id="bgKi">KI-Vorschlag</button><button class="btn sek klein" id="bgFrage">KI fragen</button>` : AS.admin ? `<button class="btn sek klein" id="bgKiAn">KI einschalten</button>` : ""}</div>`}`;
   const n = rechts.querySelector("#bgNotiz");
+  const la = rechts.querySelector("#bgLaufFragen"); if(la) la.onclick = () => asBgLaufFragen(box, p);
   n.oninput = () => { clearTimeout(AS_BG.tippt); AS_BG.tippt = setTimeout(() => { AS_BG.tippt = null; asBgNotiz(p, n.value); }, 800); };
   n.onblur = () => { if(AS_BG.tippt){ clearTimeout(AS_BG.tippt); AS_BG.tippt = null; asBgNotiz(p, n.value); } };
   const fo = rechts.querySelector("#bgFotos");
@@ -125,6 +127,20 @@ function asBgZeichnen(box){
     catch(e){ asMeldung(e.message); } kb.disabled = false; kb.textContent = "KI-Vorschlag"; };
   const an = rechts.querySelector("#bgKiAn"); if(an) an.onclick = () => asDialog({ titel: "KI für diesen Betrieb einschalten", inhalt: `<p>Notizen und Fotos dieser Begehung gehen dann an den KI-Anbieter. Das muss im AVV mit dem Betrieb geregelt sein.</p><p class="hinweis">AVV laut Stammdaten: ${AS.kundeV1 && AS.kundeV1.avv_abgeschlossen_am ? asDat(AS.kundeV1.avv_abgeschlossen_am) : "nicht hinterlegt"}</p>`,
     knoepfe: [{ t: "Einschalten, AVV ist geregelt", fn: async () => { await apiSend("POST", "/rest/v1/as_ki_einstellung?on_conflict=kunde_slug", { kunde_slug: AS.kunde, aktiv: true, avv_bestaetigt_am: asHeute() }, "resolution=merge-duplicates,return=minimal"); AS_BG.ki = { aktiv: true }; asBgZeichnen(box); } }] });
+}
+/* Automatischer Lauf (tools/begehung_wache.py): Stand und Rückfragen am Punkt */
+const AS_BG_LAUF = { in_arbeit: ["Wird verarbeitet", "grau"], entwurf: ["Entwurf fertig", "gruen"], rueckfrage: ["Rückfrage offen", "gelb"], beantwortet: ["Antwort wird verarbeitet", "grau"], fehler: ["Automatik gescheitert", "rot"], aus: ["Automatik aus", "grau"] };
+function asBgLaufZeile(p){
+  const l = AS_BG.laeufe.find(x => x.punkt_id === p.id); if(!l) return "";
+  const [t, f] = AS_BG_LAUF[l.status] || [l.status, "grau"], kann = l.status === "rueckfrage" && asListe(l.fragen).length;
+  return `<div class="bg-lauf">${asChip(t, f)}${l.hinweis ? `<small title="${esc(l.hinweis)}">${esc(l.hinweis)}</small>` : ""}${kann ? `<button class="btn klein" id="bgLaufFragen">Beantworten</button>` : ""}</div>`;
+}
+function asBgLaufFragen(box, p){
+  const l = AS_BG.laeufe.find(x => x.punkt_id === p.id), fragen = asListe(l && l.fragen);
+  asDialog({ titel: "Rückfragen: " + p.maschine, breit: true, inhalt: `<div class="form">${fragen.map((f, i) => asFeld(f, "f" + i, "", "textarea", "voll")).join("")}</div>`,
+    knoepfe: [{ t: "Senden", fn: async d => { const w = asWerte(d), antworten = fragen.map((f, i) => ({ frage: f, antwort: w["f" + i] || "keine Angabe" }));
+      await apiSend("PATCH", "/rest/v1/as_begehung_lauf?id=eq." + l.id, { status: "beantwortet", antworten: asListe(l.antworten).concat(antworten), geaendert_am: new Date().toISOString() }, "return=minimal");
+      l.status = "beantwortet"; asBgZeichnen(box); } }] });
 }
 function asBgNotiz(p, wert){ p.notiz = wert; if(AS_BG.lokal[p.id]) AS_BG.lokal[p.id].notiz = wert; const s = document.getElementById("bgStand"); if(s) s.textContent = "speichert …"; asBgSchreiben({ typ: "notiz", id: p.id, notiz: wert }).then(asBgStand); }
 
