@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Lehrgang – Ihre Antwort</title>
-<link rel="stylesheet" href="lg.css?v=2">
+<link rel="stylesheet" href="lg.css?v=3">
 </head>
 <body>
 <main>
@@ -48,8 +48,8 @@ function zeige(frage, ohneSperre){
   else feld = '<textarea id="wert" maxlength="300" placeholder="Ihre Antwort"></textarea>';
   const vorschl = Array.isArray(frage.vorschlaege) ? frage.vorschlaege : [];
   const knoepfe = vorschl.length && ["liste", "text", "zahl"].includes(frage.typ)
-    ? '<div class="lg-vorschlaege">' + vorschl.map(v => '<button type="button" class="lg-vk" data-v="' + lgEsc(v) + '">'
-        + lgEsc(v) + (frage.typ === "zahl" && frage.einheit ? " " + lgEsc(frage.einheit) : "") + "</button>").join("")
+    ? '<div class="lg-vorschlaege' + (frage.typ === "zahl" ? " lg-zahlreihe" : "") + '" style="--n:' + vorschl.length + '">'
+      + vorschl.map(v => '<button type="button" class="lg-vk" data-v="' + lgEsc(v) + '">' + lgEsc(v).replace(/\//g, "/<wbr>") + "</button>").join("")
       + '</div><p class="lg-hinweis">' + (frage.typ === "zahl" ? "Antippen oder eigene Zahl eingeben." : frage.typ === "liste" ? "Antippen (mehrere möglich) – oder unten eigene Begriffe ergänzen." : "Thema antippen und/oder eigene Frage schreiben.") + "</p>"
     : "";
   box.innerHTML = '<form class="lg-karte" id="form"><h1>' + lgEsc(frage.frage) + "</h1>" + knoepfe + feld
