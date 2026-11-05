@@ -486,7 +486,7 @@ AS_SEITEN.hallenplan = { titel: "Hallenplan", icon: "⌗", sort: 4.6, async rend
   if(!plaene.length){
     const akt = alt.find(d => d.id === AS.reiter.hallenplan) || alt[0];
     main.innerHTML = kopf + (alt.length > 1 ? `<div class="reiter">${alt.map(d => `<button class="${d === akt ? "an" : ""}" onclick="asGehe('hallenplan/${d.id}')">${esc(d.titel || "Plan")}</button>`).join("")}</div>` : "")
-      + (akt ? `<iframe src="../portal/${esc(asViewerUrl(akt.doc_typ || "html", akt.storage_path, akt.titel || "Hallenplan"))}" style="width:100%;height:calc(100vh - 200px);min-height:520px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`
+      + (akt ? `<iframe src="../portal/${esc(asViewerUrl(akt.doc_typ || "html", akt.storage_path, akt.titel || "Hallenplan"))}" class="rahmen-voll"></iframe>`
         : `<div class="karte"><div class="leer">Für diesen Betrieb ist noch kein Hallenplan hinterlegt.</div></div>`)
       + (darf ? `<p style="margin-top:12px"><button class="btn" id="hpNeu">+ Hallenplan anlegen</button> <span class="hinweis">leerer Plan, Maschinen danach aus dem Kataster zuordnen</span></p>` : "");
     const nb = document.getElementById("hpNeu"); if(nb) nb.onclick = () => asHpNeu(main);
@@ -495,7 +495,7 @@ AS_SEITEN.hallenplan = { titel: "Hallenplan", icon: "⌗", sort: 4.6, async rend
   const akt = plaene.find(x => x.id === AS.reiter.hallenplan) || plaene[0];
   main.innerHTML = kopf + `<div class="reiter">${plaene.map(x => `<button class="${x === akt ? "an" : ""}" onclick="asGehe('hallenplan/${x.id}')">${esc(x.titel)}</button>`).join("")}
       ${darf ? `<button onclick="asHpNeuDialog()" title="weiteren Plan anlegen (z. B. zweite Halle)">+ Plan</button>` : ""}</div>
-    <iframe id="hpRahmen" sandbox="allow-scripts allow-modals allow-downloads" style="width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>
+    <iframe id="hpRahmen" sandbox="allow-scripts allow-modals allow-downloads" class="rahmen-voll"></iframe>
     <p class="hinweis">Zuletzt geändert ${esc(asDat(String(akt.geaendert_am || "").slice(0, 10)))}${akt.geaendert_von ? " von " + esc(akt.geaendert_von) : ""}.</p>`;
   if(!AS_HP.vorlage){ try{ AS_HP.vorlage = await (await fetch("hallenplan-editor.html?v=2026-10-14b")).text(); }catch(e){ AS_HP.vorlage = ""; } }
   if(!AS_HP.vorlage){ document.getElementById("hpRahmen").outerHTML = `<div class="karte"><div class="leer">Editor konnte nicht geladen werden.</div></div>`; return; }
@@ -567,7 +567,7 @@ AS_SEITEN.vorort = { titel: "Vor Ort", icon: "⌂", sort: 4.8, async render(main
   const r = asReiter("vorort", [["pruefen", "Maschine prüfen"], ["begehung", "Begehung"], ["melden", "Vorfall melden"], ["terminal", "Unterweisungs-Terminal"]], "pruefen");
   main.innerHTML = `<h1 class="seite">Vor Ort</h1><p class="unter">Die Werkzeuge für Schichtführer und Beschäftigte – dieselben Seiten wie im Kundenportal.</p>${r.html}<div id="voInhalt"><div class="leer">wird geladen …</div></div>`;
   const box = document.getElementById("voInhalt"), k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
-  const rahmen = src => `<iframe src="${esc(src)}" allow="fullscreen; camera; microphone; geolocation" style="width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
+  const rahmen = src => `<iframe src="${esc(src)}" allow="fullscreen; camera; microphone; geolocation" class="rahmen-voll"></iframe>`;
   if(r.akt === "pruefen") box.innerHTML = rahmen("../portal/pruefen.html?eingebettet=1&k=" + encodeURIComponent(AS.kunde) + (AS.bereich && AS.bereich.aktiv ? "&e=" + encodeURIComponent([...AS.bereich.lesen].join(",")) : ""));
   else if(r.akt === "begehung") await (asDarf("pflegen") ? asBgSeite(box, k) : asBegehung(box, k));
   else if(r.akt === "melden"){

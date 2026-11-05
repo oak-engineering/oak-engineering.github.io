@@ -33,7 +33,7 @@ window.OAK_MARKE = {
      Die Werte landen in CSS und im <style>-Block der Dokumentansicht – nichts anderes darf dort hinein. */
   pruefen(m){
     const farbe = v => (typeof v === "string" && /^#[0-9a-fA-F]{3,8}$/.test(v)) ? v : undefined;
-    const logo = v => (typeof v === "string" && /^(marken\/[\w.-]+|https:\/\/[\w.\/%-]+)$/.test(v)) ? v : undefined;
+    const logo = v => (typeof v === "string" && /^(marken\/[\w.-]+|https:\/\/[\w.\/%-]+(\?token=[\w.-]+)?)$/.test(v)) ? v : undefined;
     return { farbe: farbe(m.farbe), farbe_tief: farbe(m.farbe_tief), farbe_hell: farbe(m.farbe_hell), akzent: farbe(m.akzent),
              hintergrund: farbe(m.hintergrund), logo: logo(m.logo), name: typeof m.name === "string" ? m.name.slice(0, 120) : undefined };
   },

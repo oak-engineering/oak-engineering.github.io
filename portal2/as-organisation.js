@@ -30,10 +30,12 @@ function asOrgGrund(box){
         <div class="z"><div><b>${ma.kopf} Beschäftigte</b><small>${ma.bereiche ? "Summe der Bereiche" : "Angabe der Grunddaten"} · Aufteilung ${d.ma_vz || 0} Vollzeit · ${d.ma_tz20 || 0} bis 20 h · ${d.ma_tz30 || 0} bis 30 h → ${ma.gewichtet} gewichtet (DGUV V2)${ma.personen ? " · " + ma.personen + " Personen in der Belegschaft" : ""}</small></div>
           ${ma.abweichung ? asChip("Aufteilung " + ma.angabe + " ≠ Bereiche " + ma.bereiche, "gelb") : ""}</div>
         <div class="z"><div><b>Geschäftsführung: ${esc(d.gf_name || "–")}</b><small>Fachkraft vor Ort: ${esc(d.fkv_name || "–")} · Betriebsrat: ${esc(d.br || "–")}</small></div></div>
-      </div></div>
+      </div>
+      ${asDarf("pflegen") && typeof asMarkeDialog === "function" ? `<div class="zeilen" title="Zum Bearbeiten anklicken"><div class="z" id="grundMarke"><div><b>Erscheinungsbild</b><small>Logo, Farben, Datenschutz-Kontakt, Druckfuß</small></div></div></div>` : ""}</div>
     <div class="karte"><h2>Nachweise zur Organisation</h2><div class="zeilen">${AS_NACHWEISE.map(([k, t, h, name]) => `
       <div class="z" data-n="${k}"><div><b>${asPunkt(d[k] ? "gruen" : "rot")}${esc(t)}</b><small>${esc(h)}${name && d[name] ? " · " + esc(d[name]) : ""}</small></div>
       ${d[k] ? asChip(asDat(d[k]), "gruen") : asChip("fehlt", "rot")}</div>`).join("")}</div></div>`;
+  const gm = box.querySelector("#grundMarke"); if(gm) gm.onclick = () => asMarkeDialog();
   box.querySelectorAll("#grundZeilen .z").forEach(z => z.onclick = () => asDialog({ titel: "Grunddaten", inhalt: `<div class="form">
       ${asFeld("WZ-Kode (Branche)", "wz_kode", d.wz_kode)}${asFeld("Schichtmodell", "schichtmodell", d.schichtmodell)}
       ${asFeld("Vollzeit-Beschäftigte", "ma_vz", d.ma_vz, "number")}${asFeld("Teilzeit bis 20 h", "ma_tz20", d.ma_tz20, "number")}

@@ -1,29 +1,97 @@
 /* OAK Arbeitsschutz-App – App-Ebene: Kundenmarke, Startseite mit Schnellzugriffen (Schichtführer-Ansicht),
-   Name beim gemeinsamen Zugang, untere Leiste fürs Handy, Installation als App.
+   Name beim gemeinsamen Zugang, Installation als App, Erscheinungsbild (Marke selbst pflegen).
    Gleiche Daten wie das Kundenportal: Marke aus portal_kunde.marke, Schnellzugriffe in
    portal_nutzer_einstellung.daten.schnellzugriffe (dieselben Kennungen – eine Auswahl gilt in beiden Apps),
    Name im Gerät unter „oak_mein_name“. */
 "use strict";
 
-/* ---------------- Kundenmarke ---------------- */
+/* ---------------- Kundenmarke ----------------
+   Fünf Farben wie im Kundenportal (portal_kunde.marke: farbe, farbe_tief, farbe_hell, akzent, hintergrund) → --blau,
+   --blau-tief, --blau-hell, --blau2, --bg. --gruen bleibt Ampelfarbe. Gleicher Gerätespeicher wie V1 (oak_portal_marke),
+   den as-marke.js im <head> vor dem ersten Zeichnen liest – kein Aufblitzen. Logo: marken/… (statisch im Portal) oder
+   https-Adresse, auch die signierte Adresse eines selbst hochgeladenen Logos im eigenen Ordner. */
+const AS_MARKE_KEY = "oak_portal_marke";
+const AS_MARKE_FARBEN = [["farbe", "--blau"], ["farbe_tief", "--blau-tief"], ["farbe_hell", "--blau-hell"], ["akzent", "--blau2"], ["hintergrund", "--bg"]];
 function asMarkePruefen(m){
   const farbe = v => typeof v === "string" && /^#[0-9a-fA-F]{3,8}$/.test(v) ? v : null;
-  const logo = v => typeof v === "string" && /^(marken\/[\w.-]+|https:\/\/[\w.\/%-]+)$/.test(v) ? v : null;
-  m = m || {}; return { farbe: farbe(m.farbe), tief: farbe(m.farbe_tief), akzent: farbe(m.akzent), logo: logo(m.logo) };
+  const logo = v => typeof v === "string" && /^(marken\/[\w.-]+|https:\/\/[\w.\/%-]+(\?token=[\w.-]+)?)$/.test(v) ? v : null;
+  m = m || {};
+  return { farbe: farbe(m.farbe), tief: farbe(m.farbe_tief), hell: farbe(m.farbe_hell), akzent: farbe(m.akzent), hintergrund: farbe(m.hintergrund),
+    logo: logo(m.logo), druckfuss_oak: m.druckfuss_oak !== false };
 }
+function asMarkeLogoUrl(logo){ return logo ? (/^https:/.test(logo) ? logo : "../portal/" + logo) : ""; }
 function asMarkeAnwenden(){
-  const m = asMarkePruefen(AS.kundeV1 && AS.kundeV1.marke), st = document.documentElement.style;
-  const setz = (k, v) => { if(v) st.setProperty(k, v); else st.removeProperty(k); };
-  setz("--blau", m.farbe); setz("--blau2", m.akzent);
+  const roh = (AS.kundeV1 && AS.kundeV1.marke) || {}, st = document.documentElement.style, m = asMarkePruefen(roh);
+  const wert = { farbe: m.farbe, farbe_tief: m.tief, farbe_hell: m.hell, akzent: m.akzent, hintergrund: m.hintergrund };
+  AS_MARKE_FARBEN.forEach(([feld, v]) => { if(wert[feld]) st.setProperty(v, wert[feld]); else st.removeProperty(v); });
   let meta = document.querySelector('meta[name="theme-color"]');
   if(!meta){ meta = document.createElement("meta"); meta.name = "theme-color"; document.head.appendChild(meta); }
   meta.content = m.farbe || "#2D6A4F";
+  /* Gerätespeicher wie V1 (marke.js): beim Kundenwechsel (OAK) wechselt er mit, ohne Marke wird er geleert */
+  try{
+    if(m.farbe) localStorage.setItem(AS_MARKE_KEY, JSON.stringify(Object.assign({}, wert, { logo: m.logo || undefined, name: (AS.kundeV1 && AS.kundeV1.name) || undefined })));
+    else localStorage.removeItem(AS_MARKE_KEY);
+  }catch(e){}
   const marke = document.getElementById("kopfLogo"); if(!marke) return;
   let img = document.getElementById("asKundeLogo");
   if(m.logo){
     if(!img){ img = document.createElement("img"); img.id = "asKundeLogo"; marke.appendChild(img); }
-    img.src = /^https:/.test(m.logo) ? m.logo : "../portal/" + m.logo; img.alt = (AS.kundeV1 && AS.kundeV1.name) || ""; img.hidden = false;
+    img.src = asMarkeLogoUrl(m.logo); img.alt = (AS.kundeV1 && AS.kundeV1.name) || ""; img.hidden = false;
   } else if(img) img.hidden = true;
+}
+/* Kundenbegriffe (AS_TITEL_KUNDE in as-kern.js) als Feld titelKunde an die Seiten hängen – Seiten dürfen eigene mitbringen */
+Object.keys(AS_TITEL_KUNDE).filter(k => !k.includes("/")).forEach(k => { if(AS_SEITEN[k] && !AS_SEITEN[k].titelKunde) AS_SEITEN[k].titelKunde = AS_TITEL_KUNDE[k]; });
+
+/* ---------------- Erscheinungsbild selbst pflegen (Betrieb autark, Stufe 9) ----------------
+   Logo in den eigenen Ordner, fünf Farben, Datenschutz-Kontakt, Druckfuß „betreut durch OAK engineering“.
+   Der Betrieb speichert über RPC portal_kunde_selbst (security definer, nur pflegeberechtigt), OAK direkt in portal_kunde. */
+async function asMarkeDialog(){
+  if(!asDarf("pflegen")) return;
+  const roh = Object.assign({}, (AS.kundeV1 && AS.kundeV1.marke) || {});
+  const k = ((await apiGet("/rest/v1/portal_kunde?select=datenschutz_kontakt&slug=eq." + encodeURIComponent(AS.kunde)).catch(() => [])) || [])[0] || {};
+  const std = { farbe: "#2D6A4F", farbe_tief: "#1B4332", farbe_hell: "#52B788", akzent: "#D8F3DC", hintergrund: "#F4F7FA" };
+  const farbe = (label, feld, hilfe) => `<label title="${esc(hilfe)}">${esc(label)}<input type="color" data-f="${feld}" value="${esc(/^#[0-9a-fA-F]{6}$/.test(roh[feld] || "") ? roh[feld] : std[feld])}"></label>`;
+  const logo = asMarkePruefen(roh).logo;
+  const d = asDialog({ titel: "Erscheinungsbild", inhalt: `<div class="form">
+      <div class="voll marke-logo">${logo ? `<img src="${esc(asMarkeLogoUrl(logo))}" alt="Logo">` : `<span class="hinweis">Noch kein Logo</span>`}
+        <label class="btn sek klein">Logo hochladen<input type="file" accept="image/png,image/jpeg,image/webp" id="markeDatei" hidden></label></div>
+      <div class="voll marke-farben">${farbe("Hauptfarbe", "farbe", "Knöpfe, Kopfzeilen-Kante, Links")}${farbe("Dunkel", "farbe_tief", "Seitentitel und aktive Einträge")}${farbe("Hell", "farbe_hell", "helle Akzente")}${farbe("Akzent", "akzent", "Fläche aktiver Einträge und Hinweise")}${farbe("Hintergrund", "hintergrund", "Seitenhintergrund")}</div>
+      ${asFeld("Datenschutz-Kontakt (erscheint auf der Datenschutzseite)", "datenschutz_kontakt", k.datenschutz_kontakt || "", "textarea", "voll")}
+      ${asFeld("Druckfuß „betreut durch OAK engineering“ auf Aushängen und Ausdrucken", "druckfuss_oak", roh.druckfuss_oak !== false, "checkbox", "voll")}</div>
+      <p class="hinweis">Gilt für alle Zugänge des Betriebs, am PC und am Handy.</p>`,
+    knoepfe: [{ t: "OAK-Standardfarben", klasse: "sek", fn: async () => {
+        await asMarkeSpeichern(Object.assign({}, roh, { farbe: null, farbe_tief: null, farbe_hell: null, akzent: null, hintergrund: null }), null); } },
+      { t: "Speichern", fn: async dl => { const w = asWerte(dl), neu = Object.assign({}, roh);
+        AS_MARKE_FARBEN.forEach(([feld]) => { neu[feld] = w[feld] || null; });
+        neu.druckfuss_oak = !!w.druckfuss_oak;
+        await asMarkeSpeichern(neu, w.datenschutz_kontakt || ""); } }] });
+  d.querySelector("#markeDatei").onchange = async ev => {
+    const datei = ev.target.files && ev.target.files[0]; if(!datei) return;
+    if(datei.size > 2 * 1024 * 1024){ asMeldung("Das Logo ist größer als 2 MB."); return; }
+    try{ roh.logo = await asMarkeLogoHochladen(datei); await asMarkeSpeichern(roh, null); asMeldung("Logo übernommen."); d.close(); asMarkeDialog(); }
+    catch(e){ asMeldung("Hochladen fehlgeschlagen: " + ((e && e.message) || e)); }
+  };
+}
+/* Logo in den eigenen Ordner (kundendokumente/<betrieb>/marke/) und als lange gültige signierte Adresse merken –
+   der Ordner ist privat, ein <img> braucht eine Adresse ohne Anmeldung. */
+async function asMarkeLogoHochladen(datei){
+  const ext = ({ "image/png": "png", "image/jpeg": "jpg", "image/webp": "webp" })[datei.type]; if(!ext) throw new Error("nur PNG, JPG oder WebP");
+  const pfad = AS.kunde + "/marke/logo-" + Date.now() + "." + ext, enc = pfad.split("/").map(encodeURIComponent).join("/");
+  const r = await fetch(CFG.url + "/storage/v1/object/" + CFG.bucket + "/" + enc, { method: "POST",
+    headers: { apikey: CFG.anon, Authorization: "Bearer " + (await token()), "Content-Type": datei.type, "x-upsert": "true" }, body: datei });
+  if(!r.ok) throw new Error("HTTP " + r.status);
+  const s = await apiSend("POST", "/storage/v1/object/sign/" + CFG.bucket + "/" + enc, { expiresIn: 60 * 60 * 24 * 365 * 10 });
+  const url = s && (s.signedURL || s.signedUrl); if(!url) throw new Error("keine Adresse erhalten");
+  return CFG.url + "/storage/v1" + url;
+}
+async function asMarkeSpeichern(marke, kontakt){
+  const m = {}; Object.keys(marke).forEach(x => { if(marke[x] !== null && marke[x] !== undefined && marke[x] !== "") m[x] = marke[x]; });
+  if(asDarf("oak") || AS.alsBetrieb){   // OAK (auch in der Prüfansicht) schreibt direkt
+    const teil = { marke: m }; if(kontakt !== null) teil.datenschutz_kontakt = kontakt || null;
+    await apiSend("PATCH", "/rest/v1/portal_kunde?slug=eq." + encodeURIComponent(AS.kunde), teil, "return=minimal");
+  } else await apiSend("POST", "/rest/v1/rpc/portal_kunde_selbst", { p_marke: m, p_datenschutz_kontakt: kontakt });
+  AS.kundeV1 = Object.assign({}, AS.kundeV1 || {}, { marke: m });
+  asMarkeAnwenden(); asMeldung("Erscheinungsbild gespeichert.");
 }
 
 /* ---------------- Name beim gemeinsamen Zugang (Schichtführer teilen sich einen Login) ---------------- */
@@ -40,8 +108,7 @@ function asNameSetzen(){
   // Prüfansicht für OAK: ?als=betrieb zeigt die Oberfläche eines Betriebskontos (nur Anzeige – die Datenrechte bleiben die des Admins)
   if(AS.admin && /[?&]als=betrieb\b/.test(location.search) && !AS.alsBetrieb){
     AS.alsBetrieb = true; AS.admin = false; AS.oak = false; AS.fachkraft = false;   // Prüfansicht = Geschäftsführung des Betriebs (AS.gf/AS.pflege bleiben)
-    const b = document.createElement("div"); b.className = "nodruck";
-    b.style.cssText = "position:fixed;bottom:70px;right:14px;z-index:40;background:#b7791f;color:#fff;padding:6px 12px;border-radius:8px;font-size:13px";
+    const b = document.createElement("div"); b.className = "nodruck pruefansicht";
     b.textContent = "Prüfansicht: so sieht es ein Betriebskonto"; document.body.appendChild(b);
   }
   if(AS.kontoName === undefined) AS.kontoName = AS.ich;
@@ -103,33 +170,52 @@ async function asSkSetzen(liste){
     "resolution=merge-duplicates,return=minimal").catch(() => {});
 }
 
-/* ======================= Start ======================= */
-AS_SEITEN.start = { titel: "Start", icon: "⌂", sort: 0.5, async render(main){
-  main.innerHTML = `<h1 class="seite">Guten Tag${AS.ich ? ", " + esc(AS.ich.split(" ")[0]) : ""}</h1><p class="unter">${esc(AS.org ? AS.org.name : "")}</p><div class="leer">wird geladen …</div>`;
+/* ======================= Start =======================
+   Wie im Kundenportal (V1 app.js renderStart/cockpit.js): Überschrift „Start“, zuerst „Auf einen Blick“ (was ein
+   Schichtführer morgens wissen will, jede Kachel führt zur Liste), darunter die Schnellzugriffe. */
+function asStartBlick(uwFaellig){
+  const datum = d => d ? asDat(String(d).slice(0, 10)) : "–";
+  const mg = typeof asMaengelRoh === "function" ? asMaengelRoh().filter(m => m.status !== "erledigt") : [];
+  const zaun = mg.filter(m => asMgFeld(m, "thema") === "schutzzaun").length, mgGefahr = mg.filter(m => asMgBand(m) === "gefahr").length;
+  const vf = asT("as_meldung").filter(m => m._v1).sort((a, b) => String(b.datum || "").localeCompare(String(a.datum || "")));
+  const vOffen = vf.filter(v => v.status !== "erledigt").length, ART = { unfall: "Unfall", beinahe: "Beinahe-Unfall", zustand: "unsicherer Zustand" };
+  const docs = (typeof AS_B !== "undefined" && AS_B.docs) || [];
+  const beg = docs.filter(d => d.kategorie === "begehungen"), letzteBeg = beg.map(d => d.stand).filter(Boolean).sort().slice(-1)[0];
+  const anl = typeof asAnlagen === "function" ? asAnlagen() : [], band = b => anl.filter(d => asAnlagenBand(d.maschinen_id) === b).length;
+  const letzteDoku = anl.map(d => d.updated_at || d.stand).filter(Boolean).sort().slice(-1)[0];
+  const kachel = (zahl, lbl, sub, farbe, ziel) => `<div class="kachel k-${farbe}" data-ziel="${esc(ziel)}" title="${esc(lbl + " – " + sub)}">
+      <div class="zahl">${esc(String(zahl))}</div><div class="lbl">${esc(lbl)}</div><div class="hinweis">${esc(sub)}</div></div>`;
+  return [
+    kachel(mg.length, "offene Mängel", zaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich", mg.length ? "rot" : "gruen", "maengel"),
+    kachel(uwFaellig, "Unterweisungen fällig", uwFaellig ? "Personen ohne gültige Unterweisung" : "alle unterwiesen", uwFaellig ? "gelb" : "gruen", "unterweisungen"),
+    kachel(vf[0] ? datum(vf[0].datum) : "keiner", "letzter Vorfall", vf[0] ? (ART[vf[0].art] || "Vorfall") + " · " + vOffen + " offen" : "bisher nichts gemeldet", vOffen ? "gelb" : "grau", "vorfaelle"),
+    kachel(datum(letzteBeg), "letzte Begehung", beg.length + " Begehungsprotokolle", "grau", "unterlagen"),
+    kachel(band("gefahr") + " von " + anl.length, "Anlagen im Gefahrbereich", band("besorgnis") + " Besorgnis · " + band("akzeptanz") + " Akzeptanz", band("gefahr") ? "rot" : "gruen", "anlagen"),
+    kachel(datum(letzteDoku), "Unterlagen aktualisiert", anl.length + " Maschinen dokumentiert", "grau", "unterlagen"),
+  ].join("");
+}
+AS_SEITEN.start = { titel: "Start", sort: 0.5, async render(main){
+  const kopf = `<h1 class="seite">Start</h1><p class="unter">${AS.ich ? "Guten Tag, " + esc(AS.ich.split(" ")[0]) + " · " : ""}${esc(AS.org ? AS.org.name : "")}</p>`;
+  main.innerHTML = kopf + `<div class="leer">wird geladen …</div>`;
   await asSkLaden();
   if(typeof asBetriebLaden === "function") await asBetriebLaden().catch(() => {});
   const fae = await apiGet("/rest/v1/v_uw_faelligkeit?select=person_id,status&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []);
   const uwFaellig = new Set((fae || []).filter(f => f.status === "ueberfaellig" || f.status === "erstunterweisung").map(f => f.person_id)).size;
-  const gefahr = typeof asAnlagen === "function" ? asAnlagen().filter(d => asAnlagenBand(d.maschinen_id) === "gefahr").length : 0;
-  const vorf = asT("as_meldung").filter(m => m._v1 && m.status !== "erledigt").length;
-  const offenM = asT("as_massnahme").filter(m => m.status === "offen").length;
+  if(AS.seite !== "start") return;
+  asNav();   // Zähler und Umwelt-Eintrag kennen jetzt die Unterlagen
   const zeichnen = () => {
     const liste = asSkAuswahl();
+    /* volle Reihen ohne einzelne Kachel am Ende: Spaltenzahl 1–4 so wählen, dass die letzte Reihe ≥ 2 Kacheln hat (Rest dehnt sich) */
+    const n = liste.length + (AS_SK.edit ? 1 : 0), spalten = n <= 4 ? Math.max(1, n) : n % 4 === 1 ? 3 : 4;
     const kachel = (id, i) => { const k = AS_SK_KATALOG[id];
-      return AS_SK.edit ? `<div class="kachel"><div class="lbl">${esc(k[1])}</div><div class="hinweis">${esc(k[2])}</div>
-          <div class="reihe" style="gap:4px;margin-top:6px"><button class="btn sek klein" data-sk="links" data-i="${i}" ${i === 0 ? "disabled" : ""}>←</button>
-          <button class="btn sek klein" data-sk="rechts" data-i="${i}" ${i === liste.length - 1 ? "disabled" : ""}>→</button>
+      return AS_SK.edit ? `<div class="kachel sk-kachel" title="${esc(k[2])}"><div class="lbl">${esc(k[1])}</div>
+          <div class="sk-knoepfe"><button class="btn sek klein" data-sk="links" data-i="${i}" ${i === 0 ? "disabled" : ""} aria-label="nach links">‹</button>
+          <button class="btn sek klein" data-sk="rechts" data-i="${i}" ${i === liste.length - 1 ? "disabled" : ""} aria-label="nach rechts">›</button>
           <button class="btn sek klein" data-sk="weg" data-i="${i}">entfernen</button></div></div>`
-        : `<div class="kachel k-gruen" data-geh="${esc(id)}" style="cursor:pointer"><div class="zahl klein">${esc(k[1])}</div><div class="hinweis">${esc(k[2])}</div></div>`; };
-    main.innerHTML = `<h1 class="seite">Guten Tag${AS.ich ? ", " + esc(AS.ich.split(" ")[0]) : ""}</h1><p class="unter">${esc(AS.org ? AS.org.name : "")}</p>
+        : `<div class="kachel k-gruen sk-kachel" data-geh="${esc(id)}" title="${esc(k[1] + " – " + k[2])}"><div class="zahl klein">${esc(k[1])}</div><div class="hinweis">${esc(k[2])}</div></div>`; };
+    main.innerHTML = kopf + `<div class="karte"><h2>Auf einen Blick</h2><div class="kacheln blick">${asStartBlick(uwFaellig)}</div></div>
       <div class="karte"><h2>Schnellzugriffe <span>${AS_SK.edit ? `<button class="btn sek klein" id="skStd">Standard</button> <button class="btn klein" id="skFertig">Fertig</button>` : `<button class="btn sek klein" id="skAnp">Anpassen</button>`}</span></h2>
-        <div class="kacheln">${liste.map(kachel).join("")}${AS_SK.edit ? `<div class="kachel" id="skNeu" style="cursor:pointer"><div class="zahl">+</div><div class="hinweis">Schnellzugriff hinzufügen</div></div>` : ""}</div></div>
-      <div class="karte"><h2>Auf einen Blick</h2><div class="kacheln">
-        <div class="kachel k-${gefahr ? "rot" : "gruen"}" data-ziel="anlagen" style="cursor:pointer"><div class="lbl">Anlagen im Gefahrbereich</div><div class="zahl">${gefahr}</div></div>
-        <div class="kachel k-${vorf ? "gelb" : "gruen"}" data-ziel="steuerung/meldungen" style="cursor:pointer"><div class="lbl">Offene Vorfälle</div><div class="zahl">${vorf}</div></div>
-        <div class="kachel k-${uwFaellig ? "gelb" : "gruen"}" data-ziel="unterweisungen" style="cursor:pointer"><div class="lbl">Unterweisungen fällig</div><div class="zahl">${uwFaellig}</div><div class="hinweis">Personen</div></div>
-        <div class="kachel k-${offenM ? "gelb" : "gruen"}" data-ziel="massnahmen" style="cursor:pointer"><div class="lbl">Offene Maßnahmen</div><div class="zahl">${offenM}</div></div></div></div>
-      <div class="karte" id="asInstall" hidden><h2>Als App installieren</h2><p>Die App startet dann ohne Browserleiste, wie ein Programm – am PC und am Handy.</p><button class="btn" id="asInstallKnopf">Jetzt installieren</button></div>`;
+        <div class="kacheln blick sk sk-${spalten}">${liste.map(kachel).join("")}${AS_SK.edit ? `<div class="kachel sk-kachel" id="skNeu"><div class="zahl">+</div><div class="hinweis">Schnellzugriff hinzufügen</div></div>` : ""}</div></div>`;
     main.querySelectorAll("[data-geh]").forEach(k => k.onclick = () => { const z = AS_SK_KATALOG[k.dataset.geh]; if(z[3] === "mangelNeu") AS.mgNeuSofort = true; asGehe(z[0]); });
     main.querySelectorAll("[data-ziel]").forEach(k => k.onclick = () => asGehe(k.dataset.ziel));
     const an = document.getElementById("skAnp"); if(an) an.onclick = () => { AS_SK.edit = true; zeichnen(); };
@@ -140,36 +226,19 @@ AS_SEITEN.start = { titel: "Start", icon: "⌂", sort: 0.5, async render(main){
       await asSkSetzen(l); zeichnen(); });
     const nk = document.getElementById("skNeu"); if(nk) nk.onclick = () => { const da = new Set(asSkAuswahl());
       const frei = Object.keys(AS_SK_KATALOG).filter(id => !da.has(id) && (id !== "gefahrstoffe" || AS_SEITEN.gefahrstoffe));
-      const d = asDialog({ titel: "Schnellzugriff hinzufügen", inhalt: `<div class="zeilen">${frei.map(id => `<div class="z" data-neu="${esc(id)}" style="cursor:pointer"><div><b>${esc(AS_SK_KATALOG[id][1])}</b><small>${esc(AS_SK_KATALOG[id][2])}</small></div></div>`).join("") || `<div class="leer">Alle sind schon da.</div>`}</div>` });
+      const d = asDialog({ titel: "Schnellzugriff hinzufügen", inhalt: `<div class="zeilen">${frei.map(id => `<div class="z" data-neu="${esc(id)}"><div><b>${esc(AS_SK_KATALOG[id][1])}</b><small>${esc(AS_SK_KATALOG[id][2])}</small></div></div>`).join("") || `<div class="leer">Alle sind schon da.</div>`}</div>` });
       d.querySelectorAll("[data-neu]").forEach(z => z.onclick = async () => { await asSkSetzen(asSkAuswahl().concat([z.dataset.neu])); d.close(); zeichnen(); }); };
-    asInstallZeigen();
   };
   zeichnen();
 }};
 
-/* ---------------- Installation als App + untere Leiste ---------------- */
+/* ---------------- Installation als App (Knopf im Fuß der Seitenleiste, wie V1) ---------------- */
 let AS_INSTALL = null;
 window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); AS_INSTALL = e; asInstallZeigen(); });
-function asInstallZeigen(){
-  const k = document.getElementById("asInstall"); if(!k) return;
-  k.hidden = !AS_INSTALL;
-  const b = document.getElementById("asInstallKnopf"); if(b) b.onclick = async () => { if(!AS_INSTALL) return; AS_INSTALL.prompt(); await AS_INSTALL.userChoice.catch(() => {}); AS_INSTALL = null; asInstallZeigen(); };
-}
+function asInstallZeigen(){ document.querySelectorAll('[data-sl="install"]').forEach(b => { b.hidden = !AS_INSTALL; }); }
+async function asInstallStarten(){ if(!AS_INSTALL) return; AS_INSTALL.prompt(); await AS_INSTALL.userChoice.catch(() => {}); AS_INSTALL = null; asInstallZeigen(); }
 if("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
-function asUnterleiste(){
-  const u = document.querySelector(".unterleiste"); if(!u || u.dataset.fertig) return;
-  u.dataset.fertig = "1"; u.style.display = ""; u.classList.add("as-leiste");
-  const s = document.createElement("style");
-  s.textContent = "@media (max-width:900px){.unterleiste.as-leiste{display:flex!important;gap:8px}.unterleiste.as-leiste button{flex:1;width:auto}"
-    + "#menueTitel{display:none}#menueKnopf::after{content:'Mehr'}}";
-  document.head.appendChild(s);
-  const knopf = (txt, ziel) => { const b = document.createElement("button"); b.textContent = txt; b.onclick = () => asGehe(ziel); return b; };
-  const melden = document.createElement("button"); melden.textContent = "Melden"; melden.onclick = asMeldenWahl;
-  u.insertBefore(melden, u.firstChild);
-  u.insertBefore(knopf("Start", "start"), u.firstChild);
-}
-document.addEventListener("DOMContentLoaded", asUnterleiste);
-/* „Melden“ (Handy): ein Knopf, zwei Wege – Mangel/unsicherer Zustand in die Mängelliste, Unfall/Beinahe-Unfall als Vorfall (Durchlauf 15.10.) */
+/* „Melden“: ein Weg, zwei Ziele – Mangel/unsicherer Zustand in die Mängelliste, Unfall/Beinahe-Unfall als Vorfall (Durchlauf 15.10.) */
 function asMeldenWahl(){
   const d = asDialog({ titel: "Was soll gemeldet werden?", inhalt: `<div class="zeilen">
       <div class="z" data-mw="mangel"><div><b>Mangel oder unsicherer Zustand</b><small>an einer Anlage, im Gebäude oder am Arbeitsplatz – kommt in die Mängelliste</small></div><span class="chip c-gelb">Mangel</span></div>
@@ -181,17 +250,27 @@ function asMeldenWahl(){
 /* ---------------- Betriebskonten: Management-Werkzeuge der Fachkraft ausblenden (wie V1 „Erweiterte Funktionen“) ---------------- */
 ["check", "prozesse", "bericht"].forEach(k => { if(AS_SEITEN[k]) AS_SEITEN[k].nurFachkraft = true; });
 
-/* ---------------- Passwort ändern (nicht beim gemeinsamen Schichtführer-Zugang, wie V1) ---------------- */
-function asPasswortKnopf(){
-  const ich = document.querySelector(".kopf .ich"); if(!ich || document.getElementById("asPw") || /^Schichtf/i.test(AS.kontoName || AS.ich || "")) return;
-  const b = document.createElement("button"); b.className = "link"; b.id = "asPw"; b.textContent = "Passwort ändern";
-  ich.insertBefore(b, document.getElementById("abmelden"));
-  b.onclick = () => asDialog({ titel: "Passwort ändern", inhalt: `<div class="form">${asFeld("Neues Passwort (mindestens 8 Zeichen)", "p1", "", "password", "voll")}${asFeld("Wiederholen", "p2", "", "password", "voll")}</div>`,
+/* ---------------- Passwort ändern (nicht beim gemeinsamen Schichtführer-Zugang, wie V1) ----------------
+   Erreichbar im Fuß der Seitenleiste und im Kopfmenü. */
+function asPasswortDialog(){
+  asDialog({ titel: "Passwort ändern", inhalt: `<div class="form">${asFeld("Neues Passwort (mindestens 8 Zeichen)", "p1", "", "password", "voll")}${asFeld("Wiederholen", "p2", "", "password", "voll")}</div>`,
     knoepfe: [{ t: "Speichern", fn: async d => { const w = asWerte(d);
       if(!w.p1 || w.p1.length < 8){ asMeldung("Mindestens 8 Zeichen."); return false; }
       if(w.p1 !== w.p2){ asMeldung("Die Eingaben stimmen nicht überein."); return false; }
       try{ await passwortAendern(w.p1); asMeldung("Passwort geändert – gilt ab sofort."); }
       catch(e){ asMeldung(e && e.message === "AUTH" ? "Sitzung abgelaufen – bitte neu anmelden." : "Fehlgeschlagen: " + ((e && e.message) || e)); return false; } } }] });
+}
+function asPasswortKnopf(){
+  const ich = document.querySelector(".kopf .ich"); if(!ich) return;
+  if(!document.getElementById("asPw") && !/^Schichtf/i.test(AS.kontoName || AS.ich || "")){
+    const b = document.createElement("button"); b.className = "link"; b.id = "asPw"; b.type = "button"; b.textContent = "Passwort ändern";
+    ich.insertBefore(b, document.getElementById("abmelden")); b.onclick = () => { if(typeof asKopfMenue === "function") asKopfMenue(false); asPasswortDialog(); };
+  }
+  /* Erscheinungsbild (Logo, Farben, Datenschutz-Kontakt) – pflegeberechtigte Konten */
+  if(!document.getElementById("asMarkeKnopf") && asDarf("pflegen")){
+    const b = document.createElement("button"); b.className = "link"; b.id = "asMarkeKnopf"; b.type = "button"; b.textContent = "Erscheinungsbild";
+    ich.insertBefore(b, document.getElementById("abmelden")); b.onclick = () => { if(typeof asKopfMenue === "function") asKopfMenue(false); asMarkeDialog(); };
+  }
 }
 
 /* ---------------- Neue Version online? (wie V1: Vergleich der Stylesheet-Fassung in index.html, nichts lädt ungefragt neu) ---------------- */
@@ -203,8 +282,7 @@ function asPasswortKnopf(){
     try{ const t = await (await fetch("index.html?stand=" + Date.now(), { cache: "no-store" })).text();
       const m = t.match(/href="(as\.css\?v=[^"]+)"/);
       if(m && m[1] !== meins){ gezeigt = true;
-        const b = document.createElement("div"); b.className = "nodruck";
-        b.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:60;background:#e8a800;color:#1d2733;padding:8px 14px;display:flex;gap:12px;align-items:center;justify-content:center";
+        const b = document.createElement("div"); b.className = "nodruck neue-version";
         b.innerHTML = `<b>Eine neue Version der App ist online.</b> <button class="btn klein">Aktualisieren</button>`;
         b.querySelector("button").onclick = () => location.reload(); document.body.appendChild(b); } }catch(e){}
   }

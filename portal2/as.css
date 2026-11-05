@@ -1,5 +1,5 @@
 /* OAK Arbeitsschutz-App – bewusst schlicht: Listenzeile + Popup, Ampel mit Zahl/Text, Admin-Knoepfe bernstein. */
-:root{--blau:#2D6A4F;--blau2:#D8F3DC;--oak-dunkel:#1B4332;--oak-hell:#52B788;--gruen:#2e9e5b;--gruen2:#e6f5ec;--gelb:#e8a800;--gelb2:#fff6dd;--rot:#d64545;--rot2:#fdeeee;
+:root{--blau:#2D6A4F;--blau-tief:#1B4332;--blau-hell:#52B788;--blau2:#D8F3DC;--oak-dunkel:#1B4332;--oak-hell:#52B788;--gruen:#2e9e5b;--gruen2:#e6f5ec;--gelb:#e8a800;--gelb2:#fff6dd;--rot:#d64545;--rot2:#fdeeee;
   --grau:#6b7785;--linie:#d6dee8;--bg:#f4f7fa;--text:#1d2733;--bern:#b7791f;--bern2:#fff4e0}
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:600 700;font-display:swap;src:url(../assets/fonts/cormorant-garamond-600-normal.woff2) format('woff2')}
 @font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300 500;font-display:swap;src:url(../assets/fonts/cormorant-garamond-400-normal.woff2) format('woff2')}
@@ -25,20 +25,28 @@ button,input,select,textarea,.btn{font-family:'Jost','Segoe UI',Arial,sans-serif
 input,select,textarea{font-family:inherit;font-size:14px;border:1px solid var(--linie);border-radius:8px;padding:7px 9px;background:#fff;color:var(--text)}
 textarea{min-height:70px;resize:vertical}
 .fehler{color:var(--rot);font-size:13px;min-height:16px}
-/* Rahmen */
-/* Kopfzeile kompakt (15.10.2026): Marke · Kontext · Lupe · Menü · Kundenlogo */
-.kopf{background:var(--blau);color:#fff;display:flex;align-items:center;gap:10px;padding:0 12px 0 16px;height:48px;position:sticky;top:0;z-index:5}
-.marke{font-weight:700;font-size:16px;white-space:nowrap}.marke span{font-weight:400;opacity:.85}
-.kopf-kontext{flex:0 1 auto;max-width:46vw;min-width:0;background:rgba(255,255,255,.12);border:0;color:#fff;border-radius:14px;padding:4px 12px;font:inherit;font-size:12.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kopf-kontext:hover{background:rgba(255,255,255,.22)}
+/* Rahmen wie das Kundenportal V1 (Phase 5, 05.11.2026): weiße Kopfzeile 72 px (Handy 56 px) mit Unterkante 3 px in
+   Kundenfarbe, OAK-Logo + „OAK EHS-Cockpit“ links, Kontext · Lupe · Menü · Kundenlogo rechts. --kopf-h = Kopf + Kante,
+   --fuss-h = Handy-Fußleiste (am PC 0) – für Höhen von Rahmen/iframes (.rahmen-voll). */
+:root{--kopf-h:75px;--fuss-h:0px}
+.kopf{background:#fff;color:var(--text);display:flex;align-items:center;gap:14px;padding:0 clamp(12px,2vw,28px);height:calc(var(--kopf-h) - 3px);
+  border-bottom:3px solid var(--blau);position:sticky;top:0;z-index:30}
+.marke{display:flex;align-items:center;gap:12px;min-width:0;cursor:pointer;color:var(--blau-tief);text-decoration:none;white-space:nowrap}
+.marke .oak-logo{height:44px;width:auto;display:block;flex:none}
+.marke .wort{display:flex;flex-direction:column;line-height:1.05;font-size:22px}
+.marke .wort small{font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:10px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:var(--grau);margin-top:3px}
+.kopf-kontext{flex:0 1 auto;max-width:40vw;min-width:0;height:34px;background:var(--blau2);border:0;color:var(--blau-tief);border-radius:17px;padding:0 14px;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kopf-kontext:hover{filter:brightness(.96)}
 .kopf-kontext .kk-kurz{display:none}
 @media(max-width:600px){.kopf-kontext .kk-voll{display:none}.kopf-kontext .kk-kurz{display:inline}}
-.kopf-rechts{margin-left:auto;display:flex;align-items:center;gap:4px}
-.kopf-icon{width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#fff;display:grid;place-items:center;cursor:pointer}
-.kopf-icon:hover,.kopf-icon[aria-expanded=true]{background:rgba(255,255,255,.18)}
-.kopf-icon svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
-.kopf-logo img{height:28px;max-width:110px;object-fit:contain;background:#fff;border-radius:6px;padding:2px 6px;margin-left:6px;display:block}
-.kopf-menue{position:absolute;top:48px;right:8px;width:min(340px,calc(100vw - 16px));background:#fff;color:var(--text);border-radius:12px;box-shadow:0 10px 30px rgba(15,25,40,.25);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.kopf-rechts{margin-left:auto;display:flex;align-items:center;gap:6px}
+.kopf-icon{width:40px;height:40px;border:0;border-radius:50%;background:transparent;color:var(--blau);display:grid;place-items:center;cursor:pointer;flex:none}
+.kopf-icon:hover,.kopf-icon[aria-expanded=true]{background:var(--blau2)}
+.kopf-icon svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.kopf-logo{display:flex;align-items:center}
+.kopf-logo img{height:50px;max-width:220px;width:auto;object-fit:contain;display:block;margin-left:8px}
+.kopf-logo img[hidden]{display:none}
+.kopf-menue{position:absolute;top:calc(100% + 3px);right:8px;width:min(340px,calc(100vw - 16px));background:#fff;color:var(--text);border-radius:12px;box-shadow:0 10px 30px rgba(15,25,40,.25);padding:12px 14px;display:flex;flex-direction:column;gap:8px;z-index:31}
 .kopf-menue[hidden]{display:none}
 .km-titel{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--grau,#667085);margin-top:4px}
 .kunde-wahl{display:flex;flex-direction:column;gap:8px;align-items:stretch}
@@ -46,27 +54,72 @@ textarea{min-height:70px;resize:vertical}
 .ich{display:flex;flex-direction:column;align-items:flex-start;gap:6px;font-size:14px}
 .ich .link{color:var(--blau);font-size:14px}
 .kopf.sucht .marke,.kopf.sucht .kopf-kontext{display:none}
-#suchFeld{display:none}.kopf.sucht #suchFeld{display:block;flex:1;min-width:0;height:34px;padding:0 14px;border-radius:17px;border:0;font:inherit;font-size:14px}
-.rumpf{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 52px)}
-.seitenleiste{background:#fff;border-right:1px solid var(--linie);padding:12px 8px}
-.seitenleiste a{display:flex;gap:10px;align-items:center;padding:9px 12px;border-radius:8px;color:var(--text);text-decoration:none;font-size:14px;margin-bottom:2px}
-.seitenleiste a:hover{background:var(--blau2)}
-.seitenleiste a.an{background:var(--blau);color:#fff}
-.seitenleiste a i{font-style:normal;width:20px;text-align:center}
-main{padding:20px 22px 90px;max-width:1320px;width:100%}
-.unterleiste,.blatt-hg{display:none}
-@media(max-width:820px){
-  .rumpf{grid-template-columns:1fr}.seitenleiste{display:none}
-  main{padding:14px 12px 90px}
-  .unterleiste{display:block;position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--linie);padding:8px 12px;z-index:6}
-  .unterleiste button{width:100%;background:var(--blau);color:#fff;border:0;border-radius:10px;padding:11px;font-size:15px}
-  .blatt-hg.zeig{display:block;position:fixed;inset:0;background:rgba(15,25,40,.4);z-index:7}
-  .blatt{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;padding:14px;max-height:80vh;overflow:auto}
-  .blatt a{display:flex;gap:12px;align-items:center;padding:13px 10px;border-bottom:1px solid var(--linie);color:var(--text);text-decoration:none;font-size:16px}
-  .marke span{display:none}
+#suchFeld{display:none}.kopf.sucht #suchFeld{display:block;flex:1;min-width:0;height:38px;padding:0 16px;border-radius:19px;border:1px solid var(--linie);font:inherit;font-size:14px}
+
+/* Seitenleiste 248 px (einklappbar auf 72 px), Einträge 44 px / 15 px, aktiv = Akzentfläche + Strich links, rote Zähler */
+.rumpf{display:grid;grid-template-columns:248px minmax(0,1fr);align-items:start;min-height:calc(100dvh - var(--kopf-h))}
+.seitenleiste{position:sticky;top:var(--kopf-h);height:calc(100dvh - var(--kopf-h));overflow-y:auto;background:#fff;border-right:1px solid var(--linie);
+  padding:14px 12px;display:flex;flex-direction:column;gap:12px}
+.sl-liste,.sl-fuss{display:flex;flex-direction:column;gap:2px}
+.sl-fuss{margin-top:auto;border-top:1px solid var(--linie);padding-top:10px}
+.sl-eintrag{position:relative;display:flex;align-items:center;gap:12px;width:100%;min-height:44px;padding:0 12px;margin:0;border:0;border-radius:10px;
+  background:transparent;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:15px;font-weight:500;color:#344054;cursor:pointer;text-align:left;
+  white-space:nowrap;text-decoration:none;line-height:1.2}
+.sl-eintrag[hidden]{display:none}
+.sl-eintrag span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sl-eintrag svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:#667085}
+.sl-eintrag:hover{background:#f2f4f7}
+.sl-eintrag.an{background:var(--blau2);color:var(--blau-tief);font-weight:600}
+.sl-eintrag.an svg{color:var(--blau)}
+.sl-eintrag.an::before{content:"";position:absolute;left:-12px;top:9px;bottom:9px;width:3px;border-radius:0 3px 3px 0;background:var(--blau)}
+.sl-badge{flex:none;min-width:24px;padding:1px 8px;border-radius:999px;background:var(--rot2);color:#b42318;font-size:12px;font-weight:700;text-align:center;line-height:18px}
+.sl-kopf{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#98a2b3;margin:14px 12px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl-klapp{color:#98a2b3;font-size:13px;min-height:36px}
+.sl-klapp svg{transition:transform .2s}
+@media(min-width:821px){
+  body.sl-schmal .rumpf{grid-template-columns:72px minmax(0,1fr)}
+  body.sl-schmal .seitenleiste{padding-left:10px;padding-right:10px}
+  body.sl-schmal .sl-eintrag{justify-content:center;padding:0}
+  body.sl-schmal .sl-eintrag span,body.sl-schmal .sl-kopf,body.sl-schmal .nav-kopf span{display:none}
+  body.sl-schmal .sl-eintrag.an::before{left:-10px}
+  body.sl-schmal .sl-klapp svg{transform:rotate(180deg)}
+  body.sl-schmal .sl-badge{position:absolute;top:3px;right:2px;min-width:18px;padding:0 5px;font-size:10.5px;line-height:16px}
+  body.sl-schmal .nav-kopf{justify-content:center}
+  body.sl-schmal .nav-links{display:block}
 }
+main{padding:24px clamp(16px,2.4vw,36px) 48px;width:100%}
+
+/* Handy (≤ 820 px): Seitenleiste weg, feste Fußleiste Start · Mängel · Unterlagen · Unterweisung · Mehr (OAK-UI-Regeln § 12) */
+.unterleiste,.blatt-hg,.as-fussleiste{display:none}
+@media(max-width:820px){
+  :root{--kopf-h:59px;--fuss-h:calc(62px + env(safe-area-inset-bottom,0px))}
+  .kopf{gap:8px;padding:0 6px 0 12px}
+  .marke{gap:8px}.marke .oak-logo{height:34px}.marke .wort{font-size:17px}.marke .wort small{display:none}
+  .kopf-logo img{height:32px;max-width:96px;margin-left:4px}
+  .kopf-icon{width:38px;height:38px}
+  .rumpf{grid-template-columns:1fr}.seitenleiste{display:none}
+  main{padding:14px 12px calc(var(--fuss-h) + 24px)}
+  .as-fussleiste{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:25;background:#fff;border-top:1px solid var(--linie);
+    padding:4px 6px env(safe-area-inset-bottom,0px);box-shadow:0 -2px 10px rgba(15,25,40,.06)}
+  .fl-i{position:relative;flex:1 1 0;min-width:0;height:58px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    background:none;border:0;border-radius:10px;color:#667085;text-decoration:none;font:500 11.5px/1.1 'Jost','Segoe UI',Arial,sans-serif;cursor:pointer}
+  .fl-i span{max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fl-i svg{width:23px;height:23px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .fl-i.an{color:var(--blau-tief);background:var(--blau2);font-weight:600}
+  .fl-i .sl-badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;padding:0 5px;font-size:10.5px;line-height:16px}
+  .blatt-hg.zeig{display:block;position:fixed;inset:0;background:rgba(15,25,40,.4);z-index:40}
+  .blatt-hg.zeig ~ .as-fussleiste{display:none}
+  .blatt{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;padding:14px 12px calc(14px + env(safe-area-inset-bottom,0px));max-height:85dvh;overflow:auto}
+  .blatt .sl-klapp{display:none}
+  .blatt .sl-fuss{margin-top:8px}
+}
+@media(max-width:600px){.marke .wort{display:none}}
+/* Vollbild-Ebenen (ASA-Mappe, Dokumentansicht, Terminal) und Druck: keine Fußleiste */
+body.mp-offen .as-fussleiste,html.mp-offen .as-fussleiste{display:none!important}
+/* Hilfsklasse für eingebettete Seiten/iframes: volle Höhe bis zur Fußleiste. --rahmen-abzug = Titel, Reiter, Abstände darüber */
+.rahmen-voll{display:block;width:100%;height:calc(100dvh - var(--kopf-h) - var(--fuss-h) - var(--rahmen-abzug,170px));min-height:420px;border:1px solid var(--linie);border-radius:12px;background:#fff}
 /* Inhalte */
-h1.seite{margin:0 0 4px;font-size:22px;color:var(--blau)}
+h1.seite{margin:0 0 4px;font-size:26px;line-height:1.15;color:var(--blau-tief)}
 .unter{color:var(--grau);font-size:13px;margin:0 0 16px}
 .karte{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.07);padding:16px;margin-bottom:16px}
 .karte h2{margin:0 0 12px;font-size:16px;color:var(--blau);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -129,7 +182,7 @@ table.tab td{border-bottom:1px solid var(--linie);padding:8px 6px;vertical-align
 .frage .ft{font-weight:600;font-size:14px}.frage .hw{font-size:12px;color:var(--grau);margin:3px 0 8px}
 .frage .reihe{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--grau)}
 .hinweis{font-size:12px;color:var(--grau)}
-@media print{.kopf,.seitenleiste,.unterleiste,.nodruck{display:none!important}.rumpf{display:block}main{padding:0}.karte{box-shadow:none;border:1px solid var(--linie)}body{background:#fff}}
+@media print{.kopf,.seitenleiste,.unterleiste,.as-fussleiste,.blatt-hg,.nodruck{display:none!important}.rumpf{display:block}main{padding:0}.karte{box-shadow:none;border:1px solid var(--linie)}body{background:#fff}}
 .mz{display:grid;grid-template-columns:minmax(180px,2.2fr) minmax(80px,1fr) 82px minmax(110px,1fr);gap:8px;padding:8px 6px;border-top:1px solid #eef1f5;align-items:start}
 .mz:first-child{border-top:0}.mz.mz-kopf{padding:0;border:0;font-weight:600}
 .mz .chip{white-space:normal}
@@ -137,13 +190,12 @@ table.tab td:nth-child(3){min-width:130px}
 
 /* OAK-CI (12.10.2026): Überschriften Cormorant Garamond, Linien-Icons im Menü wie im Kundenportal */
 h1.seite,.karte h2,.marke,.login h1,.dlg-kopf h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;letter-spacing:.2px}
-h1.seite{font-size:28px}.karte h2{font-size:20px}.marke{font-size:22px}
-.seitenleiste a svg,.blatt a svg{width:20px;height:20px;flex:0 0 20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+h1.seite{font-size:26px}.karte h2{font-size:20px}.marke{font-size:22px}
 /* Handy (12.10.2026): Inhalt darf schmaler werden als breite Reiter/Kacheln – sonst lief die Seite seitlich über */
 main{min-width:0;overflow-wrap:break-word}
 @media(max-width:820px){#haupt table{display:block;max-width:100%;overflow-x:auto}}
 @media(max-width:820px){.reiter{flex-wrap:wrap;overflow-x:visible}.kacheln{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
-  .kachel .zahl{font-size:22px}h1.seite{font-size:24px}.tabwrap{overflow-x:auto}}
+  .kachel .zahl{font-size:22px}.tabwrap{overflow-x:auto}}
 .form label{min-width:0}.form select,.form input,.form textarea{max-width:100%;min-width:0}
 
 /* Seitenleiste in Gruppen (14.10.2026) */
@@ -320,7 +372,7 @@ html.mp-offen,html.mp-offen body{overflow:hidden;height:100%}
 
 /* Begehung im Cockpit */
 .bg-kopf{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.bg-kopf small{display:block;color:var(--grau);font-size:12px}
-.bg-knoepfe{display:flex;gap:8px;flex-wrap:wrap}.bg-raster{display:grid;grid-template-columns:300px 1fr;gap:16px;height:calc(100vh - 300px);min-height:420px}
+.bg-knoepfe{display:flex;gap:8px;flex-wrap:wrap}.bg-raster{display:grid;grid-template-columns:300px 1fr;gap:16px;height:calc(100dvh - var(--kopf-h) - 252px);min-height:420px}
 .bg-links,.bg-rechts{margin:0;overflow:auto;display:flex;flex-direction:column;gap:10px;min-height:0}.bg-wahl select{width:100%;height:36px}
 .bg-akt{background:#eef4fa}.bg-links .z b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bg-links .zeilen .z{grid-template-columns:minmax(0,1fr)}
 .bg-notiz{width:100%;flex:1;min-height:140px;resize:none;padding:10px;border:1px solid var(--linie);border-radius:8px;font-size:15px;box-sizing:border-box}
@@ -333,10 +385,50 @@ html.mp-offen,html.mp-offen body{overflow:hidden;height:100%}
 .bg-gilt{display:flex;gap:6px;align-items:center;min-width:0}.bg-gilt b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bg-gef textarea{width:100%;box-sizing:border-box;resize:vertical}.bg-gef small{color:var(--grau);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bg-risiko{font-size:13px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}.bg-risiko input{width:44px}.bg-sig{width:100%;height:auto;border:1px solid var(--linie);border-radius:8px;background:#fff;touch-action:none}
 
-.ki-seite{display:flex;flex-direction:column;gap:10px;height:calc(100vh - 88px);margin-bottom:-70px;min-height:420px}
+.ki-seite{display:flex;flex-direction:column;gap:10px;height:calc(100dvh - var(--kopf-h) - 40px);margin-bottom:-32px;min-height:420px}
 .ki-verlauf{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;margin:0}
 .ki-b{max-width:100%;padding:10px 12px;border-radius:8px;background:#eef4fa;white-space:pre-wrap;overflow-wrap:anywhere}.ki-b.ich{background:var(--linie);align-self:flex-end}
 .ki-b small{display:block;color:var(--grau);margin-top:6px;white-space:normal}.ki-ablage{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .ki-eingabe{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:end;margin:0}.ki-eingabe textarea{width:100%;height:64px;resize:none;padding:8px;border:1px solid var(--linie);border-radius:8px;font:inherit;box-sizing:border-box}
 .ki-anh{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px;min-height:0}.ki-anh:empty{display:none}
-@media(max-width:820px){.ki-seite{height:calc(100dvh - 190px);margin-bottom:0}}
+@media(max-width:820px){.ki-seite{height:calc(100dvh - var(--kopf-h) - var(--fuss-h) - 40px);margin-bottom:-12px}}
+
+/* ===== Phase 5 (05.11.2026): Seitenkopf, Start, Erscheinungsbild ===== */
+/* „‹ Start“ vor dem Seitentitel – nur am Handy (am PC führt die Seitenleiste zurück) */
+.seite-zurueck{display:none;font:500 14px/1 'Jost','Segoe UI',Arial,sans-serif;color:#344054;background:#fff;border:1px solid var(--linie);border-radius:18px;
+  height:34px;padding:0 12px;margin-right:10px;vertical-align:middle;cursor:pointer;letter-spacing:0}
+.seite-zurueck:hover{border-color:var(--blau);color:var(--blau-tief)}
+@media(max-width:820px){.seite-zurueck{display:inline-flex;align-items:center}}
+/* Start: „Auf einen Blick“ und Schnellzugriffe – gleich hohe Kacheln, volle Reihen (PC 3, Tablet 2, Handy 1), je Zeile einzeilig */
+.kacheln.blick{grid-template-columns:repeat(3,minmax(0,1fr))}
+.kacheln.blick .kachel{height:104px;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;overflow:hidden}
+.kacheln.blick .kachel>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kacheln.blick .kachel.k-grau{border-left-color:#c5ced8}
+.sk-knoepfe{display:flex;gap:4px;margin-top:6px}
+/* Schnellzugriffe: frei wählbare Anzahl – Flex mit fester Spaltenzahl (sk-1 … sk-4), eine unvollständige letzte Reihe füllt die Breite */
+.kacheln.sk{display:flex;flex-wrap:wrap}
+.kacheln.sk>.kachel{flex:1 1 calc((100% - (var(--sk-spalten) - 1) * 12px) / var(--sk-spalten))}
+.sk-1{--sk-spalten:1}.sk-2{--sk-spalten:2}.sk-3{--sk-spalten:3}.sk-4{--sk-spalten:4}
+@media(max-width:1100px){.kacheln.sk.sk-3,.kacheln.sk.sk-4{--sk-spalten:2}}
+@media(max-width:600px){.kacheln.sk{--sk-spalten:1!important}}
+@media(max-width:1100px){.kacheln.blick{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.kacheln.blick{grid-template-columns:1fr}.kacheln.blick .kachel{height:88px}}
+/* Hinweisleisten (statt Inline-Stil) */
+.pruefansicht{position:fixed;bottom:calc(var(--fuss-h) + 14px);right:14px;z-index:26;background:var(--bern);color:#fff;padding:6px 12px;border-radius:8px;font-size:13px}
+.neue-version{position:fixed;top:0;left:0;right:0;z-index:60;background:var(--gelb);color:var(--text);padding:8px 14px;display:flex;gap:12px;align-items:center;justify-content:center}
+/* Erscheinungsbild: Logo-Vorschau + Farbwähler */
+.marke-logo{display:flex;align-items:center;gap:14px;min-height:60px}
+.marke-logo img{height:50px;max-width:220px;object-fit:contain;display:block}
+.marke-farben{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.marke-farben label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--grau);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.marke-farben input[type=color]{width:100%;height:38px;padding:3px 5px;cursor:pointer}
+@media(max-width:600px){.marke-farben{grid-template-columns:1fr}}
+/* Dialogtitel in Cormorant (CI) – die Regel „.dlg h3 = Jost“ gilt nur für Zwischenüberschriften im Inhalt */
+.dlg .dlg-kopf h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:21px;font-weight:600;color:var(--blau-tief);margin:0;letter-spacing:.2px}
+/* Unterweisungen: Katalog und Personenliste (Phase 5B) */
+.zeilen .z .uwk-chips{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;align-items:center}
+@media(max-width:600px){.zeilen .z .uwk-chips{justify-content:flex-start}}
+.tab td.uwk-abwahl{background:#fdecec;color:var(--rot)}
+.tab td.uwk-abwahl small{color:var(--rot)}
+.uwp-aktionsleiste{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border-top:1px solid var(--linie,#dde3ea);padding:10px 4px;margin-top:10px}
+@media(max-width:820px){.uwp-aktionsleiste{bottom:calc(var(--fuss-h,0px) + env(safe-area-inset-bottom))}}

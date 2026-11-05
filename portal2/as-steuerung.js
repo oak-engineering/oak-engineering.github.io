@@ -43,12 +43,21 @@ function asAsaTagesordnung(){
   z.push("Verschiedenes");
   return z.map((x, i) => (i + 1) + ". " + x.replace(/^\d+\.\s*/, "")).join("\n");
 }
+/* Zustand je Sitzung: geplant · abgeschlossen · Protokoll fehlt (abgeschlossen, aber kein unterschriebenes Protokoll
+   in mappe.protokoll_pfad und keine Unterlage mit „protokoll“ im Namen) */
+function asAsaZustand(a){
+  if(!a || !a.abgeschlossen) return { t: "geplant", f: "grau" };
+  const m = a.mappe || {};
+  const da = !!m.protokoll_pfad || (m.unterlagen || []).some(d => /protokoll/i.test((d.name || "") + " " + (d.pfad || "")));
+  return da ? { t: "abgeschlossen", f: "gruen" } : { t: "Protokoll fehlt", f: "gelb" };
+}
 function asAsa(box){
   const liste = asT("as_asa").slice().sort((a, b) => b.datum.localeCompare(a.datum)), jahr = new Date().getFullYear();
   const n = liste.filter(a => a.abgeschlossen && String(a.datum).startsWith(String(jahr))).length;
-  box.innerHTML = `<div class="karte"><h2>Arbeitsschutzausschuss ${jahr}: ${n} von mindestens 4 Sitzungen <button class="btn klein" id="asaNeu">+ Sitzung</button></h2>
-    <p class="hinweis">§ 11 ASiG: mindestens vierteljährlich. Je Sitzung eine Mappe: Folien und Unterlagen hochladen, präsentieren, auf den Folien notieren. Beschlüsse werden Maßnahmen und Termine im Kalender.</p>
-    <div class="zeilen">${liste.map(a => `<div class="z" data-a="${a.id}"><div><b>${asDat(a.datum)}</b><small>${esc(a.teilnehmer || "Teilnehmende offen")}</small></div><span style="display:flex;gap:6px;flex:none">${(a.mappe && (a.mappe.folien || []).length) ? asChip("Mappe", "blau") : ""}${a.abgeschlossen ? asChip("Protokoll", "gruen") : asChip("geplant", "grau")}</span></div>`).join("") || `<div class="leer">Noch keine Sitzung.</div>`}</div></div>`;
+  const zst = a => { const z = asAsaZustand(a); return asChip(z.t, z.f); };
+  box.innerHTML = `<div class="karte"><h2>Arbeitsschutzausschuss ${jahr}: ${n} von mindestens 4 Sitzungen ${asDarf("pflegen") ? `<button class="btn klein" id="asaNeu">+ Sitzung</button>` : ""}</h2>
+    <p class="hinweis">§ 11 ASiG: mindestens vierteljährlich. Je Sitzung eine Mappe: Folien und Unterlagen hochladen, präsentieren, auf den Folien notieren. Beschlüsse werden Maßnahmen und Termine im Kalender. Das unterschriebene Protokoll in der Mappe hochladen – es steht dann auch unter „Unterlagen“.</p>
+    <div class="zeilen">${liste.map(a => `<div class="z" data-a="${a.id}"><div><b>${asDat(a.datum)}</b><small>${esc(a.teilnehmer || "Teilnehmende offen")}</small></div><span style="display:flex;gap:6px;flex:none">${(a.mappe && (a.mappe.folien || []).length) ? asChip("Mappe", "blau") : ""}${zst(a)}</span></div>`).join("") || `<div class="leer">Noch keine Sitzung.</div>`}</div></div>`;
   const dlg = a => { const neu = !a; a = a || { datum: asHeute(), tagesordnung: asAsaTagesordnung() };
     const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); delete w.beschluesse; await asSpeichern("as_asa", Object.assign({ id: a.id }, w)); asZeige(); } },
       { t: "Protokoll abschließen", klasse: "sek", fn: async d => { const w = asWerte(d), b = asListe((w.beschluesse || "").replace(/\n/g, ",")); delete w.beschluesse;
@@ -69,7 +78,7 @@ function asAsa(box){
       ${!a.abgeschlossen ? asFeld("Beschlüsse (je Zeile einer – werden beim Abschließen Maßnahmen; mit „Ziel:“ davor ein Ziel)", "beschluesse", "", "textarea", "voll") : ""}</div>`, knoepfe: kn });
     d.querySelector("#toVorschlag").onclick = () => d.querySelector('[data-f="tagesordnung"]').value = asAsaTagesordnung(); };
   /* Sitzungsmappe (as-asa-mappe.js); der frühere Textdialog bleibt als Rückfall, falls das Modul fehlt */
-  document.getElementById("asaNeu").onclick = () => typeof asMpNeu === "function" ? asMpNeu() : dlg(null);
+  const neuK = document.getElementById("asaNeu"); if(neuK) neuK.onclick = () => typeof asMpNeu === "function" ? asMpNeu() : dlg(null);
   box.querySelectorAll("[data-a]").forEach(z => z.onclick = () => typeof asMpOeffnen === "function" ? asMpOeffnen(z.dataset.a) : dlg(asNach("as_asa", z.dataset.a)));
 }
 

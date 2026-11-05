@@ -6,7 +6,7 @@
 const AS_UL_KAT = [
   ["ba-sammel", "Betriebsanweisungen (Sammel-BA)"], ["allg-gbu", "Allgemeine Beurteilungen (Tätigkeiten)"], ["begehungen", "Begehungsprotokolle"],
   ["unterweisungen", "Unterweisungen"], ["gefahrstoffe", "Gefahrstoffe"], ["hallenplan", "Hallenplan"], ["vorfall-aushang", "Aushänge"],
-  ["vom-betrieb", "Interne Unterlagen (vom Betrieb hochgeladen)"], ["umwelt-immissionsschutz", "Immissionsschutz"], ["umwelt-gewaesserschutz", "Gewässerschutz"],
+  ["asa-protokolle", "ASA-Protokolle"], ["vom-betrieb", "Interne Unterlagen (vom Betrieb hochgeladen)"], ["umwelt-immissionsschutz", "Immissionsschutz"], ["umwelt-gewaesserschutz", "Gewässerschutz"],
   ["umwelt-awsv", "AwSV"], ["umwelt-unterweisungen", "Unterweisungen Umwelt"], ["energie-aspekte", "Energieaspekte"], ["energie-verbrauch", "Verbrauch & Messstellen"]];
 const AS_V1 = [];   // alle Bereiche des Kundenportals gibt es inzwischen auch hier
 

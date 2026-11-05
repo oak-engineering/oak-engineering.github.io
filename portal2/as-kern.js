@@ -457,8 +457,24 @@ const AS_ICON = {
   bericht: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7.5h6M9 11h6"/>',
   leitfaden: '<path d="M12 3 20 6.5v5c0 4.6-3.2 8.3-8 9.5-4.8-1.2-8-4.9-8-9.5v-5z"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
   datenschutz: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  pruefungen: '<circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/>',
+  notfall: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M12 7.5v9M7.5 12h9"/>',
+  fremdfirmen: '<circle cx="9" cy="8" r="3"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 14.5a5.5 5.5 0 0 1 3 5.5"/>',
+  assistent: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8.5 10.5h.01M12 10.5h.01M15.5 10.5h.01"/>',
+  leistungen: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8.5 7V5.5A1.5 1.5 0 0 1 10 4h4a1.5 1.5 0 0 1 1.5 1.5V7M3 12.5h18"/>',
+  nutzung: '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
+  asa: '<circle cx="12" cy="7" r="2.5"/><circle cx="5.5" cy="10" r="2"/><circle cx="18.5" cy="10" r="2"/><path d="M7.5 20a4.5 4.5 0 0 1 9 0M2 19a3.5 3.5 0 0 1 5-3M22 19a3.5 3.5 0 0 0-5-3"/>',
+  logbuch: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M9 7.5h6M9 11h6"/>',
+  umwelt: '<path d="M5 19c0-8 6-13 15-14-1 9-6 15-14 15"/><path d="M5 19c3-4 6-6 9-8"/>',
+  klapp: '<path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/>',
+  schloss: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  install: '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/>',
+  tuer: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/>',
+  mehr: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+  marke: '<circle cx="12" cy="12" r="9"/><circle cx="8.5" cy="10" r="1.3"/><circle cx="12" cy="7.5" r="1.3"/><circle cx="15.5" cy="10" r="1.3"/><path d="M12 21a2.5 2.5 0 0 1 0-5h2.5"/>',
 };
-function asIcon(k, s){ return AS_ICON[k] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${AS_ICON[k]}</svg>` : `<i>${s.icon || ""}</i>`; }
+/* Linien-Icon; ohne Eintrag ein neutrales Dokument-Icon statt Schriftzeichen (keine Emoji) */
+function asIcon(k){ return `<svg viewBox="0 0 24 24" aria-hidden="true">${AS_ICON[k] || AS_ICON.unterlagen}</svg>`; }
 
 /* ---------------- Navigation ---------------- */
 function asGehe(ziel){ location.hash = "#" + ziel; }
@@ -469,8 +485,10 @@ function asHashLesen(){
   AS.seite = AS_SEITEN[s] && (asDarf("pflegen") || !AS_SEITEN[s].nurFachkraft) ? s : std;
   if(r) AS.reiter[AS.seite] = r;
 }
-/* Seitenleiste in Gruppen (Nikolai 14.10.2026: „zu lang, gliedern wie in V1“). Offen ist die Gruppe der aktiven Seite
-   plus die, die man selbst aufgeklappt hat (gemerkt im Gerät). Seiten ohne Gruppe landen unter „Service“. */
+/* Seitenleiste wie V1 (Phase 5, 05.11.2026): 248 px, Einträge 44 px, aktiv = Akzentfläche + Strich links, rote Zähler,
+   Fuß mit Passwort / App installieren / Abmelden, am PC auf 72 px einklappbar. Am Handy (≤ 820 px) ersetzt die feste
+   Fußleiste die Seitenleiste; „Mehr“ öffnet dieselbe Liste als Blatt.
+   OAK sieht die Fachgruppen (klappbar, gemerkt im Gerät), der Betrieb das Kundenmenü mit den V1-Begriffen (immer offen). */
 const AS_NAV_GRUPPEN = [
   ["ueberblick", "Überblick", ["start", "cockpit", "assistent", "leitfaden", "pflichten"]],
   ["organisation", "Organisation", ["organisation", "check", "nachweise", "notfall", "prozesse"]],
@@ -480,30 +498,150 @@ const AS_NAV_GRUPPEN = [
   ["steuerung", "Steuerung", ["steuerung", "kalender", "bericht", "energie"]],
   ["service", "Service", ["fragen", "aktuelles", "unterlagen", "leistungen", "datenschutz"]],
 ];
+/* Kundenmenü: Begriffe und Reihenfolge wie im Kundenportal (V1). Eintrag = Seite, "seite/reiter" oder
+   [ziel, Beschriftung, Bedingung]. Ohne Beschriftung gilt titelKunde der Seite, sonst titel. Gruppe null = ohne Überschrift. */
+const AS_NAV_KUNDE = [
+  [null, ["start", "pflichten", "kalender"]],
+  ["Anlagen & Gefahrstoffe", ["anlagen", "pruefungen", "maengel", "gefahrstoffe", "hallenplan"]],
+  ["Beschäftigte", ["unterweisungen", "nachweise", "fremdfirmen"]],
+  ["Melden & Fragen", ["vorfaelle", ["vorfaelle/umwelt", "Umweltvorfälle", () => asNavUmwelt()], "vorort", "fragen"]],
+  ["Organisation", ["organisation", "notfall", "bda", "massnahmen", ["mitzeichnung", "", () => asDarf("pflegen") || asDarf("freigeben")], ["steuerung/asa", "Arbeitsschutzausschuss"]]],
+  ["Informationen", ["aktuelles", "unterlagen", ["steuerung/log", "Logbuch"]]],
+];
+const AS_NAV_KUNDE_FUSS = ["leistungen", "datenschutz"];
+/* Kundenbegriffe (titelKunde) – OAK behält die Fachbegriffe. Schlüssel "seite" oder "seite/reiter".
+   as-app.js setzt daraus AS_SEITEN[k].titelKunde (sofern die Seite keinen eigenen mitbringt). */
+const AS_TITEL_KUNDE = {
+  anlagen: "Anlagenkataster", gefahrstoffe: "Gefahrstoffkataster", bda: "Gefährdungsbeurteilungen", mitzeichnung: "Freigaben",
+  organisation: "Organisation & Beauftragte", notfall: "Notfall", "steuerung/asa": "Arbeitsschutzausschuss", "steuerung/log": "Logbuch",
+  "vorfaelle/umwelt": "Umweltvorfälle",
+};
+/* Bisherige Seitentitel (h1), die in der Kundensicht durch den Kundenbegriff ersetzt werden */
+const AS_TITEL_ALT = { bda: ["Beurteilung der Arbeitsbedingungen"], mitzeichnung: ["Mitzeichnung der Sifa"], gefahrstoffe: ["Gefahrstoffe"],
+  notfall: ["Notfallorganisation"], steuerung: ["Steuerung"], anlagen: ["Anlagen"], organisation: ["Organisation"] };
+function asKundenSicht(){ return !asDarf("oak"); }   // Betriebskonten und Prüfansicht ?als=betrieb
+function asNavFrei(k){ return typeof asFunktionAn === "function" ? asFunktionAn(k) !== false : true; }   // Funktionen-Freischaltung (Phase 1), sobald vorhanden
+function asNavSicht(k){ const s = AS_SEITEN[k]; return !!s && !s.versteckt && (asDarf("pflegen") || !s.nurFachkraft) && asNavFrei(k); }
+function asNavUmwelt(){ return ((typeof AS_B !== "undefined" && AS_B.docs) || []).some(d => /^umwelt/.test(d.kategorie || "")); }
+/* Seitentitel je Sicht: Betrieb → Kundenbegriff (auch je Reiter), OAK → Fachbegriff */
+function asSeitenTitel(k, r){
+  const s = AS_SEITEN[k] || {};
+  if(!asKundenSicht()) return s.titel || "";
+  return (r && AS_TITEL_KUNDE[k + "/" + r]) || s.titelKunde || AS_TITEL_KUNDE[k] || s.titel || "";
+}
+/* Zähler aus den schon geladenen Daten (keine Zusatzabfragen): offene Mängel, neue Vorfälle, offene Freigaben,
+   überfällige Maßnahmen und Prüfungen. Termine/To-dos (portal_termin) sind nicht geladen – dort kein Zähler. */
+function asNavZaehler(){
+  const heute = asHeute(), z = {};
+  try{
+    z.maengel = asT("as_massnahme").filter(m => m._v1 && m._mg && m._mg.status !== "erledigt").length;
+    z.vorfaelle = asT("as_meldung").filter(m => m._v1 && m.status === "neu").length;
+    if(asDarf("pflegen") || asDarf("freigeben")) z.mitzeichnung = asT("as_mitzeichnung").filter(x => x.status !== "entschieden").length;
+    z.massnahmen = asT("as_massnahme").filter(m => !m._v1 && m.status === "offen" && m.termin && m.termin < heute).length;
+    if(typeof asPfKennzahlen === "function") z.pruefungen = asPfKennzahlen().ueberfaellig;
+  }catch(e){}
+  return z;
+}
 function asNavOffen(){ try{ return JSON.parse(localStorage.getItem("as_nav_offen") || "[]"); }catch(e){ return []; } }
+/* ein Eintrag der Seitenleiste */
+function asNavEintrag(ziel, text, aktiv, zahl){
+  const ico = { "steuerung/asa": "asa", "steuerung/log": "logbuch", "vorfaelle/umwelt": "umwelt" }[ziel] || ziel.split("/")[0];
+  return `<a href="#${esc(ziel)}" class="sl-eintrag${aktiv ? " an" : ""}" title="${esc(text)}">${asIcon(ico)}<span>${esc(text)}</span>${zahl ? `<b class="sl-badge">${zahl}</b>` : ""}</a>`;
+}
+function asNavFuss(extra){
+  const knopf = (id, ico, text, versteckt) => `<button type="button" class="sl-eintrag" data-sl="${id}"${versteckt ? " hidden" : ""} title="${esc(text)}">${asIcon(ico)}<span>${esc(text)}</span></button>`;
+  const gemeinsam = /^Schichtf/i.test(AS.kontoName || AS.ich || "");
+  return `<div class="sl-fuss">${extra || ""}
+    ${gemeinsam ? "" : knopf("pw", "schloss", "Passwort ändern")}
+    ${knopf("install", "install", "Als App installieren", typeof AS_INSTALL === "undefined" || !AS_INSTALL)}
+    ${knopf("abmelden", "tuer", "Abmelden")}</div>`;
+}
 function asNav(){
-  const sicht = k => AS_SEITEN[k] && !AS_SEITEN[k].versteckt && (asDarf("pflegen") || !AS_SEITEN[k].nurFachkraft);
-  const zugeteilt = new Set(AS_NAV_GRUPPEN.flatMap(g => g[2]));
-  const rest = Object.keys(AS_SEITEN).filter(k => !zugeteilt.has(k)).sort((a, b) => AS_SEITEN[a].sort - AS_SEITEN[b].sort);
-  const gruppen = AS_NAV_GRUPPEN.map(([id, titel, seiten]) => [id, titel, (id === "service" ? seiten.concat(rest) : seiten).filter(sicht)]).filter(g => g[2].length);
-  const offen = new Set(asNavOffen());
-  const link = k => `<a href="#${k}" class="${AS.seite === k ? "an" : ""}">${asIcon(k, AS_SEITEN[k])}${esc(AS_SEITEN[k].titel)}</a>`;
-  const html = gruppen.map(([id, titel, seiten]) => {
-    const aktiv = seiten.includes(AS.seite), auf = aktiv || offen.has(id) || gruppen.length === 1;
-    return `<div class="nav-gruppe${auf ? " auf" : ""}${aktiv ? " aktiv" : ""}" data-g="${id}">
-      <button type="button" class="nav-kopf" aria-expanded="${auf}"><span>${esc(titel)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
-      <div class="nav-links">${seiten.map(link).join("")}</div></div>`;
-  }).join("");
+  const z = asNavZaehler(), akt = AS.seite, aktR = AS.reiter[akt] || "";
+  let oben = "", fuss = "";
+  if(asKundenSicht()){
+    /* Kundenmenü: Gruppen immer offen */
+    const norm = e => Array.isArray(e) ? e : [e, "", null];
+    const sichtbar = e => { const [ziel, , bed] = norm(e); return asNavSicht(ziel.split("/")[0]) && (!bed || bed()); };
+    const reiterZiele = new Set(AS_NAV_KUNDE.flatMap(g => g[1]).filter(sichtbar).map(e => norm(e)[0]).filter(x => x.includes("/")));
+    const eintrag = e => { const [ziel, text] = norm(e), [k, r] = ziel.split("/");
+      const an = k === akt && (r ? aktR === r : !reiterZiele.has(k + "/" + aktR));
+      return asNavEintrag(ziel, text || asSeitenTitel(k, r), an, r ? 0 : z[k]); };
+    oben = AS_NAV_KUNDE.map(([titel, eintraege]) => { const e = eintraege.filter(sichtbar); if(!e.length) return "";
+      return (titel ? `<div class="sl-kopf">${esc(titel)}</div>` : "") + e.map(eintrag).join(""); }).join("");
+    fuss = AS_NAV_KUNDE_FUSS.filter(asNavSicht).map(k => asNavEintrag(k, asSeitenTitel(k), k === akt, 0)).join("");
+  } else {
+    /* OAK: Fachgruppen, klappbar; offen ist die Gruppe der aktiven Seite plus die selbst aufgeklappten */
+    const zugeteilt = new Set(AS_NAV_GRUPPEN.flatMap(g => g[2]));
+    const rest = Object.keys(AS_SEITEN).filter(k => !zugeteilt.has(k)).sort((a, b) => AS_SEITEN[a].sort - AS_SEITEN[b].sort);
+    const gruppen = AS_NAV_GRUPPEN.map(([id, titel, seiten]) => [id, titel, (id === "service" ? seiten.concat(rest) : seiten).filter(asNavSicht)]).filter(g => g[2].length);
+    const offen = new Set(asNavOffen());
+    oben = gruppen.map(([id, titel, seiten]) => {
+      const aktiv = seiten.includes(akt), auf = aktiv || offen.has(id) || gruppen.length === 1;
+      return `<div class="nav-gruppe${auf ? " auf" : ""}${aktiv ? " aktiv" : ""}" data-g="${id}">
+        <button type="button" class="nav-kopf" aria-expanded="${auf}"><span>${esc(titel)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button>
+        <div class="nav-links">${seiten.map(k => asNavEintrag(k, AS_SEITEN[k].titel, k === akt, z[k])).join("")}</div></div>`;
+    }).join("");
+  }
+  const html = `<div class="sl-liste"><button type="button" class="sl-eintrag sl-klapp" data-sl="klapp" title="Seitenleiste ein- oder ausklappen">${asIcon("klapp")}<span>Einklappen</span></button>
+    ${oben}</div>${asNavFuss(fuss)}`;
   ["nav", "blatt"].forEach(id => {
-    const el = document.getElementById(id); el.innerHTML = html;
+    const el = document.getElementById(id); if(!el) return; el.innerHTML = html;
     el.querySelectorAll(".nav-kopf").forEach(b => b.onclick = () => {
       const g = b.parentElement, auf = !g.classList.contains("auf"), o = new Set(asNavOffen());
       g.classList.toggle("auf", auf); b.setAttribute("aria-expanded", auf);
       auf ? o.add(g.dataset.g) : o.delete(g.dataset.g);
       try{ localStorage.setItem("as_nav_offen", JSON.stringify([...o])); }catch(e){}
     });
+    el.querySelectorAll("a.sl-eintrag").forEach(a => a.addEventListener("click", () => { const hg = document.getElementById("blattHg"); if(hg) hg.classList.remove("zeig"); }));
+    el.querySelectorAll("[data-sl]").forEach(b => b.onclick = () => asNavAktion(b.dataset.sl));
   });
-  document.getElementById("menueTitel").textContent = (AS_SEITEN[AS.seite] || {}).titel || "Bereiche";
+  const mt = document.getElementById("menueTitel"); if(mt) mt.textContent = asSeitenTitel(akt, aktR) || "Bereiche";
+  asFussleiste(z);
+}
+function asNavAktion(was){
+  const hg = document.getElementById("blattHg"); if(hg) hg.classList.remove("zeig");
+  if(was === "klapp"){ const schmal = document.body.classList.toggle("sl-schmal"); try{ localStorage.setItem("as_sl_schmal", schmal ? "1" : ""); }catch(e){} return; }
+  if(was === "abmelden"){ clearSession(); location.reload(); return; }
+  if(was === "pw" && typeof asPasswortDialog === "function") return asPasswortDialog();
+  if(was === "install" && typeof asInstallStarten === "function") return asInstallStarten();
+}
+/* Handy: feste Fußleiste (OAK-UI-Regeln § 12) – Start · Mängel · Unterlagen · Unterweisung · Mehr („Mehr“ = Blatt mit der Seitenleiste) */
+const AS_FUSS_ZIELE = [["start", "Start"], ["maengel", "Mängel"], ["unterlagen", "Unterlagen"], ["unterweisungen", "Unterweisung"]];
+function asFussleiste(z){
+  const app = document.getElementById("appView"); if(!app) return;
+  let f = document.getElementById("asFuss");
+  if(!f){ f = document.createElement("nav"); f.id = "asFuss"; f.className = "as-fussleiste nodruck"; f.setAttribute("aria-label", "Hauptbereiche"); app.appendChild(f); }
+  z = z || asNavZaehler();
+  f.innerHTML = AS_FUSS_ZIELE.filter(([k]) => asNavSicht(k)).map(([k, t]) =>
+      `<a href="#${k}" class="fl-i${AS.seite === k ? " an" : ""}">${asIcon(k)}<span>${esc(t)}</span>${z[k] ? `<b class="sl-badge">${z[k]}</b>` : ""}</a>`).join("")
+    + `<button type="button" class="fl-i" id="asFussMehr">${asIcon("mehr")}<span>Mehr</span></button>`;
+  document.getElementById("asFussMehr").onclick = () => { const hg = document.getElementById("blattHg"); if(hg) hg.classList.add("zeig"); };
+}
+/* Kopfzeile wie V1: OAK-Logo + „OAK EHS-Cockpit“ links (Klick = Start); Kundenlogo rechts setzt asMarkeAnwenden */
+function asKopfAufbauen(){
+  const m = document.querySelector(".kopf .marke"); if(!m || m.dataset.fertig) return;
+  m.dataset.fertig = "1"; m.setAttribute("role", "link"); m.tabIndex = 0; m.title = "Zur Startseite";
+  m.innerHTML = `<img src="../assets/oak-logo.png" class="oak-logo" alt="OAK engineering"><span class="wort">OAK EHS-Cockpit<small>OAK engineering</small></span>`;
+  const geh = () => asGehe(AS_SEITEN.start ? "start" : "cockpit");
+  m.onclick = geh; m.onkeydown = e => { if(e.key === "Enter") geh(); };
+  try{ if(localStorage.getItem("as_sl_schmal") === "1") document.body.classList.add("sl-schmal"); }catch(e){}
+}
+/* Seitenkopf jeder Seite: Kundenbegriff im Titel (Kundensicht) und „‹ Start“ davor (sichtbar nur am Handy, per CSS).
+   Läuft nach jedem Neuaufbau des Hauptbereichs – auch bei asynchron gezeichneten Seiten – und ist idempotent. */
+function asSeitenKopf(){
+  const main = document.getElementById("haupt"); if(!main) return;
+  const h = main.querySelector(":scope > h1.seite"); if(!h || h.dataset.kopf) return;
+  h.dataset.kopf = "1";
+  if(asKundenSicht()){
+    const k = AS.seite, neu = asSeitenTitel(k, AS.reiter[k]), alt = [(AS_SEITEN[k] || {}).titel].concat(AS_TITEL_ALT[k] || []);
+    const t = [...h.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+    if(t && neu && alt.includes(t.textContent.trim())) t.textContent = neu;
+  }
+  if(AS.seite !== "start" && AS_SEITEN.start){
+    const b = document.createElement("button"); b.type = "button"; b.className = "seite-zurueck nodruck"; b.textContent = "‹ Start";
+    b.onclick = () => asGehe("start"); h.insertBefore(b, h.firstChild);
+  }
 }
 function asKundeWahl(){
   const el = document.getElementById("kundeWahl");
@@ -535,8 +673,10 @@ function asZeige(){
   const main = document.getElementById("haupt");
   if(!AS.kunde){ main.innerHTML = `<h1 class="seite">Willkommen</h1><p class="unter">${AS.admin ? "Lege oben mit „+ Kunde“ den ersten Kunden an." : "Für Ihren Betrieb ist die App noch nicht eingerichtet."}</p>`; return; }
   const s = AS_SEITEN[AS.seite];
-  main.innerHTML = ""; s.render(main);
-  document.getElementById("blattHg").classList.remove("zeig");
+  /* Seitenkopf (Kundenbegriff, „‹ Start“) nach jedem Neuaufbau des Hauptbereichs – auch wenn die Seite asynchron zeichnet */
+  if(!asZeige.beob && typeof MutationObserver === "function"){ asZeige.beob = new MutationObserver(asSeitenKopf); asZeige.beob.observe(main, { childList: true }); }
+  main.innerHTML = ""; s.render(main); asSeitenKopf();
+  const hg = document.getElementById("blattHg"); if(hg) hg.classList.remove("zeig");
   window.scrollTo(0, 0);
 }
 function asReiter(seite, liste, standard){
@@ -575,7 +715,8 @@ async function asStart(){
   document.getElementById("appView").hidden = false;
   document.getElementById("ichName").textContent = AS.ich + (AS.admin ? " · OAK" : "");
   document.getElementById("abmelden").onclick = () => { clearSession(); location.reload(); };
-  document.getElementById("menueKnopf").onclick = () => document.getElementById("blattHg").classList.add("zeig");
+  asKopfAufbauen();
+  const mk = document.getElementById("menueKnopf"); if(mk) mk.onclick = () => document.getElementById("blattHg").classList.add("zeig");   // alte Unterleiste (entfällt)
   document.getElementById("blattHg").onclick = e => { if(e.target.id === "blattHg") e.target.classList.remove("zeig"); };
   window.addEventListener("hashchange", asZeige);
   asZeige();

@@ -6,7 +6,8 @@
 "use strict";
 
 const AS_UW = { kunde: null, d: {}, kap: null, detail: null, kapThema: null, mobil: null,
-  pf: { einheit: "", status: "aktiv", suche: "" }, nf: { q: "", jahr: "", best: "" } };
+  pf: { einheit: "", status: "aktiv", suche: "" }, nf: { q: "", jahr: "", best: "" },
+  kat: null, kf: { kat: "", q: "" }, pe: { an: false, wahl: new Set() } };
 /* DGUV Vorschrift 1 § 4: mindestens jährlich – Warnung ab 11 Monaten */
 const AS_UW_FAELLIG_TAGE = 365, AS_UW_WARN_TAGE = 335;
 const AS_UW_SPALTEN = "id,kunde_slug,mitarbeiter_name,funktion,bereich,module,unterweisung,bestanden,bestaetigung,config_version,created_at,geraet,quelle,bestaetigt_von";
@@ -39,7 +40,7 @@ async function asUwLaden(neu){
     hole("/rest/v1/portal_terminal_token?select=token,kunde_slug,bezeichnung&aktiv=is.true" + k),
     hole("/rest/v1/portal_belegschaft?select=*" + k),
     hole("/rest/v1/portal_einarbeitung?select=*&archiviert=is.false" + k + "&order=am.desc"),
-    hole("/rest/v1/uw_modul?select=*&aktiv=is.true&order=reihenfolge.asc"),
+    hole("/rest/v1/uw_modul?select=*&aktiv=is.true&order=reihenfolge.asc").then(r => r.filter(m => m.ebene !== "inhalt")),   // nur die bisherigen Pakete; neue Inhalte zeigt der Reiter „Katalog“
     hole("/rest/v1/uw_buchung?select=*" + k),
     hole("/rest/v1/v_uw_faelligkeit?select=*" + k),
     hole("/rest/v1/uw_modul_zuweisung?select=*" + k),
@@ -51,7 +52,7 @@ async function asUwLaden(neu){
     hole("/rest/v1/portal_pruefauftrag?select=id,objekt_titel&objekt_typ=eq.unterweisung&erledigt_am=not.is.null" + k)]);
   AS_UW.d = { geladen: true, nachweise, pers, rollen, einheiten, tok, beleg, einarb, module, buchung, faellig, modulZuw, zusatz, docs, baustein,
     anlass: (anlassP || []).map(x => Object.assign({}, x, { titel: ((anlassA || []).find(a => a.id === x.pruefauftrag_id) || {}).objekt_titel || "" })) };
-  if(AS_UW.kunde !== AS.kunde){ AS_UW.kap = null; AS_UW.detail = null; AS_UW.mobil = null; }
+  if(AS_UW.kunde !== AS.kunde){ AS_UW.kap = null; AS_UW.detail = null; AS_UW.mobil = null; AS_UW.kat = null; AS_UW.pe = { an: false, wahl: new Set() }; }
   AS_UW.kunde = AS.kunde;
 }
 async function asUwKapLaden(neu){
@@ -90,7 +91,7 @@ function asUwLetzter(name){
 }
 function asUwModulTitel(k){
   const bu = AS_UW.d.buchung.find(x => x.kiosk_modul === k || x.thema === k);
-  const m = AS_UW.d.module.find(x => x.thema === (bu ? bu.thema : k));
+  const m = AS_UW.d.module.find(x => x.thema === (bu ? bu.thema : k)) || (AS_UW.kat ? AS_UW.kat.inhalte.find(x => x.thema === k) : null);
   return (m && m.titel) || AS_UW_MODUL_ALT[k] || k;
 }
 function asUwModule(n){
@@ -160,6 +161,7 @@ async function asUwJeRolle(box){
 AS_SEITEN.unterweisungen = { titel: "Unterweisungen", icon: "✎", sort: 5.5, async render(main){
   const liste = [["terminal", "Terminal & fällig"], ["nachweise", "Nachweise"], ["je_rolle", "Je Rolle"]];
   if(asUwDarfPflegen()) liste.push(["module", "Module"], ["mitarbeiter", "Mitarbeiter"], ["inhalte", "Inhalte"]);
+  liste.push(["katalog", "Katalog"]);
   const r = asReiter("unterweisungen", liste, "terminal");
   main.innerHTML = `<h1 class="seite">Unterweisungen</h1><p class="unter">Unterweisungs-Terminal, Fälligkeiten und Nachweise – dieselben Daten wie im Kundenportal (§ 12 ArbSchG, § 4 DGUV Vorschrift 1).</p>
     ${r.html}<div id="asUwBox"><div class="leer">wird geladen …</div></div>`;
@@ -167,7 +169,9 @@ AS_SEITEN.unterweisungen = { titel: "Unterweisungen", icon: "✎", sort: 5.5, as
   try{
     await asUwLaden();
     if(r.akt === "inhalte") await asUwKapLaden();
-    ({ terminal: asUwTerminal, nachweise: asUwNachweise, module: asUwModuleSeite, mitarbeiter: asUwMitarbeiter, inhalte: asUwInhalte, je_rolle: asUwJeRolle })[r.akt](box);
+    if(r.akt === "katalog") await asUwKatLaden();
+    ({ terminal: asUwTerminal, nachweise: asUwNachweise, module: asUwModuleSeite, mitarbeiter: asUwMitarbeiter, inhalte: asUwInhalte, je_rolle: asUwJeRolle,
+      katalog: asUwKatalog })[r.akt](box);
   }catch(e){ box.innerHTML = `<div class="karte"><div class="leer">Konnte nicht geladen werden: ${esc(e.message || e)}</div></div>`; }
 }};
 
@@ -733,34 +737,91 @@ async function asUwTextDialog(pfad, titel){
 
 /* ======================= 4. Mitarbeiter (Personen & Fälligkeiten) ======================= */
 function asUwMitarbeiter(box){
-  const d = AS_UW.d, f = AS_UW.pf, pflegen = asUwDarfPflegen();
+  const d = AS_UW.d, f = AS_UW.pf, pflegen = asUwDarfPflegen(), pe = AS_UW.pe, bearb = pflegen && pe.an;
   const einh = d.einheiten.filter(e => e.status === "aktiv");
   const offen = d.pers.filter(p => p.status === "aktiv").map(p => asUwPersStatus(p.id)).filter(s => s.status === "ueberfaellig" || s.status === "erstunterweisung").length;
   const q = f.suche.trim().toLowerCase();
   const rows = d.pers.filter(p => (!f.status || p.status === f.status) && (!f.einheit || (p.uw_person_einheit || []).some(x => x.einheit_id === f.einheit))
     && (!q || p.name.toLowerCase().includes(q)));
+  pe.wahl = new Set([...pe.wahl].filter(id => d.pers.some(p => p.id === id)));
+  const alle = rows.length > 0 && rows.every(p => pe.wahl.has(p.id)), n = pe.wahl.size;
   box.innerHTML = `<div class="karte"><h2>Personen &amp; Fälligkeiten <span class="hinweis">${d.pers.filter(p => p.status === "aktiv").length} aktiv${offen ? ` · <b>${offen} offen</b>` : ""}</span>
-      ${pflegen ? `<button class="btn klein" id="uwpNeu">Person anlegen</button> <button class="btn sek klein" id="uwpOrg">Bereiche &amp; Rollen</button>` : ""}</h2>
+      ${pflegen ? `<button class="btn klein" id="uwpNeu">Person anlegen</button> <button class="btn sek klein" id="uwpOrg">Bereiche &amp; Rollen</button>
+        <button class="btn sek klein" id="uwpListe">${bearb ? "Fertig" : "Liste bearbeiten"}</button>` : ""}</h2>
     <div class="filterleiste">
       <input type="search" id="uwpSuche" value="${esc(f.suche)}" placeholder="Person suchen …" autocomplete="off">
       ${asFilterWahl('data-f="einheit"', f.einheit, [["", "alle"]].concat(einh.map(e => [e.id, e.name + (e.kst_nr ? " (" + e.kst_nr + ")" : "")])), "Bereich")}
       ${asFilterWahl('data-f="status"', f.status, [["aktiv", "aktiv"], ["ruhend", "ruhend"], ["archiviert", "archiviert"], ["", "alle"]], "Status")}</div>
-    ${rows.length ? `<div class="tabwrap"><table class="tab"><tr><th>Name</th><th>Bereich</th><th>Rolle</th><th>Unterweisungen</th><th>nächste</th><th></th></tr>
+    ${rows.length ? `<div class="tabwrap"><table class="tab"><tr>${bearb ? `<th><label title="alle sichtbaren auswählen"><input type="checkbox" id="uwpAlle"${alle ? " checked" : ""}> alle</label></th>` : ""}<th>Name</th><th>Bereich</th><th>Rolle</th><th>Unterweisungen</th><th>nächste</th></tr>
       ${rows.map(p => { const st = asUwPersStatus(p.id), [farbe, txt] = AS_UW_FSTATUS[st.status] || ["grau", ""];
         const minderj = p.geburtsdatum && new Date(p.geburtsdatum) > new Date(Date.now() - 18 * 365.25 * 864e5);
-        return `<tr><td><b>${esc(p.name)}</b>${p.status !== "aktiv" ? " " + asChip(p.status, "grau") : ""}${minderj ? ` <span title="unter 18 – halbjährliche Unterweisung nach § 29 JArbSchG">${asChip("<18", "blau")}</span>` : ""}</td>
+        return `<tr${pflegen ? ` class="bda-klick" data-pers="${esc(p.id)}"` : ""}>${bearb ? `<td><input type="checkbox" data-wahl="${esc(p.id)}"${pe.wahl.has(p.id) ? " checked" : ""} aria-label="${esc(p.name)} auswählen"></td>` : ""}<td><b>${esc(p.name)}</b>${p.status !== "aktiv" ? " " + asChip(p.status, "grau") : ""}${minderj ? ` <span title="unter 18 – halbjährliche Unterweisung nach § 29 JArbSchG">${asChip("<18", "blau")}</span>` : ""}</td>
           <td>${esc((p.uw_person_einheit || []).map(x => asUwName(x.einheit_id, d.einheiten)).join(", ") || "—")}</td>
           <td>${esc((p.uw_person_rolle || []).map(x => asUwName(x.rolle_id, d.rollen)).join(", ") || "—")}</td>
           <td>${asChip(txt, farbe)}${st.gesamt ? ` <span class="hinweis">${st.gesamt - st.offen}/${st.gesamt}</span>` : ""}</td>
-          <td>${asDat(st.naechste)}</td><td>${pflegen ? `<button class="btn sek klein" data-pers="${esc(p.id)}">bearbeiten</button>` : ""}</td></tr>`; }).join("")}</table></div>`
+          <td>${asDat(st.naechste)}</td></tr>`; }).join("")}</table></div>`
       : `<div class="leer">Keine Personen — über „Person anlegen" beginnen.</div>`}
-    <p class="hinweis">Personendaten sind auf das Nötige beschränkt. Das Geburtsdatum dient nur der halbjährlichen Unterweisung Minderjähriger (§ 29 JArbSchG). Ausgeschiedene werden archiviert, nie gelöscht — Nachweise müssen erhalten bleiben.</p></div>`;
+    <p class="hinweis">Personendaten sind auf das Nötige beschränkt. Das Geburtsdatum dient nur der halbjährlichen Unterweisung Minderjähriger (§ 29 JArbSchG). Ausgeschiedene werden archiviert, nie gelöscht — Nachweise müssen erhalten bleiben.</p>
+    ${bearb ? `<div class="uwp-aktionsleiste"><span class="hinweis">${n} ausgewählt</span>
+        ${[["archiv", "Ausgeschieden (archivieren)"], ["status", "Status setzen"], ["bereich", "Bereich zuordnen/entfernen"], ["rolle", "Rolle zuordnen/entfernen"]]
+          .map(([k, t]) => `<button class="btn sek klein" data-pakt="${k}"${n ? "" : " disabled"}>${t}</button>`).join("")}</div>` : ""}</div>`;
   const s = box.querySelector("#uwpSuche");
   s.oninput = () => { f.suche = s.value; clearTimeout(AS_UW.pt); AS_UW.pt = setTimeout(() => { asUwMitarbeiter(box); const n = box.querySelector("#uwpSuche"); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 300); };
   box.querySelectorAll("select[data-f]").forEach(x => x.onchange = () => { f[x.dataset.f] = x.value; asUwMitarbeiter(box); });
   if(box.querySelector("#uwpNeu")) box.querySelector("#uwpNeu").onclick = () => asUwPersonDialog(null);
   if(box.querySelector("#uwpOrg")) box.querySelector("#uwpOrg").onclick = asUwOrgDialog;
-  box.querySelectorAll("[data-pers]").forEach(b => b.onclick = () => asUwPersonDialog(d.pers.find(p => p.id === b.dataset.pers)));
+  if(box.querySelector("#uwpListe")) box.querySelector("#uwpListe").onclick = () => { pe.an = !pe.an; if(!pe.an) pe.wahl.clear(); asUwMitarbeiter(box); };
+  /* Klick auf die Zeile: im Bearbeiten-Modus auswählen, sonst Dialog (OAK-UI-Regel 11) */
+  box.querySelectorAll("tr[data-pers]").forEach(tr => tr.onclick = ev => {
+    if(ev.target.closest("button, a, select") || (ev.target.closest("input") && !ev.target.closest("[data-wahl]"))) return;
+    const id = tr.dataset.pers;
+    if(!bearb){ asUwPersonDialog(d.pers.find(p => p.id === id)); return; }
+    if(pe.wahl.has(id)) pe.wahl.delete(id); else pe.wahl.add(id);
+    asUwMitarbeiter(box);
+  });
+  const al = box.querySelector("#uwpAlle");
+  if(al) al.onclick = ev => { ev.stopPropagation(); rows.forEach(p => al.checked ? pe.wahl.add(p.id) : pe.wahl.delete(p.id)); asUwMitarbeiter(box); };
+  box.querySelectorAll("[data-pakt]").forEach(b => b.onclick = () => asUwPersAktion(b.dataset.pakt));
+}
+/* Liste bearbeiten: eine Aktion für alle ausgewählten Personen. Nichts wird gelöscht – Nachweise bleiben erhalten.
+   Verknüpfungen: uw_person_einheit PK (person_id, einheit_id), uw_person_rolle PK (person_id, rolle_id) – live gelesen 05.11.2026. */
+function asUwPersAktion(art){
+  const d = AS_UW.d, ids = [...AS_UW.pe.wahl].filter(id => d.pers.some(p => p.id === id)), n = ids.length;
+  if(!n) return;
+  const titel = { archiv: "Ausgeschieden (archivieren)", status: "Status setzen", bereich: "Bereich zuordnen/entfernen", rolle: "Rolle zuordnen/entfernen" }[art];
+  const namen = ids.map(id => d.pers.find(p => p.id === id).name);
+  const ziele = art === "bereich" ? d.einheiten.filter(e => e.status === "aktiv") : art === "rolle" ? d.rollen.filter(r => r.status !== "archiviert") : [];
+  if((art === "bereich" || art === "rolle") && !ziele.length){ asMeldung(art === "bereich" ? "Noch keine Bereiche angelegt." : "Noch keine Rollen angelegt."); return; }
+  let inhalt = `<p><b>${n} ${n === 1 ? "Person" : "Personen"}</b> ausgewählt: ${esc(namen.slice(0, 8).join(", "))}${n > 8 ? " und " + (n - 8) + " weitere" : ""}</p>`;
+  if(art === "archiv") inhalt += `<p>Die ausgewählten Personen werden als ausgeschieden archiviert und erscheinen nicht mehr in den Fälligkeiten.</p>`;
+  if(art === "status") inhalt += `<div class="form">${asAuswahl("Neuer Status", "status", "aktiv", [["aktiv", "aktiv"], ["ruhend", "ruhend (Elternzeit/Langzeitkrank)"], ["archiviert", "ausgeschieden (archiviert)"]], "voll")}</div>`;
+  if(ziele.length) inhalt += `<div class="form">${asAuswahl(art === "bereich" ? "Bereich" : "Rolle", "ziel", ziele[0].id, ziele.map(x => [x.id, x.name]))}
+    ${asAuswahl("Aktion", "wie", "dazu", [["dazu", "zuordnen"], ["weg", "entfernen"]])}</div>`;
+  inhalt += `<p class="hinweis">Nachweise bleiben erhalten – es wird nichts gelöscht.</p>`;
+  asDialog({ titel, inhalt, knoepfe: [{ t: "Abbrechen", klasse: "sek", fn: () => {} }, { t: "Ausführen (" + n + ")", fn: async dlg => {
+    const w = asWerte(dlg), inn = "in.(" + ids.map(encodeURIComponent).join(",") + ")";
+    let text = "";
+    try{
+      if(art === "archiv" || art === "status"){
+        const status = art === "archiv" ? "archiviert" : w.status;
+        const erg = await apiSend("PATCH", "/rest/v1/uw_person?id=" + inn + "&select=id", { status, geaendert_am: new Date().toISOString() }, "return=representation");
+        const z = (erg || []).length;
+        text = (z === n ? n : z + " von " + n) + (status === "archiviert" ? " archiviert. Nachweise bleiben erhalten." : " auf „" + status + "“ gesetzt.");
+      } else {
+        const tab = art === "bereich" ? "uw_person_einheit" : "uw_person_rolle", sp = art === "bereich" ? "einheit_id" : "rolle_id";
+        const zname = (ziele.find(x => x.id === w.ziel) || {}).name || "";
+        if(w.wie === "weg"){
+          await apiSend("DELETE", "/rest/v1/" + tab + "?person_id=" + inn + "&" + sp + "=eq." + encodeURIComponent(w.ziel), null, "return=minimal");
+          text = "„" + zname + "“ bei " + n + (n === 1 ? " Person" : " Personen") + " entfernt.";
+        } else {
+          await apiSend("POST", "/rest/v1/" + tab + "?on_conflict=person_id," + sp, ids.map(id => ({ person_id: id, [sp]: w.ziel })), "resolution=ignore-duplicates,return=minimal");
+          text = "„" + zname + "“ " + n + (n === 1 ? " Person" : " Personen") + " zugeordnet.";
+        }
+      }
+    }catch(e){ asUwFehler(titel, e, { personen: ids, art, ziel: w.ziel || w.status || null, wie: w.wie || null }); return false; }
+    AS_UW.pe.wahl.clear();
+    await asUwNeu(text);
+  } }] });
 }
 function asUwPersonDialog(p){
   const d = AS_UW.d, einh = d.einheiten.filter(e => e.status === "aktiv"), roll = d.rollen.filter(r => r.status === "aktiv");
@@ -777,7 +838,12 @@ function asUwPersonDialog(p){
     ${p ? `<p><b>Zugewiesene Unterweisungen</b></p><div class="zeilen">${faellig.map(f => { const [farbe, txt] = AS_UW_FSTATUS[f.status] || ["grau", f.status];
         return `<div class="z"><div><b>${esc(f.kennung)}</b><small>${asDat(f.faellig_am)} · alle ${esc(f.turnus_monate)} Monate</small></div>${asChip(txt, farbe)}</div>`; }).join("")
       || '<div class="leer">Nichts zugewiesen — Rolle und Bereich setzen, dann greift die Matrix.</div>'}</div>` : ""}`,
-    knoepfe: [{ t: "Speichern", fn: async dlg => {
+    knoepfe: (p && p.status !== "archiviert" && asUwDarfPflegen() ? [{ t: "Ausgeschieden", klasse: "sek", fn: async () => {
+      if(!confirm(p.name + " als ausgeschieden archivieren?\n\nNachweise bleiben erhalten – es wird nichts gelöscht.")) return false;
+      try{ await apiSend("PATCH", "/rest/v1/uw_person?id=eq." + encodeURIComponent(p.id), { status: "archiviert", geaendert_am: new Date().toISOString() }, "return=minimal"); }
+      catch(e){ asUwFehler("Ausgeschieden", e, { person: p.id }); return false; }
+      await asUwNeu(p.name + " ist archiviert. Nachweise bleiben erhalten.");
+    } }] : []).concat([{ t: "Speichern", fn: async dlg => {
       const w = asWerte(dlg);
       if(!w.name || w.name.length < 3){ asMeldung("Bitte den vollständigen Namen eintragen."); return false; }
       const satz = { kunde_slug: AS.kunde, name: w.name, sprache: w.sprache, eintritt: w.eintritt || null, geburtsdatum: w.geburtsdatum || null,
@@ -791,7 +857,7 @@ function asUwPersonDialog(p){
       if(eIds.length) await apiSend("POST", "/rest/v1/uw_person_einheit", eIds.map(x => ({ person_id: id, einheit_id: x })), "return=minimal");
       if(rIds.length) await apiSend("POST", "/rest/v1/uw_person_rolle", rIds.map(x => ({ person_id: id, rolle_id: x })), "return=minimal");
       await asUwNeu(w.name + " ist gespeichert.");
-    } }] });
+    } }]) });
 }
 function asUwOrgDialog(){
   const d = AS_UW.d;
@@ -930,4 +996,169 @@ function asUwBilder(dlg, k){
       K.medien = K.medien.filter(m => m.id !== b.dataset.orig); asMeldung("Originalbild wiederhergestellt."); asUwBilder(dlg, k); }
     catch(e){ asMeldung("Fehler: " + (e.message || e)); }
   });
+}
+
+/* ======================= 6. Katalog – neue Unterweisungsinhalte (uw_modul.ebene='inhalt') =======================
+   ZUSÄTZLICH zur bisherigen Unterweisung: Terminal, Module, Fälligkeit (v_uw_faelligkeit) und die alten Zuweisungen bleiben unberührt
+   (WIBO bleibt bis zur Umstellung darauf, Plan Phase 6). Hier nur: uw_inhalt_kategorie, uw_modul (ebene=inhalt), uw_inhalt_zuordnung,
+   v_uw_inhalt_luecke, uw_buchung (Freischalten nur OAK). Kein DELETE auf Zuordnungen – Abwählen = aktiv=false, Pflicht nur mit Begründung. */
+const AS_UW_PFLICHT = { immer: "Pflicht", bei_anlagentyp: "Pflicht bei Anlage", bei_stoffkategorie: "Pflicht bei Gefahrstoff", bei_taetigkeit: "Pflicht bei Tätigkeit" };
+async function asUwKatLaden(neu){
+  if(!neu && AS_UW.kat && AS_UW.kat.kunde === AS.kunde) return;
+  const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
+  const hole = p => apiGet(p).then(r => r || []).catch(() => []);
+  const [kategorien, inhalte, zuordnung, luecken] = await Promise.all([
+    hole("/rest/v1/uw_inhalt_kategorie?select=*&aktiv=is.true&order=reihenfolge.asc"),
+    hole("/rest/v1/uw_modul?select=*&ebene=eq.inhalt&order=reihenfolge.asc,titel.asc"),
+    hole("/rest/v1/uw_inhalt_zuordnung?select=*" + k),
+    hole("/rest/v1/v_uw_inhalt_luecke?select=*" + k)]);
+  AS_UW.kat = { kunde: AS.kunde, kategorien, inhalte, zuordnung, luecken };
+}
+async function asUwKatNeu(text){ await Promise.all([asUwLaden(true), asUwKatLaden(true)]); asZeige(); if(text) asMeldung(text); }
+/* Fehler gehen an OAK (portal_fehler), der Nutzer bekommt eine kurze Meldung */
+function asUwFehler(was, e, details){
+  const m = String((e && e.message) || e);
+  if(window.OAK_FEHLER && m !== "AUTH") window.OAK_FEHLER("unterweisung", was + ": " + m, Object.assign({ kunde: AS.kunde }, details || {}));
+  asMeldung(was + " – nicht gespeichert: " + m.replace(/^HTTP \d+ /, "").slice(0, 140));
+}
+/* gebucht wie im DB-Trigger: aktiv und nicht abgelaufen */
+function asUwKatGebucht(thema){
+  const heute = asHeute();
+  return AS_UW.d.buchung.some(b => b.thema === thema && b.aktiv !== false && (!b.laeuft_bis || String(b.laeuft_bis) >= heute));
+}
+function asUwPflichtChip(m){
+  const t = AS_UW_PFLICHT[m.pflicht_art]; if(!t) return "";
+  const r = m.rechtsbezug || [];
+  return `<span title="${esc(r.join(" · ") || "Rechtsgrundlage wird ergänzt")}">${asChip(t + (r.length ? " · " + r[0] : ""), "blau")}</span>`;
+}
+function asUwKatTitel(s){ return ((AS_UW.kat.kategorien.find(k => k.schluessel === s) || {}).titel) || "ohne Kategorie"; }
+
+function asUwKatalog(box){
+  const K = AS_UW.kat, d = AS_UW.d, f = AS_UW.kf, pflegen = asDarf("pflegen"), oak = asDarf("oak");
+  const katRang = s => { const i = K.kategorien.findIndex(k => k.schluessel === s); return i < 0 ? 999 : i; };
+  const sichtbar = K.inhalte.filter(m => oak || m.aktiv || asUwKatGebucht(m.thema))
+    .sort((a, b) => katRang(a.kategorie) - katRang(b.kategorie) || (a.reihenfolge || 0) - (b.reihenfolge || 0) || String(a.titel).localeCompare(String(b.titel), "de"));
+  const frei = sichtbar.filter(m => asUwKatGebucht(m.thema)).length;
+  if(f.kat && !K.kategorien.some(k => k.schluessel === f.kat)) f.kat = "";
+  const rollenZahl = th => new Set(K.zuordnung.filter(z => z.thema === th && z.aktiv).map(z => z.rolle_id)).size;
+
+  /* Pflicht-Lücken: je Inhalt und Bereich eine Zeile, Rollen zusammengefasst */
+  const lGruppen = new Map();
+  K.luecken.forEach(l => { const key = l.thema + "|" + (l.einheit_id || ""); const g = lGruppen.get(key) || { l, rollen: [], gruende: new Set() };
+    g.rollen.push(asUwName(l.rolle_id, d.rollen)); String(l.vorschlag_grund || "").split("; ").filter(Boolean).forEach(x => g.gruende.add(x)); lGruppen.set(key, g); });
+  const inhaltTitel = th => (K.inhalte.find(m => m.thema === th) || {}).titel || th;
+  const frage = AS_SEITEN.fragen ? ` – <a href="#fragen">Frage an OAK</a>` : "";
+  const lueckeHtml = lGruppen.size ? `<div class="karte"><h2>Pflicht-Lücken <span class="hinweis">${lGruppen.size} ${lGruppen.size === 1 ? "Inhalt fehlt" : "Inhalte fehlen"}</span></h2>
+      <p class="hinweis">Laut Anlagen- und Gefahrstoffkataster nötig, für diesen Betrieb aber noch nicht freigeschaltet. Bitte bei OAK freischalten lassen${frage}.</p>
+      <div class="zeilen">${[...lGruppen.values()].map(g => `<div class="z"><div><b>${esc(inhaltTitel(g.l.thema))}</b>
+          <small>${esc([...g.gruende].join(" · ") || "Pflichtinhalt")} · ${esc(g.l.einheit_id ? asUwName(g.l.einheit_id, d.einheiten) : "betriebsweit")} · ${esc([...new Set(g.rollen)].join(", "))}</small></div>
+        ${asChip("fehlt – bei OAK freischalten lassen", "rot")}</div>`).join("")}</div></div>` : "";
+
+  box.innerHTML = `${lueckeHtml}
+    <div class="karte"><h2>Unterweisungsinhalte <span class="hinweis">${frei} freigeschaltet · ${sichtbar.length} im Katalog</span>
+        ${pflegen ? `<button class="btn klein" id="uwkVorschlag" title="Pflichtinhalte aus Anlagen, Gefahrstoffen und Rollen den Rollen zuordnen">Vorschläge übernehmen</button>` : ""}</h2>
+      <div class="filterleiste">${asFilterWahl('id="uwkKat"', f.kat, [["", "alle"]].concat(K.kategorien.map(k => [k.schluessel, k.titel])), "Kategorie")}
+        <input type="search" id="uwkQ" value="${esc(f.q)}" placeholder="Inhalt suchen …" autocomplete="off">
+        <span class="fl-zahl" id="uwkZahl"></span></div>
+      ${frei ? "" : `<p class="hinweis">Für diesen Betrieb sind noch keine Inhalte aus dem neuen Katalog freigeschaltet – der Katalog zeigt das Angebot. Zum Freischalten bei OAK anfragen${frage}. Die bisherige Unterweisung (Terminal, Module, Nachweise) läuft unverändert weiter.</p>`}
+      <div class="zeilen" id="uwkListe"></div>
+      <p class="hinweis">Kleine Inhalte je Kategorie, vom Betrieb je Rolle und Bereich zusammengestellt. Pflichtinhalte sind vorausgewählt und mit Rechtsgrundlage markiert; abwählen nur mit Begründung. Zeile antippen: Beschreibung und Zuordnung.</p></div>`;
+
+  const liste = box.querySelector("#uwkListe");
+  const zeichnen = () => {
+    const q = f.q.trim().toLowerCase();
+    const rows = sichtbar.filter(m => (!f.kat || m.kategorie === f.kat)
+      && (!q || [m.titel, m.untertitel, asUwKatTitel(m.kategorie), (m.rechtsbezug || []).join(" ")].join(" ").toLowerCase().includes(q)));
+    liste.innerHTML = rows.map(m => { const gb = asUwKatGebucht(m.thema), n = rollenZahl(m.thema);
+      return `<div class="z" data-inhalt="${esc(m.thema)}"><div><b>${esc(m.titel)}</b>
+          <small>${esc(asUwKatTitel(m.kategorie))}${m.untertitel ? " · " + esc(m.untertitel) : ""}${gb ? "" : " · noch nicht freigeschaltet – bei OAK anfragen"}</small></div>
+        <span class="uwk-chips">${asUwPflichtChip(m)}${asChip(gb ? "freigeschaltet" : "nicht freigeschaltet", gb ? "gruen" : "grau")}${gb ? asChip(n === 1 ? "1 Rolle" : n + " Rollen", n ? "gruen" : "gelb") : ""}${m.aktiv ? "" : asChip("im Aufbau", "grau")}${oak ? `<button class="btn adm klein" data-katbuchen="${esc(m.thema)}" data-frei="${gb ? 1 : 0}">${gb ? "Sperren" : "Freischalten"}</button>` : ""}</span></div>`; }).join("")
+      || `<div class="leer">${sichtbar.length ? "Keine Treffer." : "Der neue Katalog wird gerade aufgebaut – noch keine Inhalte verfügbar."}</div>`;
+    box.querySelector("#uwkZahl").textContent = rows.length + (rows.length === 1 ? " Inhalt" : " Inhalte");
+    liste.querySelectorAll("[data-inhalt]").forEach(z => z.onclick = ev => { if(ev.target.closest("button, a")) return;
+      asUwInhaltDialog(K.inhalte.find(m => m.thema === z.dataset.inhalt)); });
+    liste.querySelectorAll("[data-katbuchen]").forEach(b => b.onclick = async ev => {
+      ev.stopPropagation(); if(!asDarf("oak")) return;
+      const thema = b.dataset.katbuchen, warFrei = b.dataset.frei === "1"; b.disabled = true;
+      try{
+        if(warFrei) await apiSend("DELETE", "/rest/v1/uw_buchung?kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&thema=eq." + encodeURIComponent(thema), null, "return=minimal");
+        else await apiSend("POST", "/rest/v1/uw_buchung?on_conflict=kunde_slug,thema", { kunde_slug: AS.kunde, thema, aktiv: true }, "resolution=merge-duplicates,return=minimal");
+      }catch(e){ asUwFehler(warFrei ? "Sperren" : "Freischalten", e, { thema }); b.disabled = false; return; }
+      await asUwKatNeu(inhaltTitel(thema) + (warFrei ? " gesperrt." : " freigeschaltet."));
+    });
+  };
+  box.querySelector("#uwkKat").onchange = e => { f.kat = e.target.value; zeichnen(); };
+  box.querySelector("#uwkQ").oninput = e => { f.q = e.target.value; zeichnen(); };
+  const vk = box.querySelector("#uwkVorschlag");
+  if(vk) vk.onclick = async () => { vk.disabled = true;
+    let n;
+    try{ n = await apiSend("POST", "/rest/v1/rpc/uw_inhalt_vorschlag_anwenden", { p_slug: AS.kunde }); }
+    catch(e){ asUwFehler("Vorschläge übernehmen", e, {}); vk.disabled = false; return; }
+    n = +n || 0;
+    await asUwKatNeu(n ? n + (n === 1 ? " neue Zuordnung" : " neue Zuordnungen") + " aus den Vorschlägen übernommen."
+      : frei ? "Keine neuen Vorschläge – alles ist schon zugeordnet." : "Keine Vorschläge übernommen – es sind noch keine Inhalte freigeschaltet.");
+  };
+  zeichnen();
+}
+
+/* Dialog je Inhalt: Beschreibung, Rechtsgrundlage, Turnus + Matrix Rolle × (betriebsweit + Bereiche) */
+function asUwInhaltDialog(m){
+  if(!m) return;
+  const K = AS_UW.kat, d = AS_UW.d, gb = asUwKatGebucht(m.thema), darf = asDarf("pflegen") && gb, dis = darf ? "" : " disabled";
+  const rollen = d.rollen.filter(r => r.status !== "archiviert"), einh = d.einheiten.filter(e => e.status === "aktiv");
+  const spalten = [{ id: null, name: "betriebsweit" }].concat(einh.map(e => ({ id: e.id, name: e.name })));
+  const zu = K.zuordnung.filter(z => z.thema === m.thema);
+  const finde = (rid, eid) => zu.find(z => z.rolle_id === rid && (z.einheit_id || null) === eid);
+  const kt = +m.turnus_monate || 12, turnusOpt = [...new Set([6, 12, 24, 36, kt])].sort((a, b) => a - b);
+  const rTurnus = rid => { const z = zu.find(x => x.rolle_id === rid && x.aktiv && x.turnus_monate); return z ? { t: z.turnus_monate, g: z.turnus_grund || "" } : { t: "", g: "" }; };
+  const r = m.rechtsbezug || [], abgewaehlt = zu.filter(z => z.pflicht && !z.aktiv);
+  const zelle = (ro, sp) => { const z = finde(ro.id, sp.id), an = z ? z.aktiv : false, ab = z && z.pflicht && !z.aktiv;
+    const tip = ab ? "Pflicht abgewählt: " + (z.abwahl_grund || "") : z && z.vorschlag_grund ? z.vorschlag_grund : "";
+    return `<td${ab ? ' class="uwk-abwahl"' : ""}${tip ? ` title="${esc(tip)}"` : ""}><label><input type="checkbox" data-zr="${esc(ro.id)}" data-ze="${esc(sp.id || "")}"${an ? " checked" : ""}${dis}
+      aria-label="${esc(ro.name + " · " + sp.name)}">${z && z.pflicht ? ` <small class="hinweis">${ab ? "abgewählt" : "Pflicht"}</small>` : ""}</label></td>`; };
+  const matrix = rollen.length ? `<div class="tabwrap"><table class="tab"><tr><th>Rolle</th>${spalten.map(s => `<th>${esc(s.name)}</th>`).join("")}<th>Turnus</th></tr>
+      ${rollen.map(ro => { const t = rTurnus(ro.id);
+        return `<tr><td><b>${esc(ro.name)}</b></td>${spalten.map(sp => zelle(ro, sp)).join("")}
+          <td><select data-turnus="${esc(ro.id)}" aria-label="Turnus ${esc(ro.name)}"${dis}><option value="">wie Katalog (${kt} Monate)</option>
+            ${turnusOpt.map(x => `<option value="${x}"${+t.t === x ? " selected" : ""}>alle ${x} Monate</option>`).join("")}</select>
+            <input type="text" data-tgrund="${esc(ro.id)}" value="${esc(t.g)}" placeholder="Begründung bei längerem Turnus" maxlength="300"${dis}></td></tr>`; }).join("")}</table></div>`
+    : `<div class="leer">Noch keine Rollen angelegt – unter <b>Mitarbeiter</b> → Bereiche &amp; Rollen anlegen.</div>`;
+  const inhalt = `${m.beschreibung || m.untertitel ? `<p>${esc(m.beschreibung || m.untertitel)}</p>` : ""}
+    <div class="zeilen">
+      <div class="z"><div><b>Rechtsgrundlage</b><small>${esc(r.join(" · ") || "wird ergänzt")}</small></div>${asUwPflichtChip(m) || asChip("freiwillig", "grau")}</div>
+      <div class="z"><div><b>Turnus</b><small>alle ${kt} Monate${m.dauer_min ? " · ca. " + esc(m.dauer_min) + " Min." : ""} · ${esc(asUwKatTitel(m.kategorie))}</small></div>${asChip(gb ? "freigeschaltet" : "nicht freigeschaltet", gb ? "gruen" : "grau")}</div></div>
+    ${gb ? "" : `<p class="hinweis">Noch nicht freigeschaltet – bei OAK anfragen${AS_SEITEN.fragen ? ` (<a href="#fragen">Frage an OAK</a>)` : ""}. Zuordnen geht nach der Freischaltung.</p>`}
+    <h3>Wer bekommt diesen Inhalt?</h3>
+    <p class="hinweis">Haken = die Rolle bekommt den Inhalt betriebsweit oder nur im Bereich. „Pflicht“ kommt aus den Vorschlägen (Kataster, Rechtsgrundlage).${darf ? "" : " Nur lesend."}</p>
+    ${matrix}
+    ${abgewaehlt.length ? `<h3 class="rot">Abgewählte Pflichten</h3><div class="zeilen">${abgewaehlt.map(z => `<div class="z"><div><b>${esc(asUwName(z.rolle_id, d.rollen))} · ${esc(z.einheit_id ? asUwName(z.einheit_id, d.einheiten) : "betriebsweit")}</b>
+        <small>${esc(z.abwahl_grund || "")}</small></div>${asChip("Pflicht abgewählt", "rot")}</div>`).join("")}</div>` : ""}
+    ${darf && zu.some(z => z.pflicht && z.aktiv) ? `<div class="form"><label class="voll">Begründung, falls eine Pflicht abgewählt wird (mindestens 10 Zeichen)<textarea id="uwkGrund" rows="2" maxlength="500"></textarea></label></div>` : ""}`;
+  asDialog({ titel: m.titel, breit: true, inhalt, knoepfe: darf && rollen.length ? [{ t: "Speichern", fn: async dlg => {
+    const grund = ((dlg.querySelector("#uwkGrund") || {}).value || "").trim();
+    const jetzt = new Date().toISOString(), aenderungen = [];
+    const box = (rid, eid) => dlg.querySelector(`[data-zr="${CSS.escape(rid)}"][data-ze="${CSS.escape(eid || "")}"]`);
+    let pflichtAb = 0;
+    for(const ro of rollen){
+      const tv = dlg.querySelector(`[data-turnus="${CSS.escape(ro.id)}"]`).value, tn = tv ? +tv : null;
+      const tg = dlg.querySelector(`[data-tgrund="${CSS.escape(ro.id)}"]`).value.trim();
+      const zeileAn = spalten.some(sp => box(ro.id, sp.id).checked);
+      if(zeileAn && tn && tn > kt && tg.length < 10){ asMeldung("Längerer Turnus als im Katalog (" + kt + " Monate) für „" + ro.name + "“: bitte begründen (mindestens 10 Zeichen)."); return false; }
+      const turnus = { turnus_monate: tn, turnus_grund: tn && tn > kt ? tg : null };
+      for(const sp of spalten){
+        const an = box(ro.id, sp.id).checked, z = finde(ro.id, sp.id);
+        if(z){
+          const satz = {};
+          if(z.aktiv !== an){ satz.aktiv = an; if(!an && z.pflicht){ satz.abwahl_grund = grund; pflichtAb++; } if(an) satz.abwahl_grund = null; }
+          if(an && ((z.turnus_monate || null) !== turnus.turnus_monate || (z.turnus_grund || null) !== turnus.turnus_grund)) Object.assign(satz, turnus);
+          if(Object.keys(satz).length) aenderungen.push(["PATCH", "/rest/v1/uw_inhalt_zuordnung?id=eq." + encodeURIComponent(z.id), Object.assign(satz, { geaendert_am: jetzt })]);
+        } else if(an) aenderungen.push(["POST", "/rest/v1/uw_inhalt_zuordnung", Object.assign({ kunde_slug: AS.kunde, thema: m.thema, rolle_id: ro.id, einheit_id: sp.id, aktiv: true }, turnus)]);
+      }
+    }
+    if(pflichtAb && grund.length < 10){ asMeldung("Eine Pflicht abwählen geht nur mit Begründung (mindestens 10 Zeichen)."); return false; }
+    if(!aenderungen.length){ asMeldung("Nichts geändert."); return; }
+    try{ for(const [art, pfad, satz] of aenderungen) await apiSend(art, pfad, satz, "return=minimal"); }
+    catch(e){ asUwFehler("Zuordnung " + m.titel, e, { thema: m.thema, aenderungen: aenderungen.length }); await asUwKatNeu(); return; }   // Teilstand neu laden, Dialog schließen
+    await asUwKatNeu(m.titel + ": Zuordnung gespeichert" + (pflichtAb ? " – " + pflichtAb + " Pflicht(en) mit Begründung abgewählt." : "."));
+  } }] : [] });
 }

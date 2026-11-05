@@ -20,7 +20,9 @@ const AS_MP_ICON = {
 };
 function asMpI(n, g){ return `<svg viewBox="0 0 24 24" width="${g || 18}" height="${g || 18}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${AS_MP_ICON[n]}</svg>`; }
 /* Protokollfelder (für „Protokoll drucken“): zeit, ort, vorsitz, protokollfuehrer, offen (je Zeile ein Punkt), naechste (Datum), naechste_text,
-   naechste_termin_id; je Beschluss zusätzlich prio (1–3) und nach dem Abschluss massnahme_id bzw. ziel_id (Verweis Sitzung → Maßnahme/Ziel). */
+   naechste_termin_id; je Beschluss zusätzlich prio (1–3) und nach dem Abschluss massnahme_id bzw. ziel_id (Verweis Sitzung → Maßnahme/Ziel).
+   Unterschriebenes Protokoll: protokoll_pfad (+ protokoll_name, protokoll_am), Datei <slug>/organisation/asa/<id>/protokoll-unterschrieben.pdf,
+   zusätzlich ein Eintrag in portal_dokumente (Kategorie asa-protokolle), damit es unter „Unterlagen“ steht. */
 function asMpLeer(){ return { folien: [], unterlagen: [], anno: {}, teilnehmende: [], beschluesse: [], log: [],
   zeit: "", ort: "", vorsitz: "", protokollfuehrer: "", offen: "", naechste: "", naechste_text: "" }; }
 function asMpJetzt(){ const d = new Date(); return d.toLocaleDateString("de-DE") + " " + d.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }); }
@@ -45,13 +47,14 @@ async function asMpOeffnen(id){
   el.innerHTML = `<div class="mp-leiste"><b class="mp-titel">ASA ${asDat(a.datum)}</b><nav class="mp-nav" id="mpNav"></nav>
     <span class="mp-status" id="mpStatus"></span>
     <button class="mp-knopf" id="mpUnterlagen" title="Unterlagen zur Sitzung">${asMpI("akte")}<span>Unterlagen</span></button>
-    <button class="mp-knopf" id="mpFolienNeu" title="Folien hochladen (PDF oder Bilder)">${asMpI("folie")}<span>Folien</span></button>
+    ${asDarf("pflegen") ? `<button class="mp-knopf" id="mpFolienNeu" title="Folien hochladen (PDF oder Bilder)">${asMpI("folie")}<span>Folien</span></button>` : ""}
     <button class="mp-knopf" id="mpLogKnopf" title="Vermerkte Änderungen">${asMpI("uhr")}<span>Änderungen <b id="mpLogAnz">0</b></span></button>
     <button class="mp-knopf" id="mpVoll" title="Vollbild (Taste F)">${asMpI("voll")}<span>Vollbild</span></button>
     <button class="mp-knopf dunkel" id="mpZu" title="Schließen">${asMpI("zu")}<span>Schließen</span></button></div>
     <div class="mp-panel" id="mpPanelU" hidden></div><div class="mp-panel breit" id="mpPanelL" hidden></div>
     <input type="file" id="mpDateiF" accept=".pdf,.jpg,.jpeg,.png,.webp" multiple hidden>
     <input type="file" id="mpDateiU" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx" multiple hidden>
+    <input type="file" id="mpDateiP" accept=".pdf,application/pdf" hidden>
     <main class="mp-main" id="mpMain"></main>
     <footer class="mp-fuss"><button id="mpZurueck" title="Zurück (Pfeil links)">${asMpI("links", 20)}</button><span id="mpZaehler"></span><button id="mpWeiter" title="Weiter (Pfeil rechts)">${asMpI("rechts", 20)}</button></footer>`;
   const $ = s => el.querySelector(s);
@@ -59,9 +62,10 @@ async function asMpOeffnen(id){
   $("#mpVoll").onclick = asMpVollbild;
   $("#mpZurueck").onclick = () => asMpZeige(AS_MP.akt - 1);
   $("#mpWeiter").onclick = () => asMpZeige(AS_MP.akt + 1);
-  $("#mpFolienNeu").onclick = () => $("#mpDateiF").click();
+  if($("#mpFolienNeu")) $("#mpFolienNeu").onclick = () => $("#mpDateiF").click();
   $("#mpDateiF").onchange = e => asMpHochladen([...e.target.files], "folien");
   $("#mpDateiU").onchange = e => asMpHochladen([...e.target.files], "unterlagen");
+  $("#mpDateiP").onchange = e => { const f = e.target.files[0]; e.target.value = ""; if(f) asMpProtokollHochladen(f); };
   [["mpUnterlagen", "mpPanelU", asMpPanelU], ["mpLogKnopf", "mpPanelL", asMpPanelL]].forEach(([b, p, fn]) => $("#" + b).onclick = ev => {
     ev.stopPropagation(); const pn = $("#" + p), auf = pn.hidden; asMpPanelsZu(); if(auf){ fn(pn); pn.hidden = false; $("#" + b).classList.add("an"); } });
   el.addEventListener("click", ev => { if(!ev.target.closest(".mp-panel")) asMpPanelsZu(); });
@@ -146,11 +150,16 @@ async function asMpDateiOeffnen(pfad){
 function asMpPanelU(p){
   const m = AS_MP.m, darf = asDarf("pflegen");
   const zeile = (d, art, i) => `<div class="mp-doc"><a href="#" data-p="${esc(d.pfad)}">${asMpI("datei", 16)}<span title="${esc(d.name)}">${esc(d.name)}</span></a>${darf ? `<button class="mp-x" data-weg="${art}:${i}" title="Aus der Mappe entfernen">${asMpI("zu", 14)}</button>` : ""}</div>`;
-  p.innerHTML = `<h4>Unterlagen zur Sitzung</h4><div class="mp-docs">${m.unterlagen.map((d, i) => zeile(d, "unterlagen", i)).join("") || `<div class="mp-leer">Noch keine Unterlagen.</div>`}</div>
-    <button class="btn klein" id="mpUNeu">${asMpI("plus", 16)} Unterlagen hochladen</button>
+  const prot = m.protokoll_pfad ? `<div class="mp-doc"><a href="#" data-p="${esc(m.protokoll_pfad)}">${asMpI("datei", 16)}<span title="${esc(m.protokoll_name || "Protokoll (unterschrieben)")}">${esc(m.protokoll_name || "Protokoll (unterschrieben)")}</span></a></div>`
+    : `<div class="mp-leer">${AS_MP.a.abgeschlossen ? "Unterschriebenes Protokoll fehlt noch." : "Nach der Sitzung: Protokoll drucken, unterschreiben, als PDF hochladen."}</div>`;
+  p.innerHTML = `<h4>Unterschriebenes Protokoll</h4><div class="mp-docs">${prot}</div>
+    ${darf ? `<button class="btn sek klein" id="mpPNeu">${asMpI("plus", 16)} ${m.protokoll_pfad ? "Protokoll ersetzen" : "Unterschriebenes Protokoll hochladen"}</button>` : ""}
+    <h4 class="mt">Unterlagen zur Sitzung</h4><div class="mp-docs">${m.unterlagen.map((d, i) => zeile(d, "unterlagen", i)).join("") || `<div class="mp-leer">Noch keine Unterlagen.</div>`}</div>
+    ${darf ? `<button class="btn klein" id="mpUNeu">${asMpI("plus", 16)} Unterlagen hochladen</button>` : ""}
     <h4 class="mt">Folien</h4><div class="mp-docs">${m.folien.map((d, i) => zeile(d, "folien", i)).join("") || `<div class="mp-leer">Noch keine Folien.</div>`}</div>
     <p class="mp-hinweis">Folien als PDF oder Bilder. PowerPoint vorher als PDF speichern. Unterlagen: PDF, Bilder, Word, Excel.</p>`;
-  p.querySelector("#mpUNeu").onclick = () => document.getElementById("mpDateiU").click();
+  const un = p.querySelector("#mpUNeu"); if(un) un.onclick = () => document.getElementById("mpDateiU").click();
+  const pn = p.querySelector("#mpPNeu"); if(pn) pn.onclick = () => document.getElementById("mpDateiP").click();
   p.querySelectorAll("a[data-p]").forEach(x => x.onclick = ev => { ev.preventDefault(); asMpDateiOeffnen(x.dataset.p); });
   p.querySelectorAll("[data-weg]").forEach(x => x.onclick = async ev => { ev.stopPropagation();
     const [art, i] = x.dataset.weg.split(":"), d = m[art][+i]; if(!d || !confirm(d.name + " aus der Mappe entfernen?")) return;
@@ -206,7 +215,7 @@ function asMpZeige(i){
 function asMpKopf(nr, titel, rechts){ return `<header class="mp-kopf"><span class="mp-nr">${esc(nr)}</span><h2 title="${esc(titel)}">${esc(titel)}</h2>${rechts || ""}</header>`; }
 function asMpStart(main){
   const a = AS_MP.a, m = AS_MP.m;
-  main.innerHTML = `<section class="mp-screen">${asMpKopf("Start", "Sitzung und Teilnehmende", a.abgeschlossen ? asChip("abgeschlossen", "gruen") : asChip("geplant", "grau"))}
+  main.innerHTML = `<section class="mp-screen">${asMpKopf("Start", "Sitzung und Teilnehmende", asMpZustandChip())}
     <div class="mp-start"><div class="mp-spalte"><div class="mp-felder drei"><label>Datum<input type="date" id="mpDatum" value="${esc(a.datum || "")}"></label>
         <label>Uhrzeit<input type="text" data-m="zeit" value="${esc(m.zeit || "")}" placeholder="08:00–09:30"></label>
         <label class="ort">Ort<input type="text" data-m="ort" value="${esc(m.ort || "")}" placeholder="${esc((AS.kundeV1 && AS.kundeV1.name) || "Ort")}"></label></div>
@@ -233,6 +242,7 @@ function asMpKeine(main){
   main.innerHTML = `<section class="mp-screen">${asMpKopf("Folien", "Noch keine Folien")}
     <div class="mp-ablage" id="mpAblage">${asMpI("folie", 40)}<b>Folien hochladen</b><span>PDF oder Bilder hierher ziehen oder klicken. PowerPoint vorher als PDF speichern (Datei → Speichern unter → PDF).</span></div></section>`;
   const z = main.querySelector("#mpAblage");
+  if(!asDarf("pflegen")){ z.querySelector("span").textContent = "Folien lädt die Fachkraft oder die Geschäftsführung hoch."; return; }
   z.onclick = () => document.getElementById("mpDateiF").click();
   z.ondragover = e => { e.preventDefault(); z.classList.add("an"); }; z.ondragleave = () => z.classList.remove("an");
   z.ondrop = e => { e.preventDefault(); z.classList.remove("an"); asMpHochladen([...e.dataTransfer.files], "folien"); };
@@ -257,8 +267,8 @@ function asMpFelderBinden(main){
 }
 function asMpBeschluesse(main){
   const a = AS_MP.a, m = AS_MP.m;
-  const offenNeu = m.beschluesse.filter(b => b.ok && b.text && !asMpVerknuepft(b)).length;
-  const rechts = `<span class="mp-rechts">${a.abgeschlossen ? asChip("abgeschlossen", "gruen") : ""}<button class="btn sek klein" id="mpDruck" title="Protokoll als A4-Seite drucken oder als PDF speichern">Protokoll drucken</button></span>`;
+  const offenNeu = m.beschluesse.filter(asMpOffen).length;
+  const rechts = `<span class="mp-rechts">${a.abgeschlossen ? asMpZustandChip() : ""}<button class="btn sek klein" id="mpDruck" title="Protokoll als A4-Seite drucken oder als PDF speichern">Protokoll drucken</button></span>`;
   const letzte = (b, i) => { const v = asMpVerknuepft(b);
     return v ? `<button class="mp-mn" data-v="${i}" title="${v.art === "ziel" ? "Ziel öffnen" : "Maßnahme öffnen"}">${v.art === "ziel" ? "Ziel" : "Maßnahme"}</button>`
       : `<input type="checkbox" data-b="${i}" data-k="ok" ${b.ok ? "checked" : ""} title="beschlossen">`; };
@@ -274,8 +284,7 @@ function asMpBeschluesse(main){
         <label>Offene Punkte<textarea data-m="offen" placeholder="je Zeile ein Punkt">${esc(m.offen || "")}</textarea></label></div>
       <div class="mp-zeile ende"><div class="mp-naechste-wrap"><label class="mp-naechste">Nächste Sitzung<input type="date" id="mpNaechste" value="${esc(m.naechste || "")}"></label>
         <input type="text" data-m="naechste_text" value="${esc(m.naechste_text || "")}" placeholder="oder z. B. KW 49, Termin folgt"></div>
-        ${!a.abgeschlossen ? `<button class="btn" id="mpAbschluss">Sitzung abschließen</button>`
-          : offenNeu ? `<button class="btn" id="mpAbschluss">${offenNeu} neue Beschlüsse übernehmen</button>` : `<span class="mp-hinweis">Abgeschlossen – Maßnahmen und Termine sind angelegt.</span>`}</div></div></section>`;
+        ${asMpFussKnoepfe(offenNeu)}</div></div></section>`;
   main.querySelectorAll("[data-b]").forEach(f => f.onchange = () => { const b = m.beschluesse[+f.dataset.b], k = f.dataset.k, v = f.type === "checkbox" ? f.checked : f.value.trim();
     asMpVermerk("Beschluss " + (+f.dataset.b + 1) + " · " + ({ text: "Maßnahme", prio: "Prio", wer: "Wer", bis: "Bis", ok: "beschlossen" })[k], b[k], v); b[k] = v;
     if(k === "ok" && a.abgeschlossen) asMpBeschluesse(main); });
@@ -286,6 +295,8 @@ function asMpBeschluesse(main){
   const pr = main.querySelector("#mpProt"); pr.onchange = () => { asMpVermerk("Beschlüsse und Notizen", a.protokoll, pr.value); a.protokoll = pr.value; };
   const nx = main.querySelector("#mpNaechste"); nx.onchange = () => { asMpVermerk("Nächste Sitzung", m.naechste, nx.value); m.naechste = nx.value; };
   const ab = main.querySelector("#mpAbschluss"); if(ab) ab.onclick = asMpAbschliessen;
+  const vk = main.querySelector("#mpVerknuepfen"); if(vk) vk.onclick = asMpVerknuepfenDialog;
+  const pk = main.querySelector("#mpProtokollNeu"); if(pk) pk.onclick = () => document.getElementById("mpDateiP").click();
   main.querySelector("#mpDruck").onclick = asMpDrucken;
 }
 /* Verweis Beschluss → Maßnahme/Ziel; ältere abgeschlossene Sitzungen (ohne gespeicherte Kennung) über Quelle und Text */
@@ -315,35 +326,140 @@ function asMpDatum(t){
   if((x = /\b(\d{1,2})\s*\/\s*(\d{4})/.exec(t))) return new Date(Date.UTC(+x[2], +x[1], 0)).toISOString().slice(0, 10);
   return null;
 }
+/* offen = beschlossen, mit Text, noch ohne Maßnahme/Ziel und nicht bewusst „keine Maßnahme“ */
+function asMpOffen(b){ return !!(b && b.ok && b.text && !b.ohne_massnahme && !asMpVerknuepft(b)); }
+/* Maßnahmen, die schon aus dieser Sitzung stammen (quelle = asa, quelle_id = Sitzung) */
+function asMpSitzungMn(){ const a = AS_MP.a; return a ? asT("as_massnahme").filter(y => y.quelle === "asa" && y.quelle_id === a.id) : []; }
+/* Beschlüsse anlegen: Maßnahme bzw. Ziel, mit Datum zusätzlich ein Termin */
+async function asMpUebernehmen(liste){
+  const a = AS_MP.a, datum = a.datum || asHeute(), plus28 = (() => { const x = new Date(datum); x.setDate(x.getDate() + 28); return x.toISOString().slice(0, 10); })();
+  const n = { nm: 0, nz: 0, nt: 0 };
+  for(const b of liste){
+    const z = /^\s*ziel\s*:\s*(.+)$/i.exec(b.text), termin = asMpDatum(b.bis);
+    if(z){ const r = await asSpeichern("as_ziel", { titel: z[1].trim(), kennzahl: null, quelle: "ASA " + asDat(datum), status: "entwurf", termin: termin || datum.slice(0, 4) + "-12-31" });
+      if(r) b.ziel_id = r.id; n.nz++; continue; }
+    const r = await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: a.id, stop: "O", text: b.text, umsetzung: "zentral", status: "offen", termin: termin || plus28, verantwortlich: b.wer || null });
+    if(r) b.massnahme_id = r.id; n.nm++;
+    if(termin){ await apiSend("POST", "/rest/v1/portal_termin", { kunde_slug: AS.kunde, titel: ("ASA: " + b.text).slice(0, 200), art: "frist", faellig_am: termin,
+      zustaendig: (b.wer || "").slice(0, 120) || null, grundlage: "ASA-Beschluss vom " + asDat(datum), erstellt_von: AS.ich || null }, "return=minimal"); n.nt++; }
+  }
+  return n;
+}
+function asMpAnzahlText(n, sonst){ return [n.nm ? n.nm + " Maßnahme(n)" : "", n.nz ? n.nz + " Ziel(e)" : "", n.nt ? n.nt + " Termin(e)" : ""].filter(Boolean).join(", ") + (n.nm || n.nz || n.nt ? " angelegt" : sonst); }
 async function asMpAbschliessen(){
-  const a = AS_MP.a, m = AS_MP.m, nach = !!a.abgeschlossen, ok = m.beschluesse.filter(b => b.ok && b.text && !asMpVerknuepft(b));
+  if(!asDarf("pflegen")) return;
+  const a = AS_MP.a, m = AS_MP.m, nach = !!a.abgeschlossen, ok = m.beschluesse.filter(asMpOffen);
   if(nach && !ok.length) return;
+  if(nach && asMpSitzungMn().length){ asMpVerknuepfenDialog(); return; }   // schon Maßnahmen aus dieser Sitzung: verknüpfen statt doppelt anlegen
   if(!confirm((nach ? "Neue Beschlüsse übernehmen? " : "Sitzung abschließen? ") + ok.length + " beschlossene Punkte werden Maßnahmen bzw. Ziele, mit Datum zusätzlich Termine im Kalender.")) return;
   await asMpSpeichernJetzt();
-  const datum = a.datum || asHeute(), plus28 = (() => { const x = new Date(datum); x.setDate(x.getDate() + 28); return x.toISOString().slice(0, 10); })();
-  let nm = 0, nz = 0, nt = 0;
   try{
-    for(const b of ok){
-      const z = /^\s*ziel\s*:\s*(.+)$/i.exec(b.text), termin = asMpDatum(b.bis);
-      if(z){ const r = await asSpeichern("as_ziel", { titel: z[1].trim(), kennzahl: null, quelle: "ASA " + asDat(datum), status: "entwurf", termin: termin || datum.slice(0, 4) + "-12-31" });
-        if(r) b.ziel_id = r.id; nz++; continue; }
-      const r = await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: a.id, stop: "O", text: b.text, umsetzung: "zentral", status: "offen", termin: termin || plus28, verantwortlich: b.wer || null });
-      if(r) b.massnahme_id = r.id; nm++;
-      if(termin){ await apiSend("POST", "/rest/v1/portal_termin", { kunde_slug: AS.kunde, titel: ("ASA: " + b.text).slice(0, 200), art: "frist", faellig_am: termin,
-        zustaendig: (b.wer || "").slice(0, 120) || null, grundlage: "ASA-Beschluss vom " + asDat(datum), erstellt_von: AS.ich || null }, "return=minimal"); nt++; }
-    }
+    const n = await asMpUebernehmen(ok);
     if(m.naechste && !m.naechste_termin_id){ const r = await apiSend("POST", "/rest/v1/portal_termin", { kunde_slug: AS.kunde, titel: "Sitzung Arbeitsschutzausschuss (ASA)", art: "sonstiges", faellig_am: m.naechste,
       grundlage: "§ 11 ASiG", notiz: m.naechste_text || null, erstellt_von: AS.ich || null }, "return=representation");
-      if(r && r[0]) m.naechste_termin_id = r[0].id; nt++; }
-    asMpVermerk(nach ? "Beschlüsse übernommen" : "Sitzung abgeschlossen", "", nm + " Maßnahmen, " + nz + " Ziele, " + nt + " Termine");
+      if(r && r[0]) m.naechste_termin_id = r[0].id; n.nt++; }
+    asMpVermerk(nach ? "Beschlüsse übernommen" : "Sitzung abgeschlossen", "", n.nm + " Maßnahmen, " + n.nz + " Ziele, " + n.nt + " Termine");
     if(!nach){ a.abgeschlossen = true; await asSpeichern("as_asa", { id: a.id, abgeschlossen: true }); }
     await asMpSpeichernJetzt();
-    asMeldung([nm ? nm + " Maßnahme(n)" : "", nz ? nz + " Ziel(e)" : "", nt ? nt + " Termin(e)" : ""].filter(Boolean).join(", ") + " angelegt" || "Sitzung abgeschlossen");
+    asMeldung(asMpAnzahlText(n, nach ? "Nichts angelegt" : "Sitzung abgeschlossen"));
     asMpZeige(AS_MP.akt);
   }catch(e){
     if(window.OAK_FEHLER) window.OAK_FEHLER("asa-mappe", "Abschluss fehlgeschlagen: " + (e.message || e), { asa: a.id, beschluesse: ok });
     asMeldung("Abschließen fehlgeschlagen: " + (e.message || e));
   }
+}
+/* Abgeschlossene Sitzung, deren Maßnahmen schon existieren (z. B. vorab angelegt), aber ohne Verweis aus den Beschlüssen:
+   je Beschluss eine vorhandene Maßnahme der Sitzung wählen, neu anlegen, keine Maßnahme – oder offen lassen. */
+function asMpWorte(t){ return new Set(String(t || "").toLowerCase().replace(/[^a-zäöüß0-9 ]+/g, " ").split(/\s+/).filter(w => w.length > 3)); }
+function asMpVerknuepfenDialog(){
+  if(!asDarf("pflegen")) return;
+  const m = AS_MP.m, offen = m.beschluesse.map((b, i) => [b, i]).filter(([b]) => asMpOffen(b));
+  if(!offen.length){ asMeldung("Alle Beschlüsse sind verknüpft"); return; }
+  const belegt = new Set(m.beschluesse.map(b => b.massnahme_id).filter(Boolean));
+  const frei = asMpSitzungMn().filter(x => !belegt.has(x.id));
+  /* Vorschlag: vorhandene Maßnahme mit den meisten gemeinsamen Wörtern (mindestens 2), jede nur einmal */
+  const vergeben = new Set(), vorschlag = {};
+  offen.forEach(([b, i]) => { if(/^\s*ziel\s*:/i.test(b.text)) return; const w = asMpWorte(b.text); let best = null, pkt = 1;
+    frei.forEach(x => { if(vergeben.has(x.id)) return; const p = [...asMpWorte(x.text)].filter(y => w.has(y)).length; if(p > pkt){ pkt = p; best = x; } });
+    if(best){ vorschlag[i] = best.id; vergeben.add(best.id); } });
+  const opt = (b, i) => { const ziel = /^\s*ziel\s*:/i.test(b.text), v = vorschlag[i] || "";
+    const o = [["", "offen lassen"], ["neu", ziel ? "Ziel neu anlegen" : "Maßnahme neu anlegen"], ["keine", "keine Maßnahme nötig"]]
+      .concat(ziel ? [] : frei.map(x => [x.id, x.text]));
+    return o.map(([k, t]) => `<option value="${esc(k)}" ${k === v ? "selected" : ""}>${esc(t)}</option>`).join(""); };
+  return asDialog({ titel: "Beschlüsse mit Maßnahmen verknüpfen", breit: true, inhalt: `<p class="hinweis">Zu dieser Sitzung gibt es schon ${frei.length} Maßnahme(n) ohne Verweis. Je Beschluss die passende wählen – so entsteht nichts doppelt.</p>
+    <div class="form">${offen.map(([b, i]) => `<label class="voll"><span title="${esc(b.text)}">${i + 1}. ${esc(b.text)}</span><select data-vk="${i}">${opt(b, i)}</select></label>`).join("")}</div>`,
+    knoepfe: [{ t: "Übernehmen", fn: async dl => {
+      const sel = [...dl.querySelectorAll("[data-vk]")], neu = [], gew = sel.filter(s => s.value && s.value !== "neu" && s.value !== "keine").map(s => s.value);
+      if(new Set(gew).size !== gew.length){ asMeldung("Eine Maßnahme ist mehreren Beschlüssen zugeordnet – bitte je Maßnahme nur einen Beschluss"); return false; }
+      const nNeu = sel.filter(s => s.value === "neu").length;
+      if(nNeu && !confirm(nNeu + " Beschluss/Beschlüsse werden als neue Maßnahme bzw. neues Ziel angelegt. Fortfahren?")) return false;
+      sel.forEach(s => { const b = m.beschluesse[+s.dataset.vk], v = s.value; if(!v) return;
+        if(v === "neu") neu.push(b);
+        else if(v === "keine"){ b.ohne_massnahme = true; asMpVermerk("Beschluss " + (+s.dataset.vk + 1) + " · Maßnahme", "", "keine nötig"); }
+        else { b.massnahme_id = v; asMpVermerk("Beschluss " + (+s.dataset.vk + 1) + " · verknüpft", "", (asNach("as_massnahme", v) || {}).text || v); } });
+      try{
+        const n = neu.length ? await asMpUebernehmen(neu) : { nm: 0, nz: 0, nt: 0 };
+        if(neu.length) asMpVermerk("Beschlüsse übernommen", "", n.nm + " Maßnahmen, " + n.nz + " Ziele, " + n.nt + " Termine");
+        await asMpSpeichernJetzt();
+        asMeldung(asMpAnzahlText(n, "Verknüpft"));
+      }catch(e){
+        if(window.OAK_FEHLER) window.OAK_FEHLER("asa-mappe", "Verknüpfen fehlgeschlagen: " + (e.message || e), { asa: AS_MP.a.id, beschluesse: neu });
+        asMeldung("Verknüpfen fehlgeschlagen: " + (e.message || e)); await asMpSpeichernJetzt();
+      }
+      asMpZeige(AS_MP.akt);
+    } }] });
+}
+/* Zustand der Sitzung als Chip (asAsaZustand in as-steuerung.js; aktuelle, ggf. noch ungespeicherte Mappe) */
+function asMpZustandChip(){
+  const a = Object.assign({}, AS_MP.a, { mappe: AS_MP.m });
+  const z = typeof asAsaZustand === "function" ? asAsaZustand(a) : (a.abgeschlossen ? { t: "abgeschlossen", f: "gruen" } : { t: "geplant", f: "grau" });
+  return asChip(z.t, z.f);
+}
+/* Fußzeile „Beschlüsse“: genau ein Hauptknopf (abschließen / übernehmen / verknüpfen), dazu Protokoll-Upload als Nebenknopf */
+function asMpFussKnoepfe(offenNeu){
+  const a = AS_MP.a, m = AS_MP.m, darf = asDarf("pflegen");
+  if(!a.abgeschlossen) return darf ? `<button class="btn" id="mpAbschluss">Sitzung abschließen</button>` : `<span class="mp-hinweis">Sitzung geplant.</span>`;
+  const haupt = !offenNeu || !darf ? `<span class="mp-hinweis">Abgeschlossen – Maßnahmen und Termine sind angelegt.</span>`
+    : asMpSitzungMn().length ? `<button class="btn" id="mpVerknuepfen">Beschlüsse mit Maßnahmen verknüpfen</button>`
+    : `<button class="btn" id="mpAbschluss">${offenNeu} neue Beschlüsse übernehmen</button>`;
+  const prot = darf && !m.protokoll_pfad ? `<button class="btn sek" id="mpProtokollNeu" title="Gedrucktes und unterschriebenes Protokoll als PDF">Unterschriebenes Protokoll hochladen</button>` : "";
+  return `<span class="mp-rechts">${prot}${haupt}</span>`;
+}
+
+/* ---------- Unterschriebenes Protokoll (nur PDF) → Mappe + Unterlagen (portal_dokumente, Kategorie asa-protokolle) ---------- */
+async function asMpProtokollHochladen(d){
+  if(!asDarf("pflegen")) return;
+  const a = AS_MP.a, m = AS_MP.m; if(!a) return;
+  if(!/\.pdf$/i.test(d.name) || (d.type && d.type !== "application/pdf")){ asMeldung("Bitte das unterschriebene Protokoll als PDF hochladen"); return; }
+  if(d.size > 40 * 1024 * 1024){ asMeldung(d.name + ": größer als 40 MB"); return; }
+  if(m.protokoll_pfad && !confirm("Das vorhandene unterschriebene Protokoll ersetzen?")) return;
+  const alt = m.protokoll_pfad || "", pfad = AS.kunde + "/organisation/asa/" + a.id + "/protokoll-unterschrieben.pdf";
+  asMeldung("Protokoll wird hochgeladen …");
+  try{
+    const r = await fetch(CFG.url + "/storage/v1/object/" + CFG.bucket + "/" + pfad.split("/").map(encodeURIComponent).join("/"), { method: "POST",
+      headers: { apikey: CFG.anon, Authorization: "Bearer " + (await token()), "Content-Type": "application/pdf", "x-upsert": "true" }, body: d });
+    if(!r.ok) throw new Error("Status " + r.status);
+    m.protokoll_pfad = pfad; m.protokoll_name = d.name; m.protokoll_am = asHeute();
+    asMpVermerk("Unterschriebenes Protokoll", alt ? "ersetzt" : "", d.name);
+    await asMpSpeichernJetzt();
+    await asMpProtokollUnterlage(pfad, alt);
+    asMeldung("Unterschriebenes Protokoll gespeichert – steht auch unter „Unterlagen“");
+  }catch(e){
+    if(window.OAK_FEHLER) window.OAK_FEHLER("asa-mappe", "Protokoll-Upload fehlgeschlagen: " + (e.message || e), { asa: a.id, datei: d.name, pfad });
+    asMeldung("Hochladen fehlgeschlagen (" + (e.message || e) + ")");
+  }
+  const p = document.getElementById("mpPanelU"); if(p && !p.hidden) asMpPanelU(p);
+  asMpZeige(AS_MP.akt);
+}
+/* Eintrag unter „Unterlagen“: vorhandenen Eintrag (alter oder neuer Pfad) aktualisieren, sonst neu anlegen – kein Duplikat */
+async function asMpProtokollUnterlage(pfad, alt){
+  const a = AS_MP.a, liste = [pfad, alt].filter(Boolean).map(x => '"' + x.replace(/"/g, "") + '"').join(",");
+  const da = await apiGet("/rest/v1/portal_dokumente?select=id&kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&kategorie=eq.asa-protokolle&storage_path=in.(" + encodeURIComponent(liste) + ")").catch(() => []);
+  const zeile = { kunde_slug: AS.kunde, kunde: (AS.kundeV1 && AS.kundeV1.name) || AS.kunde, kategorie: "asa-protokolle", titel: "ASA-Protokoll " + asDat(a.datum) + " (unterschrieben)",
+    doc_typ: "pdf", storage_path: pfad, stand: a.datum || asHeute(), typen: ["protokoll"], sortierung: 0 };
+  if(da && da[0]) await apiSend("PATCH", "/rest/v1/portal_dokumente?id=eq." + encodeURIComponent(da[0].id), Object.assign({ updated_at: new Date().toISOString() }, zeile), "return=minimal");
+  else await apiSend("POST", "/rest/v1/portal_dokumente", zeile, "return=minimal");
+  if(typeof AS_B !== "undefined") AS_B.docs = null;   // Unterlagen beim nächsten Aufruf neu laden
 }
 
 /* ---------- Präsentation: Größe, Folie zeichnen, Notizen ---------- */
