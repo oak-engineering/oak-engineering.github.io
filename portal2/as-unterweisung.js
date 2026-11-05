@@ -562,7 +562,7 @@ function asUwModuleSeite(box){
   const benutzt = new Set();
   const oeffnen = (dok, t) => { if(!dok) return '<span class="hinweis">—</span>'; benutzt.add(dok);
     return `<button class="btn sek klein" data-dok="${esc(asUwViewer(dok, t))}" data-titel="${esc(t)}">Öffnen</button>`
-      + (asDarf("pflegen") ? ` <button class="btn sek klein" data-text="${esc(dok.storage_path)}" data-titel="${esc(t)}">Text ändern</button>` : ""); };
+      + (asDarf("oak") ? ` <button class="btn adm klein" data-text="${esc(dok.storage_path)}" data-titel="${esc(t)}">Text ändern</button>` : ""); };   // vorerst nur OAK: alle Beschäftigten bekommen 100 % denselben Inhalt (Nik 05.11.2026)
   const aktiv = d.buchung.filter(x => x.aktiv).sort((x, y) => reihe(x.thema) - reihe(y.thema));
   const archiv = aktiv.map(bu => {
     const d1 = bu.datei_v1 ? docs.find(r => base(r) === bu.datei_v1) : null, d2 = docs.find(r => base(r) === bu.thema + ".html"), f = bu.fassung === 2 ? 2 : 1;
@@ -679,7 +679,7 @@ function asUwVorfallWahl(thema){
     asUwZusatzForm(thema, { titel: (art[v.art] || "Vorfall") + " vom " + asDat(v.datum), text: String(v.beschreibung || "").trim() + (v.ort ? "\nOrt: " + v.ort : ""), vorfall_id: v.id }); });
 }
 
-/* Text in einem Modul ändern (OAK und pflegeberechtigte Betriebskonten): Suchen und Ersetzen in der Moduldatei, vorher Sicherung unter _versionen/ */
+/* Text in einem Modul ändern (vorerst nur OAK – einheitlicher Inhalt, Nik 05.11.2026): Suchen und Ersetzen in der Moduldatei, vorher Sicherung unter _versionen/ */
 function asUwTextVarianten(s){
   const ent = { "ä": "&auml;", "ö": "&ouml;", "ü": "&uuml;", "Ä": "&Auml;", "Ö": "&Ouml;", "Ü": "&Uuml;", "ß": "&szlig;" };
   const uni = x => x.replace(/[^\x00-\x7f]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
@@ -687,7 +687,7 @@ function asUwTextVarianten(s){
   return [[s, x => x], [html(s), html], [uni(s), uni]];
 }
 async function asUwTextDialog(pfad, titel){
-  if(!asDarf("pflegen")) return;
+  if(!asDarf("oak")) return;
   const dlg = asDialog({ titel: "Text ändern", breit: true, inhalt: `<p><b>${esc(titel || "")}</b></p><div class="form">
       <label class="voll">Suchen<input type="text" id="uwtSuche" placeholder="Wort oder Satz genau wie in der Folie" autocomplete="off"></label>
       <div class="voll" id="uwtTreffer"><span class="hinweis">Modul wird geladen …</span></div>
