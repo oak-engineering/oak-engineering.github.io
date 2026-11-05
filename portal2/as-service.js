@@ -387,12 +387,12 @@ function asSvAufgaben(){
       aktionen: [["Öffnen", () => { if(typeof AS_GS !== "undefined") AS_GS.f.stand = "gbu"; asGehe("gefahrstoffe/kataster"); }]] }); }
   /* 6e. Maßnahmen ohne Termin oder Verantwortlichen – würden nie überfällig (zusammengefasst) */
   { const offen = asT("as_massnahme").filter(m => m.status === "offen" && (!m.termin || !m.verantwortlich));
-    if(offen.length && (AS.fachkraft || AS.gf)) l.push({ schluessel: "mn-ohne-termin:" + offen.length, stufe: "info",
+    if(offen.length && asDarf("pflegen")) l.push({ schluessel: "mn-ohne-termin:" + offen.length, stufe: "info",
       titel: offen.length + (offen.length === 1 ? " Maßnahme" : " Maßnahmen") + " ohne Termin oder Verantwortlichen",
       sub: "Ohne Termin wird eine Maßnahme nie überfällig – Verantwortlichen und Termin festlegen", frist: null,
       aktionen: [["Öffnen", () => asGehe("massnahmen")]] }); }
   /* 6f. Beschäftigtenzahl – eine Quelle (Bereiche); abweichende Aufteilung VZ/TZ melden */
-  if(typeof asBeschaeftigte === "function" && (AS.fachkraft || AS.gf)){ const b = asBeschaeftigte();
+  if(typeof asBeschaeftigte === "function" && asDarf("pflegen")){ const b = asBeschaeftigte();
     if(b.abweichung) l.push({ schluessel: "ma-abweichung:" + b.bereiche + ":" + b.angabe, stufe: "info", quittierbar: true,
       titel: "Beschäftigtenzahl abgleichen: Bereiche " + b.bereiche + ", Aufteilung Vollzeit/Teilzeit " + b.angabe,
       sub: "Maßgeblich ist die Summe der Bereiche (Ersthelfer, Sicherheitsbeauftragte, Einsatzzeit) – Aufteilung in den Grunddaten anpassen",
@@ -437,14 +437,14 @@ function asSvAufgaben(){
     sub: String(m.beschreibung || "").slice(0, 90) + (m.art === "unfall" ? " – mehr als 3 Tage arbeitsunfähig: Unfallanzeige binnen 3 Tagen (§ 193 SGB VII)" : " – Maßnahme ableiten, Rückmeldung geben"),
     frist: null, aktionen: [["Auswerten", () => asGehe("steuerung/meldungen")]] }));
   /* 6l. Führungskräfte zur Beurteilung befähigen (P01 → P20): Leitung eines Bereichs ohne Nachweis einer BdA-Schulung */
-  if(AS.fachkraft || AS.gf){ const norm = x => String(x || "").trim().toLowerCase();
+  if(asDarf("pflegen")){ const norm = x => String(x || "").trim().toLowerCase();
     const geschult = new Set((AS_SV.nachweise || []).filter(n => /bda|beurteilung|gefährdungsbeurteilung|führungskräfte/i.test((n.bezeichnung || "") + " " + (n.art || ""))).map(n => norm(n.person_name)));
     [...new Set(asT("as_einheit").map(e => e.leitung).filter(Boolean))].filter(p => !geschult.has(norm(p))).forEach(p => l.push({
       schluessel: "fk-bda:" + norm(p), stufe: "info", quittierbar: true, quittText: "Geschult",
       titel: "Führungskraft zur Beurteilung der Arbeitsbedingungen schulen: " + p, sub: "Kurzschulung (Pflichten nach § 13 ArbSchG, BdA und BA des Bereichs) – Nachweis unter Nachweise eintragen",
       frist: null, aktionen: [["Nachweis eintragen", () => asGehe("nachweise")]] })); }
   /* 6m. Bereich mit Beschäftigten, aber ohne Beurteilung (P01 → P10) */
-  if(AS.fachkraft || AS.gf){ const E = asT("as_einheit"), sys = asT("as_arbeitssystem").filter(s => !s.stillgelegt_am && s.einheit_id);
+  if(asDarf("pflegen")){ const E = asT("as_einheit"), sys = asT("as_arbeitssystem").filter(s => !s.stillgelegt_am && s.einheit_id);
     const unter = id => { const s = new Set([id]); let neu = true; while(neu){ neu = false; E.forEach(e => { if(e.parent_id && s.has(e.parent_id) && !s.has(e.id)){ s.add(e.id); neu = true; } }); } return s; };
     E.filter(e => +e.beschaeftigte > 0).forEach(e => { const t = unter(e.id); if(sys.some(s => t.has(s.einheit_id))) return;
       l.push({ schluessel: "bereich-ohne-bda:" + e.id, stufe: "warnung", quittierbar: true, titel: "Bereich ohne Beurteilung: " + e.name,
@@ -452,7 +452,7 @@ function asSvAufgaben(){
         frist: null, aktionen: [["Beurteilungen", () => asGehe("bda")]] }); }); }
   /* 6n. Betreuungsumfang neu vereinbaren, wenn das Soll sich deutlich verändert hat (P06 → P01, DGUV V2) */
   try{ const d = asOrgDaten(), e = typeof asEinsatz === "function" ? asEinsatz() : null;
-    if(e && d.einsatz_vereinbart_am && d.einsatz_vereinbart_soll && (AS.fachkraft || AS.gf)){
+    if(e && d.einsatz_vereinbart_am && d.einsatz_vereinbart_soll && asDarf("pflegen")){
       const alt = +d.einsatz_vereinbart_soll, neu = Math.round((e.sollSifa + e.sollBa) * 10) / 10;
       if(alt > 0 && Math.abs(neu - alt) / alt > 0.1) l.push({ schluessel: "einsatz-neu:" + neu, stufe: "warnung", quittierbar: true,
         titel: "Betreuungsumfang neu vereinbaren", sub: "vereinbart " + alt + " h/Jahr, heute nötig " + neu + " h/Jahr (Beschäftigte oder Gruppe geändert) – DGUV Vorschrift 2",
@@ -480,11 +480,11 @@ function asSvAufgaben(){
         aktionen: [["Beauftragte", () => asGehe("organisation/beauftragte")]] }); }); }
   /* 6q. Gefahrstoff-Beurteilung ohne Tätigkeit der BdA (P23 → P10) */
   { const ohne = (AS_SV.gbuAlle || []).filter(g => g.status === "freigegeben" && !g.taetigkeit_id);
-    if(ohne.length && (AS.fachkraft || AS.gf)) l.push({ schluessel: "gsgbu-ohne-tk:" + ohne.length, stufe: "warnung", quittierbar: true,
+    if(ohne.length && asDarf("pflegen")) l.push({ schluessel: "gsgbu-ohne-tk:" + ohne.length, stufe: "warnung", quittierbar: true,
       titel: ohne.length + " Gefahrstoff-Beurteilung(en) keiner Tätigkeit der BdA zugeordnet", sub: "Ohne Zuordnung fehlt der Stoff in der Beurteilung der Arbeitsbedingungen – in der EMKG-Beurteilung die Tätigkeit wählen",
       frist: null, aktionen: [["Öffnen", () => { AS_GS.oeffnen = ohne[0].gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] }); }
   /* 6r. Neuer Stoff ohne Mitzeichnung der Sifa (P23 → P12) – nur im Cockpit neu aufgenommene Stoffe (nicht der Erstimport), zusammengefasst */
-  if(AS.fachkraft || AS.gf){ const mz = asT("as_mitzeichnung").filter(x => x.art === "gefahrstoff");
+  if(asDarf("pflegen")){ const mz = asT("as_mitzeichnung").filter(x => x.art === "gefahrstoff");
     const ohne = (AS_SV.gsListe || []).filter(g => g.verwendung_status !== "inaktiv" && g.quelle === "portal" && !g.ersetzt_durch && g.erfasst_am && asSvTage(String(g.erfasst_am).slice(0, 10)) >= -90
       && !(AS_SV.gsListe || []).some(x => x.ersetzt_durch === g.id)
       && !mz.some(x => (x.checkliste && (x.checkliste._objekt === g.id || (x.checkliste._folgen || {}).gefahrstoff === g.id)) || String(x.titel || "").toLowerCase() === String(g.bezeichnung || "").toLowerCase()));
@@ -495,14 +495,14 @@ function asSvAufgaben(){
   /* 6s. Substitution nach TRGS 600: Prüfung fehlt bzw. Ersatz möglich (P23 → P11) */
   { const gb = (AS_SV.gbuAlle || []).filter(g => g.status === "freigegeben"), ohne = gb.filter(g => !(g.eingaben && g.eingaben.substitution));
     const moegl = gb.filter(g => g.eingaben && g.eingaben.substitution === "moeglich" && !((AS_SV.gsListe || []).find(x => x.id === g.gefahrstoff_id) || {}).ersetzt_durch);
-    if(ohne.length && (AS.fachkraft || AS.gf)) l.push({ schluessel: "subst-offen:" + ohne.length, stufe: "info", quittierbar: true,
+    if(ohne.length && asDarf("pflegen")) l.push({ schluessel: "subst-offen:" + ohne.length, stufe: "info", quittierbar: true,
       titel: ohne.length + " Gefahrstoff-Beurteilung(en) ohne Ergebnis der Substitutionsprüfung", sub: "§ 6 Abs. 1 Nr. 4 und § 7 Abs. 3 GefStoffV, TRGS 600 – in der EMKG-Beurteilung festhalten",
       frist: null, aktionen: [["Öffnen", () => { AS_GS.oeffnen = ohne[0].gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] });
     moegl.forEach(g => l.push({ schluessel: "subst-moeglich:" + g.id, stufe: "warnung", titel: "Ersatz möglich – Ersatzstoff festlegen: " + (g.taetigkeit || ""),
       sub: "Laut Substitutionsprüfung gibt es einen geeigneten Ersatz (TRGS 600) – im Kataster „Durch Ersatzstoff ersetzen“", frist: null,
       aktionen: [["Stoff öffnen", () => { AS_GS.oeffnen = g.gefahrstoff_id; asGehe("gefahrstoffe/kataster"); }]] })); }
   /* 6t. Kennzahl im roten Bereich ohne Ziel → Zielvorschlag prüfen (P05 → P03) */
-  if((AS.fachkraft || AS.gf) && typeof asZielVorschlaege === "function"){ let v = []; try{ v = asZielVorschlaege(); }catch(e){}
+  if(asDarf("pflegen") && typeof asZielVorschlaege === "function"){ let v = []; try{ v = asZielVorschlaege(); }catch(e){}
     if(v.length) l.push({ schluessel: "zielvorschlag:" + v.map(x => x.kennzahl).sort().join(","), stufe: "info", quittierbar: true,
       titel: v.length + (v.length === 1 ? " Zielvorschlag" : " Zielvorschläge") + " aus Kennzahlen im roten Bereich", sub: v.slice(0, 3).map(x => x.titel).join(" · ") + (v.length > 3 ? " …" : ""),
       frist: null, aktionen: [["Ziele", () => asGehe("steuerung/ziele")]] }); }
@@ -613,7 +613,7 @@ function asSvPaSichtbar(a){
 }
 function asSvPaText(a){ return (a.anlaesse || []).map(x => x.text).filter(Boolean); }
 function asSvPaAufgaben(){
-  const l = [], fk = !!(AS.fachkraft || AS.admin);
+  const l = [], fk = asDarf("pflegen");
   (AS_SV.pa || []).filter(asSvPaSichtbar).forEach(a => { const [t, ziel] = AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = asSvPaText(a);
     const akt = [["Öffnen", () => asSvPaOeffnen(a, ziel)]];
     if(a.objekt_typ === "unterweisung"){
@@ -841,7 +841,7 @@ function asSvListe(box, alle){
     + (erledigt.length ? `<details class="karte"><summary style="cursor:pointer"><b style="color:var(--blau)">Erledigt</b> <span class="hinweis">letzte 12 Monate · ${erledigt.length}</span></summary>
         <div class="zeilen">${erledigt.map(t => `<div class="z" style="cursor:default"><div><b>${esc(asDat(t.erledigt_am))} · ${esc(t.titel)}${t.objekt ? " · " + esc(t.objekt) : ""}</b>
           <small>erledigt von ${esc(t.erledigt_von || "")}${t.erledigt_notiz ? " – " + esc(t.erledigt_notiz) : ""} · war fällig ${esc(asDat(t.faellig_am))}</small></div>
-          <div>${asChip("erledigt", "gruen")}${AS.admin ? ` <button class="btn adm klein" data-zurueck="${esc(t.id)}">rückgängig</button>` : ""}</div></div>`).join("")}</div></details>` : "");
+          <div>${asChip("erledigt", "gruen")}${asDarf("pflegen") ? ` <button class="btn sek klein" data-zurueck="${esc(t.id)}">rückgängig</button>` : ""}</div></div>`).join("")}</div></details>` : "");
   box.querySelectorAll("[data-e]").forEach(z => z.onclick = () => asSvEintragOeffnen(alle[+z.dataset.e]));
   asSvUnterlagenBinden(box);
   box.querySelectorAll("[data-zurueck]").forEach(b => b.onclick = async ev => {
@@ -850,7 +850,7 @@ function asSvListe(box, alle){
     try{
       if(t.nachfolger_id){ const n = AS_SV.termine.find(x => x.id === t.nachfolger_id); if(n && !n.erledigt_am) await apiSend("DELETE", "/rest/v1/portal_termin?id=eq." + encodeURIComponent(n.id), null, "return=minimal"); }
       await apiSend("PATCH", "/rest/v1/portal_termin?id=eq." + encodeURIComponent(t.id), { erledigt_am: null, erledigt_von: null, erledigt_notiz: null, nachfolger_id: null,
-        geaendert_von: "OAK engineering", geaendert_am: new Date().toISOString() }, "return=minimal");
+        geaendert_von: asDarf("oak") ? "OAK engineering" : (AS.ich || "Betrieb"), geaendert_am: new Date().toISOString() }, "return=minimal");
       asMeldung("Erledigung zurückgenommen"); asZeige();
     }catch(e){ asMeldung("Konnte nicht zurückgenommen werden: " + asSvFehler(e)); }
   });
@@ -1132,7 +1132,7 @@ function asSvRechtZeigen(el){
   const stand = recht.reduce((m, x) => (x.geaendert_am && x.geaendert_am > m) ? x.geaendert_am : m, "");
   const farbe = { gilt: "gruen", kommt: "gelb", vorhaben: "grau" };
   const quitt = id => (AS_SV.rq || []).find(q => q.rechtsinfo_id === id);
-  const darf = !!(AS.gf || AS.fachkraft);
+  const darf = asDarf("pflegen");
   const offen = recht.filter(x => x.sichtbar !== false && x.status !== "vorhaben" && !quitt(x.id)).length;
   const thema = t => (AS_RI_THEMEN.find(z => z[0] === t) || [t, t])[1];
   el.innerHTML = `<div class="karte"><h2>Rechtliche Neuerungen ${AS.admin ? `<button class="btn adm klein" id="riNeu">+ Eintrag</button>` : ""}</h2>
@@ -1347,7 +1347,7 @@ const AS_SV_RHYTHMUS = [["woechentlich", "wöchentlich (Übersicht)"], ["taeglic
 const AS_SV_WTAG = [[1, "Montag"], [2, "Dienstag"], [3, "Mittwoch"], [4, "Donnerstag"], [5, "Freitag"]];
 const AS_SV_ABO_SPALTEN = "id,kunde_slug,email,name,rhythmus,wochentag,letzte_mail,angelegt_von,angelegt_am";   // token bleibt auf dem Server
 async function asSvErinnerungen(box){
-  const pflege = !!(AS.fachkraft || AS.gf || AS.admin);
+  const pflege = asDarf("pflegen");
   let abos = [];
   try{ abos = await apiGet("/rest/v1/portal_erinnerung_abo?select=" + AS_SV_ABO_SPALTEN + "&kunde_slug=eq." + encodeURIComponent(AS.kunde) + "&order=angelegt_am.asc") || []; }
   catch(e){ box.innerHTML = `<div class="leer">Konnte nicht geladen werden: ${esc(asSvFehler(e))}</div>`; return; }

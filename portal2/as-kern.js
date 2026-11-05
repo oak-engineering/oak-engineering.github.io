@@ -3,8 +3,23 @@
    (gleiche Sitzung, gleiche Datenbank, nur Tabellen as_*). Globale Namen immer mit as/AS-Praefix. */
 "use strict";
 
-const AS = { kunde: null, kunden: [], org: null, admin: false, fachkraft: false, ich: "", uid: null,
+const AS = { kunde: null, kunden: [], org: null, admin: false, oak: false, fachkraft: false, gf: false, pflege: false, ich: "", uid: null,
   db: {}, seite: "cockpit", reiter: {} };
+/* Rechte-Raster (Stufe 9, 05.11.2026 „der Betrieb darf grundsätzlich alles selbst“). Pflegeberechtigt = Fachkraft, Geschäftsführung
+   oder Betriebs-Admin – wie portal_darf_pflegen() in der Datenbank. OAK allein: Freischaltung/Buchung, Katalog-Inhalte, Kunde anlegen,
+   AVV, Abrechnung, KI-/Begehungslauf-Werkzeuge, Fehler, Erfassungen, Nutzung, Rechtliche Neuerungen. Freigeben: Geschäftsführung (Fachkraft legt vor). */
+const AS_RECHTE = {
+  oak:       () => AS.oak,
+  pflegen:   () => AS.pflege,
+  loeschen:  () => AS.pflege,
+  freigeben: () => AS.oak || AS.gf,
+};
+function asDarf(aktion){ const f = AS_RECHTE[aktion]; return !!(f && f()); }
+/* Löschen mit Bestätigung (gibt false zurück, wenn abgebrochen – passt zu Dialogknöpfen) */
+async function asLoeschenBestaetigt(frage, t, id){
+  if(!asDarf("loeschen") || !confirm(frage + "\n\nDas lässt sich nicht rückgängig machen.")) return false;
+  await asLoeschen(t, id); return true;
+}
 const AS_TABELLEN = ["as_einheit", "as_beauftragter", "as_einsatz", "as_orgcheck", "as_arbeitssystem", "as_taetigkeit",
   "as_gefaehrdung", "as_massnahme", "as_mitzeichnung", "as_asa", "as_ziel", "as_psyche", "as_meldung", "as_thema",
   "as_kultur", "as_prozess", "as_pruefobjekt", "as_pruefung", "as_notfall", "as_fremdfirma", "as_erlaubnisschein"];
@@ -140,8 +155,9 @@ async function asV1Speichern(t, q, row, alt){
 async function asSpeichern(t, row){
   const q = AS_QUELLEN[t];
   if(q){ const alt = row.id ? asNach(t, row.id) : null;
-    // Neue Vorfaelle darf in V1 nur OAK anlegen (der Betrieb meldet ueber den QR-Melder) – sonst bleibt die Meldung V2-eigen
-    const v1Neu = !row.id && (q.ganz || q.neuV1(row)) && !(t === "as_meldung" && !AS.admin);
+    // Neue Vorfaelle in V1 anlegen darf OAK – und der Betrieb (pflegeberechtigt), wenn er neue Meldungen selbst prueft
+    // (portal_kunde.rechte.vorfall_freigabe <> 'oak', AS_VF.betrieb); sonst bleibt die Meldung V2-eigen
+    const v1Neu = !row.id && (q.ganz || q.neuV1(row)) && !(t === "as_meldung" && !(asDarf("oak") || (asDarf("pflegen") && typeof AS_VF !== "undefined" && AS_VF.betrieb)));
     if((alt && alt._v1) || v1Neu) return asV1Speichern(t, q, row, alt); }
   const daten = Object.assign({}, row); delete daten.id;
   let erg;
@@ -447,10 +463,10 @@ function asIcon(k, s){ return AS_ICON[k] ? `<svg viewBox="0 0 24 24" aria-hidden
 /* ---------------- Navigation ---------------- */
 function asGehe(ziel){ location.hash = "#" + ziel; }
 function asHashLesen(){
-  const std = AS.fachkraft || !AS_SEITEN.start ? "cockpit" : "start";   // Betrieb (Schichtführer) startet mit der Startseite
+  const std = asDarf("oak") || !AS_SEITEN.start ? "cockpit" : "start";   // OAK startet mit der Übersicht, der Betrieb mit der Startseite
   const h = decodeURIComponent(location.hash.replace(/^#/, "")) || std;
   const [s, r] = h.split("/");
-  AS.seite = AS_SEITEN[s] && (AS.fachkraft || AS.gf || !AS_SEITEN[s].nurFachkraft) ? s : std;
+  AS.seite = AS_SEITEN[s] && (asDarf("pflegen") || !AS_SEITEN[s].nurFachkraft) ? s : std;
   if(r) AS.reiter[AS.seite] = r;
 }
 /* Seitenleiste in Gruppen (Nikolai 14.10.2026: „zu lang, gliedern wie in V1“). Offen ist die Gruppe der aktiven Seite
@@ -466,7 +482,7 @@ const AS_NAV_GRUPPEN = [
 ];
 function asNavOffen(){ try{ return JSON.parse(localStorage.getItem("as_nav_offen") || "[]"); }catch(e){ return []; } }
 function asNav(){
-  const sicht = k => AS_SEITEN[k] && !AS_SEITEN[k].versteckt && (AS.fachkraft || AS.gf || !AS_SEITEN[k].nurFachkraft);
+  const sicht = k => AS_SEITEN[k] && !AS_SEITEN[k].versteckt && (asDarf("pflegen") || !AS_SEITEN[k].nurFachkraft);
   const zugeteilt = new Set(AS_NAV_GRUPPEN.flatMap(g => g[2]));
   const rest = Object.keys(AS_SEITEN).filter(k => !zugeteilt.has(k)).sort((a, b) => AS_SEITEN[a].sort - AS_SEITEN[b].sort);
   const gruppen = AS_NAV_GRUPPEN.map(([id, titel, seiten]) => [id, titel, (id === "service" ? seiten.concat(rest) : seiten).filter(sicht)]).filter(g => g[2].length);
@@ -541,8 +557,10 @@ async function asStart(){
     AS.uid = (getSession().user || {}).id;
     const me = await apiGet("/rest/v1/portal_mitglied?select=name,rolle,rollen,kunde_slug&user_id=eq." + encodeURIComponent(AS.uid));
     const m = me && me[0]; if(!m) throw new Error("Kein Portal-Zugang für dieses Konto.");
-    AS.admin = m.rolle === "admin"; AS.fachkraft = AS.admin || m.rolle === "fachkraft"; AS.ich = m.name || "";
+    AS.admin = m.rolle === "admin"; AS.oak = AS.admin;   // OAK-Admin: Freischaltung, Katalog, Kunde anlegen, AVV, Abrechnung, KI-/Fehler-Werkzeuge
+    AS.fachkraft = AS.admin || m.rolle === "fachkraft"; AS.ich = m.name || "";   // Fachkraft-Rechte (OAK eingeschlossen, damit OAK alles Fachliche weiter kann)
     AS.gf = AS.admin || !!(m.rollen && m.rollen.gf);   // Geschäftsführung: gibt Beurteilungen frei (DB prüft portal_ist_gf)
+    AS.pflege = AS.fachkraft || AS.gf || !!(m.rollen && m.rollen.admin);   // pflegeberechtigt wie DB portal_darf_pflegen(): Fachkraft, GF, Betriebs-Admin
     await asKundenLaden();
     /* ?kunde=<slug> in der Adresse öffnet direkt diesen Kunden (Link aus dem Terminal) */
     let gew = new URLSearchParams(location.search).get("kunde");

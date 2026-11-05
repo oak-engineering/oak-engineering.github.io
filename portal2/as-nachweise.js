@@ -376,10 +376,10 @@ AS_SEITEN.energie = { titel: "Energie", icon: "↯", sort: 8.5, async render(mai
       <div class="kachel"><div class="lbl">geplant</div><div class="zahl">${nach("geplant")}</div><div class="hinweis">Umsetzung terminiert</div></div>
       <div class="kachel k-${nach("umgesetzt") ? "gruen" : "grau"}"><div class="lbl">umgesetzt</div><div class="zahl">${nach("umgesetzt")}</div><div class="hinweis">abgeschlossen</div></div></div>
     <div class="karte"><h2>Effizienzmaßnahmen <span class="hinweis">${rows.length} ${rows.length === 1 ? "Eintrag" : "Einträge"}${offen ? " · " + offen + " offen" : ""}</span>
-      ${AS.admin ? `<button class="btn adm klein" id="asNwENeu">+ Maßnahme erfassen</button>` : ""}</h2>
+      ${asDarf("pflegen") ? `<button class="btn klein" id="asNwENeu">+ Maßnahme erfassen</button>` : ""}</h2>
       ${rows.length ? rows.map(asNwEKarte).join("") : `<div class="leer">Noch keine Energiebefunde erfasst.</div>`}</div>`;
   const neu = document.getElementById("asNwENeu"); if(neu) neu.onclick = asNwEDialog;
-  if(!AS.admin) return;
+  if(!asDarf("pflegen")) return;
   main.querySelectorAll("[data-estatus]").forEach(s => s.onchange = async () => {
     s.disabled = true;
     try{ await asNwESpeichern(s.dataset.estatus, { status: s.value }); const m = rows.find(x => x.id === s.dataset.estatus); if(m) m.status = s.value; asMeldung("Status gespeichert."); }
@@ -395,7 +395,7 @@ AS_SEITEN.energie = { titel: "Energie", icon: "↯", sort: 8.5, async render(mai
 }};
 function asNwEKarte(m){
   const farbe = AS_NW_E_FARBE[m.status] || "gelb";
-  const status = AS.admin
+  const status = asDarf("pflegen")
     ? `<select data-estatus="${esc(m.id)}">${Object.entries(AS_NW_E_STATUS).map(([k, l]) => `<option value="${k}"${m.status === k ? " selected" : ""}>${l}</option>`).join("")}</select>`
     : asChip(AS_NW_E_STATUS[m.status] || m.status || "offen", farbe);
   const zeilen = [
@@ -403,13 +403,13 @@ function asNwEKarte(m){
     ["Festgestellt", (m.festgestellt_am ? asDat(m.festgestellt_am) : "–") + (m.quelle ? " · " + esc(m.quelle) : "")],
     ["Maßnahme", esc(m.massnahme || "–")],
     ["Einsparung", m.einsparung ? esc(m.einsparung) : "<i>nicht beziffert – Messung ausstehend</i>"]];
-  const notiz = AS.admin
+  const notiz = asDarf("pflegen")
     ? `<label class="hinweis" style="display:flex;flex-direction:column;gap:4px;margin-top:8px">Bearbeitungsstand<textarea data-enotiz="${esc(m.id)}" rows="2" placeholder="Was ist veranlasst?">${esc(m.notiz || "")}</textarea></label>`
     : (m.notiz ? `<p class="hinweis" style="margin-top:6px"><b>Bearbeitung:</b> ${esc(m.notiz)}</p>` : "");
   return `<details style="border-top:1px solid var(--linie);padding:10px 4px">
     <summary style="cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap">${asPunkt(farbe)}<span class="hinweis">${m.festgestellt_am ? asDat(m.festgestellt_am) : "–"}</span>
       <b style="flex:1">${esc(m.titel)}</b>${asChip(AS_NW_E_STATUS[m.status] || m.status || "offen", farbe)}</summary>
-    <div style="margin-top:8px">${AS.admin ? `<div class="form"><label>Status${status}</label></div>` : ""}
+    <div style="margin-top:8px">${asDarf("pflegen") ? `<div class="form"><label>Status${status}</label></div>` : ""}
       <p>${esc(m.beschreibung || "").replace(/\n/g, "<br>")}</p>
       <table class="tab">${zeilen.map(([k, v]) => `<tr><th style="width:140px">${k}</th><td>${v}</td></tr>`).join("")}</table>
       ${notiz}<p class="hinweis">Erfasst ${m.angelegt_am ? asDat(m.angelegt_am) : "–"}</p></div></details>`;

@@ -144,7 +144,7 @@ async function asMpDateiOeffnen(pfad){
   if(w) w.location = u; else location.href = u;
 }
 function asMpPanelU(p){
-  const m = AS_MP.m, darf = AS.fachkraft || AS.gf;
+  const m = AS_MP.m, darf = asDarf("pflegen");
   const zeile = (d, art, i) => `<div class="mp-doc"><a href="#" data-p="${esc(d.pfad)}">${asMpI("datei", 16)}<span title="${esc(d.name)}">${esc(d.name)}</span></a>${darf ? `<button class="mp-x" data-weg="${art}:${i}" title="Aus der Mappe entfernen">${asMpI("zu", 14)}</button>` : ""}</div>`;
   p.innerHTML = `<h4>Unterlagen zur Sitzung</h4><div class="mp-docs">${m.unterlagen.map((d, i) => zeile(d, "unterlagen", i)).join("") || `<div class="mp-leer">Noch keine Unterlagen.</div>`}</div>
     <button class="btn klein" id="mpUNeu">${asMpI("plus", 16)} Unterlagen hochladen</button>
@@ -217,7 +217,7 @@ function asMpStart(main){
       <div class="mp-spalte"><div class="mp-felder zwei"><label>Vorsitz<input type="text" data-m="vorsitz" value="${esc(m.vorsitz || "")}" placeholder="Name"></label>
         <label>Protokoll<input type="text" data-m="protokollfuehrer" value="${esc(m.protokollfuehrer || "")}" placeholder="Name"></label></div>
       <label class="grow">Tagesordnung <textarea id="mpTo">${esc(a.tagesordnung || "")}</textarea></label>
-      <div class="mp-zeile"><button class="btn sek klein" id="mpToVorschlag">aus aktuellem Stand vorschlagen</button>${AS.admin ? `<button class="btn gefahr klein" id="mpLoeschen">Sitzung löschen</button>` : ""}</div></div></div></section>`;
+      <div class="mp-zeile"><button class="btn sek klein" id="mpToVorschlag">aus aktuellem Stand vorschlagen</button>${asDarf("loeschen") ? `<button class="btn gefahr klein" id="mpLoeschen">Sitzung löschen</button>` : ""}</div></div></div></section>`;
   main.querySelector("#mpDatum").onchange = e => { asMpVermerk("Datum", a.datum, e.target.value); a.datum = e.target.value; document.querySelector(".mp-titel").textContent = "ASA " + asDat(a.datum); };
   main.querySelectorAll("[data-t]").forEach(f => f.onchange = () => { const t = m.teilnehmende[+f.dataset.t], k = f.dataset.k, v = f.type === "checkbox" ? f.checked : f.value.trim();
     asMpVermerk("Teilnehmende " + (+f.dataset.t + 1) + " · " + k, t[k], v); t[k] = v; });
@@ -225,8 +225,8 @@ function asMpStart(main){
   main.querySelector("#mpTnNeu").onclick = () => { m.teilnehmende.push({ name: "", funktion: "", anwesend: false }); asMpSpeichern(); asMpStart(main); };
   const to = main.querySelector("#mpTo"); to.onchange = () => { asMpVermerk("Tagesordnung", a.tagesordnung, to.value); a.tagesordnung = to.value; };
   main.querySelector("#mpToVorschlag").onclick = () => { to.value = asAsaTagesordnung(); to.onchange(); };
-  const lo = main.querySelector("#mpLoeschen"); if(lo) lo.onclick = async () => { if(!confirm("Sitzung mit Mappe löschen?")) return;
-    await asLoeschen("as_asa", a.id); AS_MP.a = null; document.getElementById("asaMappe")?.remove(); document.body.classList.remove("mp-offen"); document.documentElement.classList.remove("mp-offen");
+  const lo = main.querySelector("#mpLoeschen"); if(lo) lo.onclick = async () => { if(!await asLoeschenBestaetigt("Sitzung mit Mappe löschen?", "as_asa", a.id)) return;
+    AS_MP.a = null; document.getElementById("asaMappe")?.remove(); document.body.classList.remove("mp-offen"); document.documentElement.classList.remove("mp-offen");
     document.removeEventListener("keydown", asMpTaste); asZeige(); };
 }
 function asMpKeine(main){

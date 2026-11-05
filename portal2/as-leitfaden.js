@@ -314,7 +314,7 @@ function asLfAuswerten(){
 }
 /* Badge-Verlauf in as_badge festhalten (nur mit Schreibrecht; angezeigt wird immer die Live-Auswertung) */
 async function asLfVerlauf(erg){
-  if(!(AS.gf || AS.fachkraft) || !erg) return;
+  if(!asDarf("pflegen") || !erg) return;
   const heute = asHeute(), alt = AS_LF.d.badge || [];
   for(const st of erg.stufen){
     const b = alt.find(x => x.stufe === st.nr), aktiv = b && b.seit && !b.entzogen_am;
@@ -423,7 +423,7 @@ AS_SEITEN.leitfaden = { titel: "Safety-Journey", icon: "◆", sort: 0.8, async r
 
 /* ---------- Selbstauskunft ---------- */
 function asLfSaDialog(k){
-  const x = asLfSa(AS_LF.d, k.id), darf = !!(AS.gf || AS.fachkraft);
+  const x = asLfSa(AS_LF.d, k.id), darf = asDarf("pflegen");
   const verlauf = (AS_LF.d.sa || []).filter(s => s.kriterium === k.id).slice(0, 5);
   asDialog({ titel: asKlartext(k.titel), inhalt: `<p class="hinweis">${esc(asKlartext(k.warum))} Grundlage: ${esc(asKlartext(k.recht))}. Gültig ${k.sa} Monate ab Datum.</p>
     ${k.hinweis ? `<p class="hinweis">${esc(k.hinweis())}</p>` : ""}
@@ -451,7 +451,7 @@ function asLfSaDialog(k){
 }
 /* 1b-8: Unfallanzeige je Unfall als erstattet vermerken */
 function asLfUnfallDialog(k){
-  const darf = !!(AS.gf || AS.fachkraft);
+  const darf = asDarf("pflegen");
   asDialog({ titel: "Unfallanzeige (§ 193 SGB VII)", inhalt: `<p class="hinweis">Bei mehr als 3 Tagen Arbeitsunfähigkeit muss der Unfall binnen 3 Tagen der BG angezeigt werden (Formular der BG bzw. Extranet).</p>
     <div class="zeilen">${k.unfall.map(v => `<div class="z" style="cursor:default"><div><b>${esc(asDat(v.ereignis_am || String(v.angelegt_am).slice(0, 10)))} · ${esc(v.anlage || "Unfall")}</b><small>${esc(v.ausfalltage)} Ausfalltage</small></div>
       ${darf ? `<button class="btn klein" data-ua="${esc(v.id)}">angezeigt heute</button>` : ""}</div>`).join("")}</div>` });

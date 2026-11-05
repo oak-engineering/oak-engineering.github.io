@@ -38,7 +38,7 @@ async function asBdaDokumente(box, s){
   box.innerHTML = `<div class="leer">wird geladen …</div>`;
   const bas = await apiGet("/rest/v1/as_ba?select=*&arbeitssystem_id=eq." + encodeURIComponent(s.id) + "&order=version.desc").catch(() => []);
   let ba = (bas || [])[0];
-  const darf = !!(AS.fachkraft || AS.gf), istAnlage = s.art !== "arbeitssystem" || s.quelle_id;
+  const darf = asDarf("pflegen"), istAnlage = s.art !== "arbeitssystem" || s.quelle_id;
   const dokKnopf = (typ, t) => `<button class="btn sek klein" data-vor="${typ}">${t}</button>`;
   const status = !ba ? asChip("noch keine BA", "grau")
     : ba.status === "freigegeben" ? asChip("freigegeben " + asDat(ba.freigabe_am) + (ba.freigabe_von ? " · " + ba.freigabe_von : ""), "gruen")
@@ -48,7 +48,7 @@ async function asBdaDokumente(box, s){
       <p class="hinweis">Die Dokumente werden bei jedem Öffnen aus der Beurteilung und der Betriebsanweisung unten gebaut – es gibt keine zweite Fassung mehr.</p></div>
     <div class="karte"><h2>Betriebsanweisung ${status}
       <span>${ba && darf ? `<button class="btn klein" id="baSpeichern">Speichern</button>` : ""}
-        ${ba && ba.status !== "freigegeben" && AS.fachkraft && !AS.gf && !ba.vorgelegt_am ? `<button class="btn sek klein" id="baVorlegen">Zur Freigabe vorlegen</button>` : ""}
+        ${ba && ba.status !== "freigegeben" && asDarf("pflegen") && !AS.gf && !ba.vorgelegt_am ? `<button class="btn sek klein" id="baVorlegen">Zur Freigabe vorlegen</button>` : ""}
         ${ba && ba.status !== "freigegeben" && AS.gf ? `<button class="btn klein" id="baFrei">Freigeben (Geschäftsführung)</button>` : ""}
         ${!ba && darf ? `<button class="btn klein" id="baNeu">BA anlegen</button>` : ""}</span></h2>
       ${ba ? `<div class="reiter nodruck">${AS_BA_SPR.map(([k, n]) => `<button class="${k === AS_BA.sprache ? "an" : ""}" data-spr="${k}">${n}</button>`).join("")}</div>

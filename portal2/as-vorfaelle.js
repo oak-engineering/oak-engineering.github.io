@@ -1,8 +1,10 @@
 /* OAK Arbeitsschutz-App – Vorfälle: Unfälle, Beinahe-Unfälle, unsichere Zustände und Umweltvorfälle.
    Gleiche Daten wie das Kundenportal (portal/vorfaelle.js): portal_vorfaelle, portal_vorfall_melder (nur OAK),
    portal_melde_token (QR-Melder), portal_dokumente (Aushang). Das Kundenportal selbst bleibt unverändert.
-   Rechte wie in der Datenbank: OAK legt an und ändert alles. Der Betrieb sieht nur geprüfte Meldungen
-   (Status ≠ neu) und darf nur die Auswertung nachtragen (Trigger portal_vorfaelle_nur_auswertung).
+   Rechte wie in der Datenbank: OAK legt an und ändert alles. Prüft der Betrieb neue Meldungen selbst
+   (portal_kunde.rechte.vorfall_freigabe <> 'oak', RPC portal_vorfall_betrieb), dürfen Pflegeberechtigte (Fachkraft, GF,
+   Betriebs-Admin) ebenfalls anlegen, freigeben und ändern (Policy portal_vorfaelle_betrieb, Stufe 9). Sonst sieht der Betrieb
+   nur geprüfte Meldungen (Status ≠ neu) und trägt die Auswertung nach (Trigger portal_vorfaelle_nur_auswertung).
    Globale Namen immer mit asVf/AS_VF-Präfix (gemeinsamer Scope aller V2-Skripte). */
 "use strict";
 
@@ -42,10 +44,11 @@ function asVfBereich(bereich){
 }
 function asVfAusgewertet(v){ return !!(v.ausgewertet_am || v.sofortmassnahme || v.langzeitmassnahme); }
 function asVfMelder(v){ return AS.admin ? (AS_VF.melder[v.id] || v.melder || "") : ""; }
-/* Wer prüft neue Meldungen? OAK (Standard) oder – je Betrieb einstellbar – die Fachkraft (Plan Portal eigenständig, Schritt 5) */
-function asVfVerwalter(){ return !!(AS.admin || (AS.fachkraft && AS_VF.betrieb)); }
+/* Wer prüft neue Meldungen? OAK (Standard) oder – je Betrieb einstellbar – der Betrieb (Pflegeberechtigte, Stufe 9) */
+function asVfVerwalter(){ return asDarf("oak") || (asDarf("pflegen") && !!AS_VF.betrieb); }
 function asVfFehlertext(e){ const t = String((e && e.message) || e || "unbekannter Fehler");
-  return /nur die auswertung/i.test(t) ? "Diese Angabe darf nur OAK engineering ändern. Der Betrieb trägt die Auswertung nach." : t; }
+  return /nur die auswertung/i.test(t) ? (AS_VF.betrieb ? "Diese Angabe ändern Fachkraft, Geschäftsführung oder Betriebs-Admin. Ihr Konto trägt die Auswertung nach."
+    : "Neue Meldungen prüft laut Einstellung OAK engineering – deshalb ist diese Angabe gesperrt. Der Betrieb trägt die Auswertung nach.") : t; }
 function asVfMassnahmen(v){ return asT("as_massnahme").filter(m => m.quelle === "meldung" && m.quelle_id === v.id); }
 
 /* ---------------- Daten ---------------- */
@@ -96,7 +99,7 @@ async function asVfFoto(id){
 AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render(main){
   const r = asReiter("vorfaelle", [["arbeitssicherheit", "Arbeitssicherheit"], ["umwelt", "Umwelt"]], "arbeitssicherheit");
   const umwelt = r.akt === "umwelt";
-  const kopf = `<h1 class="seite">Vorfälle</h1><p class="unter">Unfälle, Beinahe-Unfälle, unsichere Zustände und Umweltvorfälle – gemeldet über den QR-Aushang oder von OAK erfasst.</p>${r.html}`;
+  const kopf = `<h1 class="seite">Vorfälle</h1><p class="unter">Unfälle, Beinahe-Unfälle, unsichere Zustände und Umweltvorfälle – gemeldet über den QR-Aushang oder hier erfasst.</p>${r.html}`;
   main.innerHTML = kopf + `<div class="leer">wird geladen …</div>`;
   try{ await asVfLaden(); }
   catch(e){ main.innerHTML = kopf + `<div class="karte"><div class="leer">Vorfälle konnten nicht geladen werden: ${esc(asVfFehlertext(e))}</div></div>`; return; }
@@ -129,9 +132,9 @@ AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render
       <p>Unfall, Beinahe-Unfall, unsicherer Zustand oder Umweltvorfall – mit Foto. Die Meldung geht an ${AS_VF.betrieb ? "die Fachkraft für Arbeitssicherheit im Betrieb (und zur Kenntnis an OAK engineering)" : "OAK engineering"}.</p>
       <div class="reihe" style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn" id="vfMelden">${umwelt ? "Umweltvorfall melden" : "Vorfall melden"}</button>
-        ${asVfVerwalter() ? `<button class="btn ${AS.admin ? "adm" : ""}" id="vfNeu">+ Vorfall erfassen</button>` : ""}${aushangKnopf}</div>
+        ${asVfVerwalter() ? `<button class="btn" id="vfNeu">+ Vorfall erfassen</button>` : ""}${aushangKnopf}</div>
       ${AS.gf ? `<div class="form" style="margin-top:12px"><label>Neue Meldungen prüft und gibt frei
-        <select id="vfFreigabe"><option value="oak" ${AS_VF.betrieb ? "" : "selected"}>OAK engineering</option><option value="betrieb" ${AS_VF.betrieb ? "selected" : ""}>die Fachkraft im Betrieb</option></select></label>
+        <select id="vfFreigabe"><option value="oak" ${AS_VF.betrieb ? "" : "selected"}>OAK engineering</option><option value="betrieb" ${AS_VF.betrieb ? "selected" : ""}>der Betrieb (Fachkraft / Geschäftsführung)</option></select></label>
         <p class="hinweis" style="align-self:end">Bei „Fachkraft“ erhalten die Empfänger der E-Mail-Erinnerungen jede neue Meldung (ohne Namen der Meldenden).</p></div>` : ""}</div>
     ${AS_VF.fehler ? `<div class="karte"><div class="leer">Vorfälle konnten nicht geladen werden: ${esc(AS_VF.fehler)}</div></div>` : ""}
     <div class="kacheln">
@@ -174,7 +177,7 @@ AS_SEITEN.vorfaelle = { titel: "Vorfälle", icon: "△", sort: 4.7, async render
   if(fg) fg.onchange = async () => {
     try{ await apiSend("POST", "/rest/v1/rpc/portal_vorfall_freigabe_setzen", { p_slug: AS.kunde, p_wer: fg.value }); }
     catch(e){ asMeldung("Konnte nicht umgestellt werden: " + asVfFehlertext(e)); return; }
-    await asVfNeu(fg.value === "betrieb" ? "Neue Meldungen prüft jetzt die Fachkraft im Betrieb" : "Neue Meldungen prüft OAK engineering");
+    await asVfNeu(fg.value === "betrieb" ? "Neue Meldungen prüft jetzt der Betrieb" : "Neue Meldungen prüft OAK engineering");
   };
 }};
 
@@ -192,7 +195,7 @@ function asVfZeile(v){
 
 /* ---------------- Melden (QR-Melder des Kundenportals, eingebettet) ---------------- */
 function asVfMeldenOeffnen(umwelt){
-  if(!AS_VF.token){ asMeldung("Für diesen Betrieb ist noch kein Zugang eingerichtet – bitte bei OAK engineering melden."); return; }
+  if(!AS_VF.token){ asMeldung("Für diesen Betrieb ist noch kein Melde-Code eingerichtet – unter Organisation › Zugänge & Geräte erzeugen (Fachkraft oder Geschäftsführung)."); return; }
   asDokOeffnen("melden.html?t=" + encodeURIComponent(AS_VF.token) + "&eingebettet=1" + (umwelt ? "&art=umwelt" : ""),
     umwelt ? "Umweltvorfall melden" : "Vorfall melden");
   // Beim Zurückkehren die Liste auffrischen (eine neue Meldung ist für den Betrieb erst nach Prüfung sichtbar)
@@ -285,7 +288,7 @@ function asVfDetail(id){
     catch(e){ asMeldung("Konnte nicht freigegeben werden: " + asVfFehlertext(e)); return false; }
     await asVfNeu("Meldung freigegeben");
   }});
-  if(asVfVerwalter()) knoepfe.push({ t: "Speichern", klasse: AS.admin ? "adm" : "", fn: async d => {
+  if(asVfVerwalter()) knoepfe.push({ t: "Speichern", fn: async d => {
     const w = asWerte(d);
     const felder = { status: w.status || "offen", domaene: w.domaene || "arbeitssicherheit", bearbeitung: w.bearbeitung, rueckmeldung: w.rueckmeldung };
     if("as_einheit_id" in w) felder.as_einheit_id = w.as_einheit_id || null;
@@ -357,7 +360,7 @@ function asVfAuswerten(v){
       }}]});
 }
 
-/* ---------------- Erfassung durch OAK (mündlich oder telefonisch gemeldet) ---------------- */
+/* ---------------- Erfassung im Cockpit (mündlich oder telefonisch gemeldet) – OAK oder der Betrieb, wenn er selbst prüft ---------------- */
 function asVfErfassen(umwelt){
   if(!asVfVerwalter()) return;
   const einheiten = asT("as_einheit");
@@ -377,7 +380,7 @@ function asVfErfassen(umwelt){
       ${asFeld("Person verletzt", "verletzte", false, "checkbox")}
       ${asFeld("Erste Hilfe geleistet", "erste_hilfe", false, "checkbox")}
     </div>`,
-    knoepfe: [{ t: "Speichern", klasse: AS.admin ? "adm" : "", fn: async dlg => {
+    knoepfe: [{ t: "Speichern", fn: async dlg => {
       const w = asWerte(dlg);
       if(!w.beschreibung || w.beschreibung.length < 5){ asMeldung("Bitte kurz beschreiben, was passiert ist."); return false; }
       const art = AS_VF_ART[w.art] ? w.art : "unsicher";

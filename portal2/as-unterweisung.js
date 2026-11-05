@@ -66,7 +66,7 @@ async function asUwKapLaden(neu){
 async function asUwNeu(text){ await asUwLaden(true); asZeige(); if(text) asMeldung(text); }
 
 /* ---------------- Hilfen ---------------- */
-function asUwDarfPflegen(){ return !!(AS.admin || AS.fachkraft); }
+function asUwDarfPflegen(){ return asDarf("pflegen"); }
 function asUwNorm(s){ return String(s || "").toLowerCase().replace(/\s+/g, " ").trim().split(" ").sort().join(" "); }
 function asUwTage(s){ return s ? Math.floor((Date.now() - new Date(s).getTime()) / 864e5) : null; }
 function asUwBis(n){ return new Date(new Date(n.created_at).getTime() + AS_UW_FAELLIG_TAGE * 864e5).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" }); }
@@ -222,7 +222,7 @@ function asUwTerminal(box){
           <button class="btn sek" id="uwTeilen" title="QR-Code für Handy & Tablet">Teilen</button>
           <button class="btn sek" id="uwEinst" title="Module je Rolle festlegen, Rollen anlegen">Einstellungen</button>
           <span id="uwMobil"></span></div>`
-        : `<div class="leer">Terminal noch nicht eingerichtet – Gerätecode bei OAK engineering anfordern.</div>`}
+        : `<div class="leer">Terminal noch nicht eingerichtet – ${asDarf("pflegen") ? `Gerät unter <a href="#organisation/zugaenge">Organisation › Zugänge & Geräte</a> einrichten.` : "Geräte richtet die Fachkraft oder die Geschäftsführung unter Organisation › Zugänge & Geräte ein."}</div>`}
       <p class="hinweis">Am Terminal: Name eingeben, Rolle wählen, Module durchgehen, unterschreiben. Der Nachweis landet automatisch hier im Portal.</p></div>
     <div class="kacheln">
       <div class="kachel k-${ueber + erst ? "rot" : "gruen"}"><div class="lbl">überfällig</div><div class="zahl">${ueber + erst}</div><div class="hinweis">${ueber} überfällig · ${erst} Erstunterweisung</div></div>
@@ -436,13 +436,13 @@ function asUwNachweise(box){
   const jahre = [...new Set(alle.map(n => String(n.created_at || "").slice(0, 4)).filter(Boolean))].sort().reverse();
   const sicht = alle.filter(n => (!f.q || (n.mitarbeiter_name + " " + (n.funktion || "") + " " + asUwModule(n).join(" ")).toLowerCase().includes(f.q.toLowerCase()))
     && (!f.jahr || String(n.created_at).startsWith(f.jahr)) && (!f.best || (f.best === "ja") === !!n.bestanden));
-  box.innerHTML = `<div class="karte"><h2>${sicht.length} von ${alle.length} Nachweisen <span>${AS.admin || AS.fachkraft || AS.gf ? `<button class="btn sek klein" id="uwNachtrag">+ Nachweis nachtragen</button> ` : ""}${sicht.length ? `<button class="btn sek klein" id="uwCsvN">Excel-Export</button>` : ""}</span></h2>
+  box.innerHTML = `<div class="karte"><h2>${sicht.length} von ${alle.length} Nachweisen <span>${asDarf("pflegen") ? `<button class="btn sek klein" id="uwNachtrag">+ Nachweis nachtragen</button> ` : ""}${sicht.length ? `<button class="btn sek klein" id="uwCsvN">Excel-Export</button>` : ""}</span></h2>
     <div class="filterleiste">
       <input type="search" id="uwnQ" value="${esc(f.q)}" placeholder="Suchen (Name, Rolle, Modul)" autocomplete="off">
       ${asFilterWahl('data-f="jahr"', f.jahr, [["", "alle"]].concat(jahre), "Jahr")}
       ${asFilterWahl('data-f="best"', f.best, [["", "alle"], ["ja", "bestanden"], ["nein", "nicht bestanden"]], "Verständnisfragen")}</div>
     ${sicht.length ? `<div class="tabwrap"><table class="tab"><tr><th>Datum</th><th>Name</th><th>Gerät</th><th>Rolle</th><th>Module</th><th>bestanden</th><th>Stand</th><th>Fassung</th><th></th></tr>
-      ${sicht.map(n => { const st = asUwStatus(n); return `<tr class="${AS.admin || AS.fachkraft ? "bda-klick" : ""}" data-nwname="${esc(n.id)}" title="${esc(n.geraet || "")}"><td>${asDat(n.created_at)}</td><td><b>${esc(n.mitarbeiter_name || "")}</b></td><td>${esc(asUwGeraet(n))}</td>
+      ${sicht.map(n => { const st = asUwStatus(n); return `<tr class="${asDarf("pflegen") ? "bda-klick" : ""}" data-nwname="${esc(n.id)}" title="${esc(n.geraet || "")}"><td>${asDat(n.created_at)}</td><td><b>${esc(n.mitarbeiter_name || "")}</b></td><td>${esc(asUwGeraet(n))}</td>
         <td>${esc(n.funktion || "—")}${n.bereich ? `<br><small class="hinweis">${esc(n.bereich)}</small>` : ""}</td><td>${asUwModule(n).map(esc).join("<br>") || "—"}</td>
         <td>${n.bestanden ? asChip("ja", "gruen") : asChip("nein", "rot")}${n.bestaetigung ? "" : " " + asChip("nicht bestätigt", "gelb")}</td>
         <td>${asChip(st.text, AS_UW_FARBE[st.klasse])}</td><td>${esc(n.config_version || "")}</td>
@@ -477,8 +477,8 @@ function asUwNachweise(box){
         asMeldung("Nachweis eingetragen"); await asUwLaden(true); asZeige(); } }] });
   };
   box.querySelectorAll("[data-pdf]").forEach(x => x.onclick = ev => { ev.stopPropagation(); asUwPdf(x.dataset.pdf); });
-  /* Klick auf den Eintrag: Name korrigieren (z. B. Nachname nachtragen) – Fachkraft und OAK */
-  if(AS.admin || AS.fachkraft) box.querySelectorAll("tr[data-nwname]").forEach(z => z.onclick = ev => { if(ev.target.closest("button")) return;
+  /* Klick auf den Eintrag: Name korrigieren (z. B. Nachname nachtragen) – pflegeberechtigte Betriebskonten und OAK */
+  if(asDarf("pflegen")) box.querySelectorAll("tr[data-nwname]").forEach(z => z.onclick = ev => { if(ev.target.closest("button")) return;
     const n = AS_UW.d.nachweise.find(x => x.id === z.dataset.nwname); if(!n) return;
     asDialog({ titel: "Nachweis – Name", inhalt: `<div class="form">${asFeld("Vollständiger Name", "mitarbeiter_name", n.mitarbeiter_name || "")}</div>
       <p class="hinweis">${esc(asDat(n.created_at))} · ${esc(asUwModule(n).join(", "))} · ${esc(n.geraet || asUwGeraet(n))}</p>`,
@@ -562,7 +562,7 @@ function asUwModuleSeite(box){
   const benutzt = new Set();
   const oeffnen = (dok, t) => { if(!dok) return '<span class="hinweis">—</span>'; benutzt.add(dok);
     return `<button class="btn sek klein" data-dok="${esc(asUwViewer(dok, t))}" data-titel="${esc(t)}">Öffnen</button>`
-      + (AS.admin ? ` <button class="btn adm klein" data-text="${esc(dok.storage_path)}" data-titel="${esc(t)}">Text ändern</button>` : ""); };
+      + (asDarf("pflegen") ? ` <button class="btn sek klein" data-text="${esc(dok.storage_path)}" data-titel="${esc(t)}">Text ändern</button>` : ""); };
   const aktiv = d.buchung.filter(x => x.aktiv).sort((x, y) => reihe(x.thema) - reihe(y.thema));
   const archiv = aktiv.map(bu => {
     const d1 = bu.datei_v1 ? docs.find(r => base(r) === bu.datei_v1) : null, d2 = docs.find(r => base(r) === bu.thema + ".html"), f = bu.fassung === 2 ? 2 : 1;
@@ -679,7 +679,7 @@ function asUwVorfallWahl(thema){
     asUwZusatzForm(thema, { titel: (art[v.art] || "Vorfall") + " vom " + asDat(v.datum), text: String(v.beschreibung || "").trim() + (v.ort ? "\nOrt: " + v.ort : ""), vorfall_id: v.id }); });
 }
 
-/* Text in einem Modul ändern (nur Admin): Suchen und Ersetzen in der Moduldatei, vorher Sicherung unter _versionen/ */
+/* Text in einem Modul ändern (OAK und pflegeberechtigte Betriebskonten): Suchen und Ersetzen in der Moduldatei, vorher Sicherung unter _versionen/ */
 function asUwTextVarianten(s){
   const ent = { "ä": "&auml;", "ö": "&ouml;", "ü": "&uuml;", "Ä": "&Auml;", "Ö": "&Ouml;", "Ü": "&Uuml;", "ß": "&szlig;" };
   const uni = x => x.replace(/[^\x00-\x7f]/g, c => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0"));
@@ -687,7 +687,7 @@ function asUwTextVarianten(s){
   return [[s, x => x], [html(s), html], [uni(s), uni]];
 }
 async function asUwTextDialog(pfad, titel){
-  if(!AS.admin) return;
+  if(!asDarf("pflegen")) return;
   const dlg = asDialog({ titel: "Text ändern", breit: true, inhalt: `<p><b>${esc(titel || "")}</b></p><div class="form">
       <label class="voll">Suchen<input type="text" id="uwtSuche" placeholder="Wort oder Satz genau wie in der Folie" autocomplete="off"></label>
       <div class="voll" id="uwtTreffer"><span class="hinweis">Modul wird geladen …</span></div>

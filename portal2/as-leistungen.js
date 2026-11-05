@@ -51,7 +51,7 @@ async function asLePosten(){
 
 AS_SEITEN.leistungen = { titel: "Leistungen", icon: "€", sort: 9.2, async render(main){
   main.innerHTML = `<h1 class="seite">Leistungsnachweis</h1><p class="unter">Was OAK engineering im Betrieb erbracht hat.</p><div class="leer">wird geladen …</div>`;
-  const L = await asLePosten(), d = asOrgDaten(), werte = AS.fachkraft || d.leistungen_werte_zeigen;
+  const L = await asLePosten(), d = asOrgDaten(), werte = asDarf("oak") || d.leistungen_werte_zeigen;
   const abr = d.abrechnung || "", gruppen = [...new Set(L.map(x => x.gruppe))];
   const summe = L.reduce((s, x) => s + (x.wert || 0), 0), offen = L.filter(x => x.wert == null).length;
   main.innerHTML = `<h1 class="seite">Leistungsnachweis</h1><p class="unter">Was OAK engineering bei ${esc(AS.org ? AS.org.name : "")} erbracht hat – Begehungen, Beurteilungen, Betriebsanweisungen, Kataster, Unterweisungen und Organisation.</p>

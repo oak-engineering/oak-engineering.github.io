@@ -11,8 +11,8 @@ const AS_NU_TAB = { as_massnahme: "Maßnahmen", as_gefaehrdung: "Beurteilungen",
 const AS_NU = { tage: 30 };
 function asNuDatum(t){ const x = new Date(); x.setDate(x.getDate() - t); return x.toISOString(); }
 
-AS_SEITEN.nutzung = { titel: "Nutzung (OAK)", icon: "▤", sort: 9.6, get versteckt(){ return !AS.admin; }, async render(main){
-  if(!AS.admin){ main.innerHTML = `<div class="leer">Nur für OAK.</div>`; return; }
+AS_SEITEN.nutzung = { titel: "Nutzung (OAK)", icon: "▤", sort: 9.6, get versteckt(){ return !asDarf("oak"); }, async render(main){
+  if(!asDarf("oak")){ main.innerHTML = `<div class="leer">Nur für OAK.</div>`; return; }
   main.innerHTML = `<h1 class="seite">Nutzung</h1><p class="unter">wird geladen …</p>`;
   const seit = asNuDatum(AS_NU.tage), seit7 = asNuDatum(7);
   const hole = p => apiGet(p).then(r => Array.isArray(r) ? r : []).catch(() => []);

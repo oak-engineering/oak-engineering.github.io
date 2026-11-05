@@ -20,7 +20,7 @@ AS_SEITEN.bda = { titel: "Beurteilung (BdA)", icon: "⚠", sort: 4, render(main)
   const liste = asT("as_arbeitssystem");
   main.innerHTML = `<h1 class="seite">Beurteilung der Arbeitsbedingungen</h1>
     <p class="unter">Je Arbeitssystem alle Tätigkeiten mit Gefährdungen, Belastungen und Ressourcen – ein übersichtliches Dokument, das die Geschäftsführung freigibt.</p>
-    <div class="karte"><h2>Arbeitssysteme ${AS.fachkraft ? `<button class="btn klein" id="sysNeu">+ Arbeitssystem</button>` : ""}</h2><div class="zeilen">
+    <div class="karte"><h2>Arbeitssysteme ${asDarf("pflegen") ? `<button class="btn klein" id="sysNeu">+ Arbeitssystem</button>` : ""}</h2><div class="zeilen">
     ${liste.map(s => { const b = asBand(asSystemRisiko(s.id)), psy = asT("as_psyche").some(p => p.arbeitssystem_id === s.id);
       const nT = asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).length;
       return `<div class="z" data-s="${s.id}"><div><b>${asPunkt(b)}${esc(s.name)}</b><small>${esc(asEinheitName(s.einheit_id))} · ${nT} Tätigkeiten · Risiko heute: ${asBandText(b)}
@@ -45,8 +45,8 @@ async function asSystemDialog(s){
     const neuR = asListe(d.querySelector('[data-f="rollen_neu"]').value);
     for(const n of neuR) await apiSend("POST", "/rest/v1/uw_rolle", { kunde_slug: AS.kunde, name: n, typ: "eigen", status: "aktiv" }, "return=minimal").catch(() => {});
     const r = await asSpeichern("as_arbeitssystem", Object.assign({ id: s.id }, w)); asGehe("bda/" + r.id); asZeige(); } }];
-  if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Arbeitssystem mit allen Tätigkeiten und Gefährdungen löschen?")) return false;
-    await asLoeschen("as_arbeitssystem", s.id); await asLaden(); asGehe("bda"); } });
+  if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Arbeitssystem mit allen Tätigkeiten und Gefährdungen löschen?", "as_arbeitssystem", s.id)) return false;
+    await asLaden(); asGehe("bda"); } });
   asDialog({ titel: neu ? "Neues Arbeitssystem" : s.name, inhalt: `<div class="form">
       ${asFeld("Name", "name", s.name, "text", "voll")}
       ${asBereichWahl("Bereich", "einheit_id", s.einheit_id || "", "", "– betriebsweit –")}
@@ -103,9 +103,9 @@ function asBdaTabelle(box, s){
   const res = gef.filter(g => g.art === "ressource");
   box.innerHTML = `<div class="karte"><h2>Beurteilung der Arbeitsbedingungen – ${esc(s.name)}
       <span class="nodruck"><button class="btn sek klein" id="tkNeu">+ Tätigkeit</button><button class="btn sek klein" id="resNeu">+ Ressource</button><button class="btn sek klein" onclick="window.print()">Drucken</button>
-      ${s.freigabe_am ? (AS.gf ? `<button class="btn adm klein" id="frZur">Freigabe zurücknehmen</button>` : "")
+      ${s.freigabe_am ? (AS.gf ? `<button class="btn sek klein" id="frZur">Freigabe zurücknehmen</button>` : "")
         : (AS.gf ? `<button class="btn klein" id="frGeben">Freigeben (Geschäftsführung)</button>`
-          : (AS.fachkraft ? (s.vorgelegt_am ? `<span class="hinweis">zur Freigabe vorgelegt ${asDat(s.vorgelegt_am)}</span>` : `<button class="btn klein" id="frVorlegen">Zur Freigabe vorlegen</button>`)
+          : (asDarf("pflegen") ? (s.vorgelegt_am ? `<span class="hinweis">zur Freigabe vorgelegt ${asDat(s.vorgelegt_am)}</span>` : `<button class="btn klein" id="frVorlegen">Zur Freigabe vorlegen</button>`)
             : `<span class="hinweis">Freigabe durch die Geschäftsführung</span>`))}</span></h2>
     <p class="hinweis">Arbeitsbereich: ${esc(asEinheitName(s.einheit_id))} · Beschäftigte: ${esc(asListe(s.rollen).join(", "))} · Stand ${asDat(asHeute())}
       · ${s.freigabe_am ? "freigegeben am " + asDat(s.freigabe_am) + " von " + esc(s.freigabe_von) : "<b>noch nicht freigegeben</b>"}</p>
@@ -157,7 +157,7 @@ function asTaetigkeitDialog(s, t){
   const neu = !t; t = t || { rollen: asListe(s.rollen).slice(0, 1) };
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.name){ asMeldung("Name fehlt"); return false; }
     w.rollen = asListe(w.rollen); await asSpeichern("as_taetigkeit", Object.assign({ id: t.id, arbeitssystem_id: s.id, sort: t.sort || asT("as_taetigkeit").length }, w)); asZeige(); } }];
-  if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Tätigkeit mit ihren Gefährdungen löschen?")) return false; await asLoeschen("as_taetigkeit", t.id); await asLaden(); asZeige(); } });
+  if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Tätigkeit mit ihren Gefährdungen löschen?", "as_taetigkeit", t.id)) return false; await asLaden(); asZeige(); } });
   asDialog({ titel: neu ? "Neue Tätigkeit" : t.name, inhalt: `<div class="form">${asFeld("Tätigkeit (z. B. Werkzeugwechsel, Störung beseitigen)", "name", t.name, "text", "voll")}
     ${asFeld("Wer führt sie aus? (Rollen mit Komma)", "rollen", asListe(t.rollen).join(", "), "text", "voll")}</div>
     <p class="hinweis">Rollen dieses Arbeitssystems: ${esc(asListe(s.rollen).join(", ") || "–")}</p>`, knoepfe: kn });
@@ -199,7 +199,7 @@ function asGefDialog(s, g, taetigkeitId){
     asZeige(); } }];
   if(!neu){
     kn.unshift({ t: "+ Maßnahme", klasse: "sek", fn: () => { asMassnahmeDialog(null, { gefaehrdung_id: g.id, quelle: "bda" }, s); return false; } });
-    if(AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Gefährdung löschen? Maßnahmen bleiben ohne Bezug erhalten.")) return false; await asLoeschen("as_gefaehrdung", g.id); await asLaden(); asZeige(); } });
+    if(asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Gefährdung löschen? Maßnahmen bleiben ohne Bezug erhalten.", "as_gefaehrdung", g.id)) return false; await asLaden(); asZeige(); } });
   }
   asDialog({ titel: neu ? "Neue Gefährdung / Belastung / Ressource" : g.kurz, breit: true, inhalt: `${g.gefahrstoff_id ? `<p class="hinweis voll">Gefahrstoff aus dem Kataster – Beurteilung nach EMKG, Betriebsanweisung und Handschuh dort:
       <button type="button" class="btn sek klein" onclick="document.getElementById('dlg').close(); AS_GS.oeffnen='${esc(g.gefahrstoff_id)}'; asGehe('gefahrstoffe/kataster')">Im Gefahrstoffkataster öffnen</button></p>` : ""}<div class="form">
@@ -221,7 +221,7 @@ function asGefDialog(s, g, taetigkeitId){
       <div class="voll"><b>Fotos</b><div class="hakenliste" id="gefFotoListe">${(g.fotos || []).map((f, i) =>
           `<label title="abwählen = entfernen"><input type="checkbox" data-fbeh="${i}" checked><img data-fpfad="${esc(f.pfad || "")}" alt="" style="width:64px;height:48px;object-fit:cover;border-radius:6px;background:#eef1f5"> ${esc(f.alt || "Foto " + (i + 1))}</label>`).join("")
           || `<span class="hinweis">noch keine</span>`}</div>
-        ${AS.fachkraft || AS.gf ? `<label style="margin-top:6px">Fotos hinzufügen<input type="file" id="gefFotos" accept="image/*" capture="environment" multiple></label>` : ""}</div>
+        ${asDarf("pflegen") ? `<label style="margin-top:6px">Fotos hinzufügen<input type="file" id="gefFotos" accept="image/*" capture="environment" multiple></label>` : ""}</div>
       ${ws("w_v", g.w_v)}${ws("s_v", g.s_v)}${ws("w_n", g.w_n)}${ws("s_n", g.s_n)}</div>
       <p class="hinweis">Wahrscheinlichkeit 1 unwahrscheinlich … 4 häufig · Schwere 1 leicht … 4 tödlich/irreversibel · Risiko = W × S: ab 9 hoch, ab 4 mittel.</p>
       ${!neu ? `<h4 style="margin:14px 0 6px">Maßnahmen</h4>${ms.map(m => `<div class="krit">${asStopChip(m.stop)}<div>${esc(m.text)} ${asStatusChip(m)}</div></div>`).join("") || `<div class="leer">Noch keine – „+ Maßnahme“.</div>`}` : ""}`, knoepfe: kn });
@@ -242,7 +242,7 @@ function asBdaPsyche(box, s){
       await asSpeichern("as_psyche", Object.assign({ id: p.id, arbeitssystem_id: s.id, ergebnis: erg }, w));
       const auff = Object.entries(erg).filter(([, v]) => v !== "gruen");
       if(auff.length && neu) asMeldung("Auffällige Bereiche: bitte Maßnahmen ableiten (Maßnahmen → + Maßnahme)."); asZeige(); } }];
-    if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { await asLoeschen("as_psyche", p.id); asZeige(); } });
+    if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Eintrag zur psychischen Belastung löschen?", "as_psyche", p.id)) return false; asZeige(); } });
     asDialog({ titel: "Ergebnis psychische Belastung", inhalt: `<div class="form">${asFeld("Datum", "datum", p.datum, "date")}${asFeld("Methode", "methode", p.methode)}
       ${asFeld("Teilnehmende (Anzahl)", "teilnehmer", p.teilnehmer, "number")}
       ${AS_KAT.psyche_bereiche.map((b, i) => asAuswahl(b, "b" + i, (p.ergebnis || {})[b] || "", [["", "– nicht erhoben –"], ["gruen", "grün – unauffällig"], ["gelb", "gelb – beobachten"], ["rot", "rot – handeln"]])).join("")}
@@ -275,11 +275,11 @@ function asMassnahmeDialog(m, vorgabe, sys){
       for(const a of gew) await asSpeichern("as_massnahme", Object.assign({}, m, w, { anlage: a, gruppe }));
     } else await asSpeichern("as_massnahme", Object.assign({ id: m.id }, neu ? m : {}, w));
     asZeige(); } }];
-  if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Maßnahme löschen?")) return false; await asLoeschen("as_massnahme", m.id); asZeige(); } });
+  if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Maßnahme löschen?", "as_massnahme", m.id)) return false; asZeige(); } });
   if(!neu){   /* Aktionen im selben Dialog (UI-Regel § 11) */
     if(m.status === "offen") kn.unshift({ t: "Erledigt melden", klasse: "sek", fn: () => { asErledigtDialog(m); return false; } });
-    if(m.status === "erledigt" && AS.fachkraft) kn.unshift({ t: "Wirksam bestätigen", klasse: "adm", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "wirksam" }); asZeige(); } });
-    if(m.status !== "offen" && AS.fachkraft) kn.unshift({ t: "Zurück auf offen", klasse: "sek", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "offen" }); asZeige(); } });
+    if(m.status === "erledigt" && asDarf("pflegen")) kn.unshift({ t: "Wirksam bestätigen", klasse: "", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "wirksam" }); asZeige(); } });
+    if(m.status !== "offen" && asDarf("pflegen")) kn.unshift({ t: "Zurück auf offen", klasse: "sek", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "offen" }); asZeige(); } });
   }
   const gefS = m.gefaehrdung_id ? asNach("as_gefaehrdung", m.gefaehrdung_id) : null;
   const asaS = !neu && m.quelle === "asa" && m.quelle_id ? asNach("as_asa", m.quelle_id) : null;   // Verweis Maßnahme → ASA-Sitzung
@@ -354,8 +354,8 @@ function asMassnahmeStatus(m){ return asMassnahmeDialog(m); }
 function asMassnahmeStatusAlt(m){
   const kn = [];
   if(m.status === "offen") kn.push({ t: "Erledigt melden", fn: () => { asErledigtDialog(m); return false; } });
-  if(m.status === "erledigt" && AS.fachkraft) kn.push({ t: "Wirksam bestätigen", klasse: "adm", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "wirksam" }); asZeige(); } });
-  if(m.status !== "offen" && AS.fachkraft) kn.push({ t: "Zurück auf offen", klasse: "sek", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "offen" }); asZeige(); } });
+  if(m.status === "erledigt" && asDarf("pflegen")) kn.push({ t: "Wirksam bestätigen", klasse: "", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "wirksam" }); asZeige(); } });
+  if(m.status !== "offen" && asDarf("pflegen")) kn.push({ t: "Zurück auf offen", klasse: "sek", fn: async () => { await asSpeichern("as_massnahme", { id: m.id, status: "offen" }); asZeige(); } });
   kn.push({ t: "Bearbeiten", klasse: "sek", fn: () => { asMassnahmeDialog(m); return false; } });
   asDialog({ titel: "Maßnahme", inhalt: `<p>${asStopChip(m.stop)}<b>${esc(m.text)}</b></p>${m.befund ? `<p class="hinweis">Befund: ${esc(m.befund)}</p>` : ""}<p>${asStatusChip(m)}${m._v1 ? ` <span class="hinweis">· Mangel im Kundenportal – Änderungen wirken in Mängelliste, Hallenplan und Dokumenten</span>` : ""}</p>
     <div class="zeilen"><div class="z"><div><b>Verantwortlich</b><small>${esc(m.verantwortlich || "–")} · bis ${asDat(m.termin)}${m.anlage ? " · Anlage " + esc(m.anlage) : ""}</small></div></div>
@@ -434,7 +434,7 @@ function asMitzeichnungDialog(x){
   const cl = x.checkliste || {}, sifa = AS.fachkraft && x.status !== "entschieden";
   const auflagen = asT("as_massnahme").filter(m => m.quelle === "mitzeichnung" && m.quelle_id === x.id);
   const kn = [];
-  if(sifa) kn.push({ t: "Empfehlung speichern", klasse: "adm", fn: async d => { const w = asWerte(d), c = {};
+  if(sifa) kn.push({ t: "Empfehlung speichern", klasse: "", fn: async d => { const w = asWerte(d), c = {};
     kat.punkte.forEach((p, i) => c[i] = w["cl" + i] || ""); if(!w.empfehlung){ asMeldung("Empfehlung wählen"); return false; }
     c._auflagen = asListe((w.auflagen || "").replace(/\n/g, ",")).concat((cl._auflagen || []));   // werden erst mit der Freigabe zu Maßnahmen
     await asSpeichern("as_mitzeichnung", { id: x.id, checkliste: c, empfehlung: w.empfehlung, empfehlung_text: w.empfehlung_text, empfehlung_am: asHeute(), empfehlung_von: AS.ich, status: "geprueft" });

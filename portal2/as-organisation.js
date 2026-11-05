@@ -16,7 +16,7 @@ const AS_NACHWEISE = [
 /* ======================= Organisation ======================= */
 AS_SEITEN.organisation = { titel: "Organisation", icon: "▦", sort: 2, render(main){
   const r = asReiter("organisation", [["grund", "Grunddaten & Nachweise"], ["struktur", "Struktur"], ["organigramm", "Organigramm"],
-    ["beauftragte", "Beauftragte"], ["einsatz", "Einsatzzeiten"]].concat(AS.gf || AS.fachkraft ? [["zugaenge", "Zugänge & Geräte"]] : []), "grund");
+    ["beauftragte", "Beauftragte"], ["einsatz", "Einsatzzeiten"]].concat(asDarf("pflegen") ? [["zugaenge", "Zugänge & Geräte"]] : []), "grund");
   main.innerHTML = `<h1 class="seite">Organisation</h1><p class="unter">Wer ist wofür zuständig – Grundlage für alles Weitere.</p>${r.html}<div id="orgInhalt"></div>`;
   const box = document.getElementById("orgInhalt");
   ({ grund: asOrgGrund, struktur: asOrgStruktur, organigramm: asOrgOrganigramm, beauftragte: asOrgBeauftragte, einsatz: asOrgEinsatz, zugaenge: asOrgZugaenge })[r.akt](box);
@@ -82,8 +82,8 @@ function asEinheitDialog(e){
     await asSpeichern("as_einheit", Object.assign({ id: e.id }, w)); asZeige(); } }];
   if(!neu){
     kn.unshift({ t: "+ Untereinheit", klasse: "sek", fn: () => { asEinheitDialog({ parent_id: e.id, art: "kostenstelle", schichten: e.schichten, beschaeftigte: 0 }); return false; } });
-    if(AS.fachkraft || AS.gf) kn.unshift({ t: "Stilllegen", klasse: "sek", fn: () => { asEinheitStilllegen(e); return false; } });
-    if(AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!confirm("Einheit mit allen Untereinheiten löschen?")) return false; await asLoeschen("as_einheit", e.id); await asLaden(); asZeige(); } });
+    if(asDarf("pflegen")) kn.unshift({ t: "Stilllegen", klasse: "sek", fn: () => { asEinheitStilllegen(e); return false; } });
+    if(asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Einheit mit allen Untereinheiten löschen?", "as_einheit", e.id)) return false; await asLaden(); asZeige(); } });
   }
   asDialog({ titel: neu ? "Neue Einheit" : e.name, inhalt: `<div class="form">
       ${asFeld("Name", "name", e.name, "text", "voll")}
@@ -139,7 +139,7 @@ function asBeauftragterDialog(b){
     if(w.schulung_am && !w.gueltig_bis){ const m = (AS_KAT.beauftragte[w.funktion] || {}).auffrischung_monate;
       if(m){ const x = new Date(w.schulung_am); x.setMonth(x.getMonth() + m); w.gueltig_bis = x.toISOString().slice(0, 10); } }
     await asSpeichern("as_beauftragter", Object.assign({ id: b.id }, w)); asZeige(); } }];
-  if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { await asLoeschen("as_beauftragter", b.id); asZeige(); } });
+  if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Beauftragten löschen?", "as_beauftragter", b.id)) return false; asZeige(); } });
   asDialog({ titel: neu ? "Person erfassen" : b.person, inhalt: `<div class="form">
       <label class="voll">Name<input type="text" data-f="person" list="asBeaPersonen" value="${esc(b.person || "")}" autocomplete="off"></label>
       <datalist id="asBeaPersonen">${(AS.personen || []).map(p => `<option value="${esc(p.name)}">`).join("")}</datalist>
@@ -184,7 +184,7 @@ function asOrgEinsatz(box){
   const zeitDlg = x => { const neu = !x; x = x || { datum: asHeute(), rolle: "sifa", art: "grund" };
     const kn = [{ t: "Speichern", fn: async dl => { const w = asWerte(dl); if(!w.stunden){ asMeldung("Stunden fehlen"); return false; }
       await asSpeichern("as_einsatz", Object.assign({ id: x.id }, w)); asZeige(); } }];
-    if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { await asLoeschen("as_einsatz", x.id); asZeige(); } });
+    if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Einsatzzeit löschen?", "as_einsatz", x.id)) return false; asZeige(); } });
     asDialog({ titel: neu ? "Einsatz erfassen" : "Einsatz", inhalt: `<div class="form">${asFeld("Datum", "datum", x.datum, "date")}${asFeld("Stunden", "stunden", x.stunden, "number")}
       ${asAuswahl("Wer", "rolle", x.rolle, [["sifa", "Sifa"], ["ba", "Betriebsarzt"]])}${asAuswahl("Art", "art", x.art, [["grund", "Grundbetreuung"], ["spezifisch", "betriebsspezifisch"]])}
       ${asFeld("Tätigkeit (z. B. Begehung, ASA, Beratung)", "taetigkeit", x.taetigkeit, "text", "voll")}</div>`, knoepfe: kn }); };
@@ -200,7 +200,7 @@ AS_SEITEN.check = { titel: "Organisations-Check", icon: "✓", sort: 3, render(m
   const letzt = asLetzterCheck("voll"), faellig = !letzt || asTageSeit(letzt.datum) > 365;
   main.innerHTML = `<h1 class="seite">Organisations-Check</h1>
     <p class="unter">Bewertung der Arbeitsschutzorganisation nach den 7 Kernelementen des BGHM-Reifegradinstruments. Quellen: Gespräch/Fragebogen, Auditbericht ISO 45001, Begehung, Unterlagen.</p>
-    <div class="karte"><h2>Checks ${AS.fachkraft ? `<span><button class="btn adm klein" id="ckKurz">Erstaufnahme starten</button> <button class="btn adm klein" id="ckVoll">Reifegrad-Check starten</button></span>` : ""}</h2>
+    <div class="karte"><h2>Checks ${asDarf("pflegen") ? `<span><button class="btn sek klein" id="ckKurz">Erstaufnahme starten</button> <button class="btn sek klein" id="ckVoll">Reifegrad-Check starten</button></span>` : ""}</h2>
       ${faellig ? `<p>${asChip("Jährlicher Reifegrad-Check fällig", "gelb")}</p>` : ""}
       <div class="zeilen">${liste.map(c => { const rg = asCheckReifegrad(c);
         return `<div class="z" data-c="${c.id}"><div><b>${c.art === "voll" ? "Reifegrad-Check (Vollfassung)" : "Erstaufnahme (Kurzfassung)"} · ${asDat(c.datum)}</b>
@@ -215,7 +215,7 @@ let AS_CK_TIMER = null;
 function asCheckEditor(main, c){
   const kes = asCheckFragen(c.art);
   AS.ckKe = AS.ckKe && (AS.ckKe === "erg" || kes.some(k => k.id === AS.ckKe)) ? AS.ckKe : "K1";
-  const nur = !AS.fachkraft || c.abgeschlossen;
+  const nur = !asDarf("pflegen") || c.abgeschlossen;   // Erstaufnahme/Reifegrad-Check führt der Betrieb selbst (oder OAK)
   const zaehl = k => k.fragen.filter(q => asCheckGrad(c.antworten[q.id]) !== "offen").length;
   const TXT = { umfassend: ["umfassend", "gruen"], teilweise: ["teilweise", "gelb"], keine: ["keine", "rot"], offen: ["offen", "grau"], nrel: ["nicht relevant", "grau"] };
   const speichernSpaeter = () => { clearTimeout(AS_CK_TIMER); AS_CK_TIMER = setTimeout(() => asSpeichern("as_orgcheck", { id: c.id, antworten: c.antworten, reifegrad: c.reifegrad, geaendert_am: new Date().toISOString() }).catch(e => asMeldung("Nicht gespeichert: " + e.message)), 500); };
@@ -272,7 +272,7 @@ function asCheckErgebnis(c, nur){
         <select class="nodruck" data-rg="${k.id}" ${nur ? "disabled" : ""}><option value="">auto</option>${[1, 2, 3].map(s => `<option value="${s}" ${(c.reifegrad || {})[k.id] === s ? "selected" : ""}>${"I".repeat(s)}</option>`).join("")}</select></div></div>`; });
   h += `<p class="hinweis">${esc(AS_CHECK.erfuellung.reifegrad)}</p></div>`;
   const L = asCheckLuecken(c), ST = { 1: "Stufe 1 – Fundament", 2: "Stufe 2 – System", 3: "Stufe 3 – Steuerung", 4: "Stufe 4 – Kultur" };
-  h += `<div class="karte"><h2>Lücken nach Dringlichkeit ${!nur || c.abgeschlossen ? `<span class="nodruck">${AS.fachkraft ? `<button class="btn adm klein" id="ckLuecken">Lücken als Maßnahmen übernehmen</button>` : ""} ${!c.abgeschlossen && AS.fachkraft ? `<button class="btn klein" id="ckAbschluss">Abschließen</button>` : ""}</span>` : ""}</h2>`;
+  h += `<div class="karte"><h2>Lücken nach Dringlichkeit ${!nur || c.abgeschlossen ? `<span class="nodruck">${asDarf("pflegen") ? `<button class="btn sek klein" id="ckLuecken">Lücken als Maßnahmen übernehmen</button>` : ""} ${!c.abgeschlossen && asDarf("pflegen") ? `<button class="btn klein" id="ckAbschluss">Abschließen</button>` : ""}</span>` : ""}</h2>`;
   [1, 2, 3, 4].forEach(s => { const l = L.filter(x => x.q.stufe === s); if(!l.length) return;
     h += `<h3>${ST[s]}</h3>` + l.map(x => `<div class="krit"><span>${asPunkt(x.g === "teilweise" ? "gelb" : x.g === "offen" ? "grau" : "rot")}</span>
       <div><b>${esc(asKlartext(x.q.massnahme))}</b><div class="hinweis">${esc(AS_KE_KURZ[x.q.id.split(".")[0]] || "")}, Frage ${x.q.id.split(".")[1]} · ${esc(x.q.text)}${(c.antworten[x.q.id] || {}).b ? " – " + esc(c.antworten[x.q.id].b) : ""}</div></div></div>`).join(""); });
@@ -311,7 +311,7 @@ async function asOrgKonten(box){
   const zuo = await apiGet("/rest/v1/portal_mitglied_einheit?select=user_id,einheit_id&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []);
   const einhName = id => (asNach("as_einheit", id) || {}).name || "";
   const bereicheVon = uid => zuo.filter(x => x.user_id === uid).map(x => einhName(x.einheit_id)).filter(Boolean);
-  const darfBereiche = AS.admin || AS.gf || AS.fachkraft;
+  const darfBereiche = asDarf("pflegen");
   box.innerHTML = `<div class="karte"><h2>Zugänge zum EHS-Cockpit <button class="btn klein" id="zgNeu">+ Zugang anlegen</button></h2>
       <p class="hinweis">Jede Person bekommt einen eigenen Zugang – so ist im Logbuch nachvollziehbar, wer was eingetragen hat.
         ${darf.sperren ? "Als Geschäftsführung können Sie alle Zugänge Ihres Betriebs verwalten." : "Als Fachkraft können Sie Zugänge mit der Rolle „Betrieb“ anlegen und deren Passwort neu setzen."}
@@ -387,7 +387,7 @@ function asZgNeu(box, darf){
 /* ---------------- Geräte & Codes (Plan Schritt 6): Melde-Code + Aushang, Terminal-Geräte ----------------
    RPCs portal_melde_token_erneuern / terminal_geraet_anlegen / terminal_geraet_sperren prüfen GF/Fachkraft serverseitig. */
 async function asOrgGeraete(box){
-  if(!AS.gf && !AS.fachkraft){ box.innerHTML = ""; return; }
+  if(!asDarf("pflegen")){ box.innerHTML = ""; return; }
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const [mt, tt] = await Promise.all([
     apiGet("/rest/v1/portal_melde_token?select=token&aktiv=is.true" + k).catch(() => []),
@@ -484,7 +484,7 @@ h1{font-size:64px;line-height:1;font-weight:800;color:${FT};margin:16mm 0 4mm;te
 <div class="code">ohne Kamera: oak-engineering.de/portal/melden.html · Code <b>${esc(tok)}</b></div>
 <div class="punkte"><span>ohne Login</span><span>Name freiwillig</span><span>mit Foto</span></div>
 <div class="notruf">Jemand verletzt? <b>Zuerst Notruf 112</b>, dann Schichtführer.</div>
-<div class="fuss"><span>betreut durch OAK engineering · Stand ${esc(asDat(asHeute()))}</span></div>
+<div class="fuss"><span>${m.druckfuss_oak !== false ? "betreut durch OAK engineering · " : ""}Stand ${esc(asDat(asHeute()))}</span></div>
 </div></body></html>`;
   let f = document.getElementById("asAushangRahmen"); if(f) f.remove();
   f = document.createElement("iframe"); f.id = "asAushangRahmen"; f.title = "Aushang";

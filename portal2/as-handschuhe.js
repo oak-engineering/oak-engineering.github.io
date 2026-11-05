@@ -51,7 +51,7 @@ async function asHsRender(box){
   const mitStoff = einh.filter(e => gs.some(g => (g.einheit_ids || []).includes(e.id)));
   if(AS_HS.bereich && !mitStoff.some(e => e.id === AS_HS.bereich)) AS_HS.bereich = "";
   const zeigen = AS_HS.bereich ? mitStoff.filter(e => e.id === AS_HS.bereich) : mitStoff;
-  const edit = !!(AS.fachkraft || AS.gf);
+  const edit = asDarf("pflegen");
 
   const abschnitt = e => {
     const hsB = hs.filter(h => (h.einheit_ids || []).includes(e.id));

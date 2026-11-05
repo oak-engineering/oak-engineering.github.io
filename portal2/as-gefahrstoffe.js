@@ -100,7 +100,7 @@ function asGsTaetigkeiten(){
     .sort((a, b) => a[1].localeCompare(b[1], "de", { numeric: true }));
 }
 function asGsTaetigkeitName(id){ const t = asGsTaetigkeiten().find(x => x[0] === id); return t ? t[1] : ""; }
-function asGsPflege(){ return !!(AS.fachkraft || AS.gf || AS.admin); }
+function asGsPflege(){ return asDarf("pflegen"); }
 async function asGsHochladen(datei, ordner){
   const pfad = AS.kunde + "/gefahrstoffe/" + ordner + "/" + Date.now() + "-" + datei.name.replace(/[^A-Za-z0-9._-]+/g, "-").replace(/-{2,}/g, "-");
   const r = await fetch(CFG.url + "/storage/v1/object/" + CFG.bucket + "/" + pfad.split("/").map(encodeURIComponent).join("/"), { method: "POST",
@@ -418,8 +418,8 @@ function asGsEmkg(g, gbu, box){
   const bereichStd = gbu ? gbu.arbeitsbereich || "" : asGsBereiche(g)[0] || "";
   const reihe = inhalt => `<div class="voll" style="display:flex;flex-wrap:wrap;gap:4px 14px">${inhalt}</div>`;
   const kn = [];
-  if(gbu && AS.admin) kn.push({ t: "Löschen", klasse: "gefahr", fn: async () => {
-    if(!confirm("Diese Tätigkeit samt Beurteilung löschen?")) return false;
+  if(gbu && asDarf("loeschen")) kn.push({ t: "Löschen", klasse: "gefahr", fn: async () => {
+    if(!confirm("Diese Tätigkeit samt Beurteilung löschen?\n\nDas lässt sich nicht rückgängig machen.")) return false;
     await apiSend("DELETE", "/rest/v1/portal_gefahrstoff_gbu?id=eq." + encodeURIComponent(gbu.id), null, "return=minimal");
     await asGsNeuLaden(box, g.id); return false; } });
   if(gbu) kn.push({ t: "Drucken", klasse: "sek", fn: () => { const r = rechnen(); if(r) asGsGbuDrucken(g, gbu, eingaben(), r); return false; } });

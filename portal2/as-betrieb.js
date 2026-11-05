@@ -117,7 +117,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   const veraltet = (d, typ) => typeof dokVeraltetInfo === "function" ? dokVeraltetInfo(d, roh, typ) : null;
   main.innerHTML = `<h1 class="seite">Anlagen</h1><p class="unter">Alle Anlagen mit Kurzinfo, offenen Mängeln und Dokumenten – Farbe = schlimmster offener Mangel.</p>
     <div class="kacheln">${["gefahr", "besorgnis", "akzeptanz", "keine"].map(b => `<div class="kachel k-${AS_BAND_FARBE[b]}" data-band="${b}"><div class="lbl">${AS_BAND_TEXT[b]}</div><div class="zahl">${zahl(b)}</div><div class="hinweis">${st.band === b ? "Filter aktiv – erneut tippen zum Aufheben" : "Anlagen"}</div></div>`).join("")}</div>
-    <div class="karte"><h2>${sicht.length} von ${zeilen.length} Anlagen <span class="reihe" style="gap:8px">${AS.fachkraft || AS.gf ? `<button class="btn sek klein" id="anlEtikett">Etiketten (DYMO)</button>` : ""}${AS.fachkraft ? `<button class="btn klein" id="anlNeu">+ Anlage anlegen</button>` : ""}</span></h2>
+    <div class="karte"><h2>${sicht.length} von ${zeilen.length} Anlagen <span class="reihe" style="gap:8px">${asDarf("pflegen") ? `<button class="btn sek klein" id="anlEtikett">Etiketten (DYMO)</button>` : ""}${asDarf("pflegen") ? `<button class="btn klein" id="anlNeu">+ Anlage anlegen</button>` : ""}</span></h2>
       <div class="filterleiste"><input type="search" id="anlSuche" placeholder="Suchen (Name, Nr., Typ, Bereich)" value="${esc(st.q)}"></div>
       <div class="zeilen">${sicht.map(z => { const d = z.d;
         return `<div class="z" data-anl="${esc(z.mid)}"><div><b>${asPunkt(AS_BAND_FARBE[z.band])}${esc(d.maschine || d.titel)} <span class="hinweis">${esc(z.mid || "")}</span></b>
@@ -139,7 +139,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
   /* Klick auf die Anlage (nicht auf einen ihrer Knöpfe): Fachkraft/GF bearbeiten Bereich und Betriebszustand, alle anderen sehen die Maschinenseite */
   main.querySelectorAll("[data-anl]").forEach(z => z.onclick = ev => { if(ev.target.closest("button")) return;
     const d = asAnlagen().find(x => x.maschinen_id === z.dataset.anl); if(!d) return;
-    if(AS.fachkraft || AS.gf) asAnlageVerwalten(d, main);
+    if(asDarf("pflegen")) asAnlageVerwalten(d, main);
     else asDokOeffnen("maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id), d.maschine || d.titel); });
 }};
 
@@ -269,7 +269,7 @@ AS_SEITEN.maengel = { titel: "Mängel", icon: "!", sort: 4.4, async render(main)
   const vMid = new Map(asAnlagen().map(d => [d.maschinen_id, d]));
   main.innerHTML = `<h1 class="seite">Mängel</h1><p class="unter">Gleiche Mängelliste wie im Kundenportal. Erledigt melden mit Foto oder Text; „wirksam“ bestätigt die Fachkraft unter Maßnahmen.</p>
     <div class="kacheln">${["gefahr", "besorgnis", "akzeptanz"].map(b => `<div class="kachel k-${AS_BAND_FARBE[b]}" data-band="${b}"><div class="lbl">${AS_BAND_TEXT[b]}</div><div class="zahl">${zahl(b)}</div><div class="hinweis">offen${st.band === b ? " · Filter aktiv" : ""}</div></div>`).join("")}</div>
-    <div class="karte"><h2>${sicht.length} Mängel <span><button class="btn klein" id="mgNeu">+ Mangel melden</button>${AS.admin ? ` <button class="btn adm klein" id="mgCsv">Zusammenstellung (CSV)</button>` : ""}</span></h2>
+    <div class="karte"><h2>${sicht.length} Mängel <span><button class="btn klein" id="mgNeu">+ Mangel melden</button>${asDarf("pflegen") ? ` <button class="btn sek klein" id="mgCsv">Zusammenstellung (CSV)</button>` : ""}</span></h2>
       <div class="filterleiste">${asFilterWahl('data-f="status"', st.status, [["offen", "offen"], ["erledigt", "erledigt"], ["alle", "alle"]].concat(AS.admin ? [["uebernehmen", "erledigt, noch nicht übernommen"]] : []), "Status")}
         ${asFilterWahl('data-f="anlage"', st.anlage, [["", "alle"]].concat(anlagen), "Anlage")}</div>
       ${Object.entries(gruppen).sort((a, b) => (AS_MG_RANG[a[0]] ?? 9) - (AS_MG_RANG[b[0]] ?? 9)).map(([th, l]) => `<h3>${esc(AS_MG_THEMA[th] || th)} · ${l.length}</h3>
@@ -322,9 +322,9 @@ function asMangelDialog(m, vMid){
   if(m.status !== "erledigt") kn.push({ t: "Erledigt melden", fn: () => { asMangelErledigt(m); return false; } });
   if(AS.admin && m.status === "erledigt" && !m.uebernommen_am) kn.push({ t: "In Unterlagen übernommen", klasse: "adm", fn: async () => {
     await asMgAendern(m, { uebernommen_am: new Date().toISOString(), uebernommen_von: "OAK engineering" }, "übernommen"); } });
-  if(AS.admin && m.status === "erledigt") kn.push({ t: "Wieder öffnen", klasse: "sek", fn: async () => {
+  if(asDarf("pflegen") && m.status === "erledigt") kn.push({ t: "Wieder öffnen", klasse: "sek", fn: async () => {
     await asMgAendern(m, { status: "offen", erledigt_am: null, erledigt_von: null, notiz: null, nachweis_pfad: null }, "wieder geöffnet"); } });
-  const darf = !!(AS.admin || AS.fachkraft);
+  const darf = asDarf("pflegen");
   if(darf) kn.push({ t: "Speichern", fn: d => asMangelFormSpeichern(m, d) });
   const g = asNach("as_gefaehrdung", m.as_gefaehrdung_id);
   const dlg = asDialog({ titel: m.maschine || m.maschinen_id, inhalt: `<p>${asChip(AS_BAND_TEXT[asMgBand(m)], AS_BAND_FARBE[asMgBand(m)])} <b>${esc(asMgFeld(m, "label") || "")}</b></p>
@@ -480,7 +480,7 @@ const AS_HP = { vorlage: null, plaene: null, kunde: null };
 AS_SEITEN.hallenplan = { titel: "Hallenplan", icon: "⌗", sort: 4.6, async render(main){
   await asBetriebLaden();
   if(AS_HP.kunde !== AS.kunde){ AS_HP.plaene = await apiGet("/rest/v1/portal_hallenplan?select=id,titel,layout,unterlage_pfad,geaendert_am,geaendert_von&order=sort,titel&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => null); AS_HP.kunde = AS.kunde; }
-  const plaene = AS_HP.plaene || [], darf = !!(AS.fachkraft || AS.gf);
+  const plaene = AS_HP.plaene || [], darf = asDarf("pflegen");
   const alt = (AS_B.docs || []).filter(d => d.kategorie === "hallenplan" && d.doc_typ !== "svg");
   const kopf = `<h1 class="seite">Hallenplan</h1><p class="unter">Farbe je Maschine = schlimmster offener Mangel (live). Klick auf eine Maschine öffnet ihre Dokumente.${darf && plaene.length ? " Mit „Bearbeiten“ ändern Sie Aufstellung, Wege und Flächen – gespeichert wird direkt im Cockpit." : ""}</p>`;
   if(!plaene.length){
@@ -533,7 +533,7 @@ function asHpHoeren(plan){
     }
     if(d.oak !== "hallenplan-speichern") return;
     const antwort = (ok, fehler) => f.contentWindow.postMessage({ oak: "hallenplan-gespeichert", id: d.id, ok, fehler }, "*");
-    if(!(AS.fachkraft || AS.gf)) return antwort(false, "keine Berechtigung");
+    if(!asDarf("pflegen")) return antwort(false, "keine Berechtigung");
     const lay = d.lay;
     if(!lay || typeof lay !== "object" || !Array.isArray(lay.maschinen)) return antwort(false, "ungültiges Layout");
     const sauber = JSON.parse(JSON.stringify(lay));
@@ -569,7 +569,7 @@ AS_SEITEN.vorort = { titel: "Vor Ort", icon: "⌂", sort: 4.8, async render(main
   const box = document.getElementById("voInhalt"), k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const rahmen = src => `<iframe src="${esc(src)}" allow="fullscreen; camera; microphone; geolocation" style="width:100%;height:calc(100vh - 230px);min-height:560px;border:1px solid var(--linie);border-radius:10px;background:#fff"></iframe>`;
   if(r.akt === "pruefen") box.innerHTML = rahmen("../portal/pruefen.html?eingebettet=1&k=" + encodeURIComponent(AS.kunde) + (AS.bereich && AS.bereich.aktiv ? "&e=" + encodeURIComponent([...AS.bereich.lesen].join(",")) : ""));
-  else if(r.akt === "begehung") await (AS.fachkraft ? asBgSeite(box, k) : asBegehung(box, k));
+  else if(r.akt === "begehung") await (asDarf("pflegen") ? asBgSeite(box, k) : asBegehung(box, k));
   else if(r.akt === "melden"){
     const t = (await apiGet("/rest/v1/portal_melde_token?select=token,kunde_slug&aktiv=is.true" + k).catch(() => []))[0];
     box.innerHTML = t ? rahmen("../portal/melden.html?t=" + encodeURIComponent(t.token) + "&eingebettet=1")

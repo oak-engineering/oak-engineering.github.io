@@ -74,7 +74,7 @@ function asPfMaschinen(box){
     return { d, l, s, schlimm }; }).sort((a, b) => rang[b.schlimm] - rang[a.schlimm] || String(a.d.maschine || a.d.titel).localeCompare(String(b.d.maschine || b.d.titel), "de", { numeric: true }));
   const ohne = zeilen.filter(z => !z.l.length).length;
   box.innerHTML = `<div class="karte"><h2>${anl.length} Anlagen <span class="hinweis">${ohne ? ohne + " ohne erfasste Prüfungen" : ""}</span>
-      ${AS.fachkraft || AS.admin ? `<button class="btn sek klein" id="pfMasse">Für mehrere Anlagen erfassen</button>` : ""}</h2>
+      ${asDarf("pflegen") ? `<button class="btn sek klein" id="pfMasse">Für mehrere Anlagen erfassen</button>` : ""}</h2>
     <div class="zeilen">${zeilen.map(z => `<div class="z" data-mid="${esc(z.d.maschinen_id)}"><div><b>${asPunkt(z.schlimm)}${esc(z.d.maschine || z.d.titel)} <span class="hinweis">${esc(z.d.maschinen_id)}</span></b>
         <small>${z.l.length ? z.l.map((o, i) => `${esc(asPfArt(o.art).titel.split(" – ")[0].split(" (")[0])}: ${esc(z.s[i].text)}`).join(" · ") : "keine Prüfungen erfasst"}</small></div>
         <span class="reihe" style="gap:6px">${z.l.length ? `<button class="btn klein" data-mrunde="${esc(z.d.maschinen_id)}">Prüfen</button>` : ""}<button class="btn sek klein" data-mneu="${esc(z.d.maschinen_id)}">+</button></span></div>`).join("") || `<div class="leer">Keine Anlagen.</div>`}</div></div>`;
@@ -200,9 +200,9 @@ function asPfObjekt(o){
         <span class="reihe" style="gap:6px">${p.nachweis_pfad ? `<button class="btn sek klein" data-nw="${esc(p.nachweis_pfad)}">Nachweis</button>` : ""}${asChip(e[0], e[1])}</span></div>`; }).join("") || `<div class="leer">Noch keine Prüfung eingetragen.</div>`}</div>`,
     knoepfe: [{ t: "Prüfung eintragen", klasse: "sek", fn: () => { setTimeout(() => asPfEintragen(o), 0); } },
       { t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.bezeichnung){ asMeldung("Bitte eine Bezeichnung angeben."); return false; }
-        await asSpeichern("as_pruefobjekt", Object.assign(w, { id: o.id })); asMeldung("Gespeichert"); asZeige(); } }].concat(AS.admin ? [{ t: "Löschen", klasse: "sek", fn: async () => {
-        if(!confirm("Einrichtung „" + o.bezeichnung + "“ mit allen Prüfungen löschen? Besser: außer Betrieb setzen.")) return false;
-        await asLoeschen("as_pruefobjekt", o.id); AS.db.as_pruefung = asT("as_pruefung").filter(p => p.objekt_id !== o.id); asZeige(); } }] : []) });
+        await asSpeichern("as_pruefobjekt", Object.assign(w, { id: o.id })); asMeldung("Gespeichert"); asZeige(); } }].concat(asDarf("loeschen") ? [{ t: "Löschen", klasse: "gefahr", fn: async () => {
+        if(!await asLoeschenBestaetigt("Einrichtung „" + o.bezeichnung + "“ mit allen Prüfungen löschen? Besser: außer Betrieb setzen.", "as_pruefobjekt", o.id)) return false;
+        AS.db.as_pruefung = asT("as_pruefung").filter(p => p.objekt_id !== o.id); asZeige(); } }] : []) });
   asPfNachweisKnoepfe(dl);
 }
 function asPfEintragen(o){

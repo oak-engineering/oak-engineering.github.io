@@ -61,7 +61,7 @@ function asAsa(box){
             termin: String(w.datum || asHeute()).slice(0, 4) + "-12-31" }); nz++; }
           else { await asSpeichern("as_massnahme", { quelle: "asa", quelle_id: r.id, stop: "O", text: t, umsetzung: "zentral", status: "offen", termin: term }); nm++; } }
         asMeldung(nm || nz ? [nm ? nm + " Maßnahme(n)" : "", nz ? nz + " Ziel(e)" : ""].filter(Boolean).join(" und ") + " angelegt" : "Protokoll abgeschlossen"); asZeige(); } }];
-    if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { await asLoeschen("as_asa", a.id); asZeige(); } });
+    if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("ASA-Sitzung löschen?", "as_asa", a.id)) return false; asZeige(); } });
     const d = asDialog({ titel: neu ? "ASA-Sitzung" : "ASA " + asDat(a.datum), breit: true, inhalt: `<div class="form">${asFeld("Datum", "datum", a.datum, "date")}
       ${asFeld("Teilnehmende (GF, Sifa, Betriebsarzt, SiBe, Betriebsrat)", "teilnehmer", a.teilnehmer)}
       <label class="voll">Tagesordnung <span><button type="button" class="btn sek klein" id="toVorschlag">aus aktuellem Stand vorschlagen</button></span><textarea data-f="tagesordnung" rows="9">${esc(a.tagesordnung || "")}</textarea></label>
@@ -153,8 +153,8 @@ function asMeldungen(box){
       ${m.art === "unfall" ? `<p class="hinweis">Bei mehr als 3 Tagen Arbeitsunfähigkeit: Unfallanzeige an die BG (§ 193 SGB VII).</p>` : ""}`, knoepfe: kn }); };
   document.getElementById("meNeu").onclick = () => dlg(null);
   box.querySelectorAll("[data-m]").forEach(z => z.onclick = () => { const m = asNach("as_meldung", z.dataset.m);
-    // Vorfälle aus dem Kundenportal: Status und Rückmeldung pflegt OAK; der Betrieb wertet auf der Vorfall-Seite aus
-    if(m && m._v1 && !AS.admin && AS_SEITEN.vorfaelle){ asGehe("vorfaelle"); return; } dlg(m); });
+    // Vorfälle aus dem Kundenportal bearbeitet der Betrieb auf der Vorfall-Seite (Status/Rückmeldung dort je nach Einstellung „Neue Meldungen prüft“)
+    if(m && m._v1 && !asDarf("oak") && AS_SEITEN.vorfaelle){ asGehe("vorfaelle"); return; } dlg(m); });
 }
 
 /* ---------- Thema des Monats ---------- */
@@ -170,7 +170,7 @@ function asThema(box){
     const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.titel){ asMeldung("Titel fehlt"); return false; } await asSpeichern("as_thema", Object.assign({ id: t.id }, w)); asZeige(); } }];
     if(!neu) kn.unshift({ t: "Aushang drucken", klasse: "sek", fn: () => { const w = window.open("", "_blank");
       if(w){ w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(t.titel)}</title><body style="font-family:Segoe UI,Arial;padding:40px"><p style="color:#1f4e79;font-size:20px">Thema des Monats ${esc(t.monat.slice(0, 7).split("-").reverse().join("/"))}</p><h1 style="font-size:44px;color:#1f4e79">${esc(t.titel)}</h1><div style="font-size:22px;white-space:pre-wrap">${esc(t.inhalt || "")}</div><p style="margin-top:60px;color:#666">${esc(AS.org.name)}</p></body>`); w.document.close(); w.print(); } return false; } });
-    if(!neu && AS.admin) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { await asLoeschen("as_thema", t.id); asZeige(); } });
+    if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Thema löschen?", "as_thema", t.id)) return false; asZeige(); } });
     asDialog({ titel: neu ? "Thema des Monats" : t.titel, inhalt: `<div class="form">${asFeld("Monat", "monat", t.monat, "date")}${asFeld("Thema", "titel", t.titel)}
       ${asFeld("Kernbotschaften (kurz, je Zeile eine)", "inhalt", t.inhalt, "textarea", "voll")}
       ${asFeld("Erreichte Beschäftigte", "teilnehmer", t.teilnehmer, "number")}${asFeld("Beschäftigte gesamt", "beschaeftigte", t.beschaeftigte, "number")}</div>`, knoepfe: kn }); };
@@ -203,13 +203,13 @@ function asKultur(box){
   const sid = AS.reiter.kultur && AS.reiter.kultur.length > 20 ? AS.reiter.kultur : null;
   if(sid && asNach("as_kultur", sid)) return asStrukturEditor(box, asNach("as_kultur", sid));
   const kc = asKulturListe("dguv-kurzcheck"), sc = asKulturListe("dguv-strukturcheck"), letzt = kc[0];
-  box.innerHTML = `<div class="karte"><h2>KurzCheck Präventionskultur (DGUV) ${AS.fachkraft ? `<button class="btn adm klein" id="kcNeu">+ KurzCheck</button>` : ""}</h2>
+  box.innerHTML = `<div class="karte"><h2>KurzCheck Präventionskultur (DGUV) ${asDarf("pflegen") ? `<button class="btn klein" id="kcNeu">+ KurzCheck</button>` : ""}</h2>
       <p class="hinweis">${esc(AS_KAT.kurzcheck._quelle)}</p>
       ${letzt ? `<div class="zeilen">${AS_KAT.kurzcheck.felder.map(f => { const v = (letzt.antworten.felder || {})[f.id];
         return `<div class="z"><div><b>${esc(f.titel)}</b><small>${esc(f.satz)}</small></div>${v ? asChip(AS_AMPEL3[v][0], AS_AMPEL3[v][1]) : asChip("offen", "grau")}</div>`; }).join("")}</div>
         <p class="hinweis">Stand ${asDat(letzt.datum)}${letzt.antworten.von ? " · eingeschätzt von: " + esc(letzt.antworten.von) : ""}${letzt.notiz ? " · " + esc(letzt.notiz) : ""}${kc.length > 1 ? " · frühere: " + kc.slice(1).map(x => asDat(x.datum)).join(", ") : ""}</p>`
         : `<div class="leer">Noch kein KurzCheck. Er zeigt, welches Handlungsfeld mit dem StrukturCheck vertieft werden sollte.</div>`}</div>
-    <div class="karte"><h2>StrukturCheck je Handlungsfeld ${AS.fachkraft ? `<button class="btn adm klein" id="scNeu">+ StrukturCheck</button>` : ""}</h2>
+    <div class="karte"><h2>StrukturCheck je Handlungsfeld ${asDarf("pflegen") ? `<button class="btn klein" id="scNeu">+ StrukturCheck</button>` : ""}</h2>
       <p class="hinweis">${esc(AS_KULTURCHECK.quelle.split(" (")[0])} – Teil 1: gemeinsame Bewertung der Strukturen im Arbeitskreis (GF, Sifa, Betriebsarzt, Personal, Beschäftigtenvertretung). Ampel aus der Gesamteinschätzung: rot 0–50 %, orange 51–80 %, grün 81–100 %.</p>
       <div class="zeilen">${sc.map(r => { const f = asStrukturFeld(r.antworten.feld), p = asStrukturProzent(r), a = asStrukturAmpel(p);
         return `<div class="z" data-sc="${r.id}"><div><b>${esc(f ? f.titel : r.antworten.feld)} · ${asDat(r.datum)}</b><small>${p == null ? "Gesamteinschätzung offen" : "Gesamteinschätzung " + p + " %"}${r.notiz ? " · " + esc(r.notiz) : ""}</small></div>
@@ -237,7 +237,7 @@ function asKultur(box){
 let AS_SC_TIMER = null;
 function asStrukturEditor(box, r){
   const f = asStrukturFeld(r.antworten.feld), A = r.antworten.a = r.antworten.a || {}, FR = r.antworten.frei = r.antworten.frei || {};
-  const nur = !AS.fachkraft || r.antworten.abgeschlossen;
+  const nur = !asDarf("pflegen") || r.antworten.abgeschlossen;
   const sp = () => { clearTimeout(AS_SC_TIMER); AS_SC_TIMER = setTimeout(() => asSpeichern("as_kultur", { id: r.id, antworten: r.antworten, notiz: r.notiz }).catch(e => asMeldung("Nicht gespeichert: " + e.message)), 500); };
   const seg = (key, optionen, wert) => `<span class="seg">${optionen.map((o, i) => `<button class="${wert === i ? "an" : ""}" data-k="${key}" data-w="${i}" ${nur ? "disabled" : ""}>${esc(o)}</button>`).join("")}</span>`;
   const zeichnen = () => {
@@ -261,7 +261,7 @@ function asStrukturEditor(box, r){
     h += `<div class="karte"><h2>Ansatzpunkte (DGUV) ${!nur ? `<button class="btn klein" id="scAbschluss">Abschließen</button>` : asChip("abgeschlossen", "gruen")}</h2>
       <p class="hinweis">Maßnahmenplan nach dem KulturCheck: WAS · WER · Mit WEM · Bis WANN. Übernommene Ansatzpunkte erscheinen als Maßnahme.</p>
       <div class="zeilen">${(f.ansatzpunkte || []).map((a, i) => { const da = asT("as_massnahme").some(m => m.quelle === "kultur" && m.quelle_id === r.id && m.text === a);
-        return `<div class="z"><div><b>${esc(a)}</b></div>${da ? asChip("übernommen", "gruen") : AS.fachkraft ? `<button class="btn sek klein" data-ap="${i}">als Maßnahme</button>` : ""}</div>`; }).join("")}</div></div>`;
+        return `<div class="z"><div><b>${esc(a)}</b></div>${da ? asChip("übernommen", "gruen") : asDarf("pflegen") ? `<button class="btn sek klein" data-ap="${i}">als Maßnahme</button>` : ""}</div>`; }).join("")}</div></div>`;
     box.innerHTML = h;
     box.querySelectorAll("[data-k]").forEach(b => b.onclick = () => { const [id, i, j] = b.dataset.k.split("|"), w = +b.dataset.w;
       if(i == null) A[id] = A[id] === w ? null : w;
@@ -280,7 +280,7 @@ function asStrukturEditor(box, r){
 function asBradley(box){
   const liste = asKulturListe("bradley"), akt = liste[0], vor = liste[1];
   const kz = asKennzahlen();
-  box.innerHTML = `<div class="karte"><h2>Sicherheitskultur (Bradley-Kurve) ${AS.fachkraft ? `<button class="btn adm klein" id="kuNeu">+ Einstufung</button>` : ""}</h2>
+  box.innerHTML = `<div class="karte"><h2>Sicherheitskultur (Bradley-Kurve) ${asDarf("pflegen") ? `<button class="btn klein" id="kuNeu">+ Einstufung</button>` : ""}</h2>
     ${asBradleySvg(akt && akt.stufe, vor && vor.stufe)}
     <p>${akt ? `Einstufung ${asDat(akt.datum)}: <b>${esc(AS_KAT.bradley[Math.round(akt.stufe) - 1])}</b>` : "Noch nicht eingestuft."}</p>
     <p class="hinweis">Kennzahlen dazu: ${kz.meldungen_beinahe} Beinahe-Unfälle gemeldet (12 Monate) · Rückmeldung an Melder ${kz.rueckmeldung_quote} % · Maßnahmen wirksam ${kz.massnahmen_wirksam} %.
@@ -316,7 +316,7 @@ AS_SEITEN.prozesse = { titel: "Prozesse", icon: "☰", sort: 8, render(main){
   const ART = { fuehrung: "Führungsprozesse", kern: "Kernprozesse", unterstuetzung: "Unterstützungsprozesse" };
   const R = AS_PROZESSE.rollen;
   main.innerHTML = `<h1 class="seite">Prozesse</h1><p class="unter">${esc(AS_PROZESSE.rahmen.titel)}: ${esc(AS_PROZESSE.rahmen.zweck)} Je Prozess eine Seite – freigegeben durch die Geschäftsführung.</p>
-    ${AS.fachkraft ? `<div class="karte"><h2>OAK-Vorgehen bei diesem Kunden</h2><div class="zeilen">${AS_PROZESSE.oak_vorgehen.schritte.map((s, i) => `<div class="z" data-o="${i}"><div><b>${i + 1}. ${esc(s.t)}</b><small>${esc(s.ergebnis || "")}</small></div></div>`).join("")}</div></div>` : ""}
+    ${asDarf("oak") ? `<div class="karte"><h2>OAK-Vorgehen bei diesem Kunden</h2><div class="zeilen">${AS_PROZESSE.oak_vorgehen.schritte.map((s, i) => `<div class="z" data-o="${i}"><div><b>${i + 1}. ${esc(s.t)}</b><small>${esc(s.ergebnis || "")}</small></div></div>`).join("")}</div></div>` : ""}
     ${Object.entries(ART).map(([art, t]) => `<div class="karte"><h2>${t}</h2><div class="zeilen">${AS_KUNDENPROZESSE.filter(p => p.art === art).map(p =>
       `<div class="z" data-p="${p.id}"><div><b>${esc(p.titel)}</b><small>Stufe ${p.stufe} · verantwortlich: ${esc(R[p.verantwortlich] || p.verantwortlich)}</small></div>
       ${frei[p.id] && frei[p.id].freigegeben_am ? asChip("freigegeben " + asDat(frei[p.id].freigegeben_am), "gruen") : asChip("nicht freigegeben", "grau")}</div>`).join("")}</div></div>`).join("")}`;
@@ -326,7 +326,7 @@ AS_SEITEN.prozesse = { titel: "Prozesse", icon: "☰", sort: 8, render(main){
       <p class="hinweis">Auslöser: ${p.ausloeser.map(esc).join(" · ")}</p>
       <ol>${p.ablauf.map(s => `<li style="margin:6px 0">${esc(s.t)} <span class="hinweis">– ${esc(s.wer === "—" ? "automatisch" : R[s.wer] || s.wer)}${s.da ? "" : " · noch nicht in der App"}</span></li>`).join("")}</ol>
       <p class="hinweis">Ergebnis: ${p.ergebnisse.map(esc).join(" · ")} · Kennzahl: ${esc(p.kennzahl)}<br>Rechtsgrundlage: ${esc(p.recht)}</p>`,
-      knoepfe: f && f.freigegeben_am ? (AS.fachkraft ? [{ t: "Freigabe zurücknehmen", klasse: "adm", fn: async () => { await asProzessSetzen(p.id, false); asZeige(); } }] : [])
+      knoepfe: f && f.freigegeben_am ? (asDarf("pflegen") ? [{ t: "Freigabe zurücknehmen", klasse: "sek", fn: async () => { await asProzessSetzen(p.id, false); asZeige(); } }] : [])
         : [{ t: "Freigeben (Geschäftsführung)", fn: async () => { await asProzessSetzen(p.id, true); asZeige(); } }] }); });
   main.querySelectorAll("[data-o]").forEach(z => z.onclick = () => { const s = AS_PROZESSE.oak_vorgehen.schritte[+z.dataset.o];
     asDialog({ titel: s.t, inhalt: `<p>${esc(s.text)}</p><h4>Voraussetzungen</h4><ul>${(s.voraussetzungen || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul>
@@ -346,7 +346,7 @@ AS_SEITEN.bericht = { titel: "Jahresbericht", icon: "▣", sort: 9, render(main)
   main.innerHTML = `<h1 class="seite">Jahresbericht der Fachkraft für Arbeitssicherheit ${jahr}</h1>
     <p class="unter">${esc(AS.org.name)} · erstellt ${asDat(asHeute())} von ${esc(d.sifa_name || AS.ich)} · nach DGUV Vorschrift 2</p>
     <div class="filterleiste nodruck"><select id="bJahr" aria-label="Jahr">${[0, 1, 2].map(i => new Date().getFullYear() - i).map(y => `<option value="${y}" ${y === jahr ? "selected" : ""}>Jahr: ${y}</option>`).join("")}</select>
-      <button class="btn sek klein" onclick="window.print()">Drucken / PDF</button>${AS.fachkraft ? `<button class="btn adm klein" id="bErstellt">Als erstellt vermerken</button>` : ""}</div>
+      <button class="btn sek klein" onclick="window.print()">Drucken / PDF</button>${asDarf("pflegen") ? `<button class="btn klein" id="bErstellt">Als erstellt vermerken</button>` : ""}</div>
     ${abschnitt("1. Betreuung und Einsatzzeiten", `<p>Betreuungsgruppe ${esc(e.gruppe || "–")} · ${r1(e.ma)} Beschäftigte (gewichtet). Sifa: <b>${r1(e.istSifa)} von ${r1(e.sollSifa)} h</b> (${e.sollSifa ? asProz(e.istSifa, e.sollSifa) : 0} %).
       Betriebsarzt: <b>${r1(e.istBa)} von ${r1(e.sollBa)} h</b>.</p>
       <p class="hinweis">Einsätze: ${asT("as_einsatz").filter(x => imJ(x.datum)).map(x => asDat(x.datum) + " " + (x.taetigkeit || x.art)).join(" · ") || "keine erfasst"}</p>`)}
@@ -362,7 +362,7 @@ AS_SEITEN.bericht = { titel: "Jahresbericht", icon: "▣", sort: 9, render(main)
     ${abschnitt("7. Ziele", `<div class="zeilen">${asT("as_ziel").filter(z => z.status !== "verworfen").map(z => { const s = asZielStand(z); return `<div class="z"><div><b>${esc(z.titel)}</b><small>${esc(s.text)}</small></div>${s.erreicht ? asChip("erreicht", "gruen") : asChip(s.proz + " %", "blau")}</div>`; }).join("") || `<div class="leer">keine Ziele vereinbart</div>`}</div>`)}
     ${abschnitt("8. Organisation des Arbeitsschutzes (Reifegrad) und Kultur", rgJetzt ? `<div class="tabwrap"><table class="tab"><tr><th>Kernelement</th><th>${asDat(chk[0].datum)}</th>${rgVor ? `<th>${asDat(chk[1].datum)}</th>` : ""}</tr>
       ${AS_CHECK.kernelemente.map(k => `<tr><td>${esc(k.titel)}</td><td>${rgJetzt[k.id] ? "Stufe " + "I".repeat(rgJetzt[k.id]) : "–"}</td>${rgVor ? `<td>${rgVor[k.id] ? "Stufe " + "I".repeat(rgVor[k.id]) : "–"}</td>` : ""}</tr>`).join("")}</table></div>` : `<p>Noch kein abgeschlossener Organisations-Check.</p>`)}
-    ${abschnitt("9. Empfehlungen für das Folgejahr", AS.fachkraft ? `<textarea id="bEmpf" style="width:100%;min-height:120px">${esc(empf)}</textarea><p class="nodruck"><button class="btn klein" id="bEmpfSp">Speichern</button></p>
+    ${abschnitt("9. Empfehlungen für das Folgejahr", asDarf("pflegen") ? `<textarea id="bEmpf" style="width:100%;min-height:120px">${esc(empf)}</textarea><p class="nodruck"><button class="btn klein" id="bEmpfSp">Speichern</button></p>
       <div class="hinweis nodruck">Vorschläge: ${asZielVorschlaege().map(v => esc(v.titel)).join(" · ") || "–"}</div>` : `<p style="white-space:pre-wrap">${esc(empf) || "–"}</p>`)}`;
   document.getElementById("bJahr").onchange = ev => { AS.reiter.bericht = ev.target.value; asZeige(); };
   const sp = document.getElementById("bEmpfSp"); if(sp) sp.onclick = async () => { const be = Object.assign({}, d.bericht_empfehlungen || {}); be[J] = document.getElementById("bEmpf").value; await asOrgSpeichern({ bericht_empfehlungen: be }); asMeldung("Gespeichert"); };
