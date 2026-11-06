@@ -647,8 +647,8 @@ function asEinImpObjekte(art, imp){
 function asEinZuordHtml(art, imp){
   const cfg = AS_EIN_IMP[art], n = (imp.kopf ? imp.zeilen.length - 1 : imp.zeilen.length);
   const spalten = (imp.kopf || imp.zeilen[0] || []).map((h, i) => imp.kopf ? (h || "Spalte " + (i + 1)) : "Spalte " + (i + 1) + (h ? " („" + h + "“)" : ""));
-  return `<p class="hinweis"><b>${esc(imp.quelle)}</b> · ${n} ${n === 1 ? "Zeile" : "Zeilen"} · Spalten zuordnen (erkannt aus der Überschrift, änderbar):</p>
-    <div class="ein-zuord">${spalten.map((h, i) => `<label title="${esc(h)}"><span>${esc(h)}</span><select data-zsp="${i}"><option value="">– nicht übernehmen –</option>
+  return `<p class="hinweis"><b>${esc(imp.quelle)}</b> · ${n} ${n === 1 ? "Zeile" : "Zeilen"} · Spalte → Feld (erkannt aus der Überschrift, änderbar):</p>
+    <div class="ein-zuord">${spalten.map((h, i) => `<label title="${esc(h)}"><span>${esc(h)}</span><i>→</i><select data-zsp="${i}"><option value="">nicht übernehmen</option>
       ${cfg.felder.map(([f, t]) => `<option value="${f}"${imp.map[i] === f ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label>`).join("")}</div>`;
 }
 /* Ein Import-Baustein für Personen und Anlagen: Datei wählen oder einfügen → Zuordnung → Vorschau mit Fehlern/Dubletten → Übernehmen */

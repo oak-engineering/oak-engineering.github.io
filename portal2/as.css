@@ -518,10 +518,12 @@ body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
 .zeilen.ein-empf .z>div{min-width:0}
 .zeilen.ein-empf .z b,.zeilen.ein-empf .z small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .zeilen.ein-empf .z input{width:auto;margin:0}
-.ein-zuord{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:6px 0 10px}
-.ein-zuord label{display:flex;flex-direction:column;gap:3px;font-size:12px;min-width:0;margin:0}
-.ein-zuord span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--grau)}
-.ein-zuord select{height:32px;border:1px solid var(--linie);border-radius:8px;font:inherit;font-size:13px;min-width:0;background:#fff}
+.ein-zuord{display:grid;grid-template-columns:minmax(0,1fr);margin:6px 0 10px;border:1px solid var(--linie);border-radius:8px}
+.ein-zuord label{display:grid;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);align-items:center;gap:8px;height:40px;padding:0 10px;margin:0;font-size:13px;border-top:1px solid var(--linie);min-width:0}
+.ein-zuord label:first-child{border-top:0}
+.ein-zuord span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ein-zuord i{font-style:normal;color:var(--grau);text-align:center}
+.ein-zuord select{height:32px;box-sizing:border-box;padding:0 28px 0 8px;line-height:30px;margin:0;border:1px solid var(--linie);border-radius:8px;font:inherit;font-size:13px;min-width:0;background-color:#fff}
 .ein-datei{position:relative;overflow:hidden;display:inline-flex;align-items:center;cursor:pointer}
 .ein-datei input{display:none}
 #haupt .ein-spalte h3{display:flex;align-items:center;justify-content:space-between;gap:8px}
@@ -538,5 +540,7 @@ body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
   .ein-teile{grid-template-columns:repeat(2,minmax(0,1fr))}
   .ein-frage{grid-template-columns:minmax(0,1fr);gap:4px}
   .ein-erkl{display:none}
+  .ein-zuord label{grid-template-columns:minmax(0,1fr) 12px minmax(0,1.5fr);gap:6px}
+  .ein-zuord select{padding-right:22px}
   .zeilen.ein-empf .z b{white-space:normal;overflow:visible}
 }
