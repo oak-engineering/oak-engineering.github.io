@@ -31,11 +31,17 @@ function asOrgGrund(box){
           ${ma.abweichung ? asChip("Aufteilung " + ma.angabe + " ≠ Bereiche " + ma.bereiche, "gelb") : ""}</div>
         <div class="z"><div><b>Geschäftsführung: ${esc(d.gf_name || "–")}</b><small>Fachkraft vor Ort: ${esc(d.fkv_name || "–")} · Betriebsrat: ${esc(d.br || "–")}</small></div></div>
       </div>
+      ${typeof asEinProfilDialog === "function" ? `<div class="zeilen" title="Zum Bearbeiten anklicken"><div class="z" id="grundProfil"><div><b>Betriebsprofil</b><small id="grundProfilText">wird geladen …</small></div></div></div>` : ""}
       ${asDarf("pflegen") && typeof asMarkeDialog === "function" ? `<div class="zeilen" title="Zum Bearbeiten anklicken"><div class="z" id="grundMarke"><div><b>Erscheinungsbild</b><small>Logo, Farben, Datenschutz-Kontakt, Druckfuß</small></div></div></div>` : ""}</div>
     <div class="karte"><h2>Nachweise zur Organisation</h2><div class="zeilen">${AS_NACHWEISE.map(([k, t, h, name]) => `
       <div class="z" data-n="${k}"><div><b>${asPunkt(d[k] ? "gruen" : "rot")}${esc(t)}</b><small>${esc(h)}${name && d[name] ? " · " + esc(d[name]) : ""}</small></div>
       ${d[k] ? asChip(asDat(d[k]), "gruen") : asChip("fehlt", "rot")}</div>`).join("")}</div></div>`;
   const gm = box.querySelector("#grundMarke"); if(gm) gm.onclick = () => asMarkeDialog();
+  /* Betriebsprofil aus dem Einrichtungs-Assistenten (portal_kunde.einrichtung.profil) – ansehen, ändern, Empfehlungen übernehmen */
+  const gp = box.querySelector("#grundProfil");
+  if(gp){ gp.onclick = () => asEinProfilDialog();
+    apiGet("/rest/v1/portal_kunde?select=einrichtung&slug=eq." + encodeURIComponent(AS.kunde)).then(r => { const t = box.querySelector("#grundProfilText");
+      if(t) t.textContent = asEinProfilKurz(((r && r[0] && r[0].einrichtung) || {}).profil) + " · Fragen zu Beschäftigten, Tätigkeiten und Betreuung"; }).catch(() => {}); }
   box.querySelectorAll("#grundZeilen .z").forEach(z => z.onclick = () => asDialog({ titel: "Grunddaten", inhalt: `<div class="form">
       ${asFeld("WZ-Kode (Branche)", "wz_kode", d.wz_kode)}${asFeld("Schichtmodell", "schichtmodell", d.schichtmodell)}
       ${asFeld("Vollzeit-Beschäftigte", "ma_vz", d.ma_vz, "number")}${asFeld("Teilzeit bis 20 h", "ma_tz20", d.ma_tz20, "number")}

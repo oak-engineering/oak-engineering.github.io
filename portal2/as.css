@@ -462,8 +462,8 @@ body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
 
 /* ---------------- Einrichtungs-Assistent (as-einrichtung.js, Stufe 14) – ein Bildschirm je Schritt, Listen scrollen in sich ---------------- */
 .ein-wrap{display:flex;flex-direction:column;gap:12px;min-height:0}
-.ein-schritte{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:6px;flex:0 0 auto}
-.ein-s{display:flex;align-items:center;gap:8px;height:40px;padding:0 10px;border:1px solid var(--linie);border-radius:20px;background:#fff;font:inherit;font-size:13px;color:var(--text);cursor:pointer;min-width:0}
+.ein-schritte{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;flex:0 0 auto}
+.ein-s{display:flex;align-items:center;gap:5px;height:40px;padding:0 6px;border:1px solid var(--linie);border-radius:20px;background:#fff;font:inherit;font-size:13px;color:var(--text);cursor:pointer;min-width:0}
 .ein-s:disabled{cursor:default;opacity:.55}
 .ein-s b{flex:0 0 24px;height:24px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:var(--linie);color:var(--text);font-size:12px;font-weight:600}
 .ein-s span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -505,6 +505,27 @@ body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
 .zeilen.ein-pruef .z{border-top:1px solid var(--linie)}
 .zeilen.ein-pruef .z>div{min-width:0}
 .zeilen.ein-pruef .z small,.zeilen.ein-pruef .z b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Betriebsprofil (Fragebogen mit Antwort-Pills) und Empfehlungen; Datei-Import mit Spaltenzuordnung (Stufe 15) */
+.ein-teile{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.ein-teile .ein-chip{width:100%}
+.ein-fragen{display:grid;grid-template-columns:minmax(0,1fr)}
+.ein-frage{display:grid;grid-template-columns:320px minmax(0,1fr);align-items:center;gap:12px;min-height:48px;border-top:1px solid var(--linie);padding:6px 0}
+.ein-frage:first-child{border-top:0}
+.ein-frage>span{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ein-frage .ein-chips{margin:0}
+.ein-frage input[type=number]{width:120px;height:32px;box-sizing:border-box;border:1px solid var(--linie);border-radius:8px;padding:0 10px;font:inherit;font-size:14px}
+.zeilen.ein-empf .z{grid-template-columns:22px minmax(0,1fr) auto;cursor:pointer}
+.zeilen.ein-empf .z>div{min-width:0}
+.zeilen.ein-empf .z b,.zeilen.ein-empf .z small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zeilen.ein-empf .z input{width:auto;margin:0}
+.ein-zuord{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:6px 0 10px}
+.ein-zuord label{display:flex;flex-direction:column;gap:3px;font-size:12px;min-width:0;margin:0}
+.ein-zuord span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--grau)}
+.ein-zuord select{height:32px;border:1px solid var(--linie);border-radius:8px;font:inherit;font-size:13px;min-width:0;background:#fff}
+.ein-datei{position:relative;overflow:hidden;display:inline-flex;align-items:center;cursor:pointer}
+.ein-datei input{display:none}
+#haupt .ein-spalte h3{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.dlg-fragen{margin-bottom:12px}
 @media(max-width:1100px){.zeilen .z.ein-modul{grid-template-columns:1fr}}
 @media(max-width:820px){
   .ein-zwei,.ein-zwei.ein-drei{grid-template-columns:1fr;height:auto}
@@ -514,4 +535,8 @@ body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
   .ein-fuss-mitte{display:none}.ein-fuss{justify-content:space-between}
   .ein-lang{display:none}.ein-kurz{display:inline}
   .ein-start{flex-direction:column;align-items:flex-start;gap:4px}
+  .ein-teile{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ein-frage{grid-template-columns:minmax(0,1fr);gap:4px}
+  .ein-erkl{display:none}
+  .zeilen.ein-empf .z b{white-space:normal;overflow:visible}
 }
