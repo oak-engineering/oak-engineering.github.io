@@ -38,6 +38,8 @@ async function asBdaDokumente(box, s){
   box.innerHTML = `<div class="leer">wird geladen …</div>`;
   const bas = await apiGet("/rest/v1/as_ba?select=*&arbeitssystem_id=eq." + encodeURIComponent(s.id) + "&order=version.desc").catch(() => []);
   let ba = (bas || [])[0];
+  /* Gebotszeichen aus der PSA-Matrix (Stufe 12): Pflicht-PSA der Tätigkeiten dieser Beurteilung – Dokument ergänzt sie live, Speichern übernimmt sie */
+  const psaCodes = await asBaPsaCodes(s).catch(() => []);
   const darf = asDarf("pflegen"), istAnlage = s.art !== "arbeitssystem" || s.quelle_id;
   const dokKnopf = (typ, t) => `<button class="btn sek klein" data-vor="${typ}">${t}</button>`;
   const status = !ba ? asChip("noch keine BA", "grau")
@@ -57,6 +59,7 @@ async function asBdaDokumente(box, s){
         : `<label class="voll">${esc(l)}${art !== "text" ? ` <span class="hinweis">(eine Zeile je Punkt, **fett**)</span>` : ""}<textarea data-f="ba_${f}" rows="${art === "text" ? 3 : 5}"${darf ? "" : " readonly"}>${esc(asBaZuText(t[f], art))}</textarea></label>`).join("")}
         ${asFeld("Piktogramme Gefahren (Codes, z. B. W024 W017)", "pk_gefahren", asBaPk(ba, "gefahren"), "text", "voll")}
         ${asFeld("Piktogramme Schutz (z. B. M004 M009)", "pk_schutz", asBaPk(ba, "schutz"), "text", "voll")}
+        ${psaCodes.length ? `<p class="hinweis voll">Aus der PSA-Matrix: ${esc(psaCodes.join(" "))} – diese Gebotszeichen stehen immer in der BA und werden beim Speichern übernommen.</p>` : ""}
         ${asFeld("Piktogramme Erste Hilfe (z. B. E003)", "pk_ersthilfe", asBaPk(ba, "ersthilfe"), "text", "voll")}</div>
       <p class="hinweis">Version ${ba.version}${ba.geaendert_am ? " · zuletzt geändert " + asDat(ba.geaendert_am) + (ba.geaendert_von ? " von " + esc(ba.geaendert_von) : "") : ""}. Jede Änderung nach der Freigabe macht die BA wieder zum Entwurf – die Geschäftsführung gibt neu frei.</p>`
       : `<div class="leer">Für diese Beurteilung gibt es noch keine Betriebsanweisung.</div>`}</div>`;
@@ -74,7 +77,8 @@ async function asBdaDokumente(box, s){
     inhalt.t = inhalt.t || {}; const tt = inhalt.t[AS_BA.sprache] = inhalt.t[AS_BA.sprache] || {};
     AS_BA_FELDER.forEach(([f, , art]) => { if(("ba_" + f) in w) tt[f] = asBaZuHtml(w["ba_" + f] || "", art); });
     inhalt.piktogramme = inhalt.piktogramme || {};
-    ["gefahren", "schutz", "ersthilfe"].forEach(k => { const c = String(w["pk_" + k] || "").toUpperCase().match(/[A-Z]\d{3}/g) || [];
+    ["gefahren", "schutz", "ersthilfe"].forEach(k => { const c0 = String(w["pk_" + k] || "").toUpperCase().match(/[A-Z]\d{3}/g) || [];
+      const c = k === "schutz" ? [...new Set(psaCodes.concat(c0))] : c0;
       const h = Math.ceil(c.length / 2); inhalt.piktogramme[k] = { links: c.slice(0, h), rechts: c.slice(h) }; });
     await apiSend("PATCH", "/rest/v1/as_ba?id=eq." + encodeURIComponent(ba.id), { inhalt }, "return=minimal");
     AS_BA.dirty = false;
@@ -96,6 +100,12 @@ async function asBdaDokumente(box, s){
     await speichern();
     await apiSend("PATCH", "/rest/v1/as_ba?id=eq." + encodeURIComponent(ba.id), { status: "freigegeben" }, "return=minimal");
     asMeldung("Betriebsanweisung freigegeben"); asBdaDokumente(box, s); };
+}
+async function asBaPsaCodes(s){
+  const tIds = new Set(asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).map(t => t.id));
+  const z = asT("as_psa_zuordnung").filter(x => tIds.has(x.taetigkeit_id) && x.pflicht !== false); if(!z.length) return [];
+  const arten = AS_BA.psaArten || (AS_BA.psaArten = (await apiGet("/rest/v1/psa_art?select=schluessel,zeichen,sort&order=sort.asc")) || []);
+  return [...new Set(arten.filter(a => a.zeichen && z.some(x => x.psa_art === a.schluessel)).map(a => a.zeichen))];
 }
 function asBaPk(ba, k){ const p = ((ba.inhalt || {}).piktogramme || {})[k] || {}; return [].concat(p.links || [], p.rechts || []).join(" "); }
 

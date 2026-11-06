@@ -2,7 +2,9 @@
    Daten: portal_handschuh (Handschuhe des Betriebs, je Bereich) · portal_gefahrstoff.handschuh_ids / handschuh_status /
    handschuh_hinweis / handschuh_sdb (Anforderung laut SDB Abschnitt 8.2). Im Plan eines Bereichs gilt der zugeordnete
    Handschuh, der diesem Bereich gehört – fehlt er dort, steht „Passender Handschuh fehlt“ mit der SDB-Anforderung.
-   Grundlage: GefStoffV § 7, TRGS 401, SDB Abschnitt 8.2. */
+   Grundlage: GefStoffV § 7, TRGS 401, SDB Abschnitt 8.2.
+   Seit 06.11.2026 ist portal_handschuh die Modelltabelle aller PSA (Spalte psa_art); der Handschuhplan zeigt nur die
+   Chemikalienschutzhandschuhe (psa_art = handschuh_chemie, Standard für alle bisherigen Einträge). */
 "use strict";
 
 const AS_HS_STATUS = { passt: "geeignet", spritzschutz: "nur Spritzschutz", fehlt: "passender Handschuh fehlt", nicht_noetig: "kein Schutzhandschuh nötig" };
@@ -34,7 +36,7 @@ tr.hs-rot td{background:#fef3f2}.hs-bereich{margin-bottom:18px}
 async function asHsLaden(){
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const [hs, gs] = await Promise.all([
-    apiGet("/rest/v1/portal_handschuh?select=*&aktiv=is.true&order=sortierung.asc,name.asc" + k).catch(() => []),
+    apiGet("/rest/v1/portal_handschuh?select=*&aktiv=is.true&psa_art=eq.handschuh_chemie&order=sortierung.asc,name.asc" + k).catch(() => []),
     apiGet("/rest/v1/portal_gefahrstoff?select=id,bezeichnung,hersteller,verwendung_status,aktiv,einheit_ids,h_saetze,sdb_pfad,handschuh_ids,handschuh_status,handschuh_hinweis,handschuh_sdb&order=bezeichnung.asc" + k).catch(() => [])]);
   return { hs: hs || [], gs: (gs || []).filter(g => (g.verwendung_status || (g.aktiv === false ? "inaktiv" : "aktiv")) !== "inaktiv") };
 }

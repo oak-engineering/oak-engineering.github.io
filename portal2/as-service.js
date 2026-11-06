@@ -654,7 +654,10 @@ function asSvPaAufgaben(){
   { const norm = x => String(x || "").trim().toLowerCase(), rolleName = Object.fromEntries((AS_SV.rollen || []).map(r => [r.id, norm(r.name)]));
     const hat = (p, anlass) => (AS_SV.vorsorge || []).some(v => !v.abgeschlossen_am && norm(v.anlass) === norm(anlass) && (v.person_id === p.id || norm(v.person_name) === norm(p.name)));
     asT("as_arbeitssystem").filter(s => !s.stillgelegt_am).forEach(s => {
-      const codes = [...new Set(asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id).flatMap(g => g.vorsorge || []))]; if(!codes.length) return;
+      /* PSA-Matrix (Stufe 12): Gehörschutz als Pflicht an einer Tätigkeit → Pflichtvorsorge Lärm ab 85 dB(A) (ArbMedVV Anhang Teil 3) */
+      const tIds = new Set(asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).map(t => t.id));
+      const psaLaerm = asT("as_psa_zuordnung").some(z => tIds.has(z.taetigkeit_id) && z.psa_art === "gehoerschutz" && z.pflicht !== false);
+      const codes = [...new Set(asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id).flatMap(g => g.vorsorge || []).concat(psaLaerm ? ["Lärm ab 85 dB(A)"] : []))]; if(!codes.length) return;
       const rs = new Set(asListe(s.rollen).map(norm));
       const betroffen = (AS_SV.pers || []).filter(p => (p.uw_person_rolle || []).some(r => rs.has(rolleName[r.rolle_id])));
       codes.forEach(c => { const fehlt = betroffen.filter(p => !hat(p, c)); const art = ((typeof AS_NW_ANLAESSE !== "undefined" ? AS_NW_ANLAESSE : []).find(a => a[0] === c) || [])[1];

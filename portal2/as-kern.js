@@ -22,7 +22,7 @@ async function asLoeschenBestaetigt(frage, t, id){
 }
 const AS_TABELLEN = ["as_einheit", "as_beauftragter", "as_einsatz", "as_orgcheck", "as_arbeitssystem", "as_taetigkeit",
   "as_gefaehrdung", "as_massnahme", "as_mitzeichnung", "as_asa", "as_ziel", "as_psyche", "as_meldung", "as_thema",
-  "as_kultur", "as_prozess", "as_pruefobjekt", "as_pruefung", "as_notfall", "as_fremdfirma", "as_erlaubnisschein"];
+  "as_kultur", "as_prozess", "as_pruefobjekt", "as_pruefung", "as_notfall", "as_fremdfirma", "as_erlaubnisschein", "as_psa_zuordnung"];
 const AS_SEITEN = {};            // von den Modulen befuellt: { titel, icon, sort, render(main) }
 const AS_KUNDENPROZESSE = AS_PROZESSE.prozesse;
 
@@ -493,7 +493,7 @@ const AS_NAV_GRUPPEN = [
   ["ueberblick", "Überblick", ["start", "cockpit", "assistent", "leitfaden", "pflichten"]],
   ["organisation", "Organisation", ["organisation", "check", "nachweise", "notfall", "prozesse"]],
   ["gefaehrdungen", "Gefährdungen", ["bda", "massnahmen", "mitzeichnung", "gefahrstoffe"]],
-  ["anlagen", "Anlagen & Betrieb", ["anlagen", "pruefungen", "maengel", "hallenplan", "vorort"]],
+  ["anlagen", "Anlagen & Betrieb", ["anlagen", "pruefungen", "maengel", "psa", "hallenplan", "vorort"]],
   ["personal", "Personal", ["unterweisungen", "fremdfirmen", "vorfaelle"]],
   ["steuerung", "Steuerung", ["steuerung", "kalender", "bericht", "energie"]],
   ["service", "Service", ["fragen", "aktuelles", "unterlagen", "leistungen", "datenschutz"]],
@@ -502,7 +502,7 @@ const AS_NAV_GRUPPEN = [
    [ziel, Beschriftung, Bedingung]. Ohne Beschriftung gilt titelKunde der Seite, sonst titel. Gruppe null = ohne Überschrift. */
 const AS_NAV_KUNDE = [
   [null, ["start", "pflichten", "kalender"]],
-  ["Anlagen & Gefahrstoffe", ["anlagen", "pruefungen", "maengel", "gefahrstoffe", "hallenplan"]],
+  ["Anlagen & Gefahrstoffe", ["anlagen", "pruefungen", "maengel", "gefahrstoffe", "psa", "hallenplan"]],
   ["Beschäftigte", ["unterweisungen", "nachweise", "fremdfirmen"]],
   ["Melden & Fragen", ["vorfaelle", ["vorfaelle/umwelt", "Umweltvorfälle", () => asNavUmwelt()], "vorort", "fragen"]],
   ["Organisation", ["organisation", "notfall", "bda", "massnahmen", ["mitzeichnung", "", () => asDarf("pflegen") || asDarf("freigeben")], ["steuerung/asa", "Arbeitsschutzausschuss"]]],

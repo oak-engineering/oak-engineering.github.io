@@ -1,0 +1,113 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>PSA an dieser Maschine</title>
+<link rel="stylesheet" href="portal.css?v=202611060922">
+<!-- Aushang „PSA an dieser Maschine“ (Stufe 12, 06.11.2026): A4 mit Gebotszeichen (ASR A1.3 / ISO 7010) und Modellfotos aus der
+     PSA-Matrix des Cockpits (v_as_psa, portal_handschuh). Login-geschützt wie die Maschinenseite; erreichbar über QR → Maschinenseite
+     oder aus dem Cockpit (PSA-Matrix › Aushang). Aufruf: psa-aushang.html?k=<slug>&mid=<Maschinen-ID> oder &sys=<Arbeitssystem-ID>. -->
+<style>
+  body{background:#e9eef0;margin:0;font-family:'Jost','Segoe UI',Arial,sans-serif;color:#1f2a24}
+  .leiste{display:flex;gap:10px;align-items:center;padding:10px 16px;background:#fff;border-bottom:1px solid #dfe5e2}
+  .leiste .btn{height:34px}
+  .blatt{background:#fff;width:210mm;min-height:297mm;margin:16px auto;padding:14mm 14mm 12mm;box-sizing:border-box;display:flex;flex-direction:column}
+  .kopf{display:flex;align-items:center;gap:16px;border-bottom:3px solid var(--gruen);padding-bottom:10px;margin-bottom:12px}
+  .kopf h1{font-family:'Cormorant Garamond',Georgia,serif;font-size:30px;line-height:1.1;color:var(--dunkel);margin:0}
+  .kopf .sub{font-size:15px;color:#4a5663;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kopf .logo{margin-left:auto;max-height:46px;max-width:180px}
+  .kopf .t{min-width:0;flex:1 1 auto}
+  h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;color:var(--dunkel);margin:6px 0 8px}
+  .raster{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+  .pk{border:1px solid #dfe5e2;border-radius:10px;height:50mm;display:grid;grid-template-rows:24mm 6mm 5mm 1fr;justify-items:center;align-items:center;padding:3mm;box-sizing:border-box;overflow:hidden}
+  .pk img.z{width:23mm;height:23mm;border-radius:50%;object-fit:cover;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pk .n{font-weight:600;font-size:15px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pk .b{font-size:11.5px;color:#4a5663;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pk .m{display:flex;align-items:center;gap:6px;max-width:100%;font-size:12px;overflow:hidden}
+  .pk .m img{height:10mm;max-width:20mm;object-fit:contain}
+  .pk .m span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;break-inside:avoid}
+  th{font-weight:600;font-size:10.5px;color:#4a5663;border-bottom:2px solid #dfe5e2;padding:3px 1px;text-align:center;vertical-align:bottom;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  th img{display:block;width:8mm;height:8mm;margin:0 auto 2px;border-radius:50%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  th.t,td.t{text-align:left;width:34%}
+  td{border-bottom:1px solid #edf1ef;padding:2px 4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:6.2mm}
+  .x{font-weight:700;color:var(--dunkel)} .o{color:#667085}
+  .fuss{margin-top:auto;padding-top:8px;font-size:10.5px;color:#4a5663;border-top:1px solid #dfe5e2}
+  .leer{padding:30px;text-align:center;color:#4a5663}
+  @media(max-width:820px){.blatt{width:auto;min-height:0;margin:8px;padding:14px}.raster{grid-template-columns:repeat(2,minmax(0,1fr))}.pk{height:auto;grid-template-rows:auto auto auto auto;gap:4px}
+    .kopf{flex-wrap:wrap}.kopf .logo{margin-left:0}th.t,td.t{width:40%}}
+  @media(max-width:480px){.raster{grid-template-columns:1fr 1fr}.pk img.z{width:22mm;height:22mm}table{font-size:11px}}
+  @media print{@page{size:A4 portrait;margin:0}body{background:#fff}.leiste{display:none}.blatt{margin:0;box-shadow:none}}
+</style>
+<script src="marke.js?v=2026-11-05a"></script>
+</head>
+<body>
+  <div class="leiste"><button class="btn" id="drucken" type="button">Drucken</button><span id="hinweis" style="font-size:13px;color:#4a5663"></span></div>
+  <div class="blatt" id="blatt"><div class="leer">lädt …</div></div>
+<script src="auth.js?v=2026-08-19d"></script>
+<script src="../portal2/as-psa-zeichen.js?v=2026-11-06a"></script>
+<script>
+"use strict";
+(function(){
+  const q = n => new URLSearchParams(location.search).get(n) || "";
+  const deDat = d => String(d || "").slice(0, 10).split("-").reverse().join(".");
+  document.getElementById("drucken").onclick = () => window.print();
+  document.addEventListener("DOMContentLoaded", async () => {
+    const el = document.getElementById("blatt");
+    try{
+      if(!(await token())){ location.replace("index.html"); return; }
+      const slug = q("k"), mid = q("mid"), sid = q("sys"), k = "&kunde_slug=eq." + encodeURIComponent(slug);
+      if(window.OAK_MARKE) OAK_MARKE.anwenden(slug);
+      let sys = null;
+      if(sid) sys = ((await apiGet("/rest/v1/as_arbeitssystem?select=id,name,anlagen,dok&id=eq." + encodeURIComponent(sid) + k, false)) || [])[0];
+      else if(mid) sys = ((await apiGet("/rest/v1/as_arbeitssystem?select=id,name,anlagen,dok,art&anlagen=cs." + encodeURIComponent(JSON.stringify([mid])) + "&stillgelegt_am=is.null&order=art.asc,sort.asc" + k, false)) || [])[0];
+      if(!sys){ el.innerHTML = '<div class="leer">Für diese Maschine ist keine Beurteilung hinterlegt.</div>'; return; }
+      const [zeilen, arten, modelle, kunde] = await Promise.all([
+        apiGet("/rest/v1/v_as_psa?select=*&arbeitssystem_id=eq." + sys.id + k, false),
+        apiGet("/rest/v1/psa_art?select=*&order=sort.asc", false),
+        apiGet("/rest/v1/portal_handschuh?select=id,name,modell,hersteller,bild_url,psa_art&aktiv=is.true" + k, false),
+        apiGet("/rest/v1/portal_kunde?select=name,marke&slug=eq." + encodeURIComponent(slug), false).catch(() => [])]);
+      if(!(zeilen || []).length){ el.innerHTML = '<div class="leer">Für diese Maschine ist noch keine PSA festgelegt (Cockpit › PSA-Matrix).</div>'; return; }
+      const Z = window.AS_PSA_ZEICHEN || {}, A = {}; (arten || []).forEach(a => { A[a.schluessel] = a; });
+      const M = {}; (modelle || []).forEach(m => { M[m.id] = m; });
+      const zei = a => (Z[a.zeichen] || {}).bild || "";
+      const benutzt = [...new Set(zeilen.map(z => z.psa_art))].filter(x => A[x]).sort((a, b) => A[a].sort - A[b].sort);
+      const pflicht = benutzt.filter(x => zeilen.some(z => z.psa_art === x && z.pflicht));
+      const taet = {}; zeilen.slice().sort((a, b) => (a.sort || 0) - (b.sort || 0) || String(a.taetigkeit).localeCompare(String(b.taetigkeit), "de"))
+        .forEach(z => { const t = taet[z.taetigkeit_id] = taet[z.taetigkeit_id] || { t: z.taetigkeit, a: {} }; t.a[z.psa_art] = z; });
+      const bed = []; const bNr = s => { let i = bed.indexOf(s); if(i < 0){ bed.push(s); i = bed.length - 1; } return "*".repeat(i + 1); };
+      const karte = x => { const a = A[x], zs = zeilen.filter(z => z.psa_art === x && z.pflicht);
+        const mids = [...new Set(zs.flatMap(z => z.modell_ids || []))].filter(id => M[id]);
+        const m = mids.map(id => M[id])[0] || (modelle || []).find(mm => mm.psa_art === x);
+        const b = [...new Set(zs.map(z => z.quelle === "matrix" ? (z.bedingung || a.bedingung) : "").filter(Boolean))][0];
+        const wo = zs.length === Object.keys(taet).length ? "bei allen Tätigkeiten" : "bei " + zs.map(z => z.taetigkeit).join(", ");
+        return `<div class="pk" title="${esc(a.name + " – " + wo)}">${zei(a) ? `<img class="z" src="${zei(a)}" alt="">` : ""}<div class="n">${esc(a.name)}</div>
+          <div class="b">${esc(b ? b : wo)}</div>
+          <div class="m">${m && m.bild_url ? `<img src="${esc(m.bild_url)}" alt="">` : ""}<span>${esc(m ? [m.name, m.hersteller, m.modell].filter(Boolean).join(" · ") : "")}</span></div></div>`; };
+      const zelle = (t, x) => { const z = t.a[x]; if(!z) return "<td></td>";
+        if(z.quelle === "gefahrstoff") return '<td><span class="x">X&sup1;</span></td>';
+        const b = z.bedingung || A[x].bedingung; const s = b ? bNr(b) : "";
+        return z.pflicht ? `<td><span class="x">X${s}</span></td>` : `<td><span class="o">(X)${s}</span></td>`; };
+      const tabelle = `<table><thead><tr><th class="t">Tätigkeit</th>${benutzt.map(x => `<th title="${esc(A[x].name)}">${zei(A[x]) ? `<img src="${zei(A[x])}" alt="">` : ""}${esc(A[x].kurz)}</th>`).join("")}</tr></thead>
+        <tbody>${Object.values(taet).map(t => `<tr><td class="t" title="${esc(t.t)}">${esc(t.t)}</td>${benutzt.map(x => zelle(t, x)).join("")}</tr>`).join("")}</tbody></table>`;
+      const marke = ((kunde || [])[0] || {}).marke || {}, logo = marke.logo ? (/^https:/.test(marke.logo) ? marke.logo : marke.logo.replace(/^\/?/, "")) : "";
+      const name = ((sys.dok || {}).meta || {}).maschine || sys.name;
+      const fuss = [bed.map((b, i) => "*".repeat(i + 1) + " " + b).join(" · "), zeilen.some(z => z.quelle === "gefahrstoff") ? "¹ Tätigkeit mit Gefahrstoff – Handschuh laut Handschuhplan" : "",
+        zeilen.some(z => z.quelle === "matrix" && !z.pflicht) ? "(X) empfohlen" : "",
+        "Gebotszeichen nach ASR A1.3 / ISO 7010 · Grundlage § 2 PSA-Benutzungsverordnung · Stand " + deDat(new Date().toISOString())].filter(Boolean).join(" · ");
+      document.title = "PSA – " + name;
+      el.innerHTML = `<div class="kopf"><div class="t"><h1>Persönliche Schutzausrüstung</h1><div class="sub">an dieser Maschine: ${esc(name)}</div></div>${logo ? `<img class="logo" src="${esc(logo)}" alt="">` : ""}</div>
+        <h2>Pflicht an dieser Maschine</h2><div class="raster">${pflicht.map(karte).join("")}</div>
+        <h2>Je Tätigkeit</h2>${tabelle}<div class="fuss">${esc(fuss)}</div>`;
+      document.getElementById("hinweis").textContent = "A4 hochkant – vor Ort aushängen.";
+    }catch(e){
+      if(e && e.message === "AUTH"){ location.replace("index.html"); return; }
+      el.innerHTML = '<div class="leer">Fehler: ' + esc(e.message || e) + '</div>';
+    }
+  });
+})();
+</script>
+</body>
+</html>

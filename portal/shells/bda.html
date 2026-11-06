@@ -97,6 +97,14 @@
   .reifegrad li .st{font-weight:600;} .reifegrad li .st.t{color:var(--gelb);} .reifegrad li .st.o{color:var(--rot);}
   .reifegrad .todo{color:var(--grau);}
   .dash b{font-weight:700;color:var(--dunkel);}
+  .psa-block table{width:100%;border-collapse:collapse;font-size:12px;margin:2px 0 4px;table-layout:fixed;}
+  .psa-block th{font-size:10.5px;font-weight:600;color:var(--grau);border-bottom:2px solid var(--linie);padding:4px 2px;text-align:center;vertical-align:bottom;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .psa-block th.t,.psa-block td.t{text-align:left;width:30%;}
+  .psa-block th img{display:block;width:24px;height:24px;margin:0 auto 2px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .psa-block td{border-bottom:1px solid var(--linie);padding:4px 6px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .psa-block .x{font-weight:700;color:var(--dunkel);} .psa-block .o{color:var(--grau);}
+  .psa-block .psa-fuss{font-size:11px;color:var(--grau);margin:0 0 10px;}
+  @media print{.psa-block{break-inside:avoid;}}
   .kurz table{width:100%;border-collapse:collapse;font-size:13px;margin:2px 0 12px;}
   .kurz th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--grau);border-bottom:2px solid var(--linie);padding:6px 8px;}
   .kurz td{border-bottom:1px solid var(--linie);padding:7px 8px;vertical-align:top;line-height:1.4;}
@@ -393,6 +401,9 @@
     <!-- Auswertung (Seite 1) -->
     <div class="sektion-titel">Auswertung &amp; Maßnahmenstand</div>
     <div class="dash" id="dash"></div>
+
+    <!-- PSA je Tätigkeit (Cockpit-Matrix, Live-Stand, Stufe 12 06.11.2026) – erscheint nur, wenn die Matrix gepflegt ist -->
+    <div id="psa-block" class="psa-block" hidden><div class="sektion-titel">Persönliche Schutzausrüstung je Tätigkeit</div><div id="psa-tab"></div></div>
 
     <!-- Reifegrad / Vollständigkeit der gestuften Beurteilung (aus meta.reifegrad) -->
     <div id="reifegrad" class="reifegrad" hidden></div>
@@ -1092,7 +1103,27 @@ async function saveToFile(){
   }catch(e){ if(e && e.name!=="AbortError") alert("Speichern fehlgeschlagen: "+e); }
 }
 
-buildDatalists(); render(); initSignaturen();
+/* PSA je Tätigkeit aus der Cockpit-Matrix (DOC.psa, anlage-bauen.js): X = Pflicht, (X) = empfohlen, X¹ = aus dem Gefahrstoffverzeichnis */
+function renderPsa(){
+  const p = DOC.psa, box = document.getElementById("psa-block"), tab = document.getElementById("psa-tab");
+  if(!box || !tab || !p || !(p.zeilen || []).length || !(p.arten || []).length) return;
+  const e = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+  const bed = []; const bedNr = t => { let i = bed.indexOf(t); if(i < 0){ bed.push(t); i = bed.length - 1; } return "*".repeat(i + 1); };
+  let gs = false, opt = false;
+  const zelle = (z, a) => { const v = (z.a || {})[a.k]; if(!v) return "<td></td>";
+    const b = (z.b || {})[a.k] ? bedNr(z.b[a.k]) : "";
+    if(v === "gs"){ gs = true; return '<td><span class="x">X&sup1;</span></td>'; }
+    if(v === "o"){ opt = true; return '<td><span class="o">(X)' + b + '</span></td>'; }
+    return '<td><span class="x">X' + b + '</span></td>'; };
+  const kopf = '<tr><th class="t">Tätigkeit</th>' + p.arten.map(a => '<th title="' + e(a.name + (a.zeichen ? " (" + a.zeichen + ")" : "")) + '">'
+    + (a.bild ? '<img src="' + a.bild + '" alt="">' : "") + e(a.kurz) + '</th>').join("") + '</tr>';
+  const zeilen = p.zeilen.map(z => '<tr><td class="t" title="' + e(z.t) + '">' + e(z.t) + '</td>' + p.arten.map(a => zelle(z, a)).join("") + '</tr>').join("");
+  const fuss = [bed.map((t, i) => "*".repeat(i + 1) + " " + t).join(" · "), opt ? "(X) empfohlen" : "", gs ? "¹ Tätigkeit mit Gefahrstoff – Handschuh laut Handschuhplan" : "",
+    p.quelle || "", "Stand " + (p.stand || "") + " (live aus dem Cockpit)"].filter(Boolean).join(" · ");
+  tab.innerHTML = '<table><thead>' + kopf + '</thead><tbody>' + zeilen + '</tbody></table><div class="psa-fuss">' + e(fuss) + '</div>';
+  box.hidden = false;
+}
+buildDatalists(); render(); initSignaturen(); renderPsa();
 if(!DOC.hazards && !(DOC.meta && DOC.meta.maschine)){ const b=document.getElementById("vorlage-hinweis"); if(b) b.style.display="block"; }
 /* Kundenportal: HTML-Speichern ausblenden (Kunden laden nur PDF; die HTML = OAK-Wissen bleibt online). */
 if(window.__OAK_PORTAL_ORIGIN){ document.querySelectorAll(".nur-lokal").forEach(function(b){ b.style.display="none"; }); }

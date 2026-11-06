@@ -93,6 +93,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     if(!r){ el.innerHTML = `<div class="leer">Maschine nicht gefunden oder kein Zugriff.</div>`; return; }
     try{ M_MAENGEL = await apiGet("/rest/v1/portal_maengel?select=maschinen_id,kunde_slug,status,erledigt_am,uebernommen_am,ausgeblendet&kunde_slug=eq."
       + encodeURIComponent(slug) + "&maschinen_id=eq." + encodeURIComponent(mid), false) || []; }catch(e){ M_MAENGEL = []; }
+    /* PSA-Matrix (Stufe 12): Aushang „PSA an dieser Maschine“, sobald für die Anlage PSA festgelegt ist */
+    let psaDa = false;
+    try{ const sy = await apiGet("/rest/v1/as_arbeitssystem?select=id&stillgelegt_am=is.null&anlagen=cs." + encodeURIComponent(JSON.stringify([mid])) + "&kunde_slug=eq." + encodeURIComponent(slug), false) || [];
+      if(sy.length) psaDa = ((await apiGet("/rest/v1/v_as_psa?select=taetigkeit_id&limit=1&arbeitssystem_id=in.(" + sy.map(x => x.id).join(",") + ")", false)) || []).length > 0; }catch(e){ psaDa = false; }
     document.getElementById("mTitel").textContent = r.maschine || mid;
     document.getElementById("mSub").textContent = r.maschinentyp || "";
     el.innerHTML =
@@ -104,6 +108,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         ${docBtn(r,"ba","Betriebsanweisung (BA)")}
         ${docBtn(r,"maengelliste","Mängelliste")}
         ${docBtn(r,"protokoll","Protokoll")}
+        ${psaDa ? `<a class="doc-btn" href="psa-aushang.html?k=${encodeURIComponent(slug)}&mid=${encodeURIComponent(mid)}" target="_blank" rel="noopener">PSA an dieser Maschine</a>` : ""}
       </div>
       ${r.qr_svg ? `<div class="m-qr">${r.qr_svg}<div class="m-qr-cap">QR-Code zu dieser Seite</div>
         <a class="doc-open" href="qr.html?k=${encodeURIComponent(slug)}&mid=${encodeURIComponent(mid)}" target="_blank" rel="noopener">QR drucken</a></div>` : ""}`;

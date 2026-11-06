@@ -93,11 +93,39 @@
         wirkweise: g.wirkweise || "", schutzziel: g.schutzziel || "", exposition: g.exposition || "",
         fotos: (g.fotos || []).map(f => foto(f, url)).filter(f => f && (f.src || f.data)) });
     });
-    const ba = (bas || []).find(b => b.status === "freigegeben") || (bas || [])[0];
+    const ba0 = (bas || []).find(b => b.status === "freigegeben") || (bas || [])[0];
+    /* PSA je Tätigkeit (Cockpit-Matrix as_psa_zuordnung + Gefahrstoff, Sicht v_as_psa) – nur wenn die Matrix gepflegt ist (Stufe 12) */
+    const ba = ba0 ? JSON.parse(JSON.stringify(ba0)) : null;
+    let psa = null;
+    try{
+      const [zeilen, arten] = await Promise.all([
+        apiGet("/rest/v1/v_as_psa?select=*&arbeitssystem_id=eq." + sys.id + k, false),
+        apiGet("/rest/v1/psa_art?select=*&order=sort.asc", false)]);
+      if((zeilen || []).some(z => z.quelle === "matrix")){
+        const Z = window.AS_PSA_ZEICHEN || {}, artV = {}; (arten || []).forEach(a => { artV[a.schluessel] = a; });
+        const benutzt = [...new Set(zeilen.map(z => z.psa_art))].filter(x => artV[x]).sort((a, b) => artV[a].sort - artV[b].sort);
+        const taet = {};
+        zeilen.slice().sort((a, b) => (a.sort || 0) - (b.sort || 0) || String(a.taetigkeit).localeCompare(String(b.taetigkeit), "de")).forEach(z => {
+          const t = taet[z.taetigkeit_id] = taet[z.taetigkeit_id] || { t: z.taetigkeit, a: {}, b: {} };
+          t.a[z.psa_art] = z.quelle === "gefahrstoff" ? "gs" : z.pflicht ? "p" : "o";
+          const bed = z.bedingung || (z.quelle === "matrix" ? artV[z.psa_art].bedingung : "");
+          if(bed && z.quelle === "matrix") t.b[z.psa_art] = bed;
+        });
+        psa = { arten: benutzt.map(x => ({ k: x, kurz: artV[x].kurz, name: artV[x].name, zeichen: artV[x].zeichen || "", bild: (Z[artV[x].zeichen] || {}).bild || "" })),
+          zeilen: Object.values(taet), stand: deDatum(new Date().toISOString().slice(0, 10)),
+          quelle: (await apiGet("/rest/v1/as_psa_zuordnung?select=quelle&quelle=like.vorlage*&taetigkeit_id=in.(" + [...new Set(zeilen.map(z => z.taetigkeit_id))].join(",") + ")&limit=1", false).catch(() => [])).length ? "Vorlage: DGUV Information 113-606, vom Betrieb angepasst" : "" };
+        /* BA: Gebotszeichen kommen aus der Matrix (Pflicht-PSA), ergänzt um die von Hand gesetzten */
+        if(ba){ ba.inhalt = ba.inhalt || {}; const P = ba.inhalt.piktogramme = ba.inhalt.piktogramme || {}; const s = P.schutz = P.schutz || { links: [], rechts: [] };
+          const hand = [].concat(s.links || [], s.rechts || []);
+          const aus = [...new Set(zeilen.filter(z => z.pflicht !== false).map(z => (artV[z.psa_art] || {}).zeichen).filter(Boolean))];
+          const alle = [...new Set(aus.concat(hand))], h = Math.ceil(alle.length / 2);
+          P.schutz = { links: alle.slice(0, h), rechts: alle.slice(h) }; }
+      }
+    }catch(e){ psa = null; }
     /* Freigabe der BA (Cockpit, nur GF) in die Unterschriftszeile der BA */
     if(ba && ba.status === "freigegeben"){ meta.freigabeVon = ba.freigabe_von || ""; meta.freigabeAm = String(ba.freigabe_am || "").slice(0, 10).split("-").reverse().join("."); }
     return JSON.stringify({ _typ: "OAK-doc-data", _quelle: "Cockpit-Datenbank", meta, hazards, rechtsquellen: dok.rechtsquellen || [],
-      ba: ba ? ba.inhalt : {}, maengel: dok.maengel || [], protokoll: prot, stundensatz: dok.stundensatz });
+      ba: ba ? ba.inhalt : {}, maengel: dok.maengel || [], protokoll: prot, stundensatz: dok.stundensatz, psa });
   }
   window.ANLB = { daten };
 })();
