@@ -567,8 +567,10 @@ function asEinRollen(box){
 /* ---------------- 5 Personen (einzeln, Datei-Upload .xlsx/.xls/.csv oder Einfügen) ---------------- */
 /* Excel-Leser SheetJS – feste Version von cdnjs, erst beim Öffnen von Personen/Anlagen geladen. Die Datei wird nur im Browser gelesen,
    nichts wird hochgeladen; gespeichert werden erst die übernommenen Zeilen (Datenschutz). */
-const AS_EIN_XLSX = { url: "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
-  sri: "sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==" };
+/* SheetJS 0.20.3 vom offiziellen SheetJS-CDN: 0.18.5 (cdnjs, letzte Version dort) hat Prototype Pollution
+   beim Lesen präparierter Dateien (CVE-2023-30533) und ReDoS (CVE-2024-22363), behoben ab 0.20.2. SRI geprüft 06.11.2026. */
+const AS_EIN_XLSX = { url: "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js",
+  sri: "sha384-EnyY0/GSHQGSxSgMwaIPzSESbqoOLSexfnSMN2AP+39Ckmn92stwABZynq1JyzdT" };
 function asEinXlsx(){
   if(window.XLSX && window.XLSX.read) return Promise.resolve(window.XLSX);
   if(!asEinXlsx.p) asEinXlsx.p = new Promise((ok, nein) => { const s = document.createElement("script");

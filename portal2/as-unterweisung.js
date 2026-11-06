@@ -872,7 +872,10 @@ function asUwOrgDialog(){
     <div class="form"><label>Name<input id="uwoRName" placeholder="z. B. Einrichter"></label>
       <label>Typ<select id="uwoRTyp">${Object.entries(AS_UW_TYP).map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join("")}</select></label>
       <button class="btn sek" id="uwoRNeu" style="align-self:end">anlegen</button></div>` });
-  const nach = async (fn, text) => { try{ await fn(); await asLaden(); await asUwNeu(text); asUwOrgDialog(); }catch(e){ asMeldung("Fehler: " + (e.message || e)); } };
+  /* Nach dem Speichern den Dialog nur dann neu aufbauen, wenn er noch offen ist – sonst springt er nach dem Neuladen
+     ungefragt wieder auf und verdeckt die Seite (Abnahme K11/K12, 06.11.2026). */
+  const nochOffen = () => dlg.open && !!dlg.querySelector("#uwoRNeu");
+  const nach = async (fn, text) => { try{ await fn(); await asLaden(); await asUwNeu(text); if(nochOffen()) asUwOrgDialog(); }catch(e){ asMeldung("Fehler: " + (e.message || e)); } };
   dlg.querySelector("#uwoENeu").onclick = () => { const n = dlg.querySelector("#uwoEName").value.trim(); if(!n) return;
     nach(() => apiSend("POST", "/rest/v1/uw_einheit", { kunde_slug: AS.kunde, name: n, kst_nr: dlg.querySelector("#uwoEKst").value.trim() || null }, "return=minimal"), "Bereich angelegt."); };
   dlg.querySelector("#uwoRNeu").onclick = () => { const n = dlg.querySelector("#uwoRName").value.trim(); if(!n) return;
