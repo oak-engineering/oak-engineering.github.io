@@ -55,7 +55,7 @@ function asPsaStil(){
 .psa-karte .bild img.foto{max-height:80px;max-width:60%;object-fit:contain}
 .psa-karte .n{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .psa-karte .m,.psa-karte .s{font-size:12px;color:var(--grau);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.psa-person td{height:44px}
+.psa-person td{height:44px}.psa-person th{height:auto;vertical-align:middle}
 .psa-person td .psa-icons{display:flex;gap:3px;flex-wrap:nowrap;overflow:hidden}
 .psa-hinweis{display:flex;gap:10px;align-items:center;background:var(--blau2);border-radius:10px;padding:10px 12px;margin:0 0 12px;font-size:13px}
 .psa-hinweis .btn{margin-left:auto;flex:0 0 auto}
