@@ -30,8 +30,9 @@ function asPsaStil(){
 .psa-tab th .psa-kopf{display:flex;flex-direction:column;align-items:center;gap:4px;height:66px;justify-content:flex-start}
 .psa-tab th .psa-kopf span{max-width:100%;overflow:hidden;white-space:normal;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere;line-height:1.2;height:2.4em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .psa-tab th.t,.psa-tab td.t{text-align:left;width:26%;padding-left:8px}
-.psa-tab td{height:40px;border-bottom:1px solid var(--linie);text-align:center;padding:0 2px}
-.psa-tab td.t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;cursor:pointer}
+.psa-tab td{height:44px;border-bottom:1px solid var(--linie);text-align:center;padding:0 2px}
+.psa-tab td.t{font-weight:600;cursor:pointer;line-height:1.25}
+.psa-tab td.t .tn{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .psa-tab td.t:hover{color:var(--blau)}
 .psa-tab td.z.edit{cursor:pointer}.psa-tab td.z.edit:hover{background:var(--blau2)}
 .psa-zei{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:0 0 auto}
@@ -44,7 +45,7 @@ function asPsaStil(){
 .psa-liste{display:none}
 .psa-zeile{display:flex;align-items:center;gap:10px;min-height:48px;border-top:1px solid var(--linie);padding:4px 2px;cursor:pointer}
 .psa-zeile:first-child{border-top:0}
-.psa-zeile b{flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.psa-zeile b{flex:1 1 auto;min-width:0;font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .psa-zeile .psa-icons{display:flex;gap:3px;flex:0 0 auto}
 .psa-fuss{font-size:12px;color:var(--grau);margin-top:8px}
 .psa-karten{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
@@ -128,7 +129,7 @@ function asPsaMatrix(box){
     const tip = z.quelle === "gefahrstoff" ? "aus dem Gefahrstoffverzeichnis: " + (z.stoffe || []).join(", ") : (z.pflicht ? "Pflicht" : "empfohlen") + (bed ? " – " + bed : "");
     return `<span class="psa-mark${z.quelle === "gefahrstoff" ? " gs" : z.pflicht ? "" : " opt"}" title="${esc(tip)}">${AS_PSA_HAKEN}${sup}</span>`; };
   const tabelle = `<table class="psa-tab matrix"><thead><tr><th class="t">Tätigkeit</th>${spalten.map(a => `<th title="${esc(a.name + (a.norm ? " · " + a.norm : ""))}"><div class="psa-kopf">${asPsaZeichen(a)}<span>${esc(a.kurz)}</span></div></th>`).join("")}</tr></thead>
-    <tbody>${taet.map(t => `<tr><td class="t" data-taet="${esc(t.id)}" title="${esc(t.name)}">${esc(t.name)}</td>${spalten.map(a => { const z = zelle(t, a);
+    <tbody>${taet.map(t => `<tr><td class="t" data-taet="${esc(t.id)}" title="${esc(t.name)}"><span class="tn">${esc(t.name)}</span></td>${spalten.map(a => { const z = zelle(t, a);
       return `<td class="z${edit ? " edit" : ""}" data-t="${esc(t.id)}" data-a="${esc(a.schluessel)}">${markHtml(z, a)}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
   const liste = `<div class="psa-liste">${taet.map(t => { const zs = sicht.filter(z => z.taetigkeit_id === t.id);
       return `<div class="psa-zeile" data-taet="${esc(t.id)}"><b title="${esc(t.name)}">${esc(t.name)}</b><span class="psa-icons">${zs.map(z => asPsaZeichen(asPsaArt(z.psa_art), true)).join("")}</span></div>`; }).join("")}</div>`;
