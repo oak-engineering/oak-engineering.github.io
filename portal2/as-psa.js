@@ -199,21 +199,31 @@ function asPsaFehler(was, e, details){
 async function asPsaVorlageUebernehmen(s, branche, box){
   const zeilen = (AS_PSA.d.vorlage || []).filter(v => v.branche === branche);
   if(!zeilen.length) return;
-  if(!confirm(`${zeilen.length} Tätigkeiten mit ihrer PSA aus der Branchenvorlage ${AS_PSA_BRANCHE[branche] || branche} übernehmen?\nVorhandene Tätigkeiten gleichen Namens werden weiterverwendet.`)) return;
+  if(!confirm(`${zeilen.length} Tätigkeiten mit ihrer PSA aus der Branchenvorlage ${AS_PSA_BRANCHE[branche] || branche} übernehmen?
+Vorhandene Tätigkeiten gleichen Namens werden weiterverwendet.`)) return;
   try{
-    const norm = x => String(x || "").trim().toLowerCase();
-    const vorh = asPsaTaetigkeiten(s.id), fehlt = zeilen.filter(v => !vorh.some(t => norm(t.name) === norm(v.taetigkeit)));
-    let neu = [];
-    if(fehlt.length) neu = (await apiSend("POST", "/rest/v1/as_taetigkeit", fehlt.map(v => ({ kunde_slug: AS.kunde, arbeitssystem_id: s.id, name: v.taetigkeit,
-      rollen: [], sort: v.sort })), "return=representation")) || [];
-    AS.db.as_taetigkeit = asT("as_taetigkeit").concat(neu);
-    const alle = vorh.concat(neu), zuord = [];
-    zeilen.forEach(v => { const t = alle.find(x => norm(x.name) === norm(v.taetigkeit)); if(!t) return;
-      (v.psa || []).forEach(a => zuord.push({ kunde_slug: AS.kunde, taetigkeit_id: t.id, psa_art: a, pflicht: true,
-        bedingung: (v.bedingung || {})[a] || null, quelle: "vorlage:" + branche })); });
-    if(zuord.length) await apiSend("POST", "/rest/v1/as_psa_zuordnung?on_conflict=taetigkeit_id,psa_art", zuord, "resolution=ignore-duplicates,return=minimal");
-    await asPsaLaden(); asMeldung(`Vorlage übernommen: ${zeilen.length} Tätigkeiten, ${zuord.length} PSA-Felder – bitte an den Betrieb anpassen`); asPsaMatrix(box);
+    const n = await asPsaVorlageAnwenden(s, branche);
+    asMeldung(`Vorlage übernommen: ${n.taetigkeiten} Tätigkeiten, ${n.felder} PSA-Felder – bitte an den Betrieb anpassen`); asPsaMatrix(box);
   }catch(e){ asPsaFehler("Branchenvorlage", e, { arbeitssystem_id: s.id, branche }); }
+}
+/* Kern ohne Rückfrage – auch für den Einrichtungs-Assistenten (as-einrichtung.js). Lädt die Vorlage bei Bedarf. */
+async function asPsaVorlageAnwenden(s, branche){
+  if(!AS_PSA.d || AS_PSA.d.kunde !== AS.kunde || !AS_PSA.d.vorlage) await asPsaLaden();
+  const zeilen = (AS_PSA.d.vorlage || []).filter(v => v.branche === branche);
+  if(!zeilen.length) return { taetigkeiten: 0, felder: 0 };
+  const norm = x => String(x || "").trim().toLowerCase();
+  const vorh = asPsaTaetigkeiten(s.id), fehlt = zeilen.filter(v => !vorh.some(t => norm(t.name) === norm(v.taetigkeit)));
+  let neu = [];
+  if(fehlt.length) neu = (await apiSend("POST", "/rest/v1/as_taetigkeit", fehlt.map(v => ({ kunde_slug: AS.kunde, arbeitssystem_id: s.id, name: v.taetigkeit,
+    rollen: [], sort: v.sort })), "return=representation")) || [];
+  AS.db.as_taetigkeit = asT("as_taetigkeit").concat(neu);
+  const alle = vorh.concat(neu), zuord = [];
+  zeilen.forEach(v => { const t = alle.find(x => norm(x.name) === norm(v.taetigkeit)); if(!t) return;
+    (v.psa || []).forEach(a => zuord.push({ kunde_slug: AS.kunde, taetigkeit_id: t.id, psa_art: a, pflicht: true,
+      bedingung: (v.bedingung || {})[a] || null, quelle: "vorlage:" + branche })); });
+  if(zuord.length) await apiSend("POST", "/rest/v1/as_psa_zuordnung?on_conflict=taetigkeit_id,psa_art", zuord, "resolution=ignore-duplicates,return=minimal");
+  await asPsaLaden();
+  return { taetigkeiten: zeilen.length, felder: zuord.length };
 }
 
 /* Tätigkeit: Name, Rollen, je PSA Pflicht/empfohlen, Bedingung, Modelle; Mangel „PSA fehlt / nicht getragen“ */

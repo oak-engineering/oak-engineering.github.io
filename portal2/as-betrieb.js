@@ -147,7 +147,7 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
    Die Fachkraft wählt eine vorhandene Anlage gleichen Typs als Vorlage: Gefährdungen, Maßnahmen und Betriebsanweisung
    werden übernommen, Fotos, Mängel und Begehungsprotokoll nicht (die gehören zur alten Maschine). Ohne Vorlage startet
    die Beurteilung leer (Gefährdungen dann im Dokument aus dem BGHM-Katalog hinzufügen). Nummer vergibt der Server. */
-function asAnlageNeuDialog(main){
+function asAnlageNeuDialog(main, fertig){
   const anl = asAnlagen().filter(d => d.storage_path).slice()
     .sort((a, b) => String(a.maschinentyp || "").localeCompare(String(b.maschinentyp || ""), "de") || String(a.maschine).localeCompare(String(b.maschine), "de", { numeric: true }));
   const opt = [["", "– ohne Vorlage (leer beginnen) –"]].concat(anl.map(d => [d.maschinen_id, (d.maschinentyp ? String(d.maschinentyp).replace(/\s*\(.*\)\s*$/, "") + ": " : "") + (d.maschine || d.titel) + " (" + d.maschinen_id + ")"]));
@@ -166,37 +166,47 @@ function asAnlageNeuDialog(main){
       if(!w.name){ asMeldung("Bitte die Bezeichnung eintragen."); return false; }
       const vorlage = anl.find(x => x.maschinen_id === w.vorlage) || null;
       asMeldung("Anlage wird angelegt …");
-      let vd = null;
-      if(vorlage){
-        try{
-          const pm = String(vorlage.storage_path).match(/^([a-z0-9-]+)\/portal-anlagen\/([A-Z]+-\d+)\.json$/);
-          vd = pm ? ((await apiGet("/rest/v1/portal_anlage_daten?select=docdata&kunde_slug=eq." + encodeURIComponent(pm[1]) + "&maschinen_id=eq." + encodeURIComponent(pm[2])))[0] || {}).docdata
-                  : JSON.parse(await apiGet(storagePfad(vorlage.storage_path), true));
-        }catch(e){ asMeldung("Vorlage konnte nicht geladen werden: " + (e.message || e)); return false; }
-      }
-      if(w.einheit_id && !w.bereich) w.bereich = asBereichName1(w.einheit_id);
-      const doc = asAnlageAusVorlage(vd, vorlage, w);
-      let mid;
-      try{ mid = await apiSend("POST", "/rest/v1/rpc/portal_anlage_anlegen", { p_slug: AS.kunde, p_maschine: w.name, p_maschinentyp: w.art || (vorlage && vorlage.maschinentyp) || null,
-        p_docdata: doc, p_qr_svg: null, p_vorlage: vorlage ? vorlage.maschinen_id : null }); }
-      catch(e){ asMeldung("Konnte nicht angelegt werden: " + (e.message || e)); return false; }
-      /* QR-Code (Ziel: Maschinenseite) – braucht die vergebene Nummer */
-      try{
-        const url = "https://www.oak-engineering.de/portal/maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(mid);
-        if(typeof asUwQrLib === "function" && await asUwQrLib()){ const q = qrcode(0, "M"); q.addData(url); q.make();
-          await apiSend("POST", "/rest/v1/rpc/portal_anlage_qr_setzen", { p_slug: AS.kunde, p_mid: mid, p_qr_svg: q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }), p_qr_url: url }); }
-      }catch(e){ console.warn("QR", e); }
-      if(typeof asAnlageBdaAnlegen === "function")
-        await asAnlageBdaAnlegen(mid, w, vorlage ? vorlage.maschinen_id : null).catch(e => asMeldung("Beurteilung nicht angelegt: " + (e.message || e)));
-      if(w.einheit_id) await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: mid, p_einheit: w.einheit_id }).catch(e => asMeldung("Bereich nicht gesetzt: " + (e.message || e)));
-      /* Prüfung vor erster Verwendung (§ 14 Abs. 1 BetrSichV) gleich als Prüfobjekt anlegen – sofort fällig */
-      await apiSend("POST", "/rest/v1/as_pruefobjekt", { kunde_slug: AS.kunde, art: "maschine_gesamt", bezeichnung: "Gesamtcheck " + w.name, maschinen_id: mid,
-        einheit_id: w.einheit_id || null, intervall_monate: 12, grundlage: "§ 14 Abs. 1 BetrSichV (Prüfung vor erster Verwendung)", naechste_am: asHeute(), aktiv: true,
-        notiz: "Prüfung vor erster Verwendung", erstellt_von: AS.ich }, "return=minimal").catch(e => asMeldung("Prüfobjekt nicht angelegt: " + (e.message || e)));
-      await asBetriebLaden(true); await asLaden().catch(() => {});
-      asMeldung("Anlage " + w.name + " (" + mid + ") angelegt – Beurteilung jetzt prüfen und ergänzen");
-      AS_SEITEN.anlagen.render(main);
+      let erg;
+      try{ erg = await asAnlageAnlegen(w, vorlage); }
+      catch(e){ asMeldung(e.message || String(e)); return false; }
+      asMeldung("Anlage " + w.name + " (" + erg.mid + ") angelegt – Beurteilung jetzt prüfen und ergänzen");
+      if(typeof fertig === "function") fertig(erg); else AS_SEITEN.anlagen.render(main);
     } }] });
+}
+/* Kern „Anlage anlegen“ – auch für den Einrichtungs-Assistenten und den Import (as-einrichtung.js).
+   vorlage: Zeile aus portal_dokumente (kategorie anlagen) – auch aus einem anderen Betrieb (OAK-Vorlagebetrieb), dann mit kunde_slug.
+   Liefert { mid, sys } (sys = neue Beurteilung der Anlage oder null). */
+async function asAnlageAnlegen(w, vorlage){
+  let vd = null;
+  if(vorlage){
+    try{
+      const pm = String(vorlage.storage_path).match(/^([a-z0-9-]+)\/portal-anlagen\/([A-Z]+-\d+)\.json$/);
+      vd = pm ? ((await apiGet("/rest/v1/portal_anlage_daten?select=docdata&kunde_slug=eq." + encodeURIComponent(pm[1]) + "&maschinen_id=eq." + encodeURIComponent(pm[2])))[0] || {}).docdata
+              : JSON.parse(await apiGet(storagePfad(vorlage.storage_path), true));
+    }catch(e){ throw new Error("Vorlage konnte nicht geladen werden: " + (e.message || e)); }
+  }
+  if(w.einheit_id && !w.bereich) w.bereich = asBereichName1(w.einheit_id);
+  const doc = asAnlageAusVorlage(vd, vorlage, w);
+  let mid;
+  try{ mid = await apiSend("POST", "/rest/v1/rpc/portal_anlage_anlegen", { p_slug: AS.kunde, p_maschine: w.name, p_maschinentyp: w.art || (vorlage && vorlage.maschinentyp) || null,
+    p_docdata: doc, p_qr_svg: null, p_vorlage: vorlage ? ((vorlage.kunde_slug && vorlage.kunde_slug !== AS.kunde ? vorlage.kunde_slug + ":" : "") + vorlage.maschinen_id) : null }); }
+  catch(e){ throw new Error("Konnte nicht angelegt werden: " + (e.message || e)); }
+  /* QR-Code (Ziel: Maschinenseite) – braucht die vergebene Nummer */
+  try{
+    const url = "https://www.oak-engineering.de/portal/maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(mid);
+    if(typeof asUwQrLib === "function" && await asUwQrLib()){ const q = qrcode(0, "M"); q.addData(url); q.make();
+      await apiSend("POST", "/rest/v1/rpc/portal_anlage_qr_setzen", { p_slug: AS.kunde, p_mid: mid, p_qr_svg: q.createSvgTag({ cellSize: 6, margin: 4, scalable: true }), p_qr_url: url }); }
+  }catch(e){ console.warn("QR", e); }
+  let sys = null;
+  if(typeof asAnlageBdaAnlegen === "function")
+    sys = await asAnlageBdaAnlegen(mid, w, vorlage ? vorlage.maschinen_id : null, vorlage ? vorlage.kunde_slug : null).catch(e => { asMeldung("Beurteilung nicht angelegt: " + (e.message || e)); return null; });
+  if(w.einheit_id) await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: mid, p_einheit: w.einheit_id }).catch(e => asMeldung("Bereich nicht gesetzt: " + (e.message || e)));
+  /* Prüfung vor erster Verwendung (§ 14 Abs. 1 BetrSichV) gleich als Prüfobjekt anlegen – sofort fällig */
+  await apiSend("POST", "/rest/v1/as_pruefobjekt", { kunde_slug: AS.kunde, art: "maschine_gesamt", bezeichnung: "Gesamtcheck " + w.name, maschinen_id: mid,
+    einheit_id: w.einheit_id || null, intervall_monate: 12, grundlage: "§ 14 Abs. 1 BetrSichV (Prüfung vor erster Verwendung)", naechste_am: asHeute(), aktiv: true,
+    notiz: "Prüfung vor erster Verwendung", erstellt_von: AS.ich }, "return=minimal").catch(e => asMeldung("Prüfobjekt nicht angelegt: " + (e.message || e)));
+  await asBetriebLaden(true); await asLaden().catch(() => {});
+  return { mid, sys };
 }
 /* Anlage verwalten (Prozessmodell P10/P22): Bereich, Stilllegen bzw. Wiederinbetriebnahme, Änderung/Instandsetzung melden –
    die Folgen (Prüfobjekte, Termine, Mängel, Beurteilung, BA) setzt die Datenbank (portal_anlage_betrieb_setzen / portal_anlage_geaendert). */

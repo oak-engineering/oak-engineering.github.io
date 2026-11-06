@@ -50,6 +50,12 @@ function asOrgDaten(){
 /* ---------------- Daten ---------------- */
 async function asKundenLaden(){
   AS.kunden = await apiGet("/rest/v1/as_organisation?select=kunde_slug,name&order=name.asc").catch(() => []);
+  /* Testbetriebe der Abnahme (portal_kunde.einrichtung.archiviert) nicht in der Auswahl – nur OAK sieht alle Betriebe */
+  if(AS.admin && AS.kunden.length){
+    const weg = new Set(((await apiGet("/rest/v1/portal_kunde?select=slug&einrichtung->>archiviert=eq.true").catch(() => [])) || []).map(x => x.slug));
+    const gew = AS.kunde || new URLSearchParams(location.search).get("kunde");   // direkt aufgerufen (?kunde=) bleibt erreichbar
+    AS.kunden = AS.kunden.filter(k => !weg.has(k.kunde_slug) || k.kunde_slug === gew);
+  }
 }
 /* ---------------- Eine Datenquelle mit dem Kundenportal (V1) ----------------
    Maengel, Vorfaelle, Beauftragte und Einheiten liegen in den V1-Tabellen. V2 liest und schreibt sie dort,
@@ -525,13 +531,13 @@ function asHashLesen(){
    Fußleiste die Seitenleiste; „Mehr“ öffnet dieselbe Liste als Blatt.
    OAK sieht die Fachgruppen (klappbar, gemerkt im Gerät), der Betrieb das Kundenmenü mit den V1-Begriffen (immer offen). */
 const AS_NAV_GRUPPEN = [
-  ["ueberblick", "Überblick", ["start", "cockpit", "assistent", "leitfaden", "pflichten"]],
+  ["ueberblick", "Überblick", ["start", "cockpit", "assistent", "leitfaden", "pflichten", "einrichtung"]],
   ["organisation", "Organisation", ["organisation", "check", "nachweise", "notfall", "prozesse"]],
   ["gefaehrdungen", "Gefährdungen", ["bda", "massnahmen", "mitzeichnung", "gefahrstoffe"]],
   ["anlagen", "Anlagen & Betrieb", ["anlagen", "pruefungen", "maengel", "psa", "hallenplan", "vorort"]],
   ["personal", "Personal", ["unterweisungen", "fremdfirmen", "vorfaelle"]],
   ["steuerung", "Steuerung", ["steuerung", "kalender", "bericht", "energie"]],
-  ["service", "Service", ["fragen", "aktuelles", "unterlagen", "leistungen", "datenschutz"]],
+  ["service", "Service", ["fragen", "aktuelles", "unterlagen", "leistungen", "datenschutz", "hilfe"]],
 ];
 /* Kundenmenü: Begriffe und Reihenfolge wie im Kundenportal (V1). Eintrag = Seite, "seite/reiter" oder
    [ziel, Beschriftung, Bedingung]. Ohne Beschriftung gilt titelKunde der Seite, sonst titel. Gruppe null = ohne Überschrift. */
@@ -543,7 +549,7 @@ const AS_NAV_KUNDE = [
   ["Organisation", ["organisation", "notfall", "bda", "massnahmen", ["mitzeichnung", "", () => asDarf("pflegen") || asDarf("freigeben")], ["steuerung/asa", "Arbeitsschutzausschuss"]]],
   ["Informationen", ["aktuelles", "unterlagen", ["steuerung/log", "Logbuch"]]],
 ];
-const AS_NAV_KUNDE_FUSS = ["leistungen", "datenschutz"];
+const AS_NAV_KUNDE_FUSS = ["leistungen", "datenschutz", "hilfe"];
 /* Kundenbegriffe (titelKunde) – OAK behält die Fachbegriffe. Schlüssel "seite" oder "seite/reiter".
    as-app.js setzt daraus AS_SEITEN[k].titelKunde (sofern die Seite keinen eigenen mitbringt). */
 const AS_TITEL_KUNDE = {
@@ -688,6 +694,8 @@ function asKundeWahl(){
   const neu = document.getElementById("kundeNeu"); if(neu) neu.onclick = asKundeAnlegen;
 }
 function asKundeAnlegen(){
+  /* Stufe 14: neuer Betrieb über den Einrichtungs-Assistenten (as-einrichtung.js); alter Kurz-Dialog nur als Rückfall */
+  if(typeof asEinrichtungStarten === "function") return asEinrichtungStarten();
   asDialog({ titel: "Neuen Kunden anlegen", inhalt: `<div class="form">
       ${asFeld("Firmenname", "name", "", "text", "voll")}
       ${asFeld("Kurzname (klein, ohne Leerzeichen, z. B. musterbetrieb)", "slug", "", "text", "voll")}</div>

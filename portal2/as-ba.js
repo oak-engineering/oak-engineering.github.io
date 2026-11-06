@@ -128,8 +128,9 @@ function asBaVorschlagAus(name, liste){
 
 /* Neue Anlage (Cockpit): Beurteilung und BA direkt in der Datenbank anlegen – aus der Vorlage einer gleichen Anlage
    kopiert (Gefährdungen, Schutzmaßnahmen, BA-Texte; ohne Fotos und Mängel), sonst leer. Plan „eine Welt“, Schritt 4. */
-async function asAnlageBdaAnlegen(mid, w, vorlageMid){
-  const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
+async function asAnlageBdaAnlegen(mid, w, vorlageMid, vorlageSlug){
+  /* vorlageSlug: Vorlage aus einem anderen Betrieb (OAK-Vorlagebetrieb im Einrichtungs-Assistenten) – sonst der eigene */
+  const k = "&kunde_slug=eq." + encodeURIComponent(vorlageSlug || AS.kunde);
   const vSys = vorlageMid ? ((await apiGet("/rest/v1/as_arbeitssystem?select=*&anlagen=cs." + encodeURIComponent(JSON.stringify([vorlageMid])) + "&order=art.asc,sort.asc" + k).catch(() => [])) || [])[0] : null;
   const dok = { meta: { maschine: w.name, maschinenId: mid, hersteller: w.hersteller || "", typ: w.typ || "", baujahr: w.baujahr || "", seriennr: w.seriennr || "",
     bereich: w.bereich || "", standort: w.bereich || "", maschinenart: w.art || "", datum: asHeute().split("-").reverse().join("."),
