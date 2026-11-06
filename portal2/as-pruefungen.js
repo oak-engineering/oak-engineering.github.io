@@ -229,27 +229,11 @@ async function asPfDatei(f){
   return pfad;
 }
 
-/* Ergebnisse speichern: Prüfung je Objekt, bei Mängeln Eintrag in der Mängelliste (thema "pruefung") */
+/* Ergebnisse speichern: Prüfung je Objekt. Den Eintrag in der Mängelliste (thema "pruefung") legt seit 06.11.2026
+   der Datenbank-Trigger as_pruefung_mangel an und setzt mangel_id (stufe11_folgen_2026-11-06.sql) – hier nicht doppelt. */
 async function asPfSpeichern(ergebnisse, datum, pruefer, runde){
-  const zeilen = [];
-  for(const e of ergebnisse){
-    let mangelId = null;
-    if(e.ergebnis !== "ok"){
-      const a = asPfArt(e.o.art), band = e.ergebnis === "nicht_ok" ? "gefahr" : "besorgnis", mid = e.o.maschinen_id || "ALLG-HALLE";
-      const dok = asAnlagen().find(x => x.maschinen_id === e.o.maschinen_id);
-      const r = await apiSend("POST", "/rest/v1/portal_maengel", { kunde_slug: AS.kunde, kunde: AS.org ? AS.org.name : null, maschinen_id: mid,
-        maschine: dok ? dok.maschine || dok.titel : (e.o.ort || "Halle / allgemein"), maschinentyp: dok ? dok.maschinentyp : "Tätigkeit / allgemein",
-        schluessel: "PR-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6), thema: "pruefung", thema_rang: 0,
-        label: "Prüfung " + a.titel + " (" + asDat(datum) + "): " + e.o.bezeichnung + " – " + (e.bemerkung || AS_PF_ERG[e.ergebnis][0]),
-        rechtsquelle: e.o.grundlage || a.grundlage || null, band, prioritaet: band === "gefahr" ? 10 : 3010, status: "offen",
-        termin: (() => { const t = new Date(datum); t.setDate(t.getDate() + (band === "gefahr" ? 14 : 42)); return t.toISOString().slice(0, 10); })(),
-        einheit_id: e.o.einheit_id || (dok && dok.einheit_id) || null,
-        gemeldet_von: pruefer || AS.ich, gemeldet_am: datum }, "return=representation").catch(err => { asMeldung("Mangel nicht angelegt: " + (err.message || err)); return null; });
-      if(r && r[0]){ mangelId = r[0].id; await asMgLog(mangelId, "erfasst", "aus Prüfung " + a.titel, null); }
-    }
-    zeilen.push({ kunde_slug: AS.kunde, objekt_id: e.o.id, datum, ergebnis: e.ergebnis, pruefer_name: pruefer || AS.ich, bemerkung: e.bemerkung || null,
-      mangel_id: mangelId, nachweis_pfad: e.nachweis_pfad || null, runde, quelle: "app", erstellt_von: AS.ich });
-  }
+  const zeilen = ergebnisse.map(e => ({ kunde_slug: AS.kunde, objekt_id: e.o.id, datum, ergebnis: e.ergebnis, pruefer_name: pruefer || AS.ich,
+    bemerkung: e.bemerkung || null, nachweis_pfad: e.nachweis_pfad || null, runde, quelle: "app", erstellt_von: AS.ich }));
   if(zeilen.length) await apiSend("POST", "/rest/v1/as_pruefung", zeilen, "return=minimal");
   await asLaden();
 }

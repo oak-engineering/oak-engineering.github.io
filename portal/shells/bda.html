@@ -207,6 +207,10 @@
   table.mtab th:nth-child(4),table.mtab td:nth-child(4){width:112px;}
   table.mtab th:nth-child(5),table.mtab td:nth-child(5){width:22px;text-align:center;}
   .wirk-sel.wirk-wirksam{color:var(--gn);font-weight:700;} .wirk-sel.wirk-nicht{color:var(--rot);font-weight:700;}
+  table.mtab .m-dat{display:block;font-size:10px;color:var(--grau);white-space:nowrap;line-height:1.2;}
+  body.lesen table.mtab .m-dat{display:inline;margin-left:4px;}
+  table.meta tr.frg-zeile td.frg{font-weight:600;}
+  table.meta tr.frg-zeile td.frg.frei{color:var(--gn);} table.meta tr.frg-zeile td.frg.offen{color:var(--gelb);} table.meta tr.frg-zeile td.frg.geaendert{color:var(--rot);}
   /* Risikobewertung: Ausgangsrisiko oben, Maßnahmen dazwischen, Restrisiko unten */
   .rblock{display:flex;align-items:center;gap:8px;}
   .rblab{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--grau);font-weight:600;min-width:96px;}
@@ -272,6 +276,64 @@
   .fdel:hover{background:#b3261e}
   .lab-hint{font-weight:400;color:#6b7d74;font-size:10.5px}
   @media print{ .hzfotos img{width:120px;height:90px} .fdel{display:none} }
+  /* ---- Kompakte Gefährdungskarte (Nikolai 06.11.2026: kurz und knapp, Matrix nur einmal) ---- */
+  .karte .body.kompakt{grid-template-columns:1fr auto;gap:6px 16px;padding:10px 14px 8px;font-size:13.5px;}
+  .karte .body.kompakt.ohne-foto{grid-template-columns:1fr;}
+  .hz-text{display:flex;flex-direction:column;gap:3px;min-width:0;}
+  .hz-text .sub-in{border:none;border-bottom:1px dotted #ccc;border-radius:0;padding:1px 0;font-weight:600;font-size:13.5px;}
+  .hz-text .sit-in{border:none;border-bottom:1px dotted #ccc;border-radius:0;padding:1px 0;resize:none;overflow:hidden;line-height:1.45;font-size:13.5px;}
+  .ws-zeile{font-size:12.5px;color:var(--dunkel);}
+  .ws-zeile .ws-alt{color:var(--grau);}
+  .rq-zeile{display:flex;gap:6px;align-items:baseline;font-size:11.5px;color:var(--grau);}
+  .rq-zeile .rq-in{font-size:11.5px;color:var(--grau);flex:1;resize:none;overflow:hidden;line-height:1.4;padding:0;min-height:0;}
+  .hz-fotos .hzfotos{margin:0;gap:6px;}
+  .hz-fotos .hzfotos figure{width:96px;}
+  .hz-fotos .hzfotos img{width:96px;height:72px;}
+  .ampel[data-role=ampel]{cursor:pointer;}
+  .wzeile{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--grau);}
+  .wzeile .rq-in{width:auto;min-width:110px;font-size:11.5px;}
+  .wzeile .rest-offen{margin-left:auto;font-style:italic;}
+  table.mtab{font-size:12.5px;}
+  table.mtab td input,table.mtab td select{font-size:12px;}
+  .legende-box{display:flex;gap:18px;align-items:center;flex-wrap:wrap;border:1px solid var(--linie);border-radius:8px;padding:10px 14px;margin:6px 0 10px;}
+  .legende-text{flex:1;min-width:240px;font-size:12px;line-height:1.7;}
+  .legende-text .pill{display:inline-block;padding:1px 9px;border-radius:10px;font-weight:600;font-size:11.5px;white-space:nowrap;}
+  td.mx.stumm{cursor:default;} td.mx.stumm:hover{outline:none;}
+  /* Lesefassung: keine Formularoptik, leere Felder weg */
+  body.lesen .karte input,body.lesen .karte textarea{border:none !important;background:transparent;color:inherit;pointer-events:none;}
+  body.lesen .karte .rq-in{color:var(--grau);}
+  body.lesen .karte select{appearance:none;-webkit-appearance:none;border:none;background:transparent;pointer-events:none;padding:1px 0;opacity:1;color:inherit;}
+  body.lesen .karte .status-sel.offen{color:var(--rot);} body.lesen .karte .status-sel.erledigt{color:var(--gn);}
+  body.lesen .rq-zeile.leer,body.lesen .wzeile.leer .rq-in,body.lesen .wzeile.leer .wlab:not(.rest-offen),body.lesen details.bghm-details.leer,
+  body.lesen .hzdel,body.lesen .mdel,body.lesen .addm,body.lesen .fdel,body.lesen .add-hz,body.lesen .reclass-btn{display:none !important;}
+  body.lesen .ampel[data-role=ampel]{cursor:default;}
+  body.lesen .karte ::placeholder,body.lesen table.meta ::placeholder{color:transparent;}
+  body.lesen table.mtab th:nth-child(5),body.lesen table.mtab td:nth-child(5){display:none;}
+  @media (max-width:600px){
+    body{padding:0;}
+    .karte .body.kompakt{grid-template-columns:1fr;}
+    .karte > .kopfzeile{flex-wrap:wrap;}
+    .ampel{margin-left:0;}
+    table.mtab thead{display:none;}
+    table.mtab tr{display:grid;grid-template-columns:34px 1fr 1fr;gap:2px 6px;padding:4px 0;border-bottom:1px dashed #eef2f0;}
+    table.mtab td{border:none;width:auto !important;}
+    table.mtab td.mtd{grid-column:2 / 4;}
+    table.mtab td:nth-child(3){grid-column:2;} table.mtab td:nth-child(4){grid-column:3;}
+    table.mtab td:nth-child(3)::before{content:"Status";display:block;font-size:10px;color:var(--grau);text-transform:uppercase;letter-spacing:.3px;}
+    table.mtab td:nth-child(4)::before{content:"Wirksamkeit";display:block;font-size:10px;color:var(--grau);text-transform:uppercase;letter-spacing:.3px;}
+    .inner{padding:12px 10px;}
+    table.mtab td:nth-child(5){display:none;}
+    /* Kopf und Stammdaten auf dem Handy: untereinander statt überlaufen (06.11.2026) */
+    .kopf{flex-wrap:wrap;justify-content:center;gap:8px;padding:12px 10px;}
+    .kopf .mitte{flex:1 1 100%;order:-1;}
+    .kopf .mitte .doktyp{letter-spacing:1px;font-size:10px;}
+    .kopf img.kundenlogo{height:56px;}
+    table.meta,table.meta tbody,table.meta tr,table.meta td{display:block;width:100% !important;}
+    table.meta tr{display:grid;grid-template-columns:120px 1fr;}
+    table.meta td{border-width:0 0 1px 0;}
+    table.meta tr.frg-zeile td.frg{grid-column:2;}
+  }
+  @media print{ .legende-box{break-inside:avoid;} .karte .body.kompakt{font-size:11.5px;} body.lesen .wzeile.leer{display:none;} }
 </style>
 </head>
 <body>
@@ -320,11 +382,13 @@
           <td class="k">Datum / Revision</td><td><input data-k="datum" value="" placeholder="TT.MM.JJJJ / Rev. 1"></td></tr>
       <tr><td class="k">Begehung am</td><td><input data-k="begehung" value="" placeholder="TT.MM.JJJJ"></td>
           <td class="k">Nächste Prüfung</td><td><input type="date" data-k="naechste"></td></tr>
+      <tr class="frg-zeile" hidden><td class="k">Freigabe (GF)</td><td colspan="3" class="frg" id="freigabe-text"></td></tr>
     </table>
 
     <!-- Kurzuebersicht (Nikolai 16.09.2026): Maengel mit Bewertung auf einen Blick, Details mit Nohl weiter unten -->
-    <div class="sektion-titel">Kurzübersicht: Mängel und Bewertung</div>
-    <div id="kurz" class="kurz"></div>
+    <!-- 06.11.2026 (Nikolai): Kurzübersicht gehört in die Mängelliste der Anlage / ins Cockpit – hier nur noch im Hintergrund -->
+    <div hidden><div class="sektion-titel">Kurzübersicht: Mängel und Bewertung</div>
+    <div id="kurz" class="kurz"></div></div>
 
     <!-- Auswertung (Seite 1) -->
     <div class="sektion-titel">Auswertung &amp; Maßnahmenstand</div>
@@ -334,11 +398,12 @@
     <div id="reifegrad" class="reifegrad" hidden></div>
 
     <!-- Inhaltsverzeichnis der Gefährdungen (Sprungmarken) -->
-    <div id="toc" class="toc"></div>
+    <div id="toc" class="toc" hidden></div><!-- 06.11.2026: Inhaltsverzeichnis nur im Hintergrund (Sprungmarken bleiben) -->
 
     <!-- Gefährdungen -->
     <div class="sektion-titel gef-titel">Gefährdungen, Bewertung &amp; Maßnahmen
       <button type="button" class="add-hz" onclick="openBghmPicker()">+ Gefährdung</button></div>
+    <div id="legende"></div>
     <div id="karten"></div>
 
     <!-- Unterschriften -->
@@ -359,6 +424,7 @@
   </div>
 </div>
 
+<div id="risikoModal" class="modal" onclick="if(event.target===this)closeRisiko()"><div class="mbox"><div class="mhd"><span>Risiko bewerten – Feld anklicken</span><button type="button" onclick="closeRisiko()">✕</button></div><div id="risikoBody" class="mbody"></div></div></div>
 <div id="bghmPicker" class="modal"><div class="mbox"><div class="mhd"><span>Gefährdung hinzufügen – BGHM-Kategorie wählen</span><button type="button" onclick="closeBghmPicker()">✕</button></div><div id="bghmList" class="mbody"></div></div></div>
 <script id="doc-data" type="application/json">{}</script>
 <script id="oak-state" type="application/json"></script>
@@ -502,6 +568,9 @@ function renderReifegrad(rg){
     }
   }
   renderReifegrad(m.reifegrad);
+  /* Freigabe der Beurteilung (Cockpit, as_arbeitssystem) – nur bei Dokumenten aus der Datenbank gesetzt */
+  if(m.bdaFreigabeText){ const z=document.querySelector("tr.frg-zeile"), t=document.getElementById("freigabe-text");
+    if(z && t){ t.textContent=m.bdaFreigabeText; t.classList.add(m.bdaFreigabeStatus||"offen"); z.hidden=false; } }
   const imgs = document.querySelectorAll(".kopf img");
   if(m.oakLogoB64 && imgs[0]) imgs[0].src = m.oakLogoB64;
   /* OAK-Baum + Schriftzug „OAK engineering" – der Baum allein ist nicht selbsterklaerend. */
@@ -588,12 +657,16 @@ function bghmOrder(){ return state.h.map((s,i)=>i).sort((a,b)=>{ const x=bghmKey
 
 const LSKEY = "oak_bda_"+location.pathname;
 let state = loadState();
+const LESEN = !!window.OAK_LESEN || /im EHS-Cockpit gepflegt/.test((document.querySelector(".leiste")||{}).textContent||"");
+if(LESEN){ document.body.classList.add("lesen");
+  const _l=document.querySelector(".leiste"); if(_l) _l.innerHTML="<b>Bewertung aus der Begehung vor Ort.</b> Gepflegt wird sie im EHS-Cockpit – hier werden nur Unterschriften gespeichert."; }
 
 function normM(m){
   if(Array.isArray(m)) return {k:m[0]||"T", text:m[1]||"", status:"offen", verantwortlich:"", termin:"", prio:"mittel", wirksam:"offen"};
   m=m||{}; let st=m.status||"offen", wk=m.wirksam||"offen";
   if(st==="wirksam"){ st="erledigt"; wk="wirksam"; }
-  return {k:m.k||"T", text:m.text||"", status:st, verantwortlich:m.verantwortlich||"", termin:m.termin||"", prio:m.prio||"mittel", wirksam:wk};
+  return {k:m.k||"T", text:m.text||"", status:st, verantwortlich:m.verantwortlich||"", termin:m.termin||"", prio:m.prio||"mittel", wirksam:wk,
+    erledigtAm:m.erledigtAm||"", wirksamAm:m.wirksamAm||""};
 }
 function normH(src, seed){
   src=src||{}; seed=seed||{};
@@ -685,14 +758,11 @@ function matrixHtml(i, wKind, sKind, w, s){
 function hzFotoHtml(s){
   const f=(s.fotos||[]).filter(x=>x && (x.data||x.src));
   if(!f.length) return "";
-  return `<div class="feld full"><div class="lab">Belegfoto(s) aus der Begehung
-      <span class="lab-hint">– × entfernt nur die Zuordnung</span></div>
-    <div class="hzfotos">`+f.map((x,k)=>{
+  return `<div class="hz-fotos"><div class="hzfotos">`+f.map((x,k)=>{
       const src=x.data||x.src, alt=escapeAttr(x.alt||"Belegfoto");
       return `<figure><a href="${src}" target="_blank" rel="noopener" title="${alt} – gross ansehen">
         <img src="${src}" alt="${alt}"></a>
-        <button type="button" class="fdel" data-fdel="${k}" title="Zuordnung entfernen">×</button>
-        <figcaption>${escapeHtml(x.alt||"")}</figcaption></figure>`;
+        <button type="button" class="fdel" data-fdel="${k}" title="Zuordnung entfernen (Foto bleibt im Anhang)">×</button></figure>`;
     }).join("")+`</div></div>`;
 }
 function render(){
@@ -715,18 +785,23 @@ function render(){
     card.className="karte"; card.dataset.i=i; card.id="hz-"+i;
     card.innerHTML=`
       <div class="kopfzeile">${kopf}
-        <span class="ampel ${amp.cls}" data-role="ampel">${amp.txt}</span>
+        <span class="ampel ${amp.cls}" data-role="ampel" title="Klick: Risiko ändern">${amp.txt}</span>
         <span class="hzdel" title="Gefährdung löschen">×</span>
       </div>
-      <div class="body">
-        <div class="feld full"><div class="lab">Bauteil / Ort</div>
-          <input class="sub-in" data-role="sub" value="${escapeAttr(s.sub)}" placeholder="z. B. Schließeinheit / Werkzeugbereich"></div>
-        <div class="feld full"><div class="lab">Gefährdung / Situation</div>
-          <textarea class="sit-in" data-role="situation" rows="2" placeholder="Beschreibung der Gefährdung / Situation">${escapeHtml(s.situation)}</textarea></div>
-        <div class="feld full"><div class="lab">Rechtsquelle</div>
-          <input class="rq-in" data-role="rq" value="${escapeAttr(s.rq)}" placeholder="einschlägige Rechtsquellen (Rechtskataster)"></div>
+      <div class="body kompakt${hzFotoHtml(s) ? "" : " ohne-foto"}">
+        <div class="hz-text">
+          <input class="sub-in" data-role="sub" value="${escapeAttr(s.sub)}" placeholder="Bauteil / Ort, z. B. Schließeinheit">
+          <textarea class="sit-in" data-role="situation" rows="1" placeholder="Gefährdung / Situation – kurz">${escapeHtml(s.situation)}</textarea>
+          <div class="ws-zeile" data-role="ws">${wsText(s)}</div>
+          <div class="rq-zeile${s.rq ? "" : " leer"}"><span>Grundlage:</span><textarea class="rq-in" data-role="rq" rows="1" placeholder="Rechtsquelle (Rechtskataster)">${escapeHtml(s.rq)}</textarea></div>
+        </div>
         ${hzFotoHtml(s)}
-        <details class="bghm-details feld full"><summary>Erweiterte Angaben (BGHM)</summary>
+        <div class="feld full">${measuresHtml(i)}</div>
+        <div class="feld full wzeile${s.wirksamDatum || s.wirksamPruefer ? "" : " leer"}"><span class="wlab">Wirksamkeit geprüft am</span>
+          <input type="date" class="rq-in" data-role="wirksamDatum" value="${escapeAttr(s.wirksamDatum)}"><span class="wlab">von</span>
+          <input class="rq-in" data-role="wirksamPruefer" value="${escapeAttr(s.wirksamPruefer)}" placeholder="Name">
+          ${wirksamOk(s) ? "" : `<span class="wlab rest-offen">Restrisiko nach Umsetzung und Prüfung</span>`}</div>
+        <details class="bghm-details feld full${(s.quelle||s.wirkweise||s.bedingungen||s.exposition||s.schutzziel||s.schutzzielTermin) ? "" : " leer"}"><summary>Erweiterte Angaben (BGHM)</summary>
           <div class="feld full"><div class="lab">Quelle – Eigenschaften / Zustand</div>
             <input class="rq-in" data-role="quelle" value="${escapeAttr(s.quelle)}" placeholder="spezifische Eigenschaften/Zustände der Quelle"></div>
           <div class="feld full"><div class="lab">Wirkweise der Quelle</div>
@@ -742,20 +817,11 @@ function render(){
           <div class="feld full"><div class="lab">Schutzziel (SMART)</div>
             <textarea class="sit-in" data-role="schutzziel" rows="2" placeholder="messbares Ziel mit Termin (Mindest-/Optimierungsziel), z. B. ‚Unfälle auf 0 bis TT.MM.JJJJ‘">${escapeHtml(s.schutzziel)}</textarea></div>
         </details>
-        <div class="feld full"><div class="lab">1. Risiko vor Bewertung (Ausgangsrisiko · W × S)</div>
-          <div class="rblock"><div class="rblab">Ausgangsrisiko</div>${matrixHtml(i,"wV","sV",s.wV,s.sV)}<span class="mxres" data-role="rV">${rzahlHtml(rV)}</span></div></div>
-        <div class="feld full"><div class="lab">2. Maßnahmen nach S-T-O-P-V</div>${measuresHtml(i)}</div>
-        <div class="feld full"><div class="lab">Wirksamkeitsprüfung</div>
-          <div class="wprow">
-            <div class="feld"><div class="lab">Datum der Prüfung</div><input type="date" class="rq-in" data-role="wirksamDatum" value="${escapeAttr(s.wirksamDatum)}"></div>
-            <div class="feld"><div class="lab">Prüfer</div><input class="rq-in" data-role="wirksamPruefer" value="${escapeAttr(s.wirksamPruefer)}" placeholder="Name des Prüfers"></div>
-          </div></div>
-        <div class="feld full"><div class="lab">3. Risiko nach Bewertung (Restrisiko · W × S)</div>${restHtml(i,s)}</div>
       </div>`;
     wrap.appendChild(card);
   });
 
-  wrap.querySelectorAll("td.mx").forEach(td=>td.addEventListener("click",onMatrixClick));
+  wrap.querySelectorAll("[data-role=ampel]").forEach(a=>a.addEventListener("click",e=>openRisiko(idx(e.target))));
   wrap.querySelectorAll("[data-role=reclass]").forEach(el=>el.addEventListener("click",e=>{ e.stopPropagation(); openBghmPicker(idx(e.target)); }));
   wrap.querySelectorAll("[data-role=kat],[data-role=sub],[data-role=rq],[data-role=quelle],[data-role=wirkweise],[data-role=exposition],[data-role=schutzzielTermin],[data-role=wirksamDatum],[data-role=wirksamPruefer]").forEach(inp=>inp.addEventListener("input",e=>{ state.h[idx(e.target)][e.target.dataset.role]=e.target.value; save(); }));
   wrap.querySelectorAll("textarea[data-role=situation],textarea[data-role=bedingungen],textarea[data-role=schutzziel]").forEach(t=>{ autoGrow(t); t.addEventListener("input",e=>{ state.h[idx(e.target)][e.target.dataset.role]=e.target.value; autoGrow(e.target); save(); }); });
@@ -769,6 +835,41 @@ function render(){
   wrap.querySelectorAll("details.bghm-details").forEach(d=>d.addEventListener("toggle",()=>{ if(d.open) d.querySelectorAll("textarea").forEach(autoGrow); }));
 
   buildTOC(); updateOverdue(); updateDash(); renderRG(); renderFotoAnhang();
+  wrap.querySelectorAll("textarea[data-role=rq]").forEach(t=>{ autoGrow(t); t.addEventListener("input",()=>autoGrow(t)); });
+  const lg=document.getElementById("legende"); if(lg && !lg.innerHTML) lg.innerHTML=legendeHtml();
+  if(LESEN) nurLesen(wrap);
+}
+/* Lesefassung (Dokument aus dem Cockpit, gepflegt wird dort): Formularfelder werden zu Text,
+   leere Felder und Bearbeitungsknöpfe verschwinden. Vorgabe Nikolai 06.11.2026: kurz und knapp. */
+function nurLesen(wrap){
+  wrap.querySelectorAll("input,textarea").forEach(el=>{ el.readOnly=true; if(el.tagName==="TEXTAREA") autoGrow(el); });
+  wrap.querySelectorAll("select").forEach(el=>{ el.disabled=true; });
+}
+/* Risiko in Worten – die Matrix steht nur noch einmal oben (Legende) und im Ändern-Dialog */
+function wsText(s){
+  const t=(w,sv)=>`${W_TEXT[w]} × ${S_TEXT[sv]}`;
+  return wirksamOk(s) ? `Restrisiko: ${t(s.wN,s.sN)} <span class="ws-alt">(vorher ${s.wV*s.sV}: ${t(s.wV,s.sV)})</span>`
+    : `Risiko: ${t(s.wV,s.sV)}`;
+}
+function openRisiko(i){
+  if(LESEN) return;
+  const s=state.h[i], box=document.getElementById("risikoBody");
+  box.innerHTML=`<div class="lab">Ausgangsrisiko (vor den Maßnahmen)</div>`+matrixHtml(i,"wV","sV",s.wV,s.sV)
+    +(wirksamOk(s) ? `<div class="lab" style="margin-top:14px">Restrisiko (nach wirksamen Maßnahmen)</div>`+matrixHtml(i,"wN","sN",s.wN,s.sN)
+      : `<p class="restplaceholder">Das Restrisiko wird bewertet, sobald alle Maßnahmen erledigt und wirksam sind.</p>`);
+  box.querySelectorAll("td.mx").forEach(td=>td.addEventListener("click",onMatrixClick));
+  document.getElementById("risikoModal").style.display="flex";
+}
+function closeRisiko(){ document.getElementById("risikoModal").style.display="none"; }
+/* Legende einmal über den Gefährdungen */
+function legendeHtml(){
+  let k=`<tr><th class="mxcorner"><span>W ↓</span><span>S →</span></th>`;
+  for(let sv=1;sv<=4;sv++) k+=`<th class="mxh"><span class="mxnum">${sv}</span><span class="mxwort">${S_TEXT[sv]}</span></th>`;
+  let b=""; for(let wv=4;wv>=1;wv--){ b+=`<tr><th class="mxh"><span class="mxnum">${wv}</span><span class="mxwort">${W_TEXT[wv]}</span></th>`;
+    for(let sv=1;sv<=4;sv++){ const r=wv*sv; b+=`<td class="mx ${band(r).cls} stumm">${r}</td>`; } b+=`</tr>`; }
+  return `<div class="legende-box"><table class="mxg">${k}</tr>${b}</table><div class="legende-text"><b>So lesen Sie die Bewertung:</b> Risiko = Wahrscheinlichkeit (W) × Schwere (S).<br>
+    <span class="pill gn">1–3 Akzeptanzbereich</span> <span class="pill g">4–8 Besorgnisbereich</span> <span class="pill r">9–16 Gefahrbereich</span><br>
+    Je Gefährdung steht oben rechts das Risiko vor den Maßnahmen; das Restrisiko erst, wenn alle Maßnahmen erledigt und wirksam sind.</div></div>`;
 }
 function autoGrow(ta){ if(!ta) return; ta.style.height="auto"; ta.style.height=(ta.scrollHeight+2)+"px"; }
 function measAt(el){ return state.h[idx(el)].massnahmen[+el.closest("[data-mi]").dataset.mi]; }
@@ -847,8 +948,8 @@ function measuresHtml(i){
     return `<tr data-mi="${j}">`+
       `<td><select class="kindsel" data-mrole="k" title="S Substitution · T Technisch · O Organisatorisch · P Persönlich (PSA) · V Verhalten">${opts}</select></td>`+
       `<td class="mtd"><textarea class="mtext" data-mrole="text" rows="1" placeholder="Maßnahme …">${escapeHtml(m.text)}</textarea></td>`+
-      `<td><select class="status-sel ${statusCls(m.status)}" data-mrole="status">${stOpts}</select></td>`+
-      `<td><select class="wirk-sel wirk-${m.wirksam}" data-mrole="wirksam">${wkOpts}</select></td>`+
+      `<td title="${m.erledigtAm?"erledigt am "+escapeAttr(m.erledigtAm):""}"><select class="status-sel ${statusCls(m.status)}" data-mrole="status">${stOpts}</select>${m.erledigtAm&&m.status==="erledigt"?`<span class="m-dat">${escapeHtml(m.erledigtAm)}</span>`:""}</td>`+
+      `<td title="${m.wirksamAm?"wirksam bestätigt am "+escapeAttr(m.wirksamAm):""}"><select class="wirk-sel wirk-${m.wirksam}" data-mrole="wirksam">${wkOpts}</select>${m.wirksamAm&&m.wirksam==="wirksam"?`<span class="m-dat">${escapeHtml(m.wirksamAm)}</span>`:""}</td>`+
       `<td><span class="mdel" title="Maßnahme entfernen">×</span></td>`+
       `</tr>`;
   }).join("");
@@ -858,13 +959,12 @@ function measuresHtml(i){
 }
 
 function onMatrixClick(e){
-  const td=e.currentTarget, i=+td.dataset.i, card=td.closest(".karte");
+  const td=e.currentTarget, i=+td.dataset.i, card=document.getElementById("hz-"+i);
   state.h[i][td.dataset.wk]=+td.dataset.w; state.h[i][td.dataset.sk]=+td.dataset.s; save();
   td.closest(".mxg").querySelectorAll("td.mx.sel").forEach(x=>x.classList.remove("sel")); td.classList.add("sel");
-  const s=state.h[i], rV=s.wV*s.sV, rN=s.wN*s.sN;
-  const rVel=card.querySelector("[data-role=rV]"); if(rVel) rVel.innerHTML=rzahlHtml(rV);
-  const rNel=card.querySelector("[data-role=rN]"); if(rNel) rNel.innerHTML=rzahlHtml(rN);
+  const s=state.h[i];
   const amp=ampelText(s), a=card.querySelector("[data-role=ampel]"); a.className="ampel "+amp.cls; a.textContent=amp.txt;
+  const ws=card.querySelector("[data-role=ws]"); if(ws) ws.innerHTML=wsText(s);
   updateDash();
 }
 

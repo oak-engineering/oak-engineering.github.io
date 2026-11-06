@@ -160,7 +160,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   if(!t){ try{ sessionStorage.setItem("oak_nach_login", location.pathname.split("/").pop() + location.search); }catch(e){} location.replace("index.html"); return; }
 
   const typ = param("typ"), p = param("p");
-  const titel = param("t") || (param("m") + (param("mid") ? " · " + param("mid") : ""));
+  /* nach außen nur die Kundenbezeichnung der Maschine – interne Kennungen (WIB-NN, M-NN) bleiben im Link (Nik 06.11.2026) */
+  const titel = param("t") || param("m") || "";
   const istShell = !!SHELL_TYPEN[typ];
   const label = SHELL_TYPEN[typ] || FMT_LABEL[typ] || "Dokument";
   document.getElementById("vTyp").textContent = label;
@@ -217,6 +218,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           : apiGet(storagePfad(p), true),
         liveStatePromise,
       ]);
+      if(!titel){ try{ const mm = (JSON.parse(docdata) || {}).meta || {}; const n = mm.maschine || mm.titel || "";
+        if(n){ document.getElementById("vTitel").textContent = n; document.title = "OAK Portal — " + label + " " + n; } }catch(e){} }
       let html = setzePortalFlag(injiziere(shell, docdata));
       LIVE.ausDb = !!(ausDb || gsBa);
       const liveState = LIVE.ausDb ? nurUnterschriften(typ, liveRows && liveRows[0] && liveRows[0].state) : (liveRows && liveRows[0] && liveRows[0].state);
