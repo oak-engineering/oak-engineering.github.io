@@ -27,8 +27,8 @@ function asPsaStil(){
   const s = document.createElement("style"); s.id = "psaStil";
   s.textContent = `.psa-tab{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
 .psa-tab th{font-family:'Jost','Segoe UI',Arial,sans-serif;font-weight:600;font-size:11px;color:var(--grau);vertical-align:bottom;padding:6px 2px;border-bottom:2px solid var(--linie);text-align:center;height:78px}
-.psa-tab th .psa-kopf{display:flex;flex-direction:column;align-items:center;gap:4px;height:66px;justify-content:flex-end}
-.psa-tab th .psa-kopf span{max-width:100%;overflow:hidden;white-space:normal;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.psa-tab th .psa-kopf{display:flex;flex-direction:column;align-items:center;gap:4px;height:66px;justify-content:flex-start}
+.psa-tab th .psa-kopf span{max-width:100%;overflow:hidden;white-space:normal;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:anywhere;line-height:1.2;height:2.4em;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .psa-tab th.t,.psa-tab td.t{text-align:left;width:26%;padding-left:8px}
 .psa-tab td{height:40px;border-bottom:1px solid var(--linie);text-align:center;padding:0 2px}
 .psa-tab td.t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;cursor:pointer}
