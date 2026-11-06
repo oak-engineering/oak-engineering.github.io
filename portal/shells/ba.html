@@ -613,6 +613,9 @@ function renderPikCols(){
     const gesp=store.pik&&!(GS&&sec==='stoff')&&store.pik[dp];   // GHS-Rauten folgen immer der aktuellen Einstufung
     // gespeicherter Stand kommt aus der Datenbank – nur Codes der eingebetteten Bibliothek zulassen
     const list=Array.isArray(gesp)?gesp.filter(c=>typeof c==='string'&&Object.prototype.hasOwnProperty.call(PIKTOLIB,c)):(((P[sec]||{})[seite])||[]);
+    /* PSA-Matrix (Stufe 12): Gebotszeichen der Pflicht-PSA stehen immer in der BA – auch wenn der gespeicherte Stand sie nicht enthält */
+    const psaC=(DOC.ba&&Array.isArray(DOC.ba.psa_codes))?DOC.ba.psa_codes.filter(c=>Object.prototype.hasOwnProperty.call(PIKTOLIB,c)):[];
+    if(Array.isArray(gesp)&&sec==='schutz'&&seite==='links'&&psaC.length){ const da=new Set([].concat(store.pik['schutz-links']||[],store.pik['schutz-rechts']||[])); psaC.forEach(c=>{ if(!da.has(c)) list.push(c); }); }
     cell.innerHTML='';
     list.forEach(code=> cell.appendChild(makePik(code, dp)) );
     cell.appendChild(makeAdd(dp));

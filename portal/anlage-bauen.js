@@ -96,7 +96,7 @@
     const ba0 = (bas || []).find(b => b.status === "freigegeben") || (bas || [])[0];
     /* PSA je Tätigkeit (Cockpit-Matrix as_psa_zuordnung + Gefahrstoff, Sicht v_as_psa) – nur wenn die Matrix gepflegt ist (Stufe 12) */
     const ba = ba0 ? JSON.parse(JSON.stringify(ba0)) : null;
-    let psa = null;
+    let psa = null, psaBa = null;
     try{
       const [zeilen, arten] = await Promise.all([
         apiGet("/rest/v1/v_as_psa?select=*&arbeitssystem_id=eq." + sys.id + k, false),
@@ -115,17 +115,17 @@
           zeilen: Object.values(taet), stand: deDatum(new Date().toISOString().slice(0, 10)),
           quelle: (await apiGet("/rest/v1/as_psa_zuordnung?select=quelle&quelle=like.vorlage*&taetigkeit_id=in.(" + [...new Set(zeilen.map(z => z.taetigkeit_id))].join(",") + ")&limit=1", false).catch(() => [])).length ? "Vorlage: DGUV Information 113-606, vom Betrieb angepasst" : "" };
         /* BA: Gebotszeichen kommen aus der Matrix (Pflicht-PSA), ergänzt um die von Hand gesetzten */
-        if(ba){ ba.inhalt = ba.inhalt || {}; const P = ba.inhalt.piktogramme = ba.inhalt.piktogramme || {}; const s = P.schutz = P.schutz || { links: [], rechts: [] };
+        { const ziel = ba || (psaBa = { inhalt: {} }); ziel.inhalt = ziel.inhalt || {}; const P = ziel.inhalt.piktogramme = ziel.inhalt.piktogramme || {}; const s = P.schutz = P.schutz || { links: [], rechts: [] };
           const hand = [].concat(s.links || [], s.rechts || []);
           const aus = [...new Set(zeilen.filter(z => z.pflicht !== false).map(z => (artV[z.psa_art] || {}).zeichen).filter(Boolean))];
           const alle = [...new Set(aus.concat(hand))], h = Math.ceil(alle.length / 2);
-          P.schutz = { links: alle.slice(0, h), rechts: alle.slice(h) }; }
+          P.schutz = { links: alle.slice(0, h), rechts: alle.slice(h) }; ziel.inhalt.psa_codes = aus; }
       }
     }catch(e){ psa = null; }
     /* Freigabe der BA (Cockpit, nur GF) in die Unterschriftszeile der BA */
     if(ba && ba.status === "freigegeben"){ meta.freigabeVon = ba.freigabe_von || ""; meta.freigabeAm = String(ba.freigabe_am || "").slice(0, 10).split("-").reverse().join("."); }
     return JSON.stringify({ _typ: "OAK-doc-data", _quelle: "Cockpit-Datenbank", meta, hazards, rechtsquellen: dok.rechtsquellen || [],
-      ba: ba ? ba.inhalt : {}, maengel: dok.maengel || [], protokoll: prot, stundensatz: dok.stundensatz, psa });
+      ba: ba ? ba.inhalt : psaBa ? psaBa.inhalt : {}, maengel: dok.maengel || [], protokoll: prot, stundensatz: dok.stundensatz, psa });
   }
   window.ANLB = { daten };
 })();
