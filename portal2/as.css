@@ -57,7 +57,7 @@ textarea{min-height:70px;resize:vertical}
 #suchFeld{display:none}.kopf.sucht #suchFeld{display:block;flex:1;min-width:0;height:38px;padding:0 16px;border-radius:19px;border:1px solid var(--linie);font:inherit;font-size:14px}
 
 /* Seitenleiste 248 px (einklappbar auf 72 px), Einträge 44 px / 15 px, aktiv = Akzentfläche + Strich links, rote Zähler */
-.rumpf{display:grid;grid-template-columns:248px minmax(0,1fr);align-items:start;min-height:calc(100dvh - var(--kopf-h))}
+.rumpf{display:grid;grid-template-columns:264px minmax(0,1fr);align-items:start;min-height:calc(100dvh - var(--kopf-h))}
 .seitenleiste{position:sticky;top:var(--kopf-h);height:calc(100dvh - var(--kopf-h));overflow-y:auto;background:#fff;border-right:1px solid var(--linie);
   padding:14px 12px;display:flex;flex-direction:column;gap:12px}
 .sl-liste,.sl-fuss{display:flex;flex-direction:column;gap:2px}
@@ -66,7 +66,7 @@ textarea{min-height:70px;resize:vertical}
   background:transparent;font-family:'Jost','Segoe UI',Arial,sans-serif;font-size:15px;font-weight:500;color:#344054;cursor:pointer;text-align:left;
   white-space:nowrap;text-decoration:none;line-height:1.2}
 .sl-eintrag[hidden]{display:none}
-.sl-eintrag span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sl-eintrag span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4}   /* Jost-Unterlängen: sonst 1–2 px abgeschnitten (Gleichmaß 06.11.2026) */
 .sl-eintrag svg{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;color:#667085}
 .sl-eintrag:hover{background:#f2f4f7}
 .sl-eintrag.an{background:var(--blau2);color:var(--blau-tief);font-weight:600}
@@ -402,7 +402,7 @@ html.mp-offen,html.mp-offen body{overflow:hidden;height:100%}
 /* Start: „Auf einen Blick“ und Schnellzugriffe – gleich hohe Kacheln, volle Reihen (PC 3, Tablet 2, Handy 1), je Zeile einzeilig */
 .kacheln.blick{grid-template-columns:repeat(3,minmax(0,1fr))}
 .kacheln.blick .kachel{height:104px;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;overflow:hidden}
-.kacheln.blick .kachel>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kacheln.blick .kachel>*{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.35;flex-shrink:0}
 .kacheln.blick .kachel.k-grau{border-left-color:#c5ced8}
 .sk-knoepfe{display:flex;gap:4px;margin-top:6px}
 /* Schnellzugriffe: frei wählbare Anzahl – Flex mit fester Spaltenzahl (sk-1 … sk-4), eine unvollständige letzte Reihe füllt die Breite */
@@ -412,7 +412,7 @@ html.mp-offen,html.mp-offen body{overflow:hidden;height:100%}
 @media(max-width:1100px){.kacheln.sk.sk-3,.kacheln.sk.sk-4{--sk-spalten:2}}
 @media(max-width:600px){.kacheln.sk{--sk-spalten:1!important}}
 @media(max-width:1100px){.kacheln.blick{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:600px){.kacheln.blick{grid-template-columns:1fr}.kacheln.blick .kachel{height:88px}}
+@media(max-width:600px){.kacheln.blick{grid-template-columns:1fr}.kacheln.blick .kachel{height:96px}}
 /* Hinweisleisten (statt Inline-Stil) */
 .pruefansicht{position:fixed;bottom:calc(var(--fuss-h) + 14px);right:14px;z-index:26;background:var(--bern);color:#fff;padding:6px 12px;border-radius:8px;font-size:13px}
 .neue-version{position:fixed;top:0;left:0;right:0;z-index:60;background:var(--gelb);color:var(--text);padding:8px 14px;display:flex;gap:12px;align-items:center;justify-content:center}

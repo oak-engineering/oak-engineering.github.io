@@ -68,10 +68,16 @@
     function massnahmenVon(g){
       const liste = [], je = {};
       const dazu = m => { if(!m.text || m.text === "–") return; const n = norm(m.text);
-        if(je[n]){ const a = je[n]; if(rang(m) > rang(a)) Object.assign(a, m, { k: a.k || m.k }); else { a.erledigtAm = a.erledigtAm || m.erledigtAm; a.wirksamAm = a.wirksamAm || m.wirksamAm; } return; }
+        if(je[n]){ const a = je[n];
+          if(a.vorhanden && !m.vorhanden){ Object.assign(a, m, { k: a.k || m.k }); delete a.vorhanden; return; }   // verfolgte Maßnahme gewinnt
+          if(rang(m) > rang(a)) Object.assign(a, m, { k: a.k || m.k }); else { a.erledigtAm = a.erledigtAm || m.erledigtAm; a.wirksamAm = a.wirksamAm || m.wirksamAm; } return; }
         je[n] = m; liste.push(m); };
-      (g.schutzmassnahmen || []).forEach(x => x && dazu({ k: x.stop || "T", text: x.text || "", status: x.status || "offen", wirksam: x.wirksam || "offen",
-        termin: x.termin || "", verantwortlich: x.verantwortlich || "", erledigtAm: "", wirksamAm: "" }));
+      /* Schutzmaßnahmen der Beurteilung ohne eigenen Status = vorhandener Ist-Zustand (Cockpit: „T: Schutztür verriegelt“).
+         Sie gehören zum Ausgangsrisiko und halten das Restrisiko nicht auf (Abnahme K2-06); mit Status (Import) wie bisher. */
+      (g.schutzmassnahmen || []).forEach(x => x && dazu(x.status ? { k: x.stop || "T", text: x.text || "", status: x.status, wirksam: x.wirksam || "offen",
+        termin: x.termin || "", verantwortlich: x.verantwortlich || "", erledigtAm: "", wirksamAm: "" }
+        : { k: x.stop || "T", text: x.text || "", status: "erledigt", wirksam: "wirksam", vorhanden: true,
+            termin: "", verantwortlich: x.verantwortlich || "", erledigtAm: "", wirksamAm: "" }));
       (mgl || []).filter(x => x.as_gefaehrdung_id === g.id && !x.ausgeblendet).forEach(x => dazu(ausLive(x, x.massnahme || x.label || "")));
       (mas || []).filter(x => x.gefaehrdung_id === g.id).forEach(x => dazu(ausLive(x, x.text || "")));
       return liste;
@@ -114,14 +120,28 @@
         psa = { arten: benutzt.map(x => ({ k: x, kurz: artV[x].kurz, name: artV[x].name, zeichen: artV[x].zeichen || "", bild: (Z[artV[x].zeichen] || {}).bild || "" })),
           zeilen: Object.values(taet), stand: deDatum(new Date().toISOString().slice(0, 10)),
           quelle: (await apiGet("/rest/v1/as_psa_zuordnung?select=quelle&quelle=like.vorlage*&taetigkeit_id=in.(" + [...new Set(zeilen.map(z => z.taetigkeit_id))].join(",") + ")&limit=1", false).catch(() => [])).length ? "Vorlage: DGUV Information 113-606, vom Betrieb angepasst" : "" };
-        /* BA: Gebotszeichen kommen aus der Matrix (Pflicht-PSA), ergänzt um die von Hand gesetzten */
-        { const ziel = ba || (psaBa = { inhalt: {} }); ziel.inhalt = ziel.inhalt || {}; const P = ziel.inhalt.piktogramme = ziel.inhalt.piktogramme || {}; const s = P.schutz = P.schutz || { links: [], rechts: [] };
+        /* BA: Gebotszeichen kommen aus der Matrix (Pflicht-PSA), ergänzt um die von Hand gesetzten – aber nur im Entwurf.
+           Eine freigegebene BA ist ein Rechtsdokument und zeigt ihren freigegebenen Stand; neue Gebotszeichen aus der
+           Matrix kommen erst mit der Überarbeitung (BA-Editor, neue Freigabe). Der Prüfauftrag anlage_ba fordert sie an. */
+        const ausP = [...new Set(zeilen.filter(z => z.pflicht !== false).map(z => (artV[z.psa_art] || {}).zeichen).filter(Boolean))];
+        if(ba && ba.status === "freigegeben"){
+          const sP = ((ba.inhalt || {}).piktogramme || {}).schutz || {}, hat = new Set([].concat(sP.links || [], sP.rechts || []));
+          const fehlt = ausP.filter(c => !hat.has(c));
+          if(fehlt.length) meta.baPsaHinweis = "PSA-Matrix seit Freigabe geändert (neu: " + fehlt.join(" ") + ") – Überarbeitung der Betriebsanweisung angefordert";
+        } else { const ziel = ba || (psaBa = { inhalt: {} }); ziel.inhalt = ziel.inhalt || {}; const P = ziel.inhalt.piktogramme = ziel.inhalt.piktogramme || {}; const s = P.schutz = P.schutz || { links: [], rechts: [] };
           const hand = [].concat(s.links || [], s.rechts || []);
           const aus = [...new Set(zeilen.filter(z => z.pflicht !== false).map(z => (artV[z.psa_art] || {}).zeichen).filter(Boolean))];
           const alle = [...new Set(aus.concat(hand))], h = Math.ceil(alle.length / 2);
           P.schutz = { links: alle.slice(0, h), rechts: alle.slice(h) }; ziel.inhalt.psa_codes = aus; }
       }
     }catch(e){ psa = null; }
+    /* BdA: PSA-Block ist live – wurde die Matrix nach der Freigabe geändert (Prüfauftrag bda_system, Anlass „psa“),
+       steht die Freigabe als „seit Änderung nicht neu freigegeben“ im Dokument */
+    if(sys.freigabe_am){
+      const fr = String(sys.freigabe_am).slice(0, 10);
+      const psaAm = (pa || []).flatMap(x => x.anlaesse || []).filter(e => e && e.typ === "psa" && String(e.am || "").slice(0, 10) >= fr).map(e => String(e.am).slice(0, 10)).sort().slice(-1)[0];
+      if(psaAm){ meta.bdaFreigabeText += " · PSA je Tätigkeit seit Freigabe geändert (" + fDat(psaAm) + ") – nicht neu freigegeben"; meta.bdaFreigabeStatus = "geaendert"; }
+    }
     /* Freigabe der BA (Cockpit, nur GF) in die Unterschriftszeile der BA */
     if(ba && ba.status === "freigegeben"){ meta.freigabeVon = ba.freigabe_von || ""; meta.freigabeAm = String(ba.freigabe_am || "").slice(0, 10).split("-").reverse().join("."); }
     return JSON.stringify({ _typ: "OAK-doc-data", _quelle: "Cockpit-Datenbank", meta, hazards, rechtsquellen: dok.rechtsquellen || [],

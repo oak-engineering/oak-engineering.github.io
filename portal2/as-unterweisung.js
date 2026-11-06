@@ -29,7 +29,9 @@ const AS_UW_MODUL_ALT = { grund: "Allgemeine Grundunterweisung", spritzguss: "Si
 
 /* ---------------- Daten ---------------- */
 async function asUwLaden(neu){
-  if(!neu && AS_UW.kunde === AS.kunde && AS_UW.d.geladen) return;
+  /* Zwischenspeicher höchstens 10 s: Nachweise kommen vom Terminal (anderes Gerät), Fälligkeiten aus DB-Triggern –
+     beim Öffnen der Seite gilt der Stand der Datenbank (Abnahme K5-06, 06.11.2026) */
+  if(!neu && AS_UW.kunde === AS.kunde && AS_UW.d.geladen && Date.now() - (AS_UW.d.am || 0) < 10000) return;
   const k = "&kunde_slug=eq." + encodeURIComponent(AS.kunde);
   const hole = p => apiGet(p).then(r => r || []).catch(() => []);
   const [nachweise, pers, rollen, einheiten, tok, beleg, einarb, module, buchung, faellig, modulZuw, zusatz, docs, baustein, anlassP, anlassA] = await Promise.all([
@@ -50,7 +52,7 @@ async function asUwLaden(neu){
     hole("/rest/v1/portal_uw_baustein?select=*" + k + "&order=gueltig_ab.desc"),
     hole("/rest/v1/portal_pruefauftrag_person?select=person_id,am,durch,pruefauftrag_id" + k + "&order=am.desc"),
     hole("/rest/v1/portal_pruefauftrag?select=id,objekt_titel&objekt_typ=eq.unterweisung&erledigt_am=not.is.null" + k)]);
-  AS_UW.d = { geladen: true, nachweise, pers, rollen, einheiten, tok, beleg, einarb, module, buchung, faellig, modulZuw, zusatz, docs, baustein,
+  AS_UW.d = { geladen: true, am: Date.now(), nachweise, pers, rollen, einheiten, tok, beleg, einarb, module, buchung, faellig, modulZuw, zusatz, docs, baustein,
     anlass: (anlassP || []).map(x => Object.assign({}, x, { titel: ((anlassA || []).find(a => a.id === x.pruefauftrag_id) || {}).objekt_titel || "" })) };
   if(AS_UW.kunde !== AS.kunde){ AS_UW.kap = null; AS_UW.detail = null; AS_UW.mobil = null; AS_UW.kat = null; AS_UW.pe = { an: false, wahl: new Set() }; }
   AS_UW.kunde = AS.kunde;
@@ -865,8 +867,8 @@ function asUwOrgDialog(){
     <h3>Bereiche</h3><div class="zeilen">${d.einheiten.map(e => `<div class="z"><div><b>${esc(e.name)}</b><small>${esc(e.kst_nr || "")}</small></div>
       ${e.status === "aktiv" ? `<button class="btn sek klein" data-earch="${esc(e.id)}">archivieren</button>` : asChip("archiviert", "grau")}</div>`).join("") || '<div class="leer">noch keiner</div>'}</div>
     <div class="form"><label>Name<input id="uwoEName" placeholder="z. B. Halle 1"></label><label>Kst-Nr. (optional)<input id="uwoEKst"></label><button class="btn sek" id="uwoENeu" style="align-self:end">anlegen</button></div>
-    <h3>Rollen</h3><div class="zeilen">${d.rollen.map(r => `<div class="z"><div><b>${esc(r.name)}</b><small>${esc(AS_UW_TYP[r.typ] || r.typ)}</small></div>
-      ${r.status === "aktiv" ? `<button class="btn sek klein" data-rarch="${esc(r.id)}">archivieren</button>` : asChip("archiviert", "grau")}</div>`).join("") || '<div class="leer">noch keine</div>'}</div>
+    <h3>Rollen</h3><div class="zeilen">${d.rollen.map(r => `<div class="z" data-rbearb="${esc(r.id)}" title="Rolle ändern"><div><b>${esc(r.name)}</b><small>${esc(AS_UW_TYP[r.typ] || r.typ)}</small></div>
+      <span><button class="btn sek klein" data-rbearb="${esc(r.id)}">ändern</button> ${r.status === "aktiv" ? `<button class="btn sek klein" data-rarch="${esc(r.id)}">archivieren</button>` : `<button class="btn sek klein" data-rreakt="${esc(r.id)}">reaktivieren</button>`}</span></div>`).join("") || '<div class="leer">noch keine</div>'}</div>
     <div class="form"><label>Name<input id="uwoRName" placeholder="z. B. Einrichter"></label>
       <label>Typ<select id="uwoRTyp">${Object.entries(AS_UW_TYP).map(([v, t]) => `<option value="${v}">${esc(t)}</option>`).join("")}</select></label>
       <button class="btn sek" id="uwoRNeu" style="align-self:end">anlegen</button></div>` });
@@ -877,7 +879,22 @@ function asUwOrgDialog(){
     nach(() => apiSend("POST", "/rest/v1/uw_rolle", { kunde_slug: AS.kunde, name: n, typ: dlg.querySelector("#uwoRTyp").value }, "return=minimal"), "Rolle angelegt."); };
   dlg.querySelectorAll("[data-earch]").forEach(b => b.onclick = () => { const e = d.einheiten.find(x => x.id === b.dataset.earch);   // ein Weg: mit Umhängen (as-organisation.js)
     if(e && typeof asEinheitStilllegen === "function") asEinheitStilllegen(e); });
-  dlg.querySelectorAll("[data-rarch]").forEach(b => b.onclick = () => nach(() => apiSend("PATCH", "/rest/v1/uw_rolle?id=eq." + encodeURIComponent(b.dataset.rarch), { status: "archiviert" }, "return=minimal"), "Rolle archiviert."));
+  dlg.querySelectorAll("[data-rarch]").forEach(b => b.onclick = ev => { ev.stopPropagation(); nach(() => apiSend("PATCH", "/rest/v1/uw_rolle?id=eq." + encodeURIComponent(b.dataset.rarch), { status: "archiviert" }, "return=minimal"), "Rolle archiviert."); });
+  dlg.querySelectorAll("[data-rreakt]").forEach(b => b.onclick = ev => { ev.stopPropagation(); nach(() => apiSend("PATCH", "/rest/v1/uw_rolle?id=eq." + encodeURIComponent(b.dataset.rreakt), { status: "aktiv" }, "return=minimal"), "Rolle wieder aktiv."); });
+  /* Klick auf die Rolle = ändern (Name, Typ). Die DB zieht den neuen Namen in den Beurteilungen nach (Trigger uw_rolle_umbenannt). */
+  dlg.querySelectorAll("[data-rbearb]").forEach(z => z.onclick = ev => { ev.stopPropagation(); const r = d.rollen.find(x => x.id === z.dataset.rbearb); if(r) asUwRolleDialog(r); });
+}
+function asUwRolleDialog(r){
+  asDialog({ titel: "Rolle ändern", inhalt: `<div class="form">${asFeld("Name", "name", r.name, "text", "voll")}
+      <label>Typ<select data-f="typ">${Object.entries(AS_UW_TYP).map(([v, t]) => `<option value="${v}"${v === r.typ ? " selected" : ""}>${esc(t)}</option>`).join("")}</select></label></div>
+    <p class="hinweis">Personen, Unterweisungs-Zuordnungen und Beurteilungen mit dieser Rolle behalten die Verknüpfung.</p>`,
+    knoepfe: [{ t: "Speichern", fn: async dl => { const w = asWerte(dl), n = String(w.name || "").trim();
+      if(!n){ asMeldung("Bitte einen Namen eintragen."); return false; }
+      if(AS_UW.d.rollen.some(x => x.id !== r.id && x.name.trim().toLowerCase() === n.toLowerCase())){ asMeldung("Diese Rolle gibt es schon."); return false; }
+      try{ await apiSend("PATCH", "/rest/v1/uw_rolle?id=eq." + encodeURIComponent(r.id), { name: n, typ: w.typ || r.typ }, "return=minimal");
+        await asLaden(); await asUwNeu("Rolle gespeichert."); }
+      catch(e){ asMeldung("Fehler: " + (e.message || e)); return false; }
+      asUwOrgDialog(); return false; } }, { t: "Abbrechen", klasse: "sek", fn: () => { setTimeout(asUwOrgDialog, 0); return true; } }] });
 }
 
 /* ======================= 5. Inhalte (Kapitel) – Auswahl und Medien beim Kunden, Inhalt und Recht bei OAK ======================= */

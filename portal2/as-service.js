@@ -614,7 +614,7 @@ function asSvPaSichtbar(a){
 function asSvPaText(a){ return (a.anlaesse || []).map(x => x.text).filter(Boolean); }
 function asSvPaAufgaben(){
   const l = [], fk = asDarf("pflegen");
-  (AS_SV.pa || []).filter(asSvPaSichtbar).forEach(a => { const [t, ziel] = AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = asSvPaText(a);
+  (AS_SV.pa || []).filter(asSvPaSichtbar).forEach(a => { const [t, ziel] = AS_SV_PA[a.objekt_typ] || ["Unterlage prüfen", "unterlagen"], txt = asSvPaText(a).reverse();   // neueste Anlässe zuerst (Abnahme K7-05)
     const akt = [["Öffnen", () => asSvPaOeffnen(a, ziel)]];
     if(a.objekt_typ === "unterweisung"){
       if(fk || AS.gf) akt.push(["Unterwiesen …", () => asSvUwQuittieren(a)]);
@@ -627,6 +627,15 @@ function asSvPaAufgaben(){
       sub: txt.slice(0, 2).join(" · ") + (txt.length > 2 ? " · und " + (txt.length - 2) + " weitere" : "") + (fk ? "" : " – erledigt die Fachkraft"),
       frist: asSvTage(a.faellig_am), aktionen: akt }); });
   const bald = d => { const t = asSvTage(d); return t != null && t <= 30; };
+  /* Freigabe durch eine Änderung zurückgenommen (Trigger as_gefaehrdung_freigabe_weg: Anlass „gefaehrdung“ am Prüfauftrag
+     bda_system) – eigenes, sichtbares To-do statt „und N weitere“ im Prüfauftrag (Abnahme K2-08, 06.11.2026) */
+  asT("as_arbeitssystem").filter(x => !x.freigabe_am && !x.vorgelegt_am && !x.stillgelegt_am).forEach(x => {
+    const pa = (AS_SV.pa || []).find(a => a.objekt_typ === "bda_system" && a.objekt_id === x.id);
+    const weg = pa && (pa.anlaesse || []).filter(e => e.typ === "gefaehrdung").sort((a, b) => String(b.am || "").localeCompare(String(a.am || "")))[0];
+    if(!weg) return;
+    l.push({ schluessel: "bda-neu-freigeben:" + x.id + ":" + (weg.am || ""), stufe: "warnung", titel: "BdA neu freigeben: " + (x.name || ""),
+      sub: "Freigabe am " + asDat(weg.am) + " durch eine Änderung zurückgenommen – " + (fk ? "prüfen und der Geschäftsführung vorlegen" : "die Fachkraft legt die Beurteilung neu vor, dann freigeben"),
+      frist: null, aktionen: [["Öffnen", () => { AS.reiter["bda_" + x.id] = "tabelle"; AS.reiter.bda = x.id; asGehe("bda/" + x.id); }]] }); });
   /* Beurteilung wartet auf die Freigabe der Geschäftsführung (Durchlauf 15.10.2026, D16) */
   asT("as_arbeitssystem").filter(x => x.vorgelegt_am && !x.freigabe_am).forEach(x => l.push({
     schluessel: "bda-freigabe:" + x.id + ":" + x.vorgelegt_am, stufe: "warnung", titel: "Beurteilung freigeben: " + (x.name || ""),
@@ -665,7 +674,7 @@ function asSvPaAufgaben(){
           sub: "Den Rollen dieser Beurteilung sind keine Personen zugeordnet – Personen unter Unterweisungen → Mitarbeiter zuordnen", frist: null,
           aktionen: [["Öffnen", () => asGehe("unterweisungen")]] });
         else if(fehlt.length) l.push({ schluessel: "vs-fehlt:" + s.id + ":" + c + ":" + fehlt.length, stufe: art === "pflicht" ? "kritisch" : "warnung",
-          titel: (art === "pflicht" ? "Pflichtvorsorge veranlassen: " : "Vorsorge anbieten: ") + c,
+          titel: (art === "pflicht" ? "Vorsorge veranlassen (Pflichtvorsorge): " : "Vorsorge anbieten: ") + c,
           sub: fehlt.length + " Person(en) aus „" + (s.name || "") + "“: " + fehlt.slice(0, 4).map(p => p.name).join(", ") + (fehlt.length > 4 ? " …" : "") + " (ArbMedVV)",
           frist: null, aktionen: [["Öffnen", () => asGehe("nachweise/vorsorge")]] }); }); }); }
   /* Prüfkataster: fällige und überfällige Prüfungen (Durchlauf 15.10.2026: standen nur im Kalender) */
@@ -716,6 +725,11 @@ async function asSvUwQuittieren(a){
     const m = asNach("as_massnahme", oidQ.slice(3)); if(m && m.einheit_id) einh = [m.einheit_id];
   } else if(oidQ.startsWith("FK:")){
     einh = [];      // Führungskraft: die Person selbst auswählen
+  } else if(/^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(oidQ)){
+    /* BA ohne Maschinen-ID (bis 06.11.2026 hing der Auftrag an der BA-UUID) → Arbeitssystem der BA → Rollen */
+    const ba = (await hole("/rest/v1/as_ba?select=arbeitssystem_id&id=eq." + encodeURIComponent(oidQ)))[0];
+    const s = ba && ba.arbeitssystem_id ? asNach("as_arbeitssystem", ba.arbeitssystem_id) : null;
+    rollenNamen = s ? asListe(s.rollen) : []; if(s && s.einheit_id) einh = [s.einheit_id];
   } else {
     const sys = asT("as_arbeitssystem").filter(x => asListe(x.anlagen).includes(a.objekt_id));
     rollenNamen = [...new Set(sys.flatMap(x => asListe(x.rollen)))];

@@ -143,6 +143,38 @@ async function asLaden(){
   if(typeof asMarkeAnwenden === "function") asMarkeAnwenden();
   if(typeof asNameSetzen === "function") asNameSetzen();
 }
+/* Tabellen neu laden, die Datenbank-Trigger nebenbei ändern (Abnahme K2-07b/K6-03b, 06.11.2026): Freigabe zurückgenommen,
+   Gefährdung „Gefahrstoff: X“ aus der freigegebenen EMKG-Beurteilung, Prüfaufträge … – auch wenn ein anderes Konto
+   (z. B. die Geschäftsführung) die Änderung ausgelöst hat. Liefert true, wenn sich etwas geändert hat. */
+const AS_TRIGGER_FOLGEN = { as_gefaehrdung: ["as_arbeitssystem"], as_massnahme: ["as_arbeitssystem"], as_taetigkeit: ["as_arbeitssystem"] };
+async function asNachladen(tabellen){
+  if(!AS.kunde || !tabellen || !tabellen.length) return false;
+  const kunde = AS.kunde, k = "&kunde_slug=eq." + encodeURIComponent(kunde);
+  let neu;
+  try{
+    neu = await Promise.all(tabellen.map(async t => { const q = AS_QUELLEN[t];
+      const [eigen, v1] = await Promise.all([q && q.ganz ? [] : apiGet("/rest/v1/" + t + "?select=*" + k),
+        q ? apiGet("/rest/v1/" + q.v1 + "?select=*" + k + q.filter) : []]);
+      if(!Array.isArray(eigen) || !Array.isArray(v1)) throw new Error("unvollständig");
+      return eigen.concat(q ? v1.map(q.zuV2) : []); }));
+  }catch(e){ return false; }
+  if(AS.kunde !== kunde) return false;
+  const vorher = tabellen.map(t => JSON.stringify(AS.db[t] || []));
+  tabellen.forEach((t, i) => { AS.db[t] = neu[i];
+    if(["as_einheit", "as_taetigkeit", "as_gefaehrdung", "as_arbeitssystem"].includes(t)) AS.db[t].sort((a, b) => (a.sort || 0) - (b.sort || 0)); });
+  if(typeof asBereichNachLaden === "function") asBereichNachLaden();
+  return tabellen.some((t, i) => JSON.stringify(AS.db[t] || []) !== vorher[i]);
+}
+/* Beim Öffnen einer Beurteilung den Stand der Datenbank holen; zeichnet neu, wenn sich etwas geändert hat
+   und gerade kein Dialog offen ist (höchstens alle 3 s). */
+async function asFrischHalten(){
+  const jetzt = Date.now(); if(asFrischHalten.zuletzt && jetzt - asFrischHalten.zuletzt < 3000) return;
+  asFrischHalten.zuletzt = jetzt;
+  const hash = location.hash;
+  const anders = await asNachladen(["as_arbeitssystem", "as_taetigkeit", "as_gefaehrdung", "as_massnahme"]);
+  const dlg = document.getElementById("dlg");
+  if(anders && location.hash === hash && !(dlg && dlg.open)){ const y = window.scrollY; asZeige(); window.scrollTo(0, y); }
+}
 async function asV1Speichern(t, q, row, alt){
   let erg;
   if(alt) erg = await apiSend("PATCH", "/rest/v1/" + q.v1 + "?id=eq." + encodeURIComponent(alt.id), q.zuV1(row, alt), "return=representation");
@@ -150,6 +182,7 @@ async function asV1Speichern(t, q, row, alt){
   const neu = erg && erg[0] && q.zuV2(erg[0]); if(!neu) return null;
   const liste = AS.db[t] = AS.db[t] || [];
   const i = liste.findIndex(r => r.id === neu.id); if(i >= 0) liste[i] = neu; else liste.push(neu);
+  if(AS_TRIGGER_FOLGEN[t]) await asNachladen(AS_TRIGGER_FOLGEN[t]);
   return neu;
 }
 async function asSpeichern(t, row){
@@ -170,12 +203,14 @@ async function asSpeichern(t, row){
   const neu = erg && erg[0]; if(!neu) return null;
   const liste = AS.db[t] = AS.db[t] || [];
   const i = liste.findIndex(r => r.id === neu.id); if(i >= 0) liste[i] = neu; else liste.push(neu);
+  if(AS_TRIGGER_FOLGEN[t]) await asNachladen(AS_TRIGGER_FOLGEN[t]);   // z. B. Freigabe durch Trigger zurückgenommen
   return neu;
 }
 async function asLoeschen(t, id){
   const alt = asNach(t, id), q = AS_QUELLEN[t];
   await apiSend("DELETE", "/rest/v1/" + (alt && alt._v1 && q ? q.v1 : t) + "?id=eq." + encodeURIComponent(id), null, "return=minimal");
   AS.db[t] = asT(t).filter(r => r.id !== id);
+  if(AS_TRIGGER_FOLGEN[t]) await asNachladen(AS_TRIGGER_FOLGEN[t]);
 }
 async function asOrgSpeichern(teil){
   if("avv_am" in teil && AS.admin){
@@ -676,6 +711,7 @@ function asZeige(){
   /* Seitenkopf (Kundenbegriff, „‹ Start“) nach jedem Neuaufbau des Hauptbereichs – auch wenn die Seite asynchron zeichnet */
   if(!asZeige.beob && typeof MutationObserver === "function"){ asZeige.beob = new MutationObserver(asSeitenKopf); asZeige.beob.observe(main, { childList: true }); }
   main.innerHTML = ""; s.render(main); asSeitenKopf();
+  if(AS.seite === "bda") asFrischHalten();   // Folgen von Triggern/anderen Konten ohne Neuladen zeigen
   const hg = document.getElementById("blattHg"); if(hg) hg.classList.remove("zeig");
   window.scrollTo(0, 0);
 }

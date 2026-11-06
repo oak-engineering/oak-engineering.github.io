@@ -173,7 +173,7 @@ async function asSkSetzen(liste){
 /* ======================= Start =======================
    Wie im Kundenportal (V1 app.js renderStart/cockpit.js): Überschrift „Start“, zuerst „Auf einen Blick“ (was ein
    Schichtführer morgens wissen will, jede Kachel führt zur Liste), darunter die Schnellzugriffe. */
-function asStartBlick(uwFaellig){
+function asStartBlick(uwFaellig, aufgaben){
   const datum = d => d ? asDat(String(d).slice(0, 10)) : "–";
   const mg = typeof asMaengelRoh === "function" ? asMaengelRoh().filter(m => m.status !== "erledigt") : [];
   const zaun = mg.filter(m => asMgFeld(m, "thema") === "schutzzaun").length, mgGefahr = mg.filter(m => asMgBand(m) === "gefahr").length;
@@ -185,13 +185,16 @@ function asStartBlick(uwFaellig){
   const letzteDoku = anl.map(d => d.updated_at || d.stand).filter(Boolean).sort().slice(-1)[0];
   const kachel = (zahl, lbl, sub, farbe, ziel) => `<div class="kachel k-${farbe}" data-ziel="${esc(ziel)}" title="${esc(lbl + " – " + sub)}">
       <div class="zahl">${esc(String(zahl))}</div><div class="lbl">${esc(lbl)}</div><div class="hinweis">${esc(sub)}</div></div>`;
+  /* Offene Aufgaben = die To-do-Liste (Prüfaufträge, Fristen, Freigaben …) – Abnahme K2-05, 06.11.2026.
+     Sechs Kacheln (3 × 2): „letzte Begehung“ und „Unterlagen aktualisiert“ teilen sich eine Kachel. */
+  const auf = aufgaben || [], krit = auf.filter(a => a.stufe === "kritisch").length, pa = auf.filter(a => /^pa:|^bda-neu-freigeben:|^bda-freigabe:|^ba-freigabe:/.test(a.schluessel || "")).length;
   return [
     kachel(mg.length, "offene Mängel", zaun + " an Schutzzäunen / Robotern · " + mgGefahr + " im Gefahrbereich", mg.length ? "rot" : "gruen", "maengel"),
+    kachel(aufgaben ? auf.length : "–", "offene Aufgaben", aufgaben ? krit + " überfällig · " + pa + " Prüfaufträge und Freigaben" : "To-dos nicht geladen", krit ? "rot" : auf.length ? "gelb" : "gruen", "kalender/todos"),
     kachel(uwFaellig, "Unterweisungen fällig", uwFaellig ? "Personen ohne gültige Unterweisung" : "alle unterwiesen", uwFaellig ? "gelb" : "gruen", "unterweisungen"),
     kachel(vf[0] ? datum(vf[0].datum) : "keiner", "letzter Vorfall", vf[0] ? (ART[vf[0].art] || "Vorfall") + " · " + vOffen + " offen" : "bisher nichts gemeldet", vOffen ? "gelb" : "grau", "vorfaelle"),
-    kachel(datum(letzteBeg), "letzte Begehung", beg.length + " Begehungsprotokolle", "grau", "unterlagen"),
     kachel(band("gefahr") + " von " + anl.length, "Anlagen im Gefahrbereich", band("besorgnis") + " Besorgnis · " + band("akzeptanz") + " Akzeptanz", band("gefahr") ? "rot" : "gruen", "anlagen"),
-    kachel(datum(letzteDoku), "Unterlagen aktualisiert", anl.length + " Maschinen dokumentiert", "grau", "unterlagen"),
+    kachel(datum(letzteDoku), "Unterlagen aktualisiert", anl.length + " Maschinen · letzte Begehung " + datum(letzteBeg), "grau", "unterlagen"),
   ].join("");
 }
 AS_SEITEN.start = { titel: "Start", sort: 0.5, async render(main){
@@ -199,7 +202,10 @@ AS_SEITEN.start = { titel: "Start", sort: 0.5, async render(main){
   main.innerHTML = kopf + `<div class="leer">wird geladen …</div>`;
   await asSkLaden();
   if(typeof asBetriebLaden === "function") await asBetriebLaden().catch(() => {});
-  const fae = await apiGet("/rest/v1/v_uw_faelligkeit?select=person_id,status&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []);
+  const [fae, svOk] = await Promise.all([
+    apiGet("/rest/v1/v_uw_faelligkeit?select=person_id,status&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []),
+    typeof asSvLaden === "function" ? asSvLaden().then(() => true).catch(() => false) : false]);
+  let aufgaben = null; if(svOk) try{ aufgaben = asSvAufgaben(); }catch(e){ aufgaben = null; }
   const uwFaellig = new Set((fae || []).filter(f => f.status === "ueberfaellig" || f.status === "erstunterweisung").map(f => f.person_id)).size;
   if(AS.seite !== "start") return;
   asNav();   // Zähler und Umwelt-Eintrag kennen jetzt die Unterlagen
@@ -213,7 +219,7 @@ AS_SEITEN.start = { titel: "Start", sort: 0.5, async render(main){
           <button class="btn sek klein" data-sk="rechts" data-i="${i}" ${i === liste.length - 1 ? "disabled" : ""} aria-label="nach rechts">›</button>
           <button class="btn sek klein" data-sk="weg" data-i="${i}">entfernen</button></div></div>`
         : `<div class="kachel k-gruen sk-kachel" data-geh="${esc(id)}" title="${esc(k[1] + " – " + k[2])}"><div class="zahl klein">${esc(k[1])}</div><div class="hinweis">${esc(k[2])}</div></div>`; };
-    main.innerHTML = kopf + `<div class="karte"><h2>Auf einen Blick</h2><div class="kacheln blick">${asStartBlick(uwFaellig)}</div></div>
+    main.innerHTML = kopf + `<div class="karte"><h2>Auf einen Blick</h2><div class="kacheln blick">${asStartBlick(uwFaellig, aufgaben)}</div></div>
       <div class="karte"><h2>Schnellzugriffe <span>${AS_SK.edit ? `<button class="btn sek klein" id="skStd">Standard</button> <button class="btn klein" id="skFertig">Fertig</button>` : `<button class="btn sek klein" id="skAnp">Anpassen</button>`}</span></h2>
         <div class="kacheln blick sk sk-${spalten}">${liste.map(kachel).join("")}${AS_SK.edit ? `<div class="kachel sk-kachel" id="skNeu"><div class="zahl">+</div><div class="hinweis">Schnellzugriff hinzufügen</div></div>` : ""}</div></div>`;
     main.querySelectorAll("[data-geh]").forEach(k => k.onclick = () => { const z = AS_SK_KATALOG[k.dataset.geh]; if(z[3] === "mangelNeu") AS.mgNeuSofort = true; asGehe(z[0]); });

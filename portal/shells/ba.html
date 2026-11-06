@@ -560,6 +560,11 @@ if(DOC.meta && DOC.meta.dokumentart==="nachweis"){
   /* Freigabe aus dem Cockpit (Gefahrstoff-BA: freigegebene EMKG-Beurteilung) in die Unterschriftszeile */
   document.querySelectorAll('[data-f="signame"]').forEach(el=>{ if(m.freigabeVon && !el.value) el.value=m.freigabeVon; });
   document.querySelectorAll('[data-f="sigdate"]').forEach(el=>{ if(m.freigabeAm && !el.value) el.value=m.freigabeAm; });
+  /* Freigegebene BA, PSA-Matrix danach geändert: Hinweis statt stiller Änderung des Rechtsdokuments */
+  if(m.baPsaHinweis){ const k=document.getElementById("ba-titel"), h=document.createElement("div");
+    h.className="ba-psa-hinweis"; h.textContent=m.baPsaHinweis;
+    h.style.cssText="margin-top:4px;font-size:11px;font-weight:600;color:#9a5b00;background:#fff4e0;border:1px solid #f0c27a;border-radius:4px;padding:2px 8px;display:inline-block";
+    if(k && k.parentNode) k.parentNode.appendChild(h); }
   const mgl=document.getElementById("ba-mgl"), mglList=document.getElementById("ba-mgl-list");
   if(m.mitgeltend && m.mitgeltend.length){ mglList.innerHTML=m.mitgeltend.join(" · "); }
   else if(mgl){ mgl.style.display="none"; }

@@ -220,6 +220,8 @@ function asGsStoff(g, box){
   const paBa = asGsPa("gs_ba", g.id);
   const fld = (l, x) => x ? `<div><span class="hinweis">${esc(l)}</span><div>${esc(x)}</div></div>` : "";
   const gruppe = g.ba_gruppe ? AS_GS.rows.filter(x => x.ba_gruppe === g.ba_gruppe && asGsVerw(x) !== "inaktiv").length : 0;
+  /* Stammdaten immer antippbar – auch ein Stoff ohne Verwendung/Menge/Lagerort braucht einen Bearbeiten-Weg (Abnahme 06.11.2026) */
+  const stamm = fld("Bereiche", asGsBereiche(g).join(", ")) + fld("Verwendung", g.verwendung) + fld("Gebinde", g.gebinde) + fld("Menge", g.menge) + fld("Lagerort", g.lagerort) + (v !== "offen" ? fld("Hinweis", g.hinweis) : "");
   const kn = [];
   kn.push({ t: "Schließen", fn: () => {} });
   asDialog({ titel: g.bezeichnung, breit: true, knoepfe: kn, inhalt: `
@@ -227,7 +229,7 @@ function asGsStoff(g, box){
     ${asGsPiktos(g.h_saetze).length ? `<div class="gs-gross">${asGsPiktos(g.h_saetze).map(k => `<figure><img class="gs-pikto-g" src="../portal/ghs/ghs${k.slice(3)}.png" alt="${esc(k)}">${esc(AS_GS_GHS_NAME[k])}</figure>`).join("")}</div>` : ""}
     <div class="gs-zeile">${g.signalwort ? asChip("Signalwort: " + g.signalwort, g.signalwort === "Gefahr" ? "rot" : "gelb") : ""}${asChip(AS_GS_VERW[v], v === "aktiv" ? "gruen" : v === "offen" ? "gelb" : "grau")}</div>
     ${v === "offen" && g.hinweis ? `<p class="hinweis">${esc(g.hinweis)}</p>` : ""}
-    <div class="form${pflege ? " bda-klick" : ""}" id="gsStamm" ${pflege ? 'title="Stammdaten bearbeiten"' : ""}>${fld("Bereiche", asGsBereiche(g).join(", "))}${fld("Verwendung", g.verwendung)}${fld("Gebinde", g.gebinde)}${fld("Menge", g.menge)}${fld("Lagerort", g.lagerort)}${v !== "offen" ? fld("Hinweis", g.hinweis) : ""}</div>
+    <div class="form${pflege ? " bda-klick" : ""}" id="gsStamm" ${pflege ? 'title="Stammdaten bearbeiten"' : ""}>${stamm || (pflege ? `<div><span class="hinweis">Stammdaten</span><div>noch keine Angaben – antippen zum Ergänzen</div></div>` : "")}</div>
 
     <div class="gs-abschnitt">Sicherheitsdatenblatt</div>
     <div class="gs-zeile">${asChip(s.kurz, s.farbe)}<span class="hinweis">${esc(s.text)}</span></div>

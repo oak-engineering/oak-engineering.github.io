@@ -403,7 +403,7 @@
     <div class="dash" id="dash"></div>
 
     <!-- PSA je Tätigkeit (Cockpit-Matrix, Live-Stand, Stufe 12 06.11.2026) – erscheint nur, wenn die Matrix gepflegt ist -->
-    <div id="psa-block" class="psa-block" hidden><div class="sektion-titel">Persönliche Schutzausrüstung je Tätigkeit</div><div id="psa-tab"></div></div>
+    <div id="psa-block" class="psa-block" hidden><div class="sektion-titel">PSA je Tätigkeit (persönliche Schutzausrüstung)</div><div id="psa-tab"></div></div>
 
     <!-- Reifegrad / Vollständigkeit der gestuften Beurteilung (aus meta.reifegrad) -->
     <div id="reifegrad" class="reifegrad" hidden></div>
@@ -677,7 +677,7 @@ function normM(m){
   m=m||{}; let st=m.status||"offen", wk=m.wirksam||"offen";
   if(st==="wirksam"){ st="erledigt"; wk="wirksam"; }
   return {k:m.k||"T", text:m.text||"", status:st, verantwortlich:m.verantwortlich||"", termin:m.termin||"", prio:m.prio||"mittel", wirksam:wk,
-    erledigtAm:m.erledigtAm||"", wirksamAm:m.wirksamAm||""};
+    erledigtAm:m.erledigtAm||"", wirksamAm:m.wirksamAm||"", vorhanden:!!m.vorhanden};
 }
 function normH(src, seed){
   src=src||{}; seed=seed||{};
@@ -941,8 +941,11 @@ function statusCls(v){ const s=STATI.find(x=>x.v===v); return s?s.cls:""; }
 function idx(el){ return +el.closest(".karte").dataset.i; }
 function escapeHtml(s){ return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 /* Restrisiko gilt erst als belegt, wenn ALLE Massnahmen umgesetzt (erledigt) UND wirksam sind. */
-function wirksamOk(s){ return Array.isArray(s.massnahmen) && s.massnahmen.length>0
-  && s.massnahmen.every(m=>m.status==="erledigt" && m.wirksam==="wirksam"); }
+/* Restrisiko gilt, wenn alle umzusetzenden Maßnahmen erledigt und wirksam sind. Bereits vorhandene Schutzmaßnahmen
+   (Ist-Zustand der Beurteilung, „vorhanden“) sind Teil des Ausgangsrisikos und zählen nicht mit – wie im Cockpit
+   (asGefRisiko). Abnahme K2-06, 06.11.2026: „Schutztür verriegelt“ (ohne Status) hielt das Dokument auf Risiko 9. */
+function wirksamOk(s){ const ms=(Array.isArray(s.massnahmen)?s.massnahmen:[]).filter(m=>!m.vorhanden);
+  return ms.length>0 && ms.every(m=>m.status==="erledigt" && m.wirksam==="wirksam"); }
 function restHtml(i,s){
   if(wirksamOk(s)) return `<div class="rblock"><div class="rblab">Restrisiko</div>`
     +matrixHtml(i,"wN","sN",s.wN,s.sN)+`<span class="mxres" data-role="rN">${rzahlHtml(s.wN*s.sN)}</span></div>`;
@@ -959,7 +962,7 @@ function measuresHtml(i){
     return `<tr data-mi="${j}">`+
       `<td><select class="kindsel" data-mrole="k" title="S Substitution · T Technisch · O Organisatorisch · P Persönlich (PSA) · V Verhalten">${opts}</select></td>`+
       `<td class="mtd"><textarea class="mtext" data-mrole="text" rows="1" placeholder="Maßnahme …">${escapeHtml(m.text)}</textarea></td>`+
-      `<td title="${m.erledigtAm?"erledigt am "+escapeAttr(m.erledigtAm):""}"><select class="status-sel ${statusCls(m.status)}" data-mrole="status">${stOpts}</select>${m.erledigtAm&&m.status==="erledigt"?`<span class="m-dat">${escapeHtml(m.erledigtAm)}</span>`:""}</td>`+
+      `<td title="${m.erledigtAm?"erledigt am "+escapeAttr(m.erledigtAm):""}"><select class="status-sel ${statusCls(m.status)}" data-mrole="status">${stOpts}</select>${m.erledigtAm&&m.status==="erledigt"?`<span class="m-dat">${escapeHtml(m.erledigtAm)}</span>`:""}${m.vorhanden?`<span class="m-dat">vorhanden</span>`:""}</td>`+
       `<td title="${m.wirksamAm?"wirksam bestätigt am "+escapeAttr(m.wirksamAm):""}"><select class="wirk-sel wirk-${m.wirksam}" data-mrole="wirksam">${wkOpts}</select>${m.wirksamAm&&m.wirksam==="wirksam"?`<span class="m-dat">${escapeHtml(m.wirksamAm)}</span>`:""}</td>`+
       `<td><span class="mdel" title="Maßnahme entfernen">×</span></td>`+
       `</tr>`;
@@ -1017,7 +1020,7 @@ function updateDash(){
        ebenfalls erst nach der Wirksamkeitspruefung). */
     const rNow = wirksamOk(s) ? (s.wN*s.sN) : (s.wV*s.sV);
     hV[band(s.wV*s.sV).cls]++; hN[band(rNow).cls]++; maxRest=Math.max(maxRest,rNow);
-    (s.massnahmen||[]).forEach(m=>{ mTotal++; if(m.status==="erledigt") mDone++; if(m.wirksam==="wirksam") mWirk++; });
+    (s.massnahmen||[]).filter(m=>!m.vorhanden).forEach(m=>{ mTotal++; if(m.status==="erledigt") mDone++; if(m.wirksam==="wirksam") mWirk++; });
   });
   const total=state.h.length, bMax=band(maxRest);
   /* Zaehlung je Risikobereich. "akut" wird mitgezaehlt, sonst verschwaende eine

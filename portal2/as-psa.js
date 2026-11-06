@@ -6,12 +6,15 @@
    Gebotszeichen: AS_PSA_ZEICHEN (as-psa-zeichen.js, ASR A1.3 / ISO 7010). Keine KI. */
 "use strict";
 
-const AS_PSA = { sys: "", art: "", rolle: "", q: "", d: null, extraSpalten: {} };
+const AS_PSA = { sys: "", sq: "", art: "", rolle: "", q: "", d: null, extraSpalten: {} };
 const AS_PSA_BRANCHE = { "kunststoff-spritzguss": "Kunststoff-Spritzguss" };
 const AS_PSA_STANDARD = 100;   // Spalten bis Sortierung 100 = Tabelle der DGUV-Vorlage; weitere Arten nur, wenn benutzt oder dazugenommen
 AS_ICON.psa = '<path d="M3.5 17.5h17v2.5h-17z"/><path d="M5 17.5a7 7 0 0 1 14 0"/><path d="M10 10.8V6.5h4v4.3"/>';
 
 AS_SEITEN.psa = { titel: "PSA-Matrix", icon: "", sort: 4.66, async render(main){
+  /* #psa/<Arbeitssystem-ID> wählt die Anlage (Pill) und zeigt die Matrix */
+  const hashSys = AS.reiter.psa && /^[0-9a-f-]{36}$/.test(AS.reiter.psa) ? AS.reiter.psa : "";
+  if(hashSys){ AS_PSA.sys = hashSys; AS.reiter.psa = "matrix"; }
   const r = asReiter("psa", [["matrix", "Matrix"], ["modelle", "Modelle"], ["ausgabe", "Ausgabe"]], "matrix");
   main.innerHTML = `<h1 class="seite nodruck">PSA-Matrix</h1><p class="unter nodruck">Persönliche Schutzausrüstung je Tätigkeit, die Modelle des Betriebs und die Ausgabe an die Beschäftigten.</p>${r.html}<div id="psaInhalt"><div class="leer">wird geladen …</div></div>`;
   asPsaStil();
@@ -43,6 +46,9 @@ function asPsaStil(){
 .psa-mark.gs{background:#fff;color:#1d6b3f;border:2px solid #1d6b3f}
 .psa-mark sup{position:absolute;top:-6px;right:-8px;font-size:11px;color:var(--text);font-weight:700}
 .psa-liste{display:none}
+.psa-pills{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 100%;min-width:0}
+.psa-pill{height:32px;border-radius:16px;border:1px solid var(--linie);background:#fff;color:var(--text);padding:0 14px;font:13px 'Jost','Segoe UI',Arial,sans-serif;white-space:nowrap;max-width:100%;cursor:pointer}
+.psa-pill:hover{border-color:var(--blau)}.psa-pill.an{background:var(--blau);border-color:var(--blau);color:#fff}
 .psa-zeile{display:flex;align-items:center;gap:10px;min-height:48px;border-top:1px solid var(--linie);padding:4px 2px;cursor:pointer}
 .psa-zeile:first-child{border-top:0}
 .psa-zeile b{flex:1 1 auto;min-width:0;font-size:14px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -112,6 +118,9 @@ function asPsaMatrix(box){
   if(!sys.some(s => s.id === AS_PSA.sys)){
     const mit = sys.find(s => (D.zuord || []).some(z => asPsaTaetigkeiten(s.id).some(t => t.id === z.taetigkeit_id)));
     AS_PSA.sys = (mit || sys[0]).id; }
+  /* Anlagenwahl als Pills (OAK-UI-Regel 3): umbrechende Leiste, Suchfeld grenzt ein; die gewählte Anlage bleibt immer sichtbar */
+  const sq = AS_PSA.sq.trim().toLowerCase();
+  const pills = sys.filter(x => x.id === AS_PSA.sys || !sq || String(x.name).toLowerCase().includes(sq));
   const s = sys.find(x => x.id === AS_PSA.sys);
   const taet = asPsaTaetigkeiten(s.id).slice().sort((a, b) => (a.sort || 0) - (b.sort || 0) || String(a.name).localeCompare(String(b.name), "de"));
   const sicht = asPsaSicht(s.id), zuord = (D.zuord || []).filter(z => taet.some(t => t.id === z.taetigkeit_id));
@@ -130,7 +139,7 @@ function asPsaMatrix(box){
     return `<span class="psa-mark${z.quelle === "gefahrstoff" ? " gs" : z.pflicht ? "" : " opt"}" title="${esc(tip)}">${AS_PSA_HAKEN}${sup}</span>`; };
   const tabelle = `<table class="psa-tab matrix"><thead><tr><th class="t">Tätigkeit</th>${spalten.map(a => `<th title="${esc(a.name + (a.norm ? " · " + a.norm : ""))}"><div class="psa-kopf">${asPsaZeichen(a)}<span>${esc(a.kurz)}</span></div></th>`).join("")}</tr></thead>
     <tbody>${taet.map(t => `<tr><td class="t" data-taet="${esc(t.id)}" title="${esc(t.name)}"><span class="tn">${esc(t.name)}</span></td>${spalten.map(a => { const z = zelle(t, a);
-      return `<td class="z${edit ? " edit" : ""}" data-t="${esc(t.id)}" data-a="${esc(a.schluessel)}">${markHtml(z, a)}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
+      return `<td class="z${edit ? " edit" : ""}" data-t="${esc(t.id)}" data-a="${esc(a.schluessel)}" data-psa="${esc(a.schluessel)}">${markHtml(z, a)}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
   const liste = `<div class="psa-liste">${taet.map(t => { const zs = sicht.filter(z => z.taetigkeit_id === t.id);
       return `<div class="psa-zeile" data-taet="${esc(t.id)}"><b title="${esc(t.name)}">${esc(t.name)}</b><span class="psa-icons">${zs.map(z => asPsaZeichen(asPsaArt(z.psa_art), true)).join("")}</span></div>`; }).join("")}</div>`;
   const gehoer = sicht.some(z => z.psa_art === "gehoerschutz" && z.pflicht);
@@ -145,7 +154,8 @@ function asPsaMatrix(box){
 
   box.innerHTML = `<div class="karte"><h2>PSA je Tätigkeit <span class="hinweis">${taet.length} Tätigkeiten</span>
       <span><button class="btn sek klein" id="psaAushang">Aushang</button>${edit && !leer ? `<button class="btn sek klein" id="psaSpalte">+ PSA-Art</button><button class="btn klein" id="psaTaetNeu">+ Tätigkeit</button>` : ""}</span></h2>
-    <div class="filterleiste nodruck">${asFilterWahl('id="psaSys"', AS_PSA.sys, sys.map(x => [x.id, x.name]), "Anlage")}
+    <div class="filterleiste nodruck">${sys.length > 8 ? `<input type="search" id="psaSysQ" value="${esc(AS_PSA.sq)}" placeholder="Anlage suchen …" autocomplete="off">` : ""}
+      <span class="psa-pills" role="tablist" aria-label="Anlage">${pills.map(x => `<button type="button" class="psa-pill${x.id === AS_PSA.sys ? " an" : ""}" data-sys="${esc(x.id)}" title="${esc(x.name)}">${esc(x.name)}</button>`).join("")}</span>
       <span class="fl-zahl">${zuord.length} Zuordnungen</span></div>
     ${leer && edit && vorlageZeilen.length ? `<div class="psa-hinweis nodruck"><span>Für diese ${s.art === "arbeitssystem" ? "Beurteilung" : "Anlage"} ist noch keine PSA festgelegt. Die Branchenvorlage ${esc(AS_PSA_BRANCHE[vorlageBr] || vorlageBr)} legt ${vorlageZeilen.length} Tätigkeiten mit ihrer PSA an (DGUV Information 113-606); danach passen Sie die Matrix an.</span>
         <button class="btn klein" id="psaVorlage">Aus Branchenvorlage übernehmen</button></div>` : ""}
@@ -154,7 +164,9 @@ function asPsaMatrix(box){
     ${gehoer ? `<div class="psa-hinweis"><span>Gehörschutz ist Pflicht: Für die Beschäftigten dieser Tätigkeiten gilt Pflichtvorsorge Lärm ab 85 dB(A) nach ArbMedVV. Fehlende Vorsorge erscheint unter Aufgaben.</span><button class="btn sek klein" id="psaVorsorge">Vorsorge öffnen</button></div>` : ""}
     <p class="psa-fuss">${esc(fuss)}</p></div>`;
 
-  box.querySelector("#psaSys").onchange = ev => { AS_PSA.sys = ev.target.value; asPsaMatrix(box); };
+  box.querySelectorAll("[data-sys]").forEach(el => el.onclick = () => { AS_PSA.sys = el.dataset.sys; asGehe("psa/" + el.dataset.sys); });
+  const sqF = box.querySelector("#psaSysQ"); if(sqF) sqF.oninput = () => { AS_PSA.sq = sqF.value; clearTimeout(AS_PSA.sqT);
+    AS_PSA.sqT = setTimeout(() => { asPsaMatrix(box); const n = document.getElementById("psaSysQ"); if(n){ n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); };
   box.querySelector("#psaAushang").onclick = () => asDokOeffnen("../portal/psa-aushang.html?k=" + encodeURIComponent(AS.kunde) + "&sys=" + encodeURIComponent(s.id), "PSA-Aushang · " + s.name);
   const vs = box.querySelector("#psaVorsorge"); if(vs) vs.onclick = () => asGehe("nachweise/vorsorge");
   box.querySelectorAll("[data-taet]").forEach(el => el.onclick = () => asPsaTaetDialog(asNach("as_taetigkeit", el.dataset.taet), s, box));

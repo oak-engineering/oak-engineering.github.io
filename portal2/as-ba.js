@@ -59,7 +59,10 @@ async function asBdaDokumente(box, s){
         : `<label class="voll">${esc(l)}${art !== "text" ? ` <span class="hinweis">(eine Zeile je Punkt, **fett**)</span>` : ""}<textarea data-f="ba_${f}" rows="${art === "text" ? 3 : 5}"${darf ? "" : " readonly"}>${esc(asBaZuText(t[f], art))}</textarea></label>`).join("")}
         ${asFeld("Piktogramme Gefahren (Codes, z. B. W024 W017)", "pk_gefahren", asBaPk(ba, "gefahren"), "text", "voll")}
         ${asFeld("Piktogramme Schutz (z. B. M004 M009)", "pk_schutz", asBaPk(ba, "schutz"), "text", "voll")}
-        ${psaCodes.length ? `<p class="hinweis voll">Aus der PSA-Matrix: ${esc(psaCodes.join(" "))} – diese Gebotszeichen stehen immer in der BA und werden beim Speichern übernommen.</p>` : ""}
+        ${psaCodes.length ? (() => { const hat = new Set(asBaPk(ba, "schutz").split(" ").filter(Boolean)), fehlt = psaCodes.filter(c => !hat.has(c));
+          return ba.status === "freigegeben" && fehlt.length
+            ? `<p class="hinweis voll"><b>PSA-Matrix seit Freigabe geändert:</b> ${esc(fehlt.join(" "))} fehlt in der freigegebenen BA. Speichern übernimmt die Gebotszeichen – danach gibt die Geschäftsführung neu frei.</p>`
+            : `<p class="hinweis voll">Aus der PSA-Matrix: ${esc(psaCodes.join(" "))} – diese Gebotszeichen stehen im Entwurf und werden beim Speichern übernommen.</p>`; })() : ""}
         ${asFeld("Piktogramme Erste Hilfe (z. B. E003)", "pk_ersthilfe", asBaPk(ba, "ersthilfe"), "text", "voll")}</div>
       <p class="hinweis">Version ${ba.version}${ba.geaendert_am ? " · zuletzt geändert " + asDat(ba.geaendert_am) + (ba.geaendert_von ? " von " + esc(ba.geaendert_von) : "") : ""}. Jede Änderung nach der Freigabe macht die BA wieder zum Entwurf – die Geschäftsführung gibt neu frei.</p>`
       : `<div class="leer">Für diese Beurteilung gibt es noch keine Betriebsanweisung.</div>`}</div>`;
@@ -69,7 +72,8 @@ async function asBdaDokumente(box, s){
     AS_BA.sprache = b.dataset.spr; asBdaDokumente(box, s); });
   const neu = box.querySelector("#baNeu"); if(neu) neu.onclick = async () => {
     await apiSend("POST", "/rest/v1/as_ba", { kunde_slug: AS.kunde, arbeitssystem_id: s.id, maschinen_id: asListe(s.anlagen)[0] || null, titel: s.name,
-      inhalt: asBaVorschlag(s), status: "entwurf", einheit_id: s.einheit_id || null }, "return=minimal");
+      inhalt: (v => { const h = Math.ceil(psaCodes.length / 2); if(psaCodes.length) v.piktogramme.schutz = { links: psaCodes.slice(0, h), rechts: psaCodes.slice(h) }; return v; })(asBaVorschlag(s)),
+      status: "entwurf", einheit_id: s.einheit_id || null }, "return=minimal");
     asMeldung("BA als Entwurf aus der Beurteilung vorgeschlagen – bitte prüfen und ergänzen"); asBdaDokumente(box, s); };
   if(!ba) return;
   const speichern = async () => {
