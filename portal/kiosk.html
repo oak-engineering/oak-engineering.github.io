@@ -1012,8 +1012,14 @@ async function sha256hex(s){ try{ if(window.crypto&&crypto.subtle){ const buf=aw
   let h1=0xdeadbeef,h2=0x41c6ce57; for(let i=0;i<s.length;i++){const c=s.charCodeAt(i); h1=Math.imul(h1^c,2654435761); h2=Math.imul(h2^c,1597334677);}
   h1=Math.imul(h1^(h1>>>16),2246822507)^Math.imul(h2^(h2>>>13),3266489909); h2=Math.imul(h2^(h2>>>16),2246822507)^Math.imul(h1^(h1>>>13),3266489909);
   return (h2>>>0).toString(16).padStart(8,'0')+(h1>>>0).toString(16).padStart(8,'0'); }
+/* Praefix der Nachweis-ID = Betrieb (Kennung aus dem Portal, sonst erstes Wort des Firmennamens; WIBO bleibt „WIBO“) */
+function nidPraefix(){
+  let s=''; try{ s=((typeof portalCache==='function'&&portalCache())||{}).kunde_slug||''; }catch(e){}
+  if(!s) s=String(((CONTENT||{}).meta||{}).customer||'').split(/\s+/)[0]||'';
+  s=s.toUpperCase().replace(/Ä/g,'AE').replace(/Ö/g,'OE').replace(/Ü/g,'UE').replace(/[^A-Z0-9]+/g,'').slice(0,12);
+  return s||'UW'; }
 function genNid(now){ const p=n=>String(n).padStart(2,'0'); const r=Math.floor(Math.random()*65536).toString(16).toUpperCase().padStart(4,'0');
-  return 'WIBO-'+now.getFullYear()+p(now.getMonth()+1)+p(now.getDate())+'-'+p(now.getHours())+p(now.getMinutes())+'-'+r; }
+  return nidPraefix()+'-'+now.getFullYear()+p(now.getMonth()+1)+p(now.getDate())+'-'+p(now.getHours())+p(now.getMinutes())+'-'+r; }
 function wrapLines(ctx,text,maxW){ const words=String(text).split(' '); const lines=[]; let line=''; for(const w of words){ const t=line?line+' '+w:w; if(ctx.measureText(t).width>maxW && line){ lines.push(line); line=w; } else line=t; } if(line)lines.push(line); return lines; }
 async function renderResult(){
   const m=CONTENT.meta,p=participant; _ensureCertLogo();

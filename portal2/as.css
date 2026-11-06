@@ -432,3 +432,30 @@ html.mp-offen,html.mp-offen body{overflow:hidden;height:100%}
 .tab td.uwk-abwahl small{color:var(--rot)}
 .uwp-aktionsleiste{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff;border-top:1px solid var(--linie,#dde3ea);padding:10px 4px;margin-top:10px}
 @media(max-width:820px){.uwp-aktionsleiste{bottom:calc(var(--fuss-h,0px) + env(safe-area-inset-bottom))}}
+/* Testphase (as-testphase.js, 06.11.2026): Hinweisband unter dem Kopf + Feedback-Abfrage */
+body.tp-an{--tp-h:34px}
+.tp-band{position:sticky;top:var(--kopf-h);z-index:29;height:var(--tp-h,34px);display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:0 clamp(12px,2vw,28px);background:var(--gelb2);border-bottom:1px solid #f0d27a;color:#6b4d00;font-size:13px;white-space:nowrap;overflow:hidden}
+.tp-band-text{overflow:hidden;text-overflow:ellipsis;min-width:0}.tp-kurz{display:none}
+.tp-band-knopf{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 12px;border-radius:13px;border:1px solid #c99a00;background:#fff;color:#6b4d00;font:inherit;font-size:12.5px;cursor:pointer;flex:none}
+.tp-band-knopf svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round}
+body.tp-an .seitenleiste{top:calc(var(--kopf-h) + var(--tp-h));height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
+body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
+@media(max-width:820px){.tp-lang{display:none}.tp-kurz{display:inline}body.tp-an{--tp-h:32px}}
+.dlg.tp-dlg[open]{display:flex;flex-direction:column;overflow:hidden;width:min(720px,96vw)}
+.tp-dlg .dlg-inhalt{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.tp-intro,.tp-forum{margin:0;font-size:13px;color:var(--grau)}
+.tp-liste{flex:1 1 auto;min-height:80px;overflow-y:auto;border:1px solid var(--linie);border-radius:8px}
+.tp-zeile{display:grid;grid-template-columns:minmax(0,190px) auto minmax(0,1fr);align-items:center;gap:10px;height:44px;padding:0 10px;border-bottom:1px solid var(--linie)}
+.tp-zeile:last-child{border-bottom:0}
+.tp-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.tp-sterne{display:flex;gap:2px}
+.tp-stern{width:26px;height:26px;padding:2px;border:0;background:none;cursor:pointer;color:#c5ced8}
+.tp-stern svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round}
+.tp-stern.an{color:var(--gelb)}.tp-stern.an svg{fill:currentColor}
+.tp-text{height:32px;min-width:0;border:1px solid var(--linie);border-radius:8px;padding:0 8px;font:inherit;font-size:13px}
+.tp-gesamt{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--grau)}
+.tp-gesamt textarea{border:1px solid var(--linie);border-radius:8px;padding:6px 8px;font:inherit;font-size:14px;resize:none;height:56px}
+.tp-scroll{overflow-x:auto}.tp-zahl{white-space:nowrap}
+@media(max-width:600px){.tp-zeile{grid-template-columns:minmax(0,1fr) auto 64px;gap:4px;padding:0 6px}.tp-stern{width:21px;height:24px;padding:0}.tp-stern svg{width:19px;height:19px}.tp-text{padding:0 6px}.tp-dlg .dlg-inhalt{padding:12px}}
+.tp-forum a{color:var(--blau);font-weight:600}
