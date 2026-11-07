@@ -127,6 +127,18 @@ async function asKiSenden(box){
   AS_KI.laeuft = false; asKiZeichnen(box);
 }
 
+/* Ein Bildschirm: Höhe = sichtbare Höhe ab Oberkante (Hinweisband/Testphase-Band verschieben sie), die Seite selbst scrollt nie */
+function asKiHoehe(){
+  const w = document.querySelector("#haupt .ki-seite"), main = document.getElementById("haupt"); if(!w || !main) return;
+  w.style.marginBottom = "0";
+  const unten = parseFloat(getComputedStyle(main).paddingBottom) || 0;
+  const h = window.innerHeight - (w.getBoundingClientRect().top + window.scrollY) - unten;
+  w.style.height = Math.max(320, Math.floor(h)) + "px";
+  const ueber = document.documentElement.scrollHeight - window.innerHeight;
+  if(ueber > 0 && h - ueber >= 320) w.style.height = Math.floor(h - ueber) + "px";
+  if(!asKiHoehe.an){ asKiHoehe.an = true; window.addEventListener("resize", () => { clearTimeout(asKiHoehe.t); asKiHoehe.t = setTimeout(asKiHoehe, 120); }); }
+}
+
 AS_SEITEN.assistent = { titel: "Assistent", icon: "?", sort: 1.2, async render(main){
   const e = (AS_KI.einst && AS_KI.einst.kunde === AS.kunde) ? AS_KI.einst : await asKiEinstLaden();
   if(!e.aktiv){
@@ -151,4 +163,5 @@ AS_SEITEN.assistent = { titel: "Assistent", icon: "?", sort: 1.2, async render(m
   box.querySelector("#kiSenden").onclick = () => asKiSenden(box);
   box.querySelector("#kiText").onkeydown = ev => { if(ev.key === "Enter" && !ev.shiftKey){ ev.preventDefault(); asKiSenden(box); } };
   asKiZeichnen(box);
+  asKiHoehe(); setTimeout(asKiHoehe, 400); setTimeout(asKiHoehe, 1500);
 } };
