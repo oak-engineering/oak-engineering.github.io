@@ -11,7 +11,7 @@
 AS_ICON.sicherheitskultur = '<path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3z"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>';
 const AS_RG = { d: null, slug: null, monat: null, ansicht: window.matchMedia && matchMedia("(max-width: 600px)").matches ? "liste" : "monat", f: { art: "", gruppe: "", meine: "" }, entwurf: null };
 const AS_RG_ART = { lern: "Lernrundgang", sicher: "Sicherheitsrundgang" };
-const AS_RG_KURZ = { lern: "Lern-RG", sicher: "Sicherheits-RG" };
+const AS_RG_KURZ = { lern: "Lern", sicher: "Sicherheit" };
 const AS_RG_ROLLE = { fk: "Führungskraft", sibe: "Sicherheitsbeauftragte/r", fremd: "Fremder Blick" };
 const AS_RG_ROLLE_KURZ = { fk: "FK", sibe: "SiBe", fremd: "Fremder Blick" };
 const AS_RG_STD = { arten: { lern: true, sicher: true }, soll: { lern: { anzahl: 1, monate: 1, bezug: "gruppe" }, sicher: { anzahl: 1, monate: 1, bezug: "fk" } },
@@ -124,7 +124,7 @@ AS_SEITEN.sicherheitskultur = { titel: "Sicherheitskultur", icon: "◈", sort: 5
   try{ await asRgLaden(); }catch(e){ main.innerHTML = `<h1 class="seite">Sicherheitskultur</h1><div class="karte"><div class="leer">Konnte nicht geladen werden: ${esc(e.message || e)}</div></div>`; return; }
   if(AS.seite !== "sicherheitskultur") return;
   const pflege = asRgPflege();
-  const liste = [["rundgaenge", "Rundgänge"], ["stand", "Stand"], ["gruppen", "Gruppen"], ["teilnehmer", "Teilnehmende"]].concat(pflege ? [["einstellungen", "Einstellungen"]] : []);
+  const liste = [["rundgaenge", "Rundgänge"], ["stand", "Stand"], ["gruppen", "Gruppen"], ["teilnehmer", "Personen"]].concat(pflege ? [["einstellungen", "Vorgaben"]] : []);
   const r = asReiter("sicherheitskultur", liste, "rundgaenge");
   const beta = asDarf("oak") && !asRgFrei()
     ? `<div class="rg-hinweis">Beta – für diesen Betrieb noch nicht freigeschaltet (nur OAK sieht das Modul). <button class="btn klein" id="rgFrei">Für den Betrieb freischalten</button></div>`
@@ -177,7 +177,7 @@ function asRgKalender(box){
   const n = box.querySelector("#rgNeu"); if(n) n.onclick = () => asRgTerminDialog(null);
   const m = box.querySelector("#rgMit"); if(m) m.onclick = () => asRgAnmelden();
 }
-function asRgEintragText(r){ return asRgUhr(r.beginn) + " " + AS_RG_KURZ[r.art] + (r.gruppe_id ? " · " + ((asNach("rg_gruppe", r.gruppe_id) || {}).name || "") : r.fk_id ? " · " + asRgName(r.fk_id) : ""); }
+function asRgEintragText(r){ return asRgUhr(r.beginn) + " " + AS_RG_KURZ[r.art] + (r.gruppe_id ? " · " + ((asNach("rg_gruppe", r.gruppe_id) || {}).name || "") : r.fk_id ? " · " + asRgName(r.fk_id).split(" ").pop() : ""); }
 function asRgMonat(box, alle, aussen){
   if(!AS_RG.monat){ const h = new Date(); AS_RG.monat = new Date(h.getFullYear(), h.getMonth(), 1); }
   const jahr = AS_RG.monat.getFullYear(), mon = AS_RG.monat.getMonth();
