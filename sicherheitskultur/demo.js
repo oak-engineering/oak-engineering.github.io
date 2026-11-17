@@ -9,7 +9,7 @@ const CFG = { url: "", anon: "", bucket: "demo" };
 const AS = { kunde: "demo", ich: "Betrieb (Demo)", uid: "admin", pflege: true, db: {}, seite: "sicherheitskultur", reiter: {}, nurModul: true, org: { daten: { paket: "sicherheitskultur" } } };
 const AS_SEITEN = {};
 const AS_ICON = {};
-let SK = { post: [], ansicht: "admin" };
+let SK = { post: [], ich: null, modus: "start" };
 
 /* ---------------- kleine Hilfen wie im Cockpit ---------------- */
 function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
@@ -49,14 +49,22 @@ function asReiter(seite, liste, standard){
   const akt = AS.reiter[seite] && liste.some(l => l[0] === AS.reiter[seite]) ? AS.reiter[seite] : standard;
   return { akt, html: `<div class="reiter nodruck">${liste.map(([k, t]) => `<button class="${k === akt ? "an" : ""}" title="${esc(t)}" onclick="asGehe('${seite}/${k}')">${esc(t)}</button>`).join("")}</div>` }; }
 function asZeige(){
-  const [s, r] = decodeURIComponent(location.hash.replace(/^#/, "")).split("/");
-  AS.seite = "sicherheitskultur"; if(s === "sicherheitskultur" && r) AS.reiter.sicherheitskultur = r;
-  skKopf(); const main = document.getElementById("haupt"); main.innerHTML = ""; AS_SEITEN.sicherheitskultur.render(main);
+  const main = document.getElementById("haupt"); main.innerHTML = "";
+  document.body.dataset.modus = SK.modus;
+  const ab = document.getElementById("skAb"); if(ab) ab.hidden = !SK.ich || SK.modus === "verwaltung";
+  const zu = document.getElementById("skZurueck"); if(zu) zu.hidden = SK.modus !== "verwaltung";
+  if(SK.modus === "verwaltung"){
+    const [s, r] = decodeURIComponent(location.hash.replace(/^#/, "")).split("/");
+    AS.seite = "sicherheitskultur"; if(s === "sicherheitskultur" && r) AS.reiter.sicherheitskultur = r;
+    AS_SEITEN.sicherheitskultur.render(main); return;
+  }
+  if(SK.modus === "mein" && asNach("rg_teilnehmer", SK.ich)) return skMein(main);
+  SK.modus = "start"; skStartseite(main);
 }
 
 /* ---------------- Datenhaltung im Browser (statt Supabase) ---------------- */
 const SK_TAB = ["rg_einstellung", "rg_teilnehmer", "rg_gruppe", "rg_gruppe_mitglied", "rg_termin", "rg_protokoll", "as_einheit"];
-function skSichern(){ try{ localStorage.setItem(SK_KEY, JSON.stringify({ db: AS.db, org: AS.org.daten, post: SK.post, ansicht: SK.ansicht })); }catch(e){} }
+function skSichern(){ try{ localStorage.setItem(SK_KEY, JSON.stringify({ db: AS.db, org: AS.org.daten, post: SK.post, ich: SK.ich, modus: SK.modus })); }catch(e){} }
 function skId(){ return (crypto.randomUUID ? crypto.randomUUID() : "id-" + Math.random().toString(36).slice(2) + Date.now()); }
 function skTrigger(t, row){
   if(t === "rg_termin"){
@@ -118,14 +126,15 @@ function skBeispiel(){
   t("sicher", null, 1, -3, 7, 30, "Fertigung Halle 1");
   t("lern", 1, 1, 6, 9, 60, "Fertigung – Biegepresse");
   t("sicher", null, 2, 2, 13, 30, "Wareneingang");
-  AS.org.daten = { paket: "sicherheitskultur" }; SK.post = []; SK.ansicht = "admin";
+  AS.org.daten = { paket: "sicherheitskultur" }; SK.post = []; SK.ich = null; SK.modus = "start";
 }
 
 /* ---------------- Mails → Postausgang (statt Versand) ---------------- */
 const SK_ART = { lern: "Lernrundgang", sicher: "Sicherheitsrundgang" };
 function skEmpfaenger(r){ const ids = new Set([r.fk_id]); if(r.art === "lern" && r.gruppe_id) asT("rg_gruppe_mitglied").filter(m => m.gruppe_id === r.gruppe_id).forEach(m => ids.add(m.teilnehmer_id));
   return asT("rg_teilnehmer").filter(t => ids.has(t.id) && t.status !== "inaktiv"); }
-function skPost(betreff, an, text){ SK.post.unshift({ am: new Date().toISOString(), betreff, an: an.map(t => t.name), text }); skSichern(); skKopf(); }
+function skPost(betreff, an, text){ SK.post.unshift({ am: new Date().toISOString(), betreff, an: an.map(t => t.name), ids: an.map(t => t.id), text }); skSichern();
+  if(SK.ich && an.some(t => t.id === SK.ich) && SK.modus !== "verwaltung") setTimeout(() => asMeldung("Neue Mail: " + betreff), 1400); }
 async function skMail(b){
   if((asT("rg_einstellung")[0] || {}).mail_an === false) return { ok: true, gesendet: 0 };
   if(b.ereignis === "termin"){ const r = asNach("rg_termin", b.termin_id); if(!r) return null; const an = skEmpfaenger(r);
@@ -147,44 +156,95 @@ function skErinnern(){
   return n;
 }
 
-/* ---------------- Kopfzeile: Ansicht als · Postausgang · Zurücksetzen ---------------- */
-function skAnsichtSetzen(wert){
-  SK.ansicht = wert;
-  if(wert === "admin"){ AS.pflege = true; AS.uid = "admin"; AS.ich = "Betrieb (Demo)"; }
-  else if(wert === "neu"){ AS.pflege = false; AS.uid = "u-neu"; AS.ich = "Neue Person"; }
-  else { const t = asNach("rg_teilnehmer", wert); AS.pflege = false; AS.uid = t ? t.user_id : "x"; AS.ich = t ? t.name : ""; }
-  skSichern();
+/* ---------------- Rolle setzen ---------------- */
+function skAls(wer){
+  if(wer === "admin"){ AS.pflege = true; AS.uid = "admin"; AS.ich = "Betrieb (Demo)"; return; }
+  const t = asNach("rg_teilnehmer", wer); AS.pflege = false; AS.uid = t ? t.user_id : "gast"; AS.ich = t ? t.name : "";
 }
-function skKopf(){
-  const sel = document.getElementById("skAls"); if(!sel) return;
-  const rolle = { fk: "Führungskraft", sibe: "SiBe", fremd: "Fremder Blick" };
-  const tn = asT("rg_teilnehmer").filter(t => t.status === "bestaetigt" && t.user_id);
-  sel.innerHTML = `<option value="admin">Ansicht: Betrieb / Admin</option>` + tn.map(t => `<option value="${esc(t.id)}">Ansicht: ${esc(t.name)} (${esc(rolle[t.rolle])})</option>`).join("")
-    + `<option value="neu">Ansicht: neue Person (noch nicht angemeldet)</option>`;
-  sel.value = SK.ansicht; if(sel.value !== SK.ansicht){ skAnsichtSetzen("admin"); sel.value = "admin"; }
-  document.getElementById("skPostN").textContent = SK.post.length ? String(SK.post.length) : "";
+const SK_ROLLE = { fk: "Führungskraft", sibe: "Sicherheitsbeauftragte/r", fremd: "Fremder Blick" };
+
+/* ---------------- Startseite: erklären + anmelden ---------------- */
+function skStartseite(main){
+  skAls("gast");
+  const abt = asT("as_einheit");
+  main.innerHTML = `<div class="sk-start">
+    <section class="sk-intro">
+      <h1>Sicherheitskultur bei der Muster GmbH</h1>
+      <p>Gemeinsam hinschauen, miteinander reden, besser werden. Melden Sie sich an – Sie werden einer Gruppe zugeordnet und zu den Rundgängen eingeladen.</p>
+      <div class="sk-kacheln">
+        <div class="sk-kachel"><b>Lernrundgang</b><span>Die Gruppe schaut sich einen Arbeitsplatz genau an und spricht mit den Beschäftigten – 45 bis 60 Minuten.</span></div>
+        <div class="sk-kachel"><b>Sicherheitsrundgang</b><span>Die Führungskraft sieht sich allein drei bis fünf Tätigkeiten kurz an – etwa 30 Minuten.</span></div>
+      </div>
+    </section>
+    <form class="sk-karte sk-form" id="skForm" autocomplete="on">
+      <h2>Mitmachen</h2>
+      <label>Vor- und Nachname<input id="skName" required autocomplete="name"></label>
+      <label>Dienstliche E-Mail<input id="skMail" type="email" required autocomplete="email"></label>
+      <label>Abteilung<select id="skAbt" required><option value="">– bitte wählen –</option>${abt.map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`).join("")}</select></label>
+      <div class="sk-rolle-titel">Meine Rolle</div>
+      <div class="sk-rollen">${Object.entries(SK_ROLLE_KURZ).map(([k, t], i) => `<label class="sk-rolle" title="${esc(SK_ROLLE[k])}"><input type="radio" name="skRolle" value="${k}" ${i === 0 ? "checked" : ""}><span>${esc(t)}</span></label>`).join("")}</div>
+      <button class="btn sk-los" type="submit">Anmelden</button>
+    </form></div>`;
+  main.querySelector("#skForm").onsubmit = async ev => {
+    ev.preventDefault();
+    const name = main.querySelector("#skName").value.trim(), email = main.querySelector("#skMail").value.trim().toLowerCase();
+    const einheit_id = main.querySelector("#skAbt").value, rolle = (main.querySelector('input[name="skRolle"]:checked') || {}).value;
+    if(name.length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !einheit_id){ asMeldung("Bitte Name, E-Mail und Abteilung angeben"); return; }
+    let t = asT("rg_teilnehmer").find(x => String(x.email || "").toLowerCase() === email);
+    if(!t){ const id = skId(); t = await asSpeichern("rg_teilnehmer", { id, name, email, einheit_id, rolle, status: "bestaetigt", user_id: "u-" + id, angelegt_von: "Selbstanmeldung" }); }
+    SK.ich = t.id; SK.modus = "mein"; skAls(t.id);
+    const g = asRgGruppeVon(t.id) || await asRgNachruecken(t);
+    skSichern(); asZeige();
+    asMeldung(g ? "Willkommen! Sie sind in " + g.name + "." : "Willkommen! Sie werden bald einer Gruppe zugeordnet.");
+    if(g) skPost("Ihre Rundgangs-Gruppe: " + g.name, asRgMitglieder(g.id), "");
+  };
 }
-function skPostausgang(){
-  asDialog({ titel: "Postausgang (Demo)", breit: true, inhalt: `<p class="hinweis">Im echten Betrieb gehen diese Nachrichten per Mail raus – Einladungen mit Kalenderdatei für Outlook. Hier werden sie nur gesammelt.</p>
-    <div class="zeilen">${SK.post.map(m => `<div class="z" style="cursor:default"><div><b>${esc(m.betreff)}</b><small>an ${esc(m.an.join(", "))}${m.text ? " · " + esc(m.text) : ""}</small></div>
-      <small>${esc(new Date(m.am).toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }))}</small></div>`).join("") || `<div class="leer">Noch keine Nachrichten. Planen Sie einen Rundgang oder veröffentlichen Sie neue Gruppen.</div>`}</div>`,
-    knoepfe: [{ t: "Erinnerungslauf simulieren", klasse: "sek", fn: () => { const n = skErinnern(); asMeldung(n ? n + " Erinnerung(en) erzeugt" : "Keine Erinnerung fällig"); skPostausgang(); return false; } },
-      { t: "Schließen", fn: () => true }] });
+const SK_ROLLE_KURZ = { fk: "Führungskraft", sibe: "Sicherheits­beauftragte/r", fremd: "Fremder Blick" };
+
+/* ---------------- Meine Seite ---------------- */
+function skMein(main){
+  const t = asNach("rg_teilnehmer", SK.ich); skAls(t.id);
+  const g = asRgGruppeVon(t.id), leute = g ? asRgMitglieder(g.id) : [];
+  const meine = asT("rg_termin").filter(r => r.status !== "abgesagt" && (r.fk_id === t.id || (r.art === "lern" && g && r.gruppe_id === g.id)));
+  const naechster = meine.filter(r => new Date(r.beginn) > new Date()).sort((a, b) => String(a.beginn).localeCompare(String(b.beginn)))[0];
+  const offen = meine.filter(r => ["protokoll", "ueberfaellig"].includes(asRgStatus(r)));
+  const fk = t.rolle === "fk";
+  const art = r => r.art === "lern" ? "Lernrundgang" : "Sicherheitsrundgang";
+  main.innerHTML = `<div class="sk-mein">
+    <h1>Hallo ${esc(t.name.split(" ")[0])}</h1>
+    <p class="sk-unter">${esc(SK_ROLLE[t.rolle])} · ${esc(asEinheitName(t.einheit_id))}</p>
+    <div class="sk-karten">
+      <div class="sk-karte"><h2>Meine Gruppe</h2>
+        ${g ? `<div class="sk-gross">${esc(g.name)}</div><ul class="sk-liste">${leute.map(x => `<li${x.id === t.id ? ' class="sk-ich"' : ""}><span>${esc(x.name)}</span><small>${esc(SK_ROLLE[x.rolle])}</small></li>`).join("")}</ul>`
+          : `<p class="sk-leer">Sie werden bald einer Gruppe zugeordnet.</p>`}</div>
+      <div class="sk-karte"><h2>Nächster Rundgang</h2>
+        ${naechster ? `<div class="sk-gross">${esc(asDat(asRgTag(naechster.beginn)))} · ${esc(asRgUhr(naechster.beginn))} Uhr</div>
+            <ul class="sk-liste"><li><span>${esc(art(naechster))}</span></li>${naechster.bereich ? `<li><span>${esc(naechster.bereich)}</span></li>` : ""}<li><span>Leitung: ${esc(asRgName(naechster.fk_id))}</span></li></ul>`
+          : `<div class="sk-gross">Noch nicht geplant</div><p class="sk-leer">${fk ? "Planen Sie den nächsten Rundgang – Ihre Gruppe wird eingeladen." : "Sie bekommen eine Einladung per Mail."}</p>`}
+        ${fk ? `<button class="btn sk-unten" id="skPlanen">Rundgang planen</button>` : ""}</div>
+      <div class="sk-karte"><h2>Zu tun</h2>
+        ${offen.length ? `<div class="sk-gross">Protokoll offen</div><ul class="sk-liste"><li><span>${esc(art(offen[0]))} vom ${esc(asDat(asRgTag(offen[0].beginn)))}</span></li>
+            <li><span>bis ${esc(asDat(offen[0].bericht_faellig_am))} eintragen</span></li></ul><button class="btn sk-unten" id="skProt">Protokoll eintragen</button>`
+          : `<div class="sk-gross">Nichts offen</div><p class="sk-leer">Nach jedem Rundgang tragen Sie hier das Protokoll ein.</p>`}</div>
+    </div></div>`;
+  const pl = main.querySelector("#skPlanen"); if(pl) pl.onclick = () => asRgTerminDialog(null);
+  const pr = main.querySelector("#skProt"); if(pr) pr.onclick = () => asRgProtokollDialog(offen[0]);
 }
 
 /* ---------------- Start ---------------- */
 function skStart(){
   let st = null; try{ st = JSON.parse(localStorage.getItem(SK_KEY) || "null"); }catch(e){}
-  if(st && st.db){ AS.db = st.db; AS.org.daten = st.org || { paket: "sicherheitskultur" }; SK.post = st.post || []; SK.ansicht = st.ansicht || "admin"; }
+  if(st && st.db){ AS.db = st.db; AS.org.daten = st.org || { paket: "sicherheitskultur" }; SK.post = st.post || []; SK.ich = st.ich || null;
+    SK.modus = st.modus === "mein" && st.ich ? "mein" : "start"; }
   else skBeispiel();
   SK_TAB.forEach(t => AS.db[t] = AS.db[t] || []);
-  asRgMail = skMail;   // Mails → Postausgang
-  AS_RG.d = true; AS_RG.slug = AS.kunde;   // Modul nicht neu „laden“ lassen – Daten liegen schon bereit
-  skAnsichtSetzen(SK.ansicht);
-  document.getElementById("skAls").onchange = ev => { skAnsichtSetzen(ev.target.value); AS_RG.entwurf = null; asZeige(); };
-  document.getElementById("skPost").onclick = skPostausgang;
-  document.getElementById("skReset").onclick = () => { if(!confirm("Demo auf die Beispieldaten zurücksetzen? Eigene Eingaben gehen verloren.")) return;
-    skBeispiel(); skSichern(); AS_RG.entwurf = null; skAnsichtSetzen("admin"); asZeige(); };
-  window.addEventListener("hashchange", asZeige);
+  asRgMail = skMail;   // Mails → nur kurze Meldung
+  AS_RG.d = true; AS_RG.slug = AS.kunde;
+  document.getElementById("skAb").onclick = ev => { ev.preventDefault(); SK.ich = null; SK.modus = "start"; skSichern(); asZeige(); };
+  document.getElementById("skVerw").onclick = ev => { ev.preventDefault(); SK.modus = "verwaltung"; skAls("admin"); location.hash = "#sicherheitskultur/gruppen"; asZeige(); window.scrollTo(0, 0); };
+  document.getElementById("skZurueck").onclick = ev => { ev.preventDefault(); SK.modus = SK.ich ? "mein" : "start"; AS_RG.entwurf = null; history.replaceState(null, "", location.pathname); asZeige(); };
+  document.getElementById("skReset").onclick = ev => { ev.preventDefault(); if(!confirm("Demo auf die Beispieldaten zurücksetzen?")) return;
+    skBeispiel(); skSichern(); AS_RG.entwurf = null; history.replaceState(null, "", location.pathname); asZeige(); };
+  window.addEventListener("hashchange", () => { if(SK.modus === "verwaltung") asZeige(); });
   asZeige();
 }

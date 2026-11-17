@@ -243,7 +243,8 @@ function asRgTerminDialog(r, tag){
   const gruppeVonFk = fid => { const g = asRgGruppeVon(fid); return g ? g.id : ""; };
   r = r || { art: arten.length === 2 ? "beide" : arten[0], beginn: null, dauer_min: 60, fk_id: fkIch ? fkIch.id : (fks[0] || {}).id, bereich: "" };
   if(!r.gruppe_id && r.fk_id) r.gruppe_id = gruppeVonFk(r.fk_id);
-  const datum = r.beginn ? asRgTag(r.beginn) : (tag || asHeute()), uhr = r.beginn ? asRgUhr(r.beginn) : "09:00";
+  const morgen = () => { const d = new Date(); d.setDate(d.getDate() + 1); return new Date(d.getTime() - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  const datum = r.beginn ? asRgTag(r.beginn) : (tag || morgen()), uhr = r.beginn ? asRgUhr(r.beginn) : "09:00";
   const artOpt = (neu && arten.length === 2 ? [["beide", "Beides (zwei Termine)"]] : []).concat(arten.map(a => [a, AS_RG_ART[a]]));
   const kn = [{ t: neu ? "Planen und einladen" : "Speichern und informieren", fn: async d => {
     const w = asWerte(d);
@@ -404,6 +405,21 @@ function asRgGruppenSeite(box){
         if(z >= 0) AS_RG.entwurf.gruppen[z].ids.push(t.id); asRgGruppenSeite(box); } }] });
   });
 }
+/* Nachrücken: bestätigte Person ohne Gruppe der passendsten aktuellen Gruppe zuordnen – fehlende Rolle zuerst, dann die kleinste;
+   der Fremde Blick nicht aus der Abteilung der Führungskraft. Liefert die Gruppe oder null (keine Gruppen, schon zugeordnet). */
+async function asRgNachruecken(t){
+  if(!t || t.status !== "bestaetigt" || asRgGruppeVon(t.id)) return null;
+  const gr = asRgGruppen(); if(!gr.length) return null;
+  const kosten = g => { const l = asRgMitglieder(g.id); let k = l.length * 10;
+    if(!l.some(x => x.rolle === t.rolle)) k -= 100;
+    if(t.rolle === "fk" && l.some(x => x.rolle === "fk")) k += 50;
+    const abt = ro => l.filter(x => x.rolle === ro).map(x => x.einheit_id);
+    if(t.einheit_id && ((t.rolle === "fremd" && abt("fk").includes(t.einheit_id)) || (t.rolle === "fk" && abt("fremd").includes(t.einheit_id)))) k += 200;
+    return k + Math.random(); };
+  const g = gr.slice().sort((a, b) => kosten(a) - kosten(b))[0];
+  await apiSend("POST", "/rest/v1/rg_gruppe_mitglied", [{ kunde_slug: AS.kunde, gruppe_id: g.id, teilnehmer_id: t.id }], "return=minimal");
+  await asRgLaden(true); return g;
+}
 /* Würfeln: Gruppenzahl = knappste Pflichtrolle; je Gruppe zuerst die Mindestbesetzung, dann Rest auf die kleinsten Gruppen.
    Kosten je Platz: Größe, Fremder Blick aus der Abteilung der FK (stark), Wiederholung früherer Paarungen. */
 function asRgWuerfeln(){
@@ -511,7 +527,9 @@ function asRgTnDialog(t){
       return false;
     }catch(e){ asMeldung("Zugang: " + (e.message || e)); return false; } } });
   if(!neu && t.status === "angemeldet") kn.unshift({ t: "Bestätigen", fn: async d => { const w = asWerte(d); if(!asRgPruefen(w)) return false;
-    await asSpeichern("rg_teilnehmer", Object.assign({ id: t.id }, w, { status: "bestaetigt" })); asMeldung("Bestätigt"); asZeige(); } });
+    await asSpeichern("rg_teilnehmer", Object.assign({ id: t.id }, w, { status: "bestaetigt" }));
+    const g = await asRgNachruecken(asNach("rg_teilnehmer", t.id));
+    asMeldung(g ? "Bestätigt und " + g.name + " zugeordnet" : "Bestätigt"); asZeige(); } });
   if(!neu) kn.push({ t: t.status === "inaktiv" ? "Wieder aktiv" : "Inaktiv setzen", klasse: "sek", fn: async () => {
     await asSpeichern("rg_teilnehmer", { id: t.id, status: t.status === "inaktiv" ? "bestaetigt" : "inaktiv" }); asZeige(); } });
   asDialog({ titel: neu ? "Person hinzufügen" : t.name, inhalt: `<div class="form">${asRgFelderPerson(t)}</div>
