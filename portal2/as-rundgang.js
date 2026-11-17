@@ -13,6 +13,7 @@ const AS_RG = { d: null, slug: null, monat: null, ansicht: "monat", f: { art: ""
 const AS_RG_ART = { lern: "Lernrundgang", sicher: "Sicherheitsrundgang" };
 const AS_RG_KURZ = { lern: "Lern-RG", sicher: "Sicherheits-RG" };
 const AS_RG_ROLLE = { fk: "Führungskraft", sibe: "Sicherheitsbeauftragte/r", fremd: "Fremder Blick" };
+const AS_RG_ROLLE_KURZ = { fk: "FK", sibe: "SiBe", fremd: "Fremder Blick" };
 const AS_RG_STD = { arten: { lern: true, sicher: true }, soll: { lern: { anzahl: 1, monate: 1, bezug: "gruppe" }, sicher: { anzahl: 1, monate: 1, bezug: "fk" } },
   berichtsfrist_tage: 7, erinnerung_tage: [3, 1, 0], sichtbarkeit: "alle", mindest: { fk: 1, sibe: 1, fremd: 1 }, mail_an: true, auswertung_fk: true, protokoll_felder: {} };
 /* Platzhalter, bis die Protokolle gemeinsam ausgearbeitet sind (dann über rg_einstellung.protokoll_felder je Art ersetzen) */
@@ -139,6 +140,7 @@ AS_SEITEN.sicherheitskultur = { titel: "Sicherheitskultur", icon: "◈", sort: 5
 
 /* ---------------- Reiter Rundgänge: Kalender ---------------- */
 function asRgKalender(box){
+  if(typeof asSvCss === "function") asSvCss();   // gleiches Kalender-Raster wie „Kalender & To-dos“
   const e = asRgE(), f = AS_RG.f, ich = new Set(asRgIch().map(t => t.id)), meine = new Set(asRgMeineGruppen());
   const alle = asT("rg_termin").filter(r => r.status !== "abgesagt" && asRgSichtbar(r)
       && (!f.art || r.art === f.art) && (!f.gruppe || r.gruppe_id === f.gruppe)
@@ -362,7 +364,7 @@ function asRgGruppenSeite(box){
     const fremdGleich = leute.some(t => t.rolle === "fremd" && t.einheit_id && fkAbt.has(t.einheit_id));
     return `<div class="rg-gruppe"><h3><span title="${esc(name)}">${esc(name)}</span>${extra || ""}</h3>
       ${leute.map(t => `<div class="rg-person${ent && pflege ? " klick" : ""}" ${ent && pflege ? `data-um="${t.id}" data-von="${idx}"` : ""} title="${esc(t.name + " · " + AS_RG_ROLLE[t.rolle] + (t.einheit_id ? " · " + asEinheitName(t.einheit_id) : ""))}">
-        <b>${esc(t.name)}</b><small>${esc(AS_RG_ROLLE[t.rolle])}${t.einheit_id ? " · " + esc(asEinheitName(t.einheit_id)) : ""}</small></div>`).join("") || `<div class="leer">leer</div>`}
+        <b>${esc(t.name)}</b><small>${esc(AS_RG_ROLLE_KURZ[t.rolle])}${t.einheit_id ? " · " + esc(asEinheitName(t.einheit_id)) : ""}</small></div>`).join("") || `<div class="leer">leer</div>`}
       ${fehlt.length ? `<div class="rg-warn" title="Mindestbesetzung">fehlt: ${esc(fehlt.join(", "))}</div>` : ""}
       ${fremdGleich ? `<div class="rg-warn">Fremder Blick aus derselben Abteilung wie die Führungskraft</div>` : ""}</div>`;
   };
@@ -372,7 +374,7 @@ function asRgGruppenSeite(box){
     html = `<div class="rg-hinweis">Entwurf Runde ${runde + 1} – Person anklicken, um sie in eine andere Gruppe zu setzen. Erst „Veröffentlichen“ ersetzt die bisherigen Gruppen und informiert alle per Mail.</div>
       <div class="filterleiste"><button class="btn" id="rgVer">Veröffentlichen</button><button class="btn sek" id="rgNochmal">Neu würfeln</button><button class="btn sek" id="rgVerwerfen">Verwerfen</button></div>
       <div class="rg-gruppen">${ent.gruppen.map((g, i) => karte(g.name, g.ids.map(id => asNach("rg_teilnehmer", id)).filter(Boolean), "", i)).join("")}</div>
-      ${ohne.length ? `<div class="karte"><h2>Ohne Gruppe (${ohne.length})</h2><div class="rg-gruppen">${ohne.map(t => `<div class="rg-person klick" data-um="${t.id}" data-von="-1"><b>${esc(t.name)}</b><small>${esc(AS_RG_ROLLE[t.rolle])}</small></div>`).join("")}</div></div>` : ""}`;
+      ${ohne.length ? `<div class="karte"><h2>Ohne Gruppe (${ohne.length})</h2><div class="rg-gruppen">${ohne.map(t => `<div class="rg-person klick" data-um="${t.id}" data-von="-1"><b>${esc(t.name)}</b><small>${esc(AS_RG_ROLLE_KURZ[t.rolle])}</small></div>`).join("")}</div></div>` : ""}`;
   } else {
     const gr = asRgGruppen();
     html = `${pflege ? `<div class="filterleiste"><button class="btn" id="rgWuerfeln">${gr.length ? "Neue Runde würfeln" : "Gruppen würfeln"}</button>
