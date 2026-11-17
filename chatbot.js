@@ -17,7 +17,7 @@
   var CFG = window.OAK_CHAT || {};
   if (!CFG.endpoint) { return; } // ohne Endpoint inaktiv – bricht nichts
 
-  var WELCOME = "Hallo! Ich bin der OAK-Assistent (BETA). Fragen Sie mich zu EHS-Themen oder zu den Leistungen von OAK engineering.";
+  var WELCOME = "Hallo! Ich bin ein KI-Assistent (künstliche Intelligenz, Beta) von OAK engineering. Meine Antworten werden automatisch erzeugt und können Fehler enthalten. Bitte geben Sie keine personenbezogenen oder Gesundheitsdaten ein.";
   var messages = []; // {role, content}
   var busy = false;
 
@@ -77,7 +77,7 @@
   panel.className = "oakc-panel"; panel.setAttribute("role", "dialog"); panel.setAttribute("aria-label", "OAK-Assistent");
   panel.innerHTML =
     '<div class="oakc-head" style="position:relative">' +
-      '<div class="oakc-title"><span>OAK-Assistent</span><span class="oakc-pill">Beta</span></div>' +
+      '<div class="oakc-title"><span>KI-Assistent</span><span class="oakc-pill">Beta</span></div>' +
       '<div class="oakc-sub">EHS &amp; Leistungen · allgemeine Infos, keine Rechtsberatung</div>' +
       '<button class="oakc-x" aria-label="Schließen">✕</button>' +
     '</div>' +

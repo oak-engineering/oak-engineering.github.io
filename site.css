@@ -105,7 +105,7 @@ footer{background:var(--ink);color:rgba(255,255,255,.45);padding:2.5rem 8vw;disp
 }
 
 /* ── Mini-Tools: schmale Icon-Leiste am rechten Seitenrand ── */
-.sub-layout{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2.5rem;align-items:start;}
+.sub-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:2.5rem;align-items:start;}
 .sub-layout .leist-col{grid-column:1;grid-row:1;}
 /* Bewusst NICHT sticky: sonst faehrt „Mini-Tools" beim Scrollen mit, waehrend „Leistungen im
    Detail" daneben stehen bleibt – die beiden Spalten liefen auseinander. */
