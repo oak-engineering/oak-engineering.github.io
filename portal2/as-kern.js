@@ -666,7 +666,8 @@ function asFussleiste(z){
 function asKopfAufbauen(){
   const m = document.querySelector(".kopf .marke"); if(!m || m.dataset.fertig) return;
   m.dataset.fertig = "1"; m.setAttribute("role", "link"); m.tabIndex = 0; m.title = "Zur Startseite";
-  m.innerHTML = `<img src="../assets/oak-logo.png" class="oak-logo" alt="OAK engineering"><span class="wort">OAK EHS-Cockpit<small>OAK engineering</small></span>`;
+  m.innerHTML = `<img src="../assets/oak-logo.png" class="oak-logo" alt="OAK engineering"><span class="wort">${asModulMarke() ? "OAK Sicherheitskultur" : "OAK EHS-Cockpit"}<small>OAK engineering</small></span>`;
+  if(asModulMarke()) document.title = "OAK Sicherheitskultur";
   const geh = () => asGehe(AS_SEITEN.start ? "start" : "cockpit");
   m.onclick = geh; m.onkeydown = e => { if(e.key === "Enter") geh(); };
   try{ if(localStorage.getItem("as_sl_schmal") === "1") document.body.classList.add("sl-schmal"); }catch(e){}
@@ -732,8 +733,17 @@ function asReiter(seite, liste, standard){
 }
 
 /* ---------------- Start ---------------- */
+/* Eigenständiger Einstieg „OAK Sicherheitskultur“ (Link ?modul=sicherheitskultur zum Weitergeben): eigene Anmeldeseite und Wortmarke */
+const AS_MODUL_LINK = new URLSearchParams(location.search).get("modul") === "sicherheitskultur";
+function asModulMarke(){ return AS_MODUL_LINK || AS.nurModul; }
 async function asStart(){
   const s = getSession();
+  if(AS_MODUL_LINK){
+    document.title = "OAK Sicherheitskultur";
+    const lv = document.querySelector("#loginForm h1"), lp = document.querySelector("#loginForm p");
+    if(lv) lv.textContent = "OAK Sicherheitskultur";
+    if(lp) lp.textContent = "Rundgänge planen, durchführen und nachweisen. Anmeldung mit Ihrem persönlichen Zugang.";
+  }
   document.getElementById("loginForm").onsubmit = async ev => {
     ev.preventDefault(); const f = document.getElementById("loginFehler"); f.textContent = "";
     try{ await login(document.getElementById("loginMail").value.trim(), document.getElementById("loginPw").value); location.reload(); }
