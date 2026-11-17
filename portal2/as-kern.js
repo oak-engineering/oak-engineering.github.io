@@ -682,7 +682,7 @@ function asSeitenKopf(){
     const t = [...h.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
     if(t && neu && alt.includes(t.textContent.trim())) t.textContent = neu;
   }
-  if(AS.seite !== "start" && AS_SEITEN.start){
+  if(AS.seite !== "start" && AS_SEITEN.start && !AS.nurModul){
     const b = document.createElement("button"); b.type = "button"; b.className = "seite-zurueck nodruck"; b.textContent = "‹ Start";
     b.onclick = () => asGehe("start"); h.insertBefore(b, h.firstChild);
   }

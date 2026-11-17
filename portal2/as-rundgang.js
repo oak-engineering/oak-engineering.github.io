@@ -9,7 +9,7 @@
 "use strict";
 
 AS_ICON.sicherheitskultur = '<path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3z"/><path d="M8.5 12.5l2.5 2.5 4.5-5"/>';
-const AS_RG = { d: null, slug: null, monat: null, ansicht: "monat", f: { art: "", gruppe: "", meine: "" }, entwurf: null };
+const AS_RG = { d: null, slug: null, monat: null, ansicht: window.matchMedia && matchMedia("(max-width: 600px)").matches ? "liste" : "monat", f: { art: "", gruppe: "", meine: "" }, entwurf: null };
 const AS_RG_ART = { lern: "Lernrundgang", sicher: "Sicherheitsrundgang" };
 const AS_RG_KURZ = { lern: "Lern-RG", sicher: "Sicherheits-RG" };
 const AS_RG_ROLLE = { fk: "Führungskraft", sibe: "Sicherheitsbeauftragte/r", fremd: "Fremder Blick" };
