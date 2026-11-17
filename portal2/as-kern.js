@@ -3,7 +3,7 @@
    (gleiche Sitzung, gleiche Datenbank, nur Tabellen as_*). Globale Namen immer mit as/AS-Praefix. */
 "use strict";
 
-const AS = { kunde: null, kunden: [], org: null, admin: false, oak: false, fachkraft: false, gf: false, pflege: false, ich: "", uid: null,
+const AS = { kunde: null, kunden: [], org: null, admin: false, oak: false, fachkraft: false, gf: false, pflege: false, nurRundgang: false, ich: "", uid: null,
   db: {}, seite: "cockpit", reiter: {} };
 /* Rechte-Raster (Stufe 9, 05.11.2026 „der Betrieb darf grundsätzlich alles selbst“). Pflegeberechtigt = Fachkraft, Geschäftsführung
    oder Betriebs-Admin – wie portal_darf_pflegen() in der Datenbank. OAK allein: Freischaltung/Buchung, Katalog-Inhalte, Kunde anlegen,
@@ -520,10 +520,11 @@ function asIcon(k){ return `<svg viewBox="0 0 24 24" aria-hidden="true">${AS_ICO
 /* ---------------- Navigation ---------------- */
 function asGehe(ziel){ location.hash = "#" + ziel; }
 function asHashLesen(){
-  const std = asDarf("oak") || !AS_SEITEN.start ? "cockpit" : "start";   // OAK startet mit der Übersicht, der Betrieb mit der Startseite
+  const std = AS.nurRundgang && AS_SEITEN.sicherheitskultur ? "sicherheitskultur"   // Zugang „nur Rundgänge“ (Modul Sicherheitskultur)
+    : asDarf("oak") || !AS_SEITEN.start ? "cockpit" : "start";   // OAK startet mit der Übersicht, der Betrieb mit der Startseite
   const h = decodeURIComponent(location.hash.replace(/^#/, "")) || std;
   const [s, r] = h.split("/");
-  AS.seite = AS_SEITEN[s] && (asDarf("pflegen") || !AS_SEITEN[s].nurFachkraft) ? s : std;
+  AS.seite = AS_SEITEN[s] && (asDarf("pflegen") || !AS_SEITEN[s].nurFachkraft) && (!AS.nurRundgang || s === "sicherheitskultur") ? s : std;
   if(r) AS.reiter[AS.seite] = r;
 }
 /* Seitenleiste wie V1 (Phase 5, 05.11.2026): 248 px, Einträge 44 px, aktiv = Akzentfläche + Strich links, rote Zähler,
@@ -535,7 +536,7 @@ const AS_NAV_GRUPPEN = [
   ["organisation", "Organisation", ["organisation", "check", "nachweise", "notfall", "prozesse"]],
   ["gefaehrdungen", "Gefährdungen", ["bda", "massnahmen", "mitzeichnung", "gefahrstoffe"]],
   ["anlagen", "Anlagen & Betrieb", ["anlagen", "pruefungen", "maengel", "psa", "hallenplan", "vorort"]],
-  ["personal", "Personal", ["unterweisungen", "fremdfirmen", "vorfaelle"]],
+  ["personal", "Personal", ["unterweisungen", "fremdfirmen", "vorfaelle", "sicherheitskultur"]],
   ["steuerung", "Steuerung", ["steuerung", "kalender", "bericht", "energie"]],
   ["service", "Service", ["fragen", "aktuelles", "unterlagen", "leistungen", "datenschutz", "hilfe"]],
 ];
@@ -544,7 +545,7 @@ const AS_NAV_GRUPPEN = [
 const AS_NAV_KUNDE = [
   [null, ["start", "pflichten", "kalender"]],
   ["Anlagen & Gefahrstoffe", ["anlagen", "pruefungen", "maengel", "gefahrstoffe", "psa", "hallenplan"]],
-  ["Beschäftigte", ["unterweisungen", "nachweise", "fremdfirmen"]],
+  ["Beschäftigte", ["unterweisungen", "nachweise", "fremdfirmen", "sicherheitskultur"]],
   ["Melden & Fragen", ["vorfaelle", ["vorfaelle/umwelt", "Umweltvorfälle", () => asNavUmwelt()], "vorort", "fragen"]],
   ["Organisation", ["organisation", "notfall", "bda", "massnahmen", ["mitzeichnung", "", () => asDarf("pflegen") || asDarf("freigeben")], ["steuerung/asa", "Arbeitsschutzausschuss"]]],
   ["Informationen", ["aktuelles", "unterlagen", ["steuerung/log", "Logbuch"]]],
@@ -562,7 +563,7 @@ const AS_TITEL_ALT = { bda: ["Beurteilung der Arbeitsbedingungen"], mitzeichnung
   notfall: ["Notfallorganisation"], steuerung: ["Steuerung"], anlagen: ["Anlagen"], organisation: ["Organisation"] };
 function asKundenSicht(){ return !asDarf("oak"); }   // Betriebskonten und Prüfansicht ?als=betrieb
 function asNavFrei(k){ return typeof asFunktionAn === "function" ? asFunktionAn(k) !== false : true; }   // Funktionen-Freischaltung (Phase 1), sobald vorhanden
-function asNavSicht(k){ const s = AS_SEITEN[k]; return !!s && !s.versteckt && (asDarf("pflegen") || !s.nurFachkraft) && asNavFrei(k); }
+function asNavSicht(k){ const s = AS_SEITEN[k]; return !!s && !s.versteckt && (asDarf("pflegen") || !s.nurFachkraft) && asNavFrei(k) && (!AS.nurRundgang || k === "sicherheitskultur"); }
 function asNavUmwelt(){ return ((typeof AS_B !== "undefined" && AS_B.docs) || []).some(d => /^umwelt/.test(d.kategorie || "")); }
 /* Seitentitel je Sicht: Betrieb → Kundenbegriff (auch je Reiter), OAK → Fachbegriff */
 function asSeitenTitel(k, r){
@@ -745,6 +746,7 @@ async function asStart(){
     AS.fachkraft = AS.admin || m.rolle === "fachkraft"; AS.ich = m.name || "";   // Fachkraft-Rechte (OAK eingeschlossen, damit OAK alles Fachliche weiter kann)
     AS.gf = AS.admin || !!(m.rollen && m.rollen.gf);   // Geschäftsführung: gibt Beurteilungen frei (DB prüft portal_ist_gf)
     AS.pflege = AS.fachkraft || AS.gf || !!(m.rollen && m.rollen.admin);   // pflegeberechtigt wie DB portal_darf_pflegen(): Fachkraft, GF, Betriebs-Admin
+    AS.nurRundgang = !AS.pflege && !!(m.rollen && m.rollen.nur_rundgang);   // Zugang „nur Sicherheitskultur“ (DB sperrt alles andere, rundgang_2026-11-17.sql)
     await asKundenLaden();
     /* ?kunde=<slug> in der Adresse öffnet direkt diesen Kunden (Link aus dem Terminal) */
     let gew = new URLSearchParams(location.search).get("kunde");
