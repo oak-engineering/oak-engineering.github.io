@@ -23,7 +23,8 @@ const AS_RG_FELDER_STD = {
 };
 
 /* ---------------- Freischaltung (Modul) und Sicht ---------------- */
-function asRgFrei(){ const m = asOrgDaten().module; return !!(m && m.sicherheitskultur); }
+function asRgPaket(){ return asOrgDaten().paket === "sicherheitskultur"; }   // eigenständiges Angebot: nur dieses Modul
+function asRgFrei(){ const m = asOrgDaten().module; return asRgPaket() || !!(m && m.sicherheitskultur); }
 if(typeof window.asFunktionAn !== "function") window.asFunktionAn = k => k === "sicherheitskultur" ? (asRgFrei() || asDarf("oak")) : true;
 function asRgPflege(){ return asDarf("pflegen"); }
 
@@ -127,13 +128,20 @@ AS_SEITEN.sicherheitskultur = { titel: "Sicherheitskultur", icon: "◈", sort: 5
   const r = asReiter("sicherheitskultur", liste, "rundgaenge");
   const beta = asDarf("oak") && !asRgFrei()
     ? `<div class="rg-hinweis">Beta – für diesen Betrieb noch nicht freigeschaltet (nur OAK sieht das Modul). <button class="btn klein" id="rgFrei">Für den Betrieb freischalten</button></div>`
-    : asDarf("oak") ? `<div class="hinweis" style="margin-bottom:8px">Beta · freigeschaltet <button class="btn sek klein" id="rgSperr">Freischaltung zurücknehmen</button></div>` : "";
+    : asDarf("oak") ? `<div class="hinweis" style="margin-bottom:8px">Beta · ${asRgPaket() ? "<b>eigenständig</b> (Betrieb sieht nur die Sicherheitskultur)" : "freigeschaltet als Modul im Cockpit"}
+        <button class="btn sek klein" id="rgPaket">${asRgPaket() ? "Als Modul im vollen Cockpit" : "Nur Sicherheitskultur (eigenständig)"}</button>
+        ${asRgPaket() ? "" : `<button class="btn sek klein" id="rgSperr">Freischaltung zurücknehmen</button>`}</div>` : "";
   main.innerHTML = `<h1 class="seite">Sicherheitskultur</h1>
     <p class="unter">Rundgänge planen, durchführen und nachweisen: Lernrundgang in der Gruppe, Sicherheitsrundgang der Führungskraft.</p>
     ${beta}${r.html}<div id="rgInhalt"></div>`;
   const fr = main.querySelector("#rgFrei"), sp = main.querySelector("#rgSperr");
   if(fr) fr.onclick = async () => { await asOrgSpeichern({ module: Object.assign({}, asOrgDaten().module || {}, { sicherheitskultur: true }) }); asMeldung("Modul freigeschaltet"); asZeige(); };
   if(sp) sp.onclick = async () => { await asOrgSpeichern({ module: Object.assign({}, asOrgDaten().module || {}, { sicherheitskultur: false }) }); asMeldung("Freischaltung zurückgenommen"); asZeige(); };
+  const pk = main.querySelector("#rgPaket");
+  if(pk) pk.onclick = async () => { const nur = !asRgPaket();
+    if(!confirm(nur ? "Betrieb auf „nur Sicherheitskultur“ stellen? Alle Konten des Betriebs sehen dann nur dieses Modul." : "Betrieb wieder auf das volle Cockpit stellen?")) return;
+    await asOrgSpeichern({ paket: nur ? "sicherheitskultur" : null, module: Object.assign({}, asOrgDaten().module || {}, { sicherheitskultur: true }) });
+    asMeldung(nur ? "Eigenständig: nur Sicherheitskultur" : "Volles Cockpit"); asZeige(); };
   const box = main.querySelector("#rgInhalt");
   ({ rundgaenge: asRgKalender, stand: asRgStand, gruppen: asRgGruppenSeite, teilnehmer: asRgTeilnehmerSeite, einstellungen: asRgEinstellungen }[r.akt] || asRgKalender)(box);
 }};
@@ -549,7 +557,16 @@ function asRgEinstellungen(box){
       <div class="rg-hinweis"><b>Mitbestimmung:</b> Die Auswertung je Führungskraft kann eine technische Leistungs- und Verhaltenskontrolle sein
         (§ 87 Abs. 1 Nr. 6 BetrVG). Vor dem Echtbetrieb mit dem Betriebsrat klären (Betriebsvereinbarung) – oder die Auswertung je Führungskraft ausschalten.
         Datenschutz: nur Name, dienstliche E-Mail, Abteilung, Rolle; keine Namen von Beschäftigten im Protokoll.</div>
-      <div class="filterleiste"><button class="btn" id="rgEsp">Speichern</button></div></div>`;
+      <div class="filterleiste"><button class="btn" id="rgEsp">Speichern</button></div></div>
+    <div class="karte"><h2>Abteilungen <span><button class="btn klein" id="rgAbtNeu">+ Abteilung</button></span></h2>
+      <div class="zeilen">${asT("as_einheit").map(x => `<div class="z" data-abt="${x.id}"><div><b>${esc(x.name)}</b>
+        <small>${asRgTn().filter(t => t.einheit_id === x.id && t.status !== "inaktiv").length} Teilnehmende</small></div></div>`).join("") || `<div class="leer">Noch keine Abteilungen.</div>`}</div>
+      <p class="hinweis">Dieselben Abteilungen gelten im ganzen Cockpit (Organisation). Für die Gruppen wichtig: Der „Fremde Blick“ kommt aus einer anderen Abteilung als die Führungskraft.</p></div>`;
+  const abt = x => asDialog({ titel: x ? x.name : "Neue Abteilung", inhalt: `<div class="form">${asFeld("Name", "name", x ? x.name : "", "text", "voll")}</div>`,
+    knoepfe: [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.name){ asMeldung("Namen angeben"); return false; }
+      await asSpeichern("as_einheit", x ? { id: x.id, name: w.name } : { name: w.name }); asZeige(); } }] });
+  box.querySelector("#rgAbtNeu").onclick = () => abt(null);
+  box.querySelectorAll("[data-abt]").forEach(z => z.onclick = () => abt(asNach("as_einheit", z.dataset.abt)));
   box.querySelector("#rgEsp").onclick = async () => {
     const w = asWerte(box), zahl = (v, d) => Number.isFinite(+v) && v !== null ? Math.max(0, Math.round(+v)) : d;
     const row = { kunde_slug: AS.kunde, arten: { lern: !!w.an_lern, sicher: !!w.an_sicher },
