@@ -25,7 +25,7 @@ async function asBgFertig(box, p){
 }
 
 async function asBgLaeuft(box, p, typ, antworten){
-  const vorlage = typ.vorlage, roh = (vorlage.hazards || []).map(h => ({ nr: String(h.nr), gilt: true, situation: h.situation, wV: h.wV, sV: h.sV, wN: h.wN, sN: h.sN }));
+  const vorlage = typ.vorlage, roh = (vorlage.hazards || []).map(h => ({ nr: String(h.nr), gilt: !(h.bedingt === "linearroboter" && asBgOhneRoboter(p)), situation: h.situation, wV: h.wV, sV: h.sV, wN: h.wN, sN: h.sN }));
   let e = { fragen: [], hazards: roh, zusatz: [] };
   if(AS_BG.ki && AS_BG.ki.aktiv){
     asDialog({ titel: "KI erstellt den Entwurf", inhalt: `<div class="leer">Das dauert meist unter einer Minute.</div>` });
@@ -35,6 +35,17 @@ async function asBgLaeuft(box, p, typ, antworten){
     }catch(x){ asMeldung(x.message + " Es gilt die unveränderte Vorlage."); }
   }
   asBgPruefen(box, p, typ, e);
+}
+/* Typ-Vorlage nach references/vorlagen/typ-vorlage-standard.md: Gefährdungen mit bedingt="linearroboter" entfallen,
+   wenn die Begehung „kein Roboter“ festhält (Notiz oder Merkmal am Punkt). Ohne Angabe bleiben sie zum Prüfen angehakt. */
+function asBgOhneRoboter(p){
+  if(p.linearroboter === "nein" || (p.merkmale && p.merkmale.linearroboter === "nein")) return true;
+  return /kein(en)?\s+(linear)?roboter|ohne\s+(linear)?roboter/i.test(String(p.notiz || ""));
+}
+/* Tätigkeit der Vorlage zu einer Gefährdung (null = „Für alle Tätigkeiten“) */
+function asBgTaetigkeit(typ, h){
+  const t = h && h.taetigkeit ? (typ.vorlage.taetigkeiten || []).find(x => x.key === h.taetigkeit) : null;
+  return t || null;
 }
 function asBgKiTyp(p, slug, antworten){
   const fotos = asListe(p.fotos).filter(x => !x.startsWith("blob:")).slice(-3);
@@ -54,8 +65,14 @@ function asBgPruefen(box, p, typ, e){
   const zeile = (g, i, titel, rq) => `<div class="bg-gef" data-i="${i}"><label class="bg-gilt"><input type="checkbox" data-f="gilt"${g.gilt === false ? "" : " checked"}> <b title="${esc(titel)}">${esc(titel)}</b></label>
       <textarea data-f="situation" rows="2">${esc(g.situation || "")}</textarea><div class="bg-risiko">W ${zahl("wV", g.wV)} S ${zahl("sV", g.sV)} nach Maßnahme W ${zahl("wN", g.wN)} S ${zahl("sN", g.sN)}</div>
       ${rq ? `<small title="${esc(rq)}">${esc(rq)}</small>` : `<small>Rechtsquelle bitte prüfen</small>`}</div>`;
-  const zeilen = e.hazards.map((g, i) => { const h = hz[i] || {}; return zeile(g, i, [h.kat, h.sub].filter(Boolean).join(" – "), h.rq); })
-    .concat((e.zusatz || []).map((g, i) => zeile(g, "z" + i, "Neu: " + (g.kat || "Gefährdung"), "")));
+  // nach Tätigkeiten der Vorlage gruppiert; „Für alle“ zuerst, Vorlagen ohne Tätigkeiten bleiben eine Liste
+  const gruppen = [{ key: null, name: "Für alle Tätigkeiten" }].concat(typ.vorlage.taetigkeiten || []);
+  const mitTk = (typ.vorlage.taetigkeiten || []).length > 0;
+  const zeilen = gruppen.flatMap(gr => {
+    const z = e.hazards.map((g, i) => [g, i]).filter(([, i]) => ((hz[i] || {}).taetigkeit || null) === gr.key)
+      .map(([g, i]) => { const h = hz[i] || {}; return zeile(g, i, [h.kat, h.sub].filter(Boolean).join(" – ") + (h.bedingt === "linearroboter" ? " (nur mit Roboter)" : ""), h.rq); });
+    return z.length && mitTk ? [`<h3 class="bg-tk">${esc(gr.name)}${gr.rollen ? ` <span class="hinweis">${esc(asListe(gr.rollen).join(", "))}</span>` : ""}</h3>`].concat(z) : z;
+  }).concat((e.zusatz || []).map((g, i) => zeile(g, "z" + i, "Neu: " + (g.kat || "Gefährdung"), "")));
   asDialog({ titel: "BdA-Entwurf: " + p.maschine, breit: true, inhalt: `<p class="hinweis">Entwurf aus der Vorlage „${esc(typ.titel)}“. Gemeinsam durchgehen und korrigieren.</p><div class="bg-gefliste">${zeilen.join("")}</div>`,
     knoepfe: [{ t: "Speichern", klasse: "sek", fn: d => asBgSpeichern(box, p, typ, e, d, false) }, { t: "Speichern und unterschreiben", fn: d => asBgSpeichern(box, p, typ, e, d, true) }] });
 }
@@ -64,14 +81,25 @@ async function asBgSpeichern(box, p, typ, e, d, signieren){
   d.querySelectorAll(".bg-gef").forEach(z => { const w = asWerte(z), i = z.dataset.i, zu = i[0] === "z", q = zu ? e.zusatz[+i.slice(1)] : hz[+i];
     if(!w.gilt) return;
     const kat = q.kat, top = zu ? "" : (q.top || []).filter(t => Array.isArray(t) && t[1] && !["–", "-"].includes(t[1])).map(t => t[0] + ": " + t[1]).join(" · ");
-    neu.push({ kat, kurz: zu ? (q.kat || "Gefährdung") : [q.kat, q.sub].filter(Boolean).join(" – "), rq: zu ? "" : q.rq, text: [w.situation, top ? "Schutzmaßnahmen lt. BdA – " + top : "", !zu && q.rq ? "Rechtsquelle: " + q.rq : "Rechtsquelle: bitte prüfen"].filter(Boolean).join("\n"), w_v: w.wV, s_v: w.sV, w_n: w.wN, s_n: w.sN, situation: w.situation }); });
+    neu.push({ kat, tk: zu ? null : asBgTaetigkeit(typ, q), kurz: zu ? (q.kat || "Gefährdung") : (q.taetigkeit !== undefined ? q.sub : [q.kat, q.sub].filter(Boolean).join(" – ")), rq: zu ? "" : q.rq, text: [w.situation, top ? "Schutzmaßnahmen lt. BdA – " + top : "", !zu && q.rq ? "Rechtsquelle: " + q.rq : "Rechtsquelle: bitte prüfen"].filter(Boolean).join("\n"), w_v: w.wV, s_v: w.sV, w_n: w.wN, s_n: w.sN, situation: w.situation }); });
   if(!neu.length){ asMeldung("Keine Gefährdung ausgewählt"); return false; }
   const mid = p.maschinen_id && p.maschinen_id !== "ALLG-HALLE" ? p.maschinen_id : null;
   await asLaden();
   let s = p.arbeitssystem_id ? asNach("as_arbeitssystem", p.arbeitssystem_id) : mid ? asT("as_arbeitssystem").find(x => asListe(x.anlagen).includes(mid) && !x.stillgelegt_am) : null;
   if(!s){ const r = await apiSend("POST", "/rest/v1/as_arbeitssystem", { kunde_slug: AS.kunde, name: p.maschine + (mid ? " (" + mid + ")" : ""), beschreibung: typ.titel + " · Entwurf aus Begehung " + asDat(AS_BG.b.datum), anlagen: mid ? [mid] : [], art: "anlage" }, "return=representation"); s = r[0]; }
-  const da = await apiGet("/rest/v1/as_gefaehrdung?select=id,kurz&arbeitssystem_id=eq." + s.id + "&kunde_slug=eq." + encodeURIComponent(AS.kunde)) || [];
-  for(const [i, g] of neu.entries()){ const x = da.find(y => y.kurz === g.kurz), z = { beschreibung: g.text, situation: g.situation, rechtsquelle: g.rq || null, w_v: g.w_v, s_v: g.s_v, w_n: g.w_n, s_n: g.s_n };
+  // Tätigkeiten aus der Vorlage im System anlegen (gleicher Name = vorhandene Tätigkeit, der Betrieb kann sie danach frei ändern)
+  const tkDa = await apiGet("/rest/v1/as_taetigkeit?select=id,name&arbeitssystem_id=eq." + s.id + "&kunde_slug=eq." + encodeURIComponent(AS.kunde)) || [];
+  const tkId = {};
+  for(const [i, t] of (typ.vorlage.taetigkeiten || []).entries()){
+    if(!neu.some(g => g.tk && g.tk.key === t.key)) continue;
+    let x = tkDa.find(y => String(y.name).trim().toLowerCase() === String(t.name).trim().toLowerCase());
+    if(!x){ const r = await apiSend("POST", "/rest/v1/as_taetigkeit", { kunde_slug: AS.kunde, arbeitssystem_id: s.id, name: t.name, rollen: asListe(t.rollen), rechtsquelle: t.rechtsquelle || null, sort: i }, "return=representation"); x = r[0]; }
+    tkId[t.key] = x.id;
+  }
+  const da = await apiGet("/rest/v1/as_gefaehrdung?select=id,kurz,taetigkeit_id&arbeitssystem_id=eq." + s.id + "&kunde_slug=eq." + encodeURIComponent(AS.kunde)) || [];
+  for(const [i, g] of neu.entries()){ const tid = g.tk ? tkId[g.tk.key] || null : null;
+    const x = da.find(y => y.kurz === g.kurz && (y.taetigkeit_id || null) === tid) || da.find(y => y.kurz === g.kurz && !y.taetigkeit_id),
+      z = { beschreibung: g.text, situation: g.situation, rechtsquelle: g.rq || null, w_v: g.w_v, s_v: g.s_v, w_n: g.w_n, s_n: g.s_n, taetigkeit_id: tid };
     if(x) await apiSend("PATCH", "/rest/v1/as_gefaehrdung?id=eq." + x.id, z, "return=minimal");
     else await apiSend("POST", "/rest/v1/as_gefaehrdung", Object.assign({ kunde_slug: AS.kunde, arbeitssystem_id: s.id, art: "gefaehrdung", faktor: asBgFaktor(g.kat), kurz: g.kurz, sort: 100 + i }, z), "return=minimal"); }
   const ba = await apiGet("/rest/v1/as_ba?select=id&limit=1&arbeitssystem_id=eq." + s.id) || [];

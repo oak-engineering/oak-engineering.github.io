@@ -159,7 +159,8 @@ function asTaetigkeitDialog(s, t){
     w.rollen = asListe(w.rollen); await asSpeichern("as_taetigkeit", Object.assign({ id: t.id, arbeitssystem_id: s.id, sort: t.sort || asT("as_taetigkeit").length }, w)); asZeige(); } }];
   if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Tätigkeit mit ihren Gefährdungen löschen?", "as_taetigkeit", t.id)) return false; await asLaden(); asZeige(); } });
   asDialog({ titel: neu ? "Neue Tätigkeit" : t.name, inhalt: `<div class="form">${asFeld("Tätigkeit (z. B. Werkzeugwechsel, Störung beseitigen)", "name", t.name, "text", "voll")}
-    ${asFeld("Wer führt sie aus? (Rollen mit Komma)", "rollen", asListe(t.rollen).join(", "), "text", "voll")}</div>
+    ${asFeld("Wer führt sie aus? (Rollen mit Komma)", "rollen", asListe(t.rollen).join(", "), "text", "voll")}
+    ${asFeld("Fundstelle (z. B. DGUV 113-606 3.2.2)", "rechtsquelle", t.rechtsquelle || "", "text", "voll")}</div>
     <p class="hinweis">Rollen dieses Arbeitssystems: ${esc(asListe(s.rollen).join(", ") || "–")}</p>`, knoepfe: kn });
 }
 /* Vorschaubilder der Gefährdungsfotos (signiert, nur eigener Fotoordner) */
