@@ -129,6 +129,7 @@ function asGsStil(){
 .gs-sptab{width:100%;border-collapse:collapse;table-layout:fixed;margin:8px 0}.gs-sptab th,.gs-sptab td{border:1px solid var(--linie);padding:6px 8px;text-align:left;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gs-sptab thead th{background:var(--blau);color:#fff;font-weight:600}
 .gs-sp5{background:var(--rot2)}.gs-sp4{background:#ffe1cc}.gs-sp3{background:var(--gelb2)}.gs-sp2{background:#eef7f0}.gs-sp1{background:var(--gruen2)}
+@media(max-width:640px){.gs-sptab th,.gs-sptab td{white-space:normal;overflow:visible;font-size:12px;padding:4px 5px;hyphens:auto;overflow-wrap:anywhere}}
 .gs-pflicht{background:var(--rot2);color:#a32f2f;padding:8px 10px;border-radius:8px}`;
   document.head.appendChild(s);
 }
@@ -250,7 +251,7 @@ function asGsSubstitution(g, box){
   const SPM = window.OAK_SPALTEN; if(!SPM){ asMeldung("Spaltenmodell nicht geladen"); return; }
   const r = SPM.bewerten(g.h_saetze), vr = SPM.vorrangig(g.h_saetze || []);
   const zelle = (v, z) => `<td class="gs-sp gs-sp${v}">${esc(SPM.NAMEN[v])}${z || ""}</td>`;
-  const leer = `<th>Ersatzstoff</th><td colspan="4" class="hinweis">H-Sätze des Ersatzstoffs eingeben</td>`;
+  const leer = `<th>Ersatz</th><td colspan="4" class="hinweis">H-Sätze des Ersatzstoffs eingeben</td>`;
   const SUB = { nicht_moeglich: "Ersatz nicht möglich oder nicht zumutbar", moeglich: "Ersatz möglich – Ersatzstoff festlegen" };
   const doku = asGsGbus(g).map(x => { const e = x.eingaben || {};
     return `<li><b>${esc(x.taetigkeit)}</b>: ${e.substitution ? esc(SUB[e.substitution] || e.substitution) + (e.substitution_text ? " – " + esc(e.substitution_text) : "") : '<span class="hinweis">noch nicht geprüft</span>'}</li>`; }).join("");
@@ -258,14 +259,14 @@ function asGsSubstitution(g, box){
     ${vr.length ? `<p class="gs-pflicht">Besonders gefährliche Eigenschaft (${esc(vr.join(", "))}) – Substitution vorrangig prüfen und regelmäßig dokumentieren (§ 7 Abs. 3 GefStoffV, TRGS 600).</p>`
       : `<p class="hinweis">Substitutionsprüfung nach § 6 Abs. 1 Nr. 4 GefStoffV und TRGS 600.</p>`}
     <table class="gs-sptab"><thead><tr><th></th>${SPM.spalten.map(s => `<th>${esc(s[1])}</th>`).join("")}</tr></thead>
-      <tbody><tr><th>Aktueller Stoff</th>${SPM.spalten.map(s => zelle(r[s[0]])).join("")}</tr><tr id="gsSubAlt">${leer}</tr></tbody></table>
+      <tbody><tr><th>Aktuell</th>${SPM.spalten.map(s => zelle(r[s[0]])).join("")}</tr><tr id="gsSubAlt">${leer}</tr></tbody></table>
     <div class="form"><label class="voll">H-Sätze des Ersatzstoffs (SDB Abschnitt 2)<input type="text" id="gsSubH" placeholder="z. B. H315 H319 H412" autocomplete="off"></label></div>
     <div class="gs-abschnitt">Dokumentiertes Ergebnis je Tätigkeit</div>
     ${doku ? `<ul class="gs-hl">${doku}</ul>` : `<p class="hinweis">Noch keine Tätigkeit nach EMKG beurteilt – das Prüfergebnis wird in der Beurteilung je Tätigkeit festgehalten.</p>`}
     <p class="hinweis">Bewertung nach GESTIS-Spaltenmodell 2025 (IFA), je Spalte zählt die höchste Einstufung. Technische Eignung, Verfahren und Aufwand gehören ebenfalls in die Prüfung.</p>` });
   const inp = document.querySelector("#dlg #gsSubH");
   if(inp) inp.addEventListener("input", () => { const hs = SPM.saetze(inp.value), a = SPM.bewerten(hs);
-    document.querySelector("#dlg #gsSubAlt").innerHTML = hs.length ? `<th>Ersatzstoff</th>${SPM.spalten.map(s => zelle(a[s[0]], a[s[0]] < r[s[0]] ? " ↓" : a[s[0]] > r[s[0]] ? " ↑" : " =")).join("")}` : leer; });
+    document.querySelector("#dlg #gsSubAlt").innerHTML = hs.length ? `<th>Ersatz</th>${SPM.spalten.map(s => zelle(a[s[0]], a[s[0]] < r[s[0]] ? " ↓" : a[s[0]] > r[s[0]] ? " ↑" : " =")).join("")}` : leer; });
 }
 function asGsGbuStatus(x){
   if(x.status === "freigegeben") return asChip("freigegeben" + (x.freigegeben_von ? " – " + x.freigegeben_von : "") + (x.freigegeben_am ? " " + asDat(x.freigegeben_am) : ""), "gruen");
