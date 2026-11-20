@@ -259,7 +259,7 @@ function asGsSubstitution(g, box){
       : `<p class="hinweis">Substitutionsprüfung nach § 6 Abs. 1 Nr. 4 GefStoffV und TRGS 600.</p>`}
     <table class="gs-sptab"><thead><tr><th></th>${SPM.spalten.map(s => `<th>${esc(s[1])}</th>`).join("")}</tr></thead>
       <tbody><tr><th>Aktueller Stoff</th>${SPM.spalten.map(s => zelle(r[s[0]])).join("")}</tr><tr id="gsSubAlt">${leer}</tr></tbody></table>
-    <label>H-Sätze des Ersatzstoffs (SDB Abschnitt 2)<input type="text" id="gsSubH" placeholder="z. B. H315 H319 H412" autocomplete="off"></label>
+    <div class="form"><label class="voll">H-Sätze des Ersatzstoffs (SDB Abschnitt 2)<input type="text" id="gsSubH" placeholder="z. B. H315 H319 H412" autocomplete="off"></label></div>
     <div class="gs-abschnitt">Dokumentiertes Ergebnis je Tätigkeit</div>
     ${doku ? `<ul class="gs-hl">${doku}</ul>` : `<p class="hinweis">Noch keine Tätigkeit nach EMKG beurteilt – das Prüfergebnis wird in der Beurteilung je Tätigkeit festgehalten.</p>`}
     <p class="hinweis">GHS-Spaltenmodell (IFA): je Spalte zählt die höchste Einstufung. Technische Eignung, Verfahren und Aufwand gehören ebenfalls in die Prüfung.</p>` });
