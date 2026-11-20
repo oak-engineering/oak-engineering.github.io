@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Beispiel: Digitales Gefahrstoffkataster | OAK engineering</title>
 <meta name="description" content="Anonymisierter Auszug aus einem digitalen Gefahrstoffkataster im EHS-Cockpit: GHS-Einstufung, Aktualität der Sicherheitsdatenblätter, EMKG-Gefährdungsbeurteilung je Tätigkeit, Handschuhauswahl.">
-<link rel="stylesheet" href="fonts.css?v=202611200635">
-<link rel="stylesheet" href="site.css?v=202611200635">
+<link rel="stylesheet" href="fonts.css?v=202611200646">
+<link rel="stylesheet" href="site.css?v=202611200646">
 <style>
   .gk-intro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 1.6rem}
   .gk-kachel{border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px 14px;height:76px;display:flex;flex-direction:column;justify-content:center}
@@ -34,31 +34,34 @@
   .gk-chip{font-size:.75rem;border-radius:99px;padding:2px 10px;white-space:nowrap;background:#f2f4f7;color:#475467}
   .gk-gut{background:var(--oak-pale);color:var(--oak-deep)}.gk-warn{background:#fff4e0;color:#7a4a00}.gk-krit{background:#fdecea;color:#8e1b1b}
   .gk-pfeil{color:var(--muted)}
-  dialog.gk-dlg{border:0;border-radius:12px;padding:0;width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 40px)}
+  dialog.gk-dlg{position:fixed;inset:0;margin:auto;border:0;border-radius:12px;padding:0;width:min(720px,calc(100vw - 32px));max-height:calc(100dvh - 48px);overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  dialog.gk-dlg[open]{display:flex;flex-direction:column}
+  html.gk-gesperrt,html.gk-gesperrt body{overflow:hidden}
   dialog.gk-dlg::backdrop{background:rgba(17,26,20,.45)}
   .gk-dkopf{display:flex;gap:12px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
   .gk-dkopf h3{font-family:var(--serif);font-size:1.5rem;font-weight:600;line-height:1.2;flex:1;min-width:0}
-  .gk-zu{border:0;background:none;font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1}
+  .gk-zu{flex:0 0 auto;height:32px;border:1px solid var(--border);background:#fff;border-radius:99px;padding:0 14px;font:inherit;font-size:.82rem;cursor:pointer;color:var(--ink-2)}
+  .gk-zu:hover{background:var(--oak-ghost)}
+  .gk-dinhalt{overflow:auto}
   .gk-dinhalt{padding:16px 20px 20px;font-size:.92rem}
   .gk-dinhalt h4{font-family:var(--serif);font-size:1.15rem;font-weight:600;margin:14px 0 6px}
   .gk-dinhalt h4:first-child{margin-top:0}
   .gk-h{list-style:none;padding:0}.gk-h li{padding:2px 0}.gk-h b{display:inline-block;width:62px;font-weight:600}
-  .gk-module{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:6px 0 4px}
-  .gk-modul{border:1px solid var(--border);border-radius:8px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-  .gk-modul span{font-size:.75rem;color:var(--muted);white-space:nowrap}
-  .gk-modul b{font-size:1.1rem;font-weight:600}
+  .gk-module{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:6px 0 4px}
+  .gk-modul{border:1px solid var(--border);border-radius:6px;height:40px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .gk-modul span{font-size:.68rem;line-height:1.1;color:var(--muted);white-space:nowrap}
+  .gk-modul b{font-size:.82rem;line-height:1.2;font-weight:600}
   .gk-s1{background:var(--oak-pale)}.gk-s2{background:#fff4e0}.gk-s3{background:#ffe1cc}.gk-s4{background:#fdecea}
   .gk-leise{color:var(--muted);font-size:.82rem}
-  .gk-knoepfe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0 4px}
-  .gk-dok{display:flex;align-items:center;justify-content:center;height:40px;border:0;border-radius:99px;background:var(--oak);color:#fff;font:inherit;font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px;cursor:pointer}
-  .gk-offen{background:#f6f7f9}.gk-offen b{font-size:.85rem;font-weight:500;color:#7a4a00}
+  .gk-knoepfe{display:grid;grid-template-columns:repeat(5,minmax(0,104px));gap:6px;margin:10px 0 4px}
+  .gk-dok{display:inline-flex;align-items:center;justify-content:center;width:100%;height:30px;border:0;border-radius:99px;background:var(--oak);color:#fff;font:inherit;font-size:.78rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px;cursor:pointer}
+  .gk-offen{background:#f6f7f9}.gk-offen b{font-size:.78rem;font-weight:500;color:#7a4a00}
   .gk-grund{font-size:.82rem;color:var(--ink-2);padding-left:18px;margin-top:4px}
   .gk-sptab{width:100%;border-collapse:collapse;table-layout:fixed;margin:10px 0}.gk-sptab th,.gk-sptab td{border:1px solid var(--border);padding:6px 8px;text-align:left;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .gk-sptab thead th{background:var(--oak);color:#fff;font-weight:500}
   .gk-sp5{background:#fdecea}.gk-sp4{background:#ffe1cc}.gk-sp3{background:#fff4e0}.gk-sp2{background:#eef7f0}.gk-sp1{background:var(--oak-pale)}
   .gk-altfeld{display:flex;flex-direction:column;gap:4px;font-size:.85rem;margin:6px 0}.gk-altfeld input{height:36px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font:inherit}
   .gk-pflicht{background:#fdecea;color:#8e1b1b;padding:8px 10px;border-radius:8px}
-  @media(max-width:640px){.gk-knoepfe{grid-template-columns:1fr}}
   .gk-cta{margin-top:2rem;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
   .gk-cta a{display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:99px;background:var(--oak);color:#fff;font-weight:500}
   @media(max-width:900px){.gk-intro{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -66,8 +69,10 @@
     .gk-signal{grid-column:1;grid-row:1}.gk-name{grid-column:2;grid-row:1}
     .gk-piktos{grid-column:1/3;grid-row:2}.gk-chips{grid-column:1/3;grid-row:3;justify-content:flex-start;flex-wrap:wrap}
     .gk-pfeil{grid-column:3;grid-row:1/4}
-    .gk-module{grid-template-columns:repeat(3,minmax(0,1fr))}
     .gk-name b,.gk-name span,.gk-kachel span{white-space:normal;overflow:visible}}
+  @media(max-width:640px){.gk-knoepfe{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}.gk-dok{font-size:.66rem;padding:0 3px}
+    .gk-module{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px}.gk-modul span{font-size:.6rem}.gk-modul b{font-size:.7rem}
+    .gk-dkopf{padding:12px 14px}.gk-dkopf h3{font-size:1.15rem}.gk-dinhalt{padding:12px 14px 16px}}
   @media(max-width:420px){.gk-intro{grid-template-columns:1fr}.gk-kachel{height:64px}}
 </style>
 </head>
@@ -108,9 +113,9 @@
   <div class="gk-cta"><a href="kontakt.html">Ihr Kataster digital aufbauen</a><span class="gk-leise">Übernahme aus Excel oder bestehender Gefahrstoffsoftware möglich.</span></div>
 </main>
 
-<dialog class="gk-dlg" id="gkDlg"><div class="gk-dkopf"><span id="gkDSignal"></span><h3 id="gkDTitel"></h3><button class="gk-zu" type="button" aria-label="Schließen" id="gkZu">×</button></div><div class="gk-dinhalt" id="gkDInhalt"></div></dialog>
+<dialog class="gk-dlg" id="gkDlg"><div class="gk-dkopf"><span id="gkDSignal"></span><h3 id="gkDTitel"></h3><button class="gk-zu" type="button" id="gkZu">Schließen</button></div><div class="gk-dinhalt" id="gkDInhalt"></div></dialog>
 
-<dialog class="gk-dlg" id="gkSub"><div class="gk-dkopf"><h3>Substitutionsprüfung (TRGS 600)</h3><button class="gk-zu" type="button" aria-label="Schließen" onclick="this.closest('dialog').close()">×</button></div><div class="gk-dinhalt" id="gkSubInhalt"></div></dialog>
+<dialog class="gk-dlg" id="gkSub"><div class="gk-dkopf"><h3>Substitutionsprüfung (TRGS 600)</h3><button class="gk-zu" type="button" onclick="this.closest('dialog').close()">Schließen</button></div><div class="gk-dinhalt" id="gkSubInhalt"></div></dialog>
 
 <footer>
   <div class="footer-brand">OAK engineering · Nikolai Krawielitzki</div>
@@ -153,7 +158,7 @@ const SEITE = "https://www.oak-engineering.de/gefahrstoffkataster-beispiel.html"
 const HTXT = {H220:"Extrem entzündbares Gas.",H222:"Extrem entzündbares Aerosol.",H225:"Flüssigkeit und Dampf leicht entzündbar.",H226:"Flüssigkeit und Dampf entzündbar.",H229:"Behälter steht unter Druck: Kann bei Erwärmung bersten.",H280:"Enthält Gas unter Druck; kann bei Erwärmung explodieren.",H304:"Kann bei Verschlucken und Eindringen in die Atemwege tödlich sein.",H312:"Gesundheitsschädlich bei Hautkontakt.",H315:"Verursacht Hautreizungen.",H317:"Kann allergische Hautreaktionen verursachen.",H318:"Verursacht schwere Augenschäden.",H319:"Verursacht schwere Augenreizung.",H332:"Gesundheitsschädlich bei Einatmen.",H335:"Kann die Atemwege reizen.",H336:"Kann Schläfrigkeit und Benommenheit verursachen.",H373:"Kann die Organe schädigen bei längerer oder wiederholter Exposition.",H411:"Giftig für Wasserorganismen, mit langfristiger Wirkung.",H412:"Schädlich für Wasserorganismen, mit langfristiger Wirkung.",EUH066:"Wiederholter Kontakt kann zu spröder oder rissiger Haut führen.",EUH202:"Cyanacrylat. Gefahr. Klebt innerhalb von Sekunden Haut und Augenlider zusammen.",EUH430:"Kann endokrine Störungen in der Umwelt verursachen."};
 const GHS = {GHS02:["H220","H222","H225","H226"],GHS04:["H280"],GHS05:["H318"],GHS07:["H312","H315","H317","H319","H332","H335","H336"],GHS08:["H304","H373"],GHS09:["H411"]};
 const GHSN = {GHS02:"Flamme",GHS04:"Gasflasche",GHS05:"Ätzwirkung",GHS07:"Ausrufezeichen",GHS08:"Gesundheitsgefahr",GHS09:"Umwelt"};
-const MOD = ["Einatmen","Haut","Augen","Brand/Explosion","Lagern"];
+const MOD = ["Einatmen","Haut","Augen","Brand/Ex","Lagern"];
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const datum = d => d ? d.split("-").reverse().join(".") : "";
 function piktos(hs){ const h = new Set(hs); const p = Object.keys(GHS).filter(k => GHS[k].some(x => h.has(x)));
@@ -189,7 +194,7 @@ function detail(g){ const st = sdbStand(g), d = document.getElementById("gkDlg")
       <button type="button" class="gk-dok" id="gkSubBtn" title="Substitutionsprüfung nach TRGS 600">Substitution</button></div>`;
   if(g.hinweis) h += `<p style="margin-top:10px">${esc(g.hinweis)}</p>`;
   if(g.hs.length) h += `<h4>Einstufung (SDB Abschnitt 2)</h4><div class="gk-piktos" style="margin-bottom:6px">${piktos(g.hs)}</div><ul class="gk-h">${g.hs.map(x => `<li><b>${x}</b>${esc(HTXT[x] || "")}</li>`).join("")}</ul>`;
-  if(g.m) h += `<h4>Gefährdungsbeurteilung nach EMKG</h4><p>Tätigkeit: ${esc(g.t)}</p><div class="gk-module">${MOD.map((t,i) => modul(t, g.m[i])).join("")}</div><p class="gk-leise">Stufe 1 = Grundmaßnahmen · 2 = technische Maßnahmen · 3 = Fachkunde/Spezialmaßnahmen · 4 = Expertenrat. Maßnahmen je Modul aus den BAuA-Schutzleitfäden. Status: Entwurf, Freigabe durch den Betrieb offen.</p>${modulHinweise(g.m) ? `<ul class="gk-grund">${modulHinweise(g.m)}</ul>` : ""}`;
+  if(g.m) h += `<h4>Gefährdungsbeurteilung nach EMKG</h4><p>Tätigkeit: ${esc(g.t)}</p><div class="gk-module">${MOD.map((t,i) => modul(t, g.m[i])).join("")}</div><p class="gk-leise">Entwurf – Freigabe durch den Betrieb offen.</p>`;
   if(g.hand) h += `<h4>Handschuhauswahl</h4><p>${esc(g.hand)}</p>`;
   if(!g.id) h += `<h4>Gefährdungsbeurteilung und Betriebsanweisung</h4><p>Folgen, sobald das Sicherheitsdatenblatt vorliegt.</p>`;
   document.getElementById("gkDInhalt").innerHTML = h; if(!d.open) d.showModal();
@@ -197,9 +202,9 @@ function detail(g){ const st = sdbStand(g), d = document.getElementById("gkDlg")
   if(qb) qb.addEventListener("click", () => qrEtikett(g)); if(sb) sb.addEventListener("click", () => substitution(g));
   if(g.id && location.hash !== "#" + g.id) history.replaceState(null, "", "#" + g.id); }
 /* EMKG-Modul ohne Stufe: Grund statt Strich (Daten wie im Cockpit) */
-const GRUND = { gas: ["nicht anwendbar", "Gase sind nicht Gegenstand der EMKG-Module Einatmen, Haut und Augen (EMKG-Leitfaden 2.2, R0.1) – Beurteilung nach TRGS 400 und TRGS 407."],
-  lager: ["Angabe fehlt", "Lagermenge am Lagerort fehlt – Modul Lagern noch nicht berechenbar."],
-  sdb9: ["Angabe fehlt", "Siedebeginn oder Dampfdruck (SDB Abschnitt 9.1) fehlt – Modul noch nicht berechenbar."] };
+const GRUND = { gas: ["entfällt", "Gase sind nicht Gegenstand der EMKG-Module Einatmen, Haut und Augen (EMKG-Leitfaden 2.2, R0.1) – Beurteilung nach TRGS 400 und TRGS 407."],
+  lager: ["fehlt", "Lagermenge am Lagerort fehlt – Modul Lagern noch nicht berechenbar."],
+  sdb9: ["fehlt", "Siedebeginn oder Dampfdruck (SDB Abschnitt 9.1) fehlt – Modul noch nicht berechenbar."] };
 function modul(t, v){
   if(typeof v === "number") return `<div class="gk-modul gk-s${v}"><span>${t}</span><b>Stufe ${v}</b></div>`;
   const gr = GRUND[v] || ["–", ""];
@@ -253,11 +258,13 @@ document.querySelectorAll(".gk-pill").forEach(p => p.addEventListener("click", (
   filtern(); }));
 document.querySelectorAll(".gk-zeile").forEach(z => { const o = () => detail(STOFFE[+z.dataset.i]); z.addEventListener("click", o); z.addEventListener("keydown", e => { if(e.key === "Enter") o(); }); });
 document.getElementById("gkZu").addEventListener("click", () => document.getElementById("gkDlg").close());
+const sperre = () => document.documentElement.classList.toggle("gk-gesperrt", !!document.querySelector("dialog.gk-dlg[open]"));
+document.querySelectorAll("dialog.gk-dlg").forEach(x => { x.addEventListener("close", () => setTimeout(sperre)); new MutationObserver(sperre).observe(x, { attributes: true, attributeFilter: ["open"] }); });
 document.getElementById("gkDlg").addEventListener("close", () => history.replaceState(null, "", location.pathname));
 window.addEventListener("hashchange", () => { const g = STOFFE.find(x => x.id && "#" + x.id === location.hash); if(g){ document.getElementById("gkSub").close(); detail(g); } });
 const start = STOFFE.find(g => g.id && "#" + g.id === location.hash); if(start) detail(start);
 document.getElementById("gkDlg").addEventListener("click", e => { if(e.target.id === "gkDlg") e.target.close(); });
 </script>
-<script src="site.js?v=202611200635"></script>
+<script src="site.js?v=202611200646"></script>
 </body>
 </html>

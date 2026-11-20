@@ -546,3 +546,64 @@ body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
   .ein-zuord select{padding-right:22px}
   .zeilen.ein-empf .z b{white-space:normal;overflow:visible}
 }
+/* BdA nach Tätigkeiten (20.11.2026): Kacheln je Tätigkeit, Tabelle je Tätigkeit, Fotos, Matrix einmal */
+.bd-stamm{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:6px 0 10px}
+.bd-stamm>div{background:var(--bg);border:1px solid var(--linie);border-radius:6px;padding:6px 10px;height:50px;overflow:hidden}
+.bd-stamm span{display:block;font-size:10.5px;color:var(--grau);text-transform:uppercase;letter-spacing:.5px}
+.bd-stamm b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd-zweck{font-size:12.5px;color:var(--grau);margin:0 0 12px}
+.bd-kacheln{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:10px;margin-bottom:18px}
+.bd-kachel{display:grid;grid-template-rows:auto auto 1fr auto;gap:5px;height:132px;padding:10px 12px;border:1px solid var(--linie);border-top:4px solid var(--blau);border-radius:6px;text-decoration:none;color:inherit;background:#fff;min-width:0}
+.bd-kachel:hover{background:var(--bg)}
+.bd-k-titel{font-family:'Cormorant Garamond',Georgia,serif;font-weight:700;font-size:19px;color:var(--blau-tief);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd-k-wer{font-size:12px;color:var(--grau);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bd-k-risk{display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden}.bd-k-risk small{font-size:11px;color:var(--grau)}
+.bd-pfeil{color:var(--grau)}
+.bd-k-zahl{display:flex;gap:10px;font-size:12px;color:var(--grau);white-space:nowrap;overflow:hidden}.bd-k-zahl b{color:var(--text)}
+.bd-rk{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.bd-rk.bd-rot,.bd-mx b.bd-rot{background:var(--rot2);color:var(--rot)}.bd-rk.bd-gelb,.bd-mx b.bd-gelb{background:var(--gelb2);color:#8a6200}
+.bd-rk.bd-gruen,.bd-mx b.bd-gruen{background:var(--gruen2);color:#1e7a45}.bd-rk.bd-grau{background:#eef1f5;color:var(--grau)}
+.bd-abschnitt{margin-bottom:20px}
+.bd-a-kopf{display:flex;align-items:center;gap:12px;border-bottom:2px solid var(--blau);padding-bottom:4px;margin-bottom:6px;min-width:0}
+.bd-a-kopf h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:21px;color:var(--blau-tief);margin:0;white-space:nowrap}
+.bd-a-wer{color:var(--grau);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.bd-a-quelle{margin-left:auto;font-size:11.5px;color:var(--blau);font-weight:500;white-space:nowrap}
+.bd-a-kopf .btn{flex:none}.bd-a-wer+.btn{margin-left:auto}
+.bd-tab{width:100%;border-collapse:collapse;table-layout:fixed}
+.bd-c-nr{width:32px}.bd-c-gef{width:21%}.bd-c-wann{width:18%}.bd-c-r{width:104px}.bd-c-st{width:104px}
+.bd-tab th{text-align:left;font-size:11px;font-weight:600;color:var(--grau);text-transform:uppercase;letter-spacing:.4px;padding:4px 8px;border-bottom:1px solid var(--linie)}
+.bd-tab td{padding:8px;border-bottom:1px solid var(--linie);vertical-align:top}
+.bd-tab tbody tr:nth-child(even) td{background:#fafcfb}
+.bd-nr{color:var(--grau);font-weight:600;text-align:center}
+.bd-g1{font-weight:600;line-height:1.3}.bd-g2{font-size:11.5px;color:var(--blau);margin-top:2px;overflow-wrap:anywhere}
+.bd-wann{color:#33433b;line-height:1.35;overflow-wrap:anywhere}
+.bd-ms{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px;align-items:start;line-height:1.35;padding:2px 0}
+.bd-ms span{overflow-wrap:anywhere}.bd-ms .chip{font-size:11px}
+.bd-mass .btn{margin-top:4px}
+.bd-galerie{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.bd-galerie figure{margin:0;min-width:0}.bd-fx{display:block;width:100%;height:110px;border:1px solid var(--linie);border-radius:5px;overflow:hidden;padding:0;background:var(--bg);cursor:zoom-in}
+.bd-fx img{width:100%;height:100%;object-fit:cover;display:block}
+.bd-galerie figcaption{font-size:12px;color:var(--grau);margin-top:4px;line-height:1.3;height:32px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.bd-fuss{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:8px}
+.bd-box{border:1px solid var(--linie);border-radius:6px;padding:10px 12px;height:170px;font-size:12px;color:#33433b;overflow:hidden;min-width:0}
+.bd-box h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:var(--blau-tief);margin:0 0 6px}.bd-box p{margin:0}
+.bd-mxw{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.bd-mx{display:grid;grid-template-columns:auto repeat(4,28px);gap:3px;align-items:center;font-size:11px}
+.bd-mx b{display:grid;place-items:center;height:21px;border-radius:4px;font-weight:600}
+.bd-ax{color:var(--grau);padding-right:4px}.bd-ko{text-align:center;color:var(--grau)}
+.bd-mxl{display:grid;gap:6px;white-space:nowrap}
+.bd-stop{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px}.bd-stop span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.bd-unter{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.bd-unter>div{border-top:1px solid #9aa8a0;padding-top:4px;font-size:11.5px;color:var(--grau);height:52px;display:flex;align-items:flex-end}
+@media (max-width:760px){
+  .bd-stamm{grid-template-columns:repeat(2,minmax(0,1fr))}.bd-kacheln{grid-template-columns:1fr}.bd-kachel{height:118px}
+  .bd-a-kopf{flex-wrap:wrap}.bd-a-quelle{margin-left:0}
+  .bd-tab colgroup,.bd-tab thead{display:none}.bd-tab,.bd-tab tbody,.bd-tab tr{display:block;width:100%}
+  .bd-tab tr{display:grid;grid-template-columns:1fr auto auto;gap:4px 8px;padding:9px 0;border-bottom:1px solid var(--linie)}
+  .bd-tab td{display:block;border:0;padding:0;background:none!important}
+  .bd-tab td.bd-nr{display:none}.bd-tab td.bd-gef,.bd-tab td.bd-wann,.bd-tab td.bd-mass{grid-column:1/-1}
+  .bd-tab td.bd-risk::before{content:attr(data-l) " ";font-size:11px;color:var(--grau)}
+  .bd-fuss,.bd-unter{grid-template-columns:1fr}.bd-box{height:auto}.bd-galerie{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@page bda{size:A4 landscape;margin:10mm}
+@media print{.karte.bd{page:bda}.bd-kachel,.bd-tab tr,.bd-box,.bd-galerie figure{break-inside:avoid}.bd-a-kopf{break-after:avoid}.bd-fuss,.bd-unter{break-inside:avoid}}
