@@ -78,6 +78,22 @@ function asBdaSystem(main, s){
    (Gefährdung · Wann/wo · Risiko heute · Maßnahmen · Risiko danach · Stand) → Fotos gesammelt → Matrix einmal → Unterschriften.
    „Für alle Tätigkeiten“ = Gefährdungen ohne Tätigkeit. Tätigkeiten kommen nur aus den Daten, nichts ist fest verdrahtet. */
 function asBdRk(r, titel, kurz){ const b = asBand(r); return `<span class="bd-rk bd-${b}"${titel ? ` title="${esc(titel)}"` : ""}>${r ? r + (kurz ? "" : " " + asBandText(b)) : kurz ? "–" : asBandText(b)}</span>`; }
+/* Plausibilitätsprüfung (Fahrplan Schritt 4, 20.11.2026): Hinweise je Arbeitssystem, nur Anzeige – nichts wird gesperrt */
+function asBdaPruefung(s){
+  const tk = asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id);
+  const gef = asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id && g.art !== "ressource");
+  const h = [];
+  gef.forEach(g => { const v = asRisiko(g.w_v, g.s_v), n = asRisiko(g.w_n, g.s_n), ms = asMassnahmenZu(g.id);
+    if(!v) h.push([g.id, g.kurz, "nicht bewertet (W und S fehlen)"]);
+    else if(n > v) h.push([g.id, g.kurz, `Risiko danach (${n}) höher als heute (${v})`]);
+    if(!String(g.rechtsquelle || "").trim()) h.push([g.id, g.kurz, "keine Fundstelle (Rechtsquelle)"]);
+    if(asGefRisiko(g) >= 9 && !ms.some(m => m.status !== "wirksam")) h.push([g.id, g.kurz, "Risiko hoch, aber keine offene Maßnahme"]);
+    const ohne = ms.filter(m => m.status === "offen" && (!m.verantwortlich || !m.termin)).length;
+    if(ohne && asGefRisiko(g) >= 4) h.push([g.id, g.kurz, `${ohne} offene Maßnahme${ohne === 1 ? "" : "n"} ohne Verantwortlichen oder Termin`]); });
+  tk.forEach(t => { if(String(t.name || "").length > 60 || /festgestellt|begehung|notiz/i.test(t.name || "")) h.push([null, t.name, "Tätigkeitsname sieht aus wie eine Notiz – kurz benennen, Text ins Hinweisfeld"]);
+    if(!gef.some(g => g.taetigkeit_id === t.id)) h.push([null, t.name, "Tätigkeit ohne Gefährdung"]); });
+  return h;
+}
 function asBdaTabelle(box, s){
   const tk = asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).sort((x, y) => (x.sort || 0) - (y.sort || 0));
   const gef = asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id).sort((x, y) => (x.sort || 0) - (y.sort || 0));
@@ -139,6 +155,8 @@ function asBdaTabelle(box, s){
       <div><span>Beschäftigte</span><b title="${esc(asListe(s.rollen).join(", "))}">${esc(asListe(s.rollen).join(", ") || "–")}</b></div><div><span>Stand</span><b>${asDat(asHeute())}</b></div>
       <div><span>Freigabe</span><b>${s.freigabe_am ? asDat(s.freigabe_am) + " · " + esc(s.freigabe_von || "") : "noch nicht freigegeben"}</b></div></div>
     <p class="bd-zweck">Beurteilt nach § 5 ArbSchG und § 3 BetrSichV, getrennt nach Tätigkeiten. Je Zeile: Risiko heute → Maßnahmen → Risiko danach. Das Restrisiko gilt, sobald alle Maßnahmen einer Gefährdung wirksam sind.</p>
+    ${(() => { const h = asDarf("pflegen") ? asBdaPruefung(s) : []; return h.length ? `<details class="bd-pruef nodruck"><summary>${h.length} Hinweis${h.length === 1 ? "" : "e"} zur Prüfung</summary>${h.map(([gid, was, txt]) =>
+      `<div class="bd-pz${gid ? " bda-klick" : ""}"${gid ? ` data-gk="${gid}"` : ""}><b title="${esc(was)}">${esc(was)}</b><span>${esc(txt)}</span></div>`).join("")}</details>` : ""; })()}
     <div class="bd-kacheln" style="--n:${Math.min(Math.max(gruppen.length, 1), 6)}">${kacheln}</div>
     ${abschnitte || `<p class="leer">Mit „+ Tätigkeit“ beginnen, dann je Tätigkeit „+ Gefährdung“.</p>`}
     ${res.length ? `<section class="bd-abschnitt"><div class="bd-a-kopf"><h2>Ressourcen</h2></div>${res.map(g => `<div class="krit bda-klick" data-gk="${g.id}"><span class="ok">+</span><div><b>${esc(g.kurz)}</b> <span class="hinweis">${esc(g.faktor || "")} ${esc(g.beschreibung || "")}</span></div></div>`).join("")}</section>` : ""}
