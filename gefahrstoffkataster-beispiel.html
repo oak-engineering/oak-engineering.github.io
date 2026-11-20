@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Beispiel: Digitales Gefahrstoffkataster | OAK engineering</title>
 <meta name="description" content="Anonymisierter Auszug aus einem digitalen Gefahrstoffkataster im EHS-Cockpit: GHS-Einstufung, Aktualität der Sicherheitsdatenblätter, EMKG-Gefährdungsbeurteilung je Tätigkeit, Handschuhauswahl.">
-<link rel="stylesheet" href="fonts.css?v=202611200621">
-<link rel="stylesheet" href="site.css?v=202611200621">
+<link rel="stylesheet" href="fonts.css?v=202611200635">
+<link rel="stylesheet" href="site.css?v=202611200635">
 <style>
   .gk-intro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 1.6rem}
   .gk-kachel{border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px 14px;height:76px;display:flex;flex-direction:column;justify-content:center}
@@ -49,12 +49,16 @@
   .gk-modul b{font-size:1.1rem;font-weight:600}
   .gk-s1{background:var(--oak-pale)}.gk-s2{background:#fff4e0}.gk-s3{background:#ffe1cc}.gk-s4{background:#fdecea}
   .gk-leise{color:var(--muted);font-size:.82rem}
-  .gk-unterlagen{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:16px;align-items:center;margin:12px 0 4px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--oak-ghost)}
-  .gk-knoepfe{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-  .gk-dok{display:flex;align-items:center;justify-content:center;height:40px;border-radius:99px;background:var(--oak);color:#fff;font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
-  .gk-qr{margin:0;text-align:center}.gk-qr svg{width:110px;height:110px;display:block;margin:0 auto;background:#fff}
-  .gk-qr figcaption{font-size:.7rem;color:var(--muted);line-height:1.3;margin-top:4px}
-  @media(max-width:640px){.gk-unterlagen{grid-template-columns:1fr}.gk-knoepfe{grid-template-columns:1fr}}
+  .gk-knoepfe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:12px 0 4px}
+  .gk-dok{display:flex;align-items:center;justify-content:center;height:40px;border:0;border-radius:99px;background:var(--oak);color:#fff;font:inherit;font-size:.8rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 8px;cursor:pointer}
+  .gk-offen{background:#f6f7f9}.gk-offen b{font-size:.85rem;font-weight:500;color:#7a4a00}
+  .gk-grund{font-size:.82rem;color:var(--ink-2);padding-left:18px;margin-top:4px}
+  .gk-sptab{width:100%;border-collapse:collapse;table-layout:fixed;margin:10px 0}.gk-sptab th,.gk-sptab td{border:1px solid var(--border);padding:6px 8px;text-align:left;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gk-sptab thead th{background:var(--oak);color:#fff;font-weight:500}
+  .gk-sp5{background:#fdecea}.gk-sp4{background:#ffe1cc}.gk-sp3{background:#fff4e0}.gk-sp2{background:#eef7f0}.gk-sp1{background:var(--oak-pale)}
+  .gk-altfeld{display:flex;flex-direction:column;gap:4px;font-size:.85rem;margin:6px 0}.gk-altfeld input{height:36px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font:inherit}
+  .gk-pflicht{background:#fdecea;color:#8e1b1b;padding:8px 10px;border-radius:8px}
+  @media(max-width:640px){.gk-knoepfe{grid-template-columns:1fr}}
   .gk-cta{margin-top:2rem;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
   .gk-cta a{display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:99px;background:var(--oak);color:#fff;font-weight:500}
   @media(max-width:900px){.gk-intro{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -106,6 +110,8 @@
 
 <dialog class="gk-dlg" id="gkDlg"><div class="gk-dkopf"><span id="gkDSignal"></span><h3 id="gkDTitel"></h3><button class="gk-zu" type="button" aria-label="Schließen" id="gkZu">×</button></div><div class="gk-dinhalt" id="gkDInhalt"></div></dialog>
 
+<dialog class="gk-dlg" id="gkSub"><div class="gk-dkopf"><h3>Substitutionsprüfung (TRGS 600)</h3><button class="gk-zu" type="button" aria-label="Schließen" onclick="this.closest('dialog').close()">×</button></div><div class="gk-dinhalt" id="gkSubInhalt"></div></dialog>
+
 <footer>
   <div class="footer-brand">OAK engineering · Nikolai Krawielitzki</div>
   <div>© 2026 OAK engineering</div>
@@ -123,20 +129,20 @@
    Stufen EMKG: 1 = Grundmaßnahmen … 4 = Expertenrat; leer = Modul nicht relevant. */
 const STOFFE = [
  {n:"Bremsenreiniger 500 ml", h:"Würth", b:["Instandhaltung","Produktion","Werkzeugbau"], s:"Gefahr", hs:["H222","H229","H315","H336","H411"], sdb:"2026-09-29", t:"Teile und Werkzeuge reinigen (Spraydose)", m:[1,2,2,1,3], hand:"Nitril nur als Spritzschutz – SDB fordert Nitril > 0,45 mm; nach Kontakt sofort wechseln.", ba:""},
- {n:"Butangaskartusche 190 g", h:"Handelsware", b:["Instandhaltung","Produktion","Werkzeugbau"], s:"Gefahr", hs:["H220","H280"], sdb:"2015-12-07", t:"Gasbrenner betreiben, Kartusche wechseln", m:[null,null,null,4,3], hand:"SDB nennt „geprüfte Schutzhandschuhe“ ohne Material – beim Kartuschenwechsel.", ba:""},
- {n:"Dielektrikum (Erodierflüssigkeit)", h:"Oelheld", b:["Werkzeugbau"], s:"Gefahr", hs:["H304","EUH066"], sdb:"2024-01-12", gepr:"2026-10-12", t:"Erodieren – Werkstücke einsetzen, Bad nachfüllen", m:[1,2,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Butangaskartusche 190 g", h:"Handelsware", b:["Instandhaltung","Produktion","Werkzeugbau"], s:"Gefahr", hs:["H220","H280"], sdb:"2015-12-07", t:"Gasbrenner betreiben, Kartusche wechseln", m:["gas","gas","gas",4,3], hand:"SDB nennt „geprüfte Schutzhandschuhe“ ohne Material – beim Kartuschenwechsel.", ba:""},
+ {n:"Dielektrikum (Erodierflüssigkeit)", h:"Oelheld", b:["Werkzeugbau"], s:"Gefahr", hs:["H304","EUH066"], sdb:"2024-01-12", gepr:"2026-10-12", t:"Erodieren – Werkstücke einsetzen, Bad nachfüllen", m:[1,2,1,1,"lager"], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
  {n:"Formentrennspray", h:"Lutz", b:["Produktion"], s:"Gefahr", hs:["H222","H229"], sdb:"2015-08-04", t:"Formentrennmittel auf Werkzeug sprühen", m:[1,1,1,1,3], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
  {n:"Hochleistungs-Gleitfett", h:"Jost Chemicals", b:["Werkzeugbau"], s:"", hs:[], sdb:"", t:"", m:null, hand:"", ba:"", hinweis:"Sicherheitsdatenblatt beim Lieferanten angefordert – Einstufung folgt."},
- {n:"Kaltreiniger (Fass mit Zapfhahn)", h:"Hebro Chemie", b:["Werkzeugbau"], s:"Gefahr", hs:["H225","H304","H336","H411"], sdb:"2026-06-09", t:"Abfüllen aus dem Fass · großflächig reinigen und entfetten", m:[1,1,1,2,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
- {n:"Kühlschmierstoff-Konzentrat", h:"Hebro Chemie", b:["Werkzeugbau"], s:"Gefahr", hs:["H315","H317","H318","H412"], sdb:"2026-06-05", t:"Konzentrat ansetzen und nachfüllen", m:[null,1,null,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Kaltreiniger (Fass mit Zapfhahn)", h:"Hebro Chemie", b:["Werkzeugbau"], s:"Gefahr", hs:["H225","H304","H336","H411"], sdb:"2026-06-09", t:"Abfüllen aus dem Fass · großflächig reinigen und entfetten", m:[1,1,1,2,"lager"], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Kühlschmierstoff-Konzentrat", h:"Hebro Chemie", b:["Werkzeugbau"], s:"Gefahr", hs:["H315","H317","H318","H412"], sdb:"2026-06-05", t:"Konzentrat ansetzen und nachfüllen", m:["sdb9",1,"sdb9",1,"lager"], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
  {n:"Kontaktreiniger (Spraydose)", h:"Kontakt Chemie", b:["Instandhaltung"], s:"Gefahr", hs:["H222","H229","H315","H319","H336","H412"], sdb:"2026-03-11", t:"Kontakte reinigen (Spraydose)", m:[1,1,2,1,3], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
  {n:"Lackspray, diverse Farben", h:"Würth", b:["Instandhaltung","Werkzeugbau"], s:"Gefahr", hs:["H222","H229","H319","H336"], sdb:"2019-11-19", t:"Anlackieren und Kennzeichnen", m:[1,1,2,1,3], hand:"Nitril nur als Spritzschutz – SDB fordert Nitril 0,7 mm; nach Kontakt sofort wechseln.", ba:""},
- {n:"n-Butylacetat", h:"Laborchemikalie", b:["Produktion"], s:"Achtung", hs:["H226","H336"], sdb:"2019-04-02", gepr:"2026-10-13", t:"Reinigen bei der Montage (Lappen)", m:[1,1,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
- {n:"Siebdruckfarbe 2K-PUR", h:"Druckfarbenhersteller", b:["Druckerei"], s:"Gefahr", hs:["H226","H315","H317","H318","H335","H412","EUH430"], sdb:"2026-09-23", t:"Farbe anmischen und drucken (Sieb-/Tampondruck)", m:[1,2,2,2,null], hand:"Material laut SDB (LLDPE), SDB nennt ≥ 0,4 mm – Eignung beim Hersteller bestätigen.", ba:"Sammel-BA Siebdruckfarben"},
- {n:"Verdünner für Siebdruckfarbe", h:"Druckfarbenhersteller", b:["Druckerei"], s:"Gefahr", hs:["H226","H304","H312","H315","H318","H332","H335","H336","H373"], sdb:"2026-10-08", t:"Farbe verdünnen", m:[3,2,2,2,null], hand:"Material laut SDB (LLDPE), SDB nennt ≥ 0,4 mm – Eignung beim Hersteller bestätigen.", ba:""},
- {n:"Spiritus", h:"Handelsware", b:["Instandhaltung","Produktion","Werkzeugbau"], s:"Gefahr", hs:["H225","H319"], sdb:"2021-11-22", gepr:"2026-10-13", t:"Kunststoffteile reinigen (Lappen)", m:[1,1,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
- {n:"Sekundenkleber", h:"Würth", b:["Instandhaltung","Werkzeugbau"], s:"Achtung", hs:["H315","H319","H335","EUH202"], sdb:"2026-06-08", t:"Kleben", m:[1,1,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
- {n:"Entkalker (Pulver)", h:"Heppner", b:["Instandhaltung"], s:"Achtung", hs:["H319"], sdb:"2020-01-07", t:"Entkalkerlösung ansetzen (Pulver einwiegen)", m:[2,1,2,3,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:"", offen:true}
+ {n:"n-Butylacetat", h:"Laborchemikalie", b:["Produktion"], s:"Achtung", hs:["H226","H336"], sdb:"2019-04-02", gepr:"2026-10-13", t:"Reinigen bei der Montage (Lappen)", m:[1,1,1,1,"lager"], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Siebdruckfarbe 2K-PUR", h:"Druckfarbenhersteller", b:["Druckerei"], s:"Gefahr", hs:["H226","H315","H317","H318","H335","H412","EUH430"], sdb:"2026-09-23", t:"Farbe anmischen und drucken (Sieb-/Tampondruck)", m:[1,2,2,2,"lager"], hand:"Material laut SDB (LLDPE), SDB nennt ≥ 0,4 mm – Eignung beim Hersteller bestätigen.", ba:"Sammel-BA Siebdruckfarben"},
+ {n:"Verdünner für Siebdruckfarbe", h:"Druckfarbenhersteller", b:["Druckerei"], s:"Gefahr", hs:["H226","H304","H312","H315","H318","H332","H335","H336","H373"], sdb:"2026-10-08", t:"Farbe verdünnen", m:[3,2,2,2,"lager"], hand:"Material laut SDB (LLDPE), SDB nennt ≥ 0,4 mm – Eignung beim Hersteller bestätigen.", ba:""},
+ {n:"Spiritus", h:"Handelsware", b:["Instandhaltung","Produktion","Werkzeugbau"], s:"Gefahr", hs:["H225","H319"], sdb:"2021-11-22", gepr:"2026-10-13", t:"Kunststoffteile reinigen (Lappen)", m:[1,1,1,1,"lager"], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Sekundenkleber", h:"Würth", b:["Instandhaltung","Werkzeugbau"], s:"Achtung", hs:["H315","H319","H335","EUH202"], sdb:"2026-06-08", t:"Kleben", m:[1,1,1,1,"lager"], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Entkalker (Pulver)", h:"Heppner", b:["Instandhaltung"], s:"Achtung", hs:["H319"], sdb:"2020-01-07", t:"Entkalkerlösung ansetzen (Pulver einwiegen)", m:[2,1,2,3,"lager"], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:"", offen:true}
 ];
 /* Unterlagen je Stoff: SDB (Hersteller-PDF), GBU nach EMKG und BA nach TRGS 555 – erzeugt mit den Cockpit-Generatoren */
 const SLUG = {"Bremsenreiniger 500 ml":"bremsenreiniger","Butangaskartusche 190 g":"butan","Dielektrikum (Erodierflüssigkeit)":"dielektrikum","Formentrennspray":"formentrennspray",
@@ -175,19 +181,70 @@ function detail(g){ const st = sdbStand(g), d = document.getElementById("gkDlg")
   document.getElementById("gkDSignal").innerHTML = `<span class="gk-signal ${g.s === "Gefahr" ? "gk-gefahr" : g.s === "Achtung" ? "gk-achtung" : ""}" style="display:inline-block;width:78px">${esc(g.s || "–")}</span>`;
   document.getElementById("gkDTitel").textContent = g.n;
   let h = `<p class="gk-leise">${esc(g.h)} · ${esc(g.b.join(", "))} · <span class="gk-chip ${st.k}">${st.t}</span></p>`;
-  if(g.id){ let qr = ""; try{ const q = qrcode(0, "M"); q.addData(SEITE + "#" + g.id); q.make(); qr = q.createSvgTag({ cellSize: 3, margin: 2 }); }catch(e){}
-    h += `<div class="gk-unterlagen"><div class="gk-knoepfe">
-      <a class="gk-dok" href="assets/sdb-beispiel-${g.id}.pdf" target="_blank" rel="noopener">Sicherheitsdatenblatt</a>
-      <a class="gk-dok" href="gefahrstoffkataster-beispiel-gbu.html#${g.id}" target="_blank" rel="noopener">Gefährdungsbeurteilung</a>
-      <a class="gk-dok" href="gefahrstoffkataster-beispiel-ba.html?s=${g.id}" target="_blank" rel="noopener">Betriebsanweisung</a></div>
-      <figure class="gk-qr">${qr}<figcaption>QR am Gebinde oder Schrank führt direkt hierher</figcaption></figure></div>`; }
+  if(g.id) h += `<div class="gk-knoepfe">
+      <a class="gk-dok" href="assets/sdb-beispiel-${g.id}.pdf" target="_blank" rel="noopener" title="Sicherheitsdatenblatt (PDF)">SDB</a>
+      <a class="gk-dok" href="gefahrstoffkataster-beispiel-gbu.html?s=${g.id}" target="_blank" rel="noopener" title="Gefährdungsbeurteilung nach EMKG">GBU</a>
+      <a class="gk-dok" href="gefahrstoffkataster-beispiel-ba.html?s=${g.id}" target="_blank" rel="noopener" title="Betriebsanweisung nach § 14 GefStoffV">BA</a>
+      <button type="button" class="gk-dok" id="gkQrBtn" title="QR-Etikett drucken (101 × 54 mm)">QR-Etikett</button>
+      <button type="button" class="gk-dok" id="gkSubBtn" title="Substitutionsprüfung nach TRGS 600">Substitution</button></div>`;
   if(g.hinweis) h += `<p style="margin-top:10px">${esc(g.hinweis)}</p>`;
   if(g.hs.length) h += `<h4>Einstufung (SDB Abschnitt 2)</h4><div class="gk-piktos" style="margin-bottom:6px">${piktos(g.hs)}</div><ul class="gk-h">${g.hs.map(x => `<li><b>${x}</b>${esc(HTXT[x] || "")}</li>`).join("")}</ul>`;
-  if(g.m) h += `<h4>Gefährdungsbeurteilung nach EMKG</h4><p>Tätigkeit: ${esc(g.t)}</p><div class="gk-module">${MOD.map((t,i) => `<div class="gk-modul ${g.m[i] ? "gk-s" + g.m[i] : ""}"><span>${t}</span><b>${g.m[i] ? "Stufe " + g.m[i] : "–"}</b></div>`).join("")}</div><p class="gk-leise">Stufe 1 = Grundmaßnahmen · 2 = technische Maßnahmen · 3 = Fachkunde/Spezialmaßnahmen · 4 = Expertenrat. Maßnahmen je Modul aus den BAuA-Schutzleitfäden. Status: Entwurf, Freigabe durch den Betrieb offen.</p>`;
+  if(g.m) h += `<h4>Gefährdungsbeurteilung nach EMKG</h4><p>Tätigkeit: ${esc(g.t)}</p><div class="gk-module">${MOD.map((t,i) => modul(t, g.m[i])).join("")}</div><p class="gk-leise">Stufe 1 = Grundmaßnahmen · 2 = technische Maßnahmen · 3 = Fachkunde/Spezialmaßnahmen · 4 = Expertenrat. Maßnahmen je Modul aus den BAuA-Schutzleitfäden. Status: Entwurf, Freigabe durch den Betrieb offen.</p>${modulHinweise(g.m) ? `<ul class="gk-grund">${modulHinweise(g.m)}</ul>` : ""}`;
   if(g.hand) h += `<h4>Handschuhauswahl</h4><p>${esc(g.hand)}</p>`;
   if(!g.id) h += `<h4>Gefährdungsbeurteilung und Betriebsanweisung</h4><p>Folgen, sobald das Sicherheitsdatenblatt vorliegt.</p>`;
   document.getElementById("gkDInhalt").innerHTML = h; if(!d.open) d.showModal();
+  const qb = document.getElementById("gkQrBtn"), sb = document.getElementById("gkSubBtn");
+  if(qb) qb.addEventListener("click", () => qrEtikett(g)); if(sb) sb.addEventListener("click", () => substitution(g));
   if(g.id && location.hash !== "#" + g.id) history.replaceState(null, "", "#" + g.id); }
+/* EMKG-Modul ohne Stufe: Grund statt Strich (Daten wie im Cockpit) */
+const GRUND = { gas: ["nicht anwendbar", "Gase sind nicht Gegenstand der EMKG-Module Einatmen, Haut und Augen (EMKG-Leitfaden 2.2, R0.1) – Beurteilung nach TRGS 400 und TRGS 407."],
+  lager: ["Angabe fehlt", "Lagermenge am Lagerort fehlt – Modul Lagern noch nicht berechenbar."],
+  sdb9: ["Angabe fehlt", "Siedebeginn oder Dampfdruck (SDB Abschnitt 9.1) fehlt – Modul noch nicht berechenbar."] };
+function modul(t, v){
+  if(typeof v === "number") return `<div class="gk-modul gk-s${v}"><span>${t}</span><b>Stufe ${v}</b></div>`;
+  const gr = GRUND[v] || ["–", ""];
+  return `<div class="gk-modul gk-offen" title="${esc(gr[1])}"><span>${t}</span><b>${gr[0]}</b></div>`; }
+function modulHinweise(m){ return [...new Set((m || []).filter(v => typeof v === "string"))].map(v => `<li>${esc(GRUND[v][1])}</li>`).join(""); }
+/* QR-Etikett: eigenes Fenster, druckfertig (Etikett 101 × 54 mm) */
+function qrEtikett(g){
+  let svg = ""; try{ const q = qrcode(0, "M"); q.addData(SEITE + "#" + g.id); q.make(); svg = q.createSvgTag({ cellSize: 4, margin: 0 }); }catch(e){}
+  const w = window.open("", "_blank"); if(!w) return;
+  const basis = location.href.replace(/[#?].*$/, "").replace(/[^/]*$/, "");
+  const pk = piktos(g.hs).replace(/src="portal/g, 'src="' + basis + "portal");
+  const farbe = g.s === "Gefahr" ? "#C0392B" : g.s === "Achtung" ? "#E08E0B" : "#999";
+  w.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR-Etikett ${esc(g.n)}</title>
+<style>@page{size:101mm 54mm;margin:0}body{margin:0;font-family:Jost,Arial,sans-serif;background:#eef1ee}
+.et{width:101mm;height:54mm;box-sizing:border-box;padding:4mm;display:grid;grid-template-columns:44mm 1fr;gap:4mm;background:#fff;margin:10mm auto;border:1px dashed #9ab;overflow:hidden}
+.et svg{width:44mm;height:44mm;display:block;margin-top:1mm}.r{display:flex;flex-direction:column;min-width:0}
+.sw{align-self:flex-start;font-weight:700;font-size:9pt;padding:.5mm 2.5mm;border-radius:2mm;background:${farbe};color:#fff}
+h1{font-size:12pt;line-height:1.15;margin:1.5mm 0 1mm}.h{font-size:7pt;color:#555}.pk{display:flex;gap:1mm;margin-top:auto}.pk img{width:10mm;height:10mm}
+.f{font-size:6.5pt;color:#555;margin-top:1mm}.knopf{display:block;margin:0 auto 10mm;padding:10px 22px;border:0;border-radius:99px;background:#2D6A4F;color:#fff;font:inherit;cursor:pointer}
+@media print{body{background:#fff}.et{margin:0;border:0}.knopf{display:none}}</style></head><body>
+<div class="et">${svg}<div class="r"><span class="sw">${esc(g.s || "nicht eingestuft")}</span><h1>${esc(g.n)}</h1><div class="h">${esc(g.h)}</div>
+<div class="pk">${pk}</div><div class="f">Scannen: SDB · Gefährdungsbeurteilung · Betriebsanweisung</div></div></div>
+<button class="knopf" onclick="print()">Etikett drucken</button></body></html>`);
+  w.document.close(); }
+/* Substitutionsprüfung nach TRGS 600: Spaltenmodell (Gesundheit, Umwelt, Brand/Explosion) – gleiche Zuordnung wie der OAK-Substitutions-Checker */
+const SP = {H220:{p:5},H222:{p:5},H225:{p:4},H226:{p:3},H280:{p:2},H302:{g:3},H304:{g:5},H312:{g:3},H315:{g:3},H317:{g:3},H318:{g:4},H319:{g:3},H332:{g:3},H335:{g:3},H336:{g:3},
+  H361:{g:4},H373:{g:4},H410:{u:5},H411:{u:4},H412:{u:3},EUH066:{g:2}};
+const SPN = {5:"sehr hoch",4:"hoch",3:"mittel",2:"gering",1:"vernachlässigbar"};
+function spalten(hs){ const r = {g:1,u:1,p:1}; (hs || []).forEach(h => { const e = SP[h] || {}; ["g","u","p"].forEach(k => { if(e[k] && e[k] > r[k]) r[k] = e[k]; }); }); return r; }
+function substitution(g){
+  const d = document.getElementById("gkSub"), r = spalten(g.hs);
+  const pflicht = (g.hs || []).some(h => ["H300","H301","H310","H311","H330","H331","H340","H341","H350","H351","H360","H361","H370","H371"].includes(h));
+  const zelle = (v, z) => `<td class="gk-sp gk-sp${v}">${SPN[v]}${z || ""}</td>`;
+  const leer = `<th>Ersatzstoff</th><td colspan="3" class="gk-leise">H-Sätze des Ersatzstoffs eingeben</td>`;
+  document.getElementById("gkSubInhalt").innerHTML = `<p class="gk-leise">${esc(g.n)} · ${esc(g.hs.join(" ") || "nicht eingestuft")}</p>
+    ${pflicht ? `<p class="gk-pflicht">Besonders gefährliche Eigenschaft – Substitutionsprüfung vorrangig und regelmäßig dokumentieren (§ 6 Abs. 1 Nr. 4, § 7 Abs. 3 GefStoffV, TRGS 600).</p>`
+              : `<p>Substitutionsprüfung nach § 6 Abs. 1 Nr. 4 GefStoffV und TRGS 600. Das Ergebnis steht in der Gefährdungsbeurteilung.</p>`}
+    <table class="gk-sptab"><thead><tr><th></th><th>Gesundheit</th><th>Umwelt</th><th>Brand/Explosion</th></tr></thead>
+    <tbody><tr><th>Aktueller Stoff</th>${zelle(r.g)}${zelle(r.u)}${zelle(r.p)}</tr><tr id="gkAltZeile">${leer}</tr></tbody></table>
+    <label class="gk-altfeld">H-Sätze des Ersatzstoffs (SDB Abschnitt 2)<input id="gkAlt" placeholder="z. B. H315 H319 H412" autocomplete="off"></label>
+    <p class="gk-leise">Vereinfachtes GHS-Spaltenmodell (IFA): je Spalte zählt die höchste Einstufung. Technische Eignung, Verfahren und Aufwand gehören ebenfalls in die Prüfung. Im Cockpit wird das Ergebnis je Tätigkeit festgehalten; ein Ersatzstoff übernimmt Bereiche und Tätigkeiten.</p>`;
+  const alt = document.getElementById("gkAlt");
+  alt.addEventListener("input", () => { const hs = alt.value.toUpperCase().match(/EUH\d{3}|H\d{3}/g) || [], a = spalten(hs);
+    document.getElementById("gkAltZeile").innerHTML = hs.length ? `<th>Ersatzstoff</th>${["g","u","p"].map(k => zelle(a[k], a[k] < r[k] ? " ↓" : a[k] > r[k] ? " ↑" : " =")).join("")}` : leer; });
+  d.showModal(); }
 kacheln(); liste(); filtern();
 document.getElementById("gkSuche").addEventListener("input", filtern);
 document.querySelectorAll(".gk-pill").forEach(p => p.addEventListener("click", () => { const f = p.dataset.f;
@@ -197,9 +254,10 @@ document.querySelectorAll(".gk-pill").forEach(p => p.addEventListener("click", (
 document.querySelectorAll(".gk-zeile").forEach(z => { const o = () => detail(STOFFE[+z.dataset.i]); z.addEventListener("click", o); z.addEventListener("keydown", e => { if(e.key === "Enter") o(); }); });
 document.getElementById("gkZu").addEventListener("click", () => document.getElementById("gkDlg").close());
 document.getElementById("gkDlg").addEventListener("close", () => history.replaceState(null, "", location.pathname));
+window.addEventListener("hashchange", () => { const g = STOFFE.find(x => x.id && "#" + x.id === location.hash); if(g){ document.getElementById("gkSub").close(); detail(g); } });
 const start = STOFFE.find(g => g.id && "#" + g.id === location.hash); if(start) detail(start);
 document.getElementById("gkDlg").addEventListener("click", e => { if(e.target.id === "gkDlg") e.target.close(); });
 </script>
-<script src="site.js?v=202611200621"></script>
+<script src="site.js?v=202611200635"></script>
 </body>
 </html>
