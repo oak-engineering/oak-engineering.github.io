@@ -78,6 +78,34 @@ function asBdaSystem(main, s){
    (Gefährdung · Wann/wo · Risiko heute · Maßnahmen · Risiko danach · Stand) → Fotos gesammelt → Matrix einmal → Unterschriften.
    „Für alle Tätigkeiten“ = Gefährdungen ohne Tätigkeit. Tätigkeiten kommen nur aus den Daten, nichts ist fest verdrahtet. */
 function asBdRk(r, titel, kurz){ const b = asBand(r); return `<span class="bd-rk bd-${b}"${titel ? ` title="${esc(titel)}"` : ""}>${r ? r + (kurz ? "" : " " + asBandText(b)) : kurz ? "–" : asBandText(b)}</span>`; }
+/* Eigene Typ-Vorlage aus einer fertig bewerteten Anlage (Fahrplan Schritt 3, Stufe 14): Tätigkeiten, Gefährdungen mit
+   Bewertung, Fundstelle und Maßnahmen (S/T/O/P) sowie die BA des Systems. Nur der Betrieb sieht sie; OAK-Vorlagen bleiben unverändert.
+   Typ-Standard: references/vorlagen/typ-vorlage-standard.md */
+async function asAlsVorlageDialog(s){
+  const tk = asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).sort((x, y) => (x.sort || 0) - (y.sort || 0));
+  const gef = asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id && g.art !== "ressource");
+  if(!gef.length){ asMeldung("Noch keine Gefährdung – erst beurteilen, dann als Vorlage speichern"); return; }
+  const vorschlag = String(s.name || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+  asDialog({ titel: "Als Vorlage speichern", inhalt: `<p class="hinweis">Aus dieser Beurteilung wird eine Vorlage für gleiche Maschinen in Ihrem Betrieb: ${tk.length} Tätigkeiten,
+      ${gef.length} Gefährdungen mit Bewertung, Fundstelle und Maßnahmen, dazu die Betriebsanweisung. Bei der nächsten Begehung steht sie unter „Maschine fertig“ zur Auswahl.
+      Fotos, Termine und Verantwortliche werden nicht übernommen.</p><div class="form">${asFeld("Name des Maschinentyps (z. B. „Kantenschleifmaschine“)", "titel", vorschlag, "text", "voll")}</div>`,
+    knoepfe: [{ t: "Vorlage speichern", fn: async d => { const titel = String(asWerte(d).titel || "").trim(); if(!titel){ asMeldung("Name fehlt"); return false; }
+      const slug = AS.kunde + "--" + titel.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      const da = await apiGet("/rest/v1/as_maschinentyp?select=slug&slug=eq." + encodeURIComponent(slug)).catch(() => []) || [];
+      if(da.length && !confirm("Eine eigene Vorlage „" + titel + "“ gibt es schon. Ersetzen?")) return false;
+      const key = t => "t" + (tk.indexOf(t) + 1);
+      const v = { _typ: "Eigene Vorlage " + titel, _hinweis: "Vom Betrieb aus „" + s.name + "“ gespeichert am " + asDat(asHeute()) + " von " + AS.ich,
+        meta: { maschinenart: titel },
+        taetigkeiten: tk.map(t => ({ key: key(t), name: t.name, rollen: asListe(t.rollen), rechtsquelle: t.rechtsquelle || "" })),
+        hazards: gef.map((g, i) => { const t = tk.find(x => x.id === g.taetigkeit_id), gesehen = new Set();
+          const top = asMassnahmenZu(g.id).filter(m => { const k = String(m.text || "").trim().toLowerCase(); if(!k || gesehen.has(k)) return false; gesehen.add(k); return true; }).map(m => [m.stop || "T", m.text]);
+          return { nr: "e" + (i + 1), taetigkeit: t ? key(t) : null, kat: g.faktor || "Gefährdung", sub: g.kurz, situation: g.situation || "", rq: g.rechtsquelle || "",
+            wV: g.w_v, sV: g.s_v, wN: g.w_n, sN: g.s_n, top, verantwortlich: "", termin: "", status: "offen" }; }) };
+      const ba = await apiGet("/rest/v1/as_ba?select=inhalt&limit=1&arbeitssystem_id=eq." + s.id).catch(() => []) || [];
+      if(ba[0] && ba[0].inhalt && typeof ba[0].inhalt === "object") v.ba = ba[0].inhalt;
+      await apiSend("POST", "/rest/v1/as_maschinentyp?on_conflict=slug", { slug, titel, vorlage: v, quelle: "Betrieb " + asHeute(), aktiv: true, kunde_slug: AS.kunde }, "resolution=merge-duplicates,return=minimal");
+      asMeldung("Vorlage „" + titel + "“ gespeichert – bei der nächsten Begehung unter „Maschine fertig“ wählbar"); } }] });
+}
 /* Plausibilitätsprüfung (Fahrplan Schritt 4, 20.11.2026): Hinweise je Arbeitssystem, nur Anzeige – nichts wird gesperrt */
 function asBdaPruefung(s){
   const tk = asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id);
@@ -146,7 +174,7 @@ function asBdaTabelle(box, s){
   const quellen = ["§§ 5, 6 ArbSchG", "§ 3 BetrSichV"].concat([...new Set(tk.map(t => t.rechtsquelle).filter(Boolean))]);
   const res = gef.filter(g => g.art === "ressource");
   box.innerHTML = `<div class="karte bd"><h2>Beurteilung der Arbeitsbedingungen – ${esc(s.name)}
-      <span class="nodruck">${asDarf("pflegen") ? `<button class="btn sek klein" id="tkNeu">+ Tätigkeit</button><button class="btn sek klein" id="resNeu">+ Ressource</button>` : ""}<button class="btn sek klein" onclick="window.print()">Drucken</button>
+      <span class="nodruck">${asDarf("pflegen") ? `<button class="btn sek klein" id="tkNeu">+ Tätigkeit</button><button class="btn sek klein" id="resNeu">+ Ressource</button>` : ""}${asDarf("pflegen") ? `<button class="btn sek klein" id="alsVorlage" title="Diese Beurteilung als Vorlage für gleiche Maschinen speichern">Als Vorlage</button>` : ""}<button class="btn sek klein" onclick="window.print()">Drucken</button>
       ${s.freigabe_am ? (AS.gf ? `<button class="btn sek klein" id="frZur">Freigabe zurücknehmen</button>` : "")
         : (AS.gf ? `<button class="btn klein" id="frGeben">Freigeben (Geschäftsführung)</button>`
           : (asDarf("pflegen") ? (s.vorgelegt_am ? `<span class="hinweis">zur Freigabe vorgelegt ${asDat(s.vorgelegt_am)}</span>` : `<button class="btn klein" id="frVorlegen">Zur Freigabe vorlegen</button>`)
@@ -177,6 +205,7 @@ function asBdaTabelle(box, s){
     asDialog({ titel: im.alt || "Foto", breit: true, inhalt: `<img src="${esc(im.src)}" alt="" style="width:100%;max-height:75vh;object-fit:contain">`, knoepfe: [] }); });
   (async () => { for(const im of box.querySelectorAll("img[data-fpfad]")){ const p = im.dataset.fpfad; if(!p.startsWith(AS.kunde + "/")) continue; const u = await asSigniert(p); if(u) im.src = u; } })();
   const tn = box.querySelector("#tkNeu"); if(tn) tn.onclick = () => asTaetigkeitDialog(s, null);
+  const av = box.querySelector("#alsVorlage"); if(av) av.onclick = () => asAlsVorlageDialog(s);
   const rn = box.querySelector("#resNeu"); if(rn) rn.onclick = () => asGefDialog(s, Object.assign({ art: "ressource" }), null);
 
   const fg = document.getElementById("frGeben"); if(fg) fg.onclick = () => asDialog({ titel: "BdA freigeben", inhalt: `<p>Mit der Freigabe übernimmt die Geschäftsführung die Beurteilung als verbindlich.</p>

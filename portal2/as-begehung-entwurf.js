@@ -8,7 +8,9 @@ const AS_BG_FAKTOR = [[/psych/, "10 Psychische Belastung"], [/physische/, "9 Phy
 function asBgFaktor(kat){ const k = String(kat || "").toLowerCase(), t = AS_BG_FAKTOR.find(([m]) => m.test(k)); return t ? t[1] : "11 Sonstige"; }
 
 async function asBgFertig(box, p){
-  const typen = await apiGet("/rest/v1/as_maschinentyp?select=slug,titel,vorlage&aktiv=is.true&order=titel").catch(() => []) || [];
+  // OAK-Vorlagen (kunde_slug leer) + eigene Vorlagen des Betriebs (Stufe 14, 20.11.2026)
+  const typen = (await apiGet("/rest/v1/as_maschinentyp?select=slug,titel,vorlage,kunde_slug&aktiv=is.true&order=titel&or=(kunde_slug.is.null,kunde_slug.eq." + encodeURIComponent(AS.kunde) + ")").catch(() => []) || [])
+    .map(t => t.kunde_slug ? Object.assign(t, { titel: t.titel + " (eigene Vorlage)" }) : t);
   const dok = asAnlagen().find(x => x.maschinen_id === p.maschinen_id), name = String((dok && dok.maschinentyp) || p.maschine).toLowerCase();
   // Vorschlag: spezifischster Typ, dessen erstes Titelwort im Namen steht; „Maschine allgemein“ nur als Rückfall (20.11.2026)
   const passt = typen.filter(t => t.slug !== "maschine-allgemein" && name.includes(t.titel.toLowerCase().split(" ")[0])).sort((x, y) => y.titel.split(" ")[0].length - x.titel.split(" ")[0].length);
