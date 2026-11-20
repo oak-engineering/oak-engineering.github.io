@@ -101,7 +101,7 @@ const AS_QUELLEN = {
       if(w.status === "wirksam"){ o.status = "erledigt"; o.wirksam_am = asHeute(); o.wirksam_von = AS.ich; }
       else if(w.status === "erledigt"){ o.status = "erledigt"; if(alt.status === "wirksam"){ o.wirksam_am = null; o.wirksam_von = null; }
         if(!o.erledigt_am && !alt.erledigt_am) o.erledigt_am = new Date().toISOString(); }
-      else if(w.status === "offen"){ o.status = "offen"; o.erledigt_am = null; }
+      else if(w.status === "offen"){ o.status = "offen"; o.erledigt_am = null; o.wirksam_am = null; o.wirksam_von = null; }   // sonst zeigt asMgStatus weiter „wirksam“
       return o; },
     neu: w => { const g = asNach("as_gefaehrdung", w.gefaehrdung_id), s = g && asNach("as_arbeitssystem", g.arbeitssystem_id);
       const anl = String(w.anlage || "").split(" ")[0] || (s && asListe(s.anlagen)[0]) || "";
@@ -111,7 +111,9 @@ const AS_QUELLEN = {
         schluessel: "V2-" + Math.random().toString(36).slice(2, 10), label: w.text, massnahme: w.text, thema: "sonstiges",
         schwere: { rot: "s", gelb: "g", gruen: "a" }[band] || "g", band: { rot: "gefahr", gelb: "besorgnis", gruen: "akzeptanz" }[band] || "besorgnis",
         status: "offen", as_gefaehrdung_id: w.gefaehrdung_id, stop: w.stop || "T", verantwortlich: w.verantwortlich || null, folge_art: w.folge_art || null,
-        termin: w.termin || null, gemeldet_von: AS.ich, gemeldet_am: asHeute(), kunde: AS.org ? AS.org.name : null }; } },
+        termin: w.termin || null, gemeldet_von: AS.ich, gemeldet_am: asHeute(), kunde: AS.org ? AS.org.name : null,
+        // bei der Begehung als vorhanden bestätigt (BdA-Entwurf): gleich als wirksam anlegen, mit Nachweis wer/wann
+        ...(w.status === "wirksam" ? { status: "erledigt", erledigt_am: new Date().toISOString(), erledigt_von: AS.ich, wirksam_am: asHeute(), wirksam_von: AS.ich, notiz: "Bei der Begehung als vorhanden bestätigt" } : {}) }; } },
   as_meldung: { v1: "portal_vorfaelle", filter: "&domaene=neq.umwelt", ganz: false,
     // Verbesserungsvorschlaege kennt V1 nicht – sie bleiben V2-eigen
     neuV1: w => w.art !== "vorschlag",

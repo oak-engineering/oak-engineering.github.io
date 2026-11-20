@@ -62,7 +62,7 @@ function asBgFragen(box, p, typ, fragen){
 /* Durchsprechen und korrigieren: eine Zeile je Gefährdung */
 function asBgPruefen(box, p, typ, e){
   const hz = typ.vorlage.hazards || [], zahl = (f, w) => `<input type="number" min="0" max="9" data-f="${f}" value="${esc(w == null ? "" : w)}" aria-label="${f}">`;
-  // Maßnahmen der Vorlage: „fehlt“ anhaken = echte Maßnahme (Mängelliste der Anlage), sonst vorhandene Schutzmaßnahme (Text)
+  // Maßnahmen der Vorlage: alle gehen in die Maßnahmenliste; „fehlt“ angehakt = offen, sonst vorhanden = wirksam
   const massn = i => (((hz[i] || {}).top) || []).filter(t => Array.isArray(t) && t[1] && !["–", "-"].includes(t[1]));
   const zeile = (g, i, titel, rq) => `<div class="bg-gef" data-i="${i}"><label class="bg-gilt"><input type="checkbox" data-f="gilt"${g.gilt === false ? "" : " checked"}> <b title="${esc(titel)}">${esc(titel)}</b></label>
       <textarea data-f="situation" rows="2">${esc(g.situation || "")}</textarea><div class="bg-risiko">W ${zahl("wV", g.wV)} S ${zahl("sV", g.sV)} nach Maßnahme W ${zahl("wN", g.wN)} S ${zahl("sN", g.sN)}</div>
@@ -87,7 +87,7 @@ async function asBgSpeichern(box, p, typ, e, d, signieren){
     const alleTop = zu ? [] : (q.top || []).filter(t => Array.isArray(t) && t[1] && !["–", "-"].includes(t[1]));
     const fehlen = alleTop.filter((t, k) => w["fehlt" + k]), vorhanden = alleTop.filter((t, k) => !w["fehlt" + k]);
     const kat = q.kat, top = vorhanden.map(t => t[0] + ": " + t[1]).join(" · ");
-    neu.push({ kat, fehlen, tk: zu ? null : asBgTaetigkeit(typ, q), kurz: zu ? (q.kat || "Gefährdung") : (q.taetigkeit !== undefined ? q.sub : [q.kat, q.sub].filter(Boolean).join(" – ")), rq: zu ? "" : q.rq, text: [w.situation, top ? "Schutzmaßnahmen lt. BdA – " + top : "", !zu && q.rq ? "Rechtsquelle: " + q.rq : "Rechtsquelle: bitte prüfen"].filter(Boolean).join("\n"), w_v: w.wV, s_v: w.sV, w_n: w.wN, s_n: w.sN, situation: w.situation }); });
+    neu.push({ kat, fehlen, vorhanden, tk: zu ? null : asBgTaetigkeit(typ, q), kurz: zu ? (q.kat || "Gefährdung") : (q.taetigkeit !== undefined ? q.sub : [q.kat, q.sub].filter(Boolean).join(" – ")), rq: zu ? "" : q.rq, text: [w.situation, top ? "Schutzmaßnahmen lt. BdA – " + top : "", !zu && q.rq ? "Rechtsquelle: " + q.rq : "Rechtsquelle: bitte prüfen"].filter(Boolean).join("\n"), w_v: w.wV, s_v: w.sV, w_n: w.wN, s_n: w.sN, situation: w.situation }); });
   if(!neu.length){ asMeldung("Keine Gefährdung ausgewählt"); return false; }
   const mid = p.maschinen_id && p.maschinen_id !== "ALLG-HALLE" ? p.maschinen_id : null;
   await asLaden();
@@ -108,26 +108,32 @@ async function asBgSpeichern(box, p, typ, e, d, signieren){
       z = { beschreibung: g.text, situation: g.situation, rechtsquelle: g.rq || null, w_v: g.w_v, s_v: g.s_v, w_n: g.w_n, s_n: g.s_n, taetigkeit_id: tid };
     if(x){ await apiSend("PATCH", "/rest/v1/as_gefaehrdung?id=eq." + x.id, z, "return=minimal"); g.gid = x.id; }
     else { const r = await apiSend("POST", "/rest/v1/as_gefaehrdung", Object.assign({ kunde_slug: AS.kunde, arbeitssystem_id: s.id, art: "gefaehrdung", faktor: asBgFaktor(g.kat), kurz: g.kurz, sort: 100 + i }, z), "return=representation"); g.gid = r[0].id; } }
-  // Fehlende Maßnahmen als echte Maßnahmen – keine doppelten: gleicher Text an derselben Gefährdung oder Anlage wird übersprungen
-  const fehlend = neu.filter(g => g.fehlen && g.fehlen.length);
-  let angelegt = 0, uebersprungen = 0;
-  if(fehlend.length){
+  // Alle Maßnahmen der Vorlage kommen in die Maßnahmenliste (Variante A, 20.11.2026): angehakt = fehlt → offen,
+  // nicht angehakt = an der Anlage vorhanden → gleich „wirksam“ (Nachweis, zählt nicht als offen). Keine doppelten:
+  // gleicher Text an derselben Gefährdung oder Anlage wird übersprungen.
+  const mitMn = neu.filter(g => (g.fehlen && g.fehlen.length) || (g.vorhanden && g.vorhanden.length));
+  let angelegt = 0, wirksam = 0, uebersprungen = 0, wieder = 0;
+  if(mitMn.length){
     await asLaden();
     const norm = t => String(t || "").toLowerCase().replace(/[^a-zäöüß0-9]+/g, " ").trim();
     const gleich = (a, b) => { a = norm(a); b = norm(b); return !!a && !!b && (a === b || a.includes(b) || b.includes(a)); };
     const gidsSys = new Set(asT("as_gefaehrdung").filter(x => x.arbeitssystem_id === s.id).map(x => x.id));
     const da = asT("as_massnahme").filter(m => gidsSys.has(m.gefaehrdung_id) || (mid && (m.maschinen_id === mid || String(m.anlage || "").split(" ")[0] === mid)));
-    for(const g of fehlend) for(const [stop, text] of g.fehlen){
-      if(da.some(m => (m.gefaehrdung_id === g.gid || !m.gefaehrdung_id || gidsSys.has(m.gefaehrdung_id)) && gleich(m.text, text))){ uebersprungen++; continue; }
-      await asSpeichern("as_massnahme", { gefaehrdung_id: g.gid, stop, text, status: "offen", quelle: "bda", anlage: mid || "" });
-      da.push({ gefaehrdung_id: g.gid, text }); angelegt++;
+    for(const g of mitMn) for(const [liste, status] of [[g.fehlen || [], "offen"], [g.vorhanden || [], "wirksam"]]) for(const [stop, text] of liste){
+      const x = da.find(m => (m.gefaehrdung_id === g.gid || !m.gefaehrdung_id || gidsSys.has(m.gefaehrdung_id)) && gleich(m.text, text));
+      if(x){ // steht schon drin: nur wenn die Begehung sie jetzt als fehlend meldet, wird sie wieder offen (schließen nur in der Liste)
+        if(status === "offen" && x.id && x.status !== "offen"){ await asSpeichern("as_massnahme", { id: x.id, status: "offen" }); x.status = "offen"; wieder++; }
+        else uebersprungen++;
+        continue; }
+      await asSpeichern("as_massnahme", { gefaehrdung_id: g.gid, stop, text, status, quelle: "bda", anlage: mid || "" });
+      da.push({ gefaehrdung_id: g.gid, text, status }); if(status === "offen") angelegt++; else wirksam++;
     }
   }
   const ba = await apiGet("/rest/v1/as_ba?select=id&limit=1&arbeitssystem_id=eq." + s.id) || [];
   if(!ba.length && typ.vorlage.ba) await apiSend("POST", "/rest/v1/as_ba", { kunde_slug: AS.kunde, arbeitssystem_id: s.id, maschinen_id: mid, titel: "Betriebsanweisung " + p.maschine, inhalt: typ.vorlage.ba, status: "entwurf", geaendert_von: AS.ich }, "return=minimal");
   p.typ_slug = typ.slug; p.arbeitssystem_id = s.id; p.entwurf = neu;
   await apiSend("PATCH", "/rest/v1/as_begehung_punkt?id=eq." + p.id, { typ_slug: typ.slug, arbeitssystem_id: s.id, entwurf: neu }, "return=minimal");
-  asMeldung("BdA und BA gespeichert, BA ist Entwurf" + (angelegt || uebersprungen ? ` · ${angelegt} Maßnahme${angelegt === 1 ? "" : "n"} angelegt` + (uebersprungen ? `, ${uebersprungen} schon vorhanden` : "") : ""));
+  asMeldung("BdA und BA gespeichert, BA ist Entwurf" + (angelegt || wirksam || uebersprungen || wieder ? ` · Maßnahmenliste: ${angelegt} offen, ${wirksam} vorhanden (wirksam)` + (wieder ? `, ${wieder} wieder offen` : "") + (uebersprungen ? `, ${uebersprungen} standen schon drin` : "") : ""));
   asBgZeichnen(box);
   if(signieren){ asBgSignieren(box, p); return false; }
 }

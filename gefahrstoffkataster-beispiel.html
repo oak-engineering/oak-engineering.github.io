@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Beispiel: Digitales Gefahrstoffkataster | OAK engineering</title>
 <meta name="description" content="Anonymisierter Auszug aus einem digitalen Gefahrstoffkataster im EHS-Cockpit: GHS-Einstufung, Aktualität der Sicherheitsdatenblätter, EMKG-Gefährdungsbeurteilung je Tätigkeit, Handschuhauswahl.">
-<link rel="stylesheet" href="fonts.css?v=202611200610">
-<link rel="stylesheet" href="site.css?v=202611200610">
+<link rel="stylesheet" href="fonts.css?v=202611200621">
+<link rel="stylesheet" href="site.css?v=202611200621">
 <style>
   .gk-intro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 1.6rem}
   .gk-kachel{border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px 14px;height:76px;display:flex;flex-direction:column;justify-content:center}
@@ -49,6 +49,12 @@
   .gk-modul b{font-size:1.1rem;font-weight:600}
   .gk-s1{background:var(--oak-pale)}.gk-s2{background:#fff4e0}.gk-s3{background:#ffe1cc}.gk-s4{background:#fdecea}
   .gk-leise{color:var(--muted);font-size:.82rem}
+  .gk-unterlagen{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:16px;align-items:center;margin:12px 0 4px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--oak-ghost)}
+  .gk-knoepfe{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .gk-dok{display:flex;align-items:center;justify-content:center;height:40px;border-radius:99px;background:var(--oak);color:#fff;font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 10px}
+  .gk-qr{margin:0;text-align:center}.gk-qr svg{width:110px;height:110px;display:block;margin:0 auto;background:#fff}
+  .gk-qr figcaption{font-size:.7rem;color:var(--muted);line-height:1.3;margin-top:4px}
+  @media(max-width:640px){.gk-unterlagen{grid-template-columns:1fr}.gk-knoepfe{grid-template-columns:1fr}}
   .gk-cta{margin-top:2rem;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
   .gk-cta a{display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:99px;background:var(--oak);color:#fff;font-weight:500}
   @media(max-width:900px){.gk-intro{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -111,6 +117,7 @@
     <a href="agb.html">AGB</a>
   </div>
 </footer>
+<script src="spiele/qrcode.min.js"></script>
 <script>
 /* Anonymisierter Auszug (Stand 20.11.2026). Quelle: EHS-Cockpit, Betriebsname, Bereiche und betriebsspezifische Angaben entfernt.
    Stufen EMKG: 1 = Grundmaßnahmen … 4 = Expertenrat; leer = Modul nicht relevant. */
@@ -131,6 +138,12 @@ const STOFFE = [
  {n:"Sekundenkleber", h:"Würth", b:["Instandhaltung","Werkzeugbau"], s:"Achtung", hs:["H315","H319","H335","EUH202"], sdb:"2026-06-08", t:"Kleben", m:[1,1,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
  {n:"Entkalker (Pulver)", h:"Heppner", b:["Instandhaltung"], s:"Achtung", hs:["H319"], sdb:"2020-01-07", t:"Entkalkerlösung ansetzen (Pulver einwiegen)", m:[2,1,2,3,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:"", offen:true}
 ];
+/* Unterlagen je Stoff: SDB (Hersteller-PDF), GBU nach EMKG und BA nach TRGS 555 – erzeugt mit den Cockpit-Generatoren */
+const SLUG = {"Bremsenreiniger 500 ml":"bremsenreiniger","Butangaskartusche 190 g":"butan","Dielektrikum (Erodierflüssigkeit)":"dielektrikum","Formentrennspray":"formentrennspray",
+ "Kaltreiniger (Fass mit Zapfhahn)":"kaltreiniger","Kühlschmierstoff-Konzentrat":"kss","Kontaktreiniger (Spraydose)":"kontaktreiniger","Lackspray, diverse Farben":"lackspray",
+ "n-Butylacetat":"butylacetat","Siebdruckfarbe 2K-PUR":"siebdruckfarbe","Verdünner für Siebdruckfarbe":"verduenner","Spiritus":"spiritus","Sekundenkleber":"sekundenkleber","Entkalker (Pulver)":"entkalker"};
+STOFFE.forEach(g => { g.id = SLUG[g.n] || ""; });
+const SEITE = "https://www.oak-engineering.de/gefahrstoffkataster-beispiel.html";
 const HTXT = {H220:"Extrem entzündbares Gas.",H222:"Extrem entzündbares Aerosol.",H225:"Flüssigkeit und Dampf leicht entzündbar.",H226:"Flüssigkeit und Dampf entzündbar.",H229:"Behälter steht unter Druck: Kann bei Erwärmung bersten.",H280:"Enthält Gas unter Druck; kann bei Erwärmung explodieren.",H304:"Kann bei Verschlucken und Eindringen in die Atemwege tödlich sein.",H312:"Gesundheitsschädlich bei Hautkontakt.",H315:"Verursacht Hautreizungen.",H317:"Kann allergische Hautreaktionen verursachen.",H318:"Verursacht schwere Augenschäden.",H319:"Verursacht schwere Augenreizung.",H332:"Gesundheitsschädlich bei Einatmen.",H335:"Kann die Atemwege reizen.",H336:"Kann Schläfrigkeit und Benommenheit verursachen.",H373:"Kann die Organe schädigen bei längerer oder wiederholter Exposition.",H411:"Giftig für Wasserorganismen, mit langfristiger Wirkung.",H412:"Schädlich für Wasserorganismen, mit langfristiger Wirkung.",EUH066:"Wiederholter Kontakt kann zu spröder oder rissiger Haut führen.",EUH202:"Cyanacrylat. Gefahr. Klebt innerhalb von Sekunden Haut und Augenlider zusammen.",EUH430:"Kann endokrine Störungen in der Umwelt verursachen."};
 const GHS = {GHS02:["H220","H222","H225","H226"],GHS04:["H280"],GHS05:["H318"],GHS07:["H312","H315","H317","H319","H332","H335","H336"],GHS08:["H304","H373"],GHS09:["H411"]};
 const GHSN = {GHS02:"Flamme",GHS04:"Gasflasche",GHS05:"Ätzwirkung",GHS07:"Ausrufezeichen",GHS08:"Gesundheitsgefahr",GHS09:"Umwelt"};
@@ -145,10 +158,10 @@ function sdbStand(g){ if(!g.sdb) return {k:"gk-krit", t:"SDB fehlt"};
   if(bezug < grenze.toISOString().slice(0,10)) return {k:"gk-warn", t:"SDB veraltet"};
   return {k:"gk-gut", t: g.gepr && g.gepr > g.sdb ? "SDB geprüft " + datum(g.gepr) : "SDB " + datum(g.sdb)}; }
 function kacheln(){ const n = STOFFE.length, gef = STOFFE.filter(g => g.s === "Gefahr").length, sdbOk = STOFFE.filter(g => sdbStand(g).k === "gk-gut").length, emkg = STOFFE.filter(g => g.m).length;
-  document.getElementById("gkKacheln").innerHTML = [[n,"Stoffe im Auszug"],[gef,"Signalwort Gefahr"],[sdbOk + " / " + n,"SDB aktuell (≤ 2 Jahre)"],[emkg + " / " + n,"EMKG je Tätigkeit erfasst"]]
+  document.getElementById("gkKacheln").innerHTML = [[n,"Stoffe im Auszug"],[gef,"Signalwort Gefahr"],[sdbOk + " / " + n,"SDB aktuell (≤ 2 Jahre)"],[STOFFE.filter(g => g.id).length + " / " + n,"mit GBU, BA und QR-Code"]]
     .map(([z,t]) => `<div class="gk-kachel"><b>${z}</b><span>${t}</span></div>`).join(""); }
 function liste(){ document.getElementById("gkListe").innerHTML = STOFFE.map((g,i) => { const st = sdbStand(g);
-  const chips = [`<span class="gk-chip ${st.k}">${st.t}</span>`, g.m ? `<span class="gk-chip">EMKG Entwurf</span>` : "", g.ba ? `<span class="gk-chip gk-gut" title="${esc(g.ba)}">BA vorhanden</span>` : (g.m ? `<span class="gk-chip gk-warn">BA fehlt</span>` : ""), g.offen ? `<span class="gk-chip gk-warn">Verwendung klären</span>` : ""].join("");
+  const chips = [`<span class="gk-chip ${st.k}">${st.t}</span>`, g.id ? `<span class="gk-chip gk-gut">GBU</span><span class="gk-chip gk-gut">BA</span><span class="gk-chip gk-gut">QR</span>` : `<span class="gk-chip gk-warn">GBU + BA folgen</span>`, g.offen ? `<span class="gk-chip gk-warn">Verwendung klären</span>` : ""].join("");
   return `<div class="gk-zeile" data-i="${i}" tabindex="0" data-suche="${esc([g.n,g.h,g.hs.join(" ")].join(" ").toLowerCase())}" data-b="${esc(g.b.join("|"))}" data-sdb="${st.k === "gk-gut" ? "" : "1"}">
     <span class="gk-signal ${g.s === "Gefahr" ? "gk-gefahr" : g.s === "Achtung" ? "gk-achtung" : ""}">${esc(g.s || "–")}</span>
     <span class="gk-piktos">${piktos(g.hs)}</span>
@@ -162,12 +175,19 @@ function detail(g){ const st = sdbStand(g), d = document.getElementById("gkDlg")
   document.getElementById("gkDSignal").innerHTML = `<span class="gk-signal ${g.s === "Gefahr" ? "gk-gefahr" : g.s === "Achtung" ? "gk-achtung" : ""}" style="display:inline-block;width:78px">${esc(g.s || "–")}</span>`;
   document.getElementById("gkDTitel").textContent = g.n;
   let h = `<p class="gk-leise">${esc(g.h)} · ${esc(g.b.join(", "))} · <span class="gk-chip ${st.k}">${st.t}</span></p>`;
+  if(g.id){ let qr = ""; try{ const q = qrcode(0, "M"); q.addData(SEITE + "#" + g.id); q.make(); qr = q.createSvgTag({ cellSize: 3, margin: 2 }); }catch(e){}
+    h += `<div class="gk-unterlagen"><div class="gk-knoepfe">
+      <a class="gk-dok" href="assets/sdb-beispiel-${g.id}.pdf" target="_blank" rel="noopener">Sicherheitsdatenblatt</a>
+      <a class="gk-dok" href="gefahrstoffkataster-beispiel-gbu.html#${g.id}" target="_blank" rel="noopener">Gefährdungsbeurteilung</a>
+      <a class="gk-dok" href="gefahrstoffkataster-beispiel-ba.html?s=${g.id}" target="_blank" rel="noopener">Betriebsanweisung</a></div>
+      <figure class="gk-qr">${qr}<figcaption>QR am Gebinde oder Schrank führt direkt hierher</figcaption></figure></div>`; }
   if(g.hinweis) h += `<p style="margin-top:10px">${esc(g.hinweis)}</p>`;
   if(g.hs.length) h += `<h4>Einstufung (SDB Abschnitt 2)</h4><div class="gk-piktos" style="margin-bottom:6px">${piktos(g.hs)}</div><ul class="gk-h">${g.hs.map(x => `<li><b>${x}</b>${esc(HTXT[x] || "")}</li>`).join("")}</ul>`;
   if(g.m) h += `<h4>Gefährdungsbeurteilung nach EMKG</h4><p>Tätigkeit: ${esc(g.t)}</p><div class="gk-module">${MOD.map((t,i) => `<div class="gk-modul ${g.m[i] ? "gk-s" + g.m[i] : ""}"><span>${t}</span><b>${g.m[i] ? "Stufe " + g.m[i] : "–"}</b></div>`).join("")}</div><p class="gk-leise">Stufe 1 = Grundmaßnahmen · 2 = technische Maßnahmen · 3 = Fachkunde/Spezialmaßnahmen · 4 = Expertenrat. Maßnahmen je Modul aus den BAuA-Schutzleitfäden. Status: Entwurf, Freigabe durch den Betrieb offen.</p>`;
   if(g.hand) h += `<h4>Handschuhauswahl</h4><p>${esc(g.hand)}</p>`;
-  h += `<h4>Betriebsanweisung (§ 14 GefStoffV)</h4><p>${g.ba ? esc(g.ba) + " – im Cockpit direkt beim Stoff abrufbar." : "Noch nicht erstellt – entsteht aus der freigegebenen EMKG-Beurteilung."}</p>`;
-  document.getElementById("gkDInhalt").innerHTML = h; d.showModal(); }
+  if(!g.id) h += `<h4>Gefährdungsbeurteilung und Betriebsanweisung</h4><p>Folgen, sobald das Sicherheitsdatenblatt vorliegt.</p>`;
+  document.getElementById("gkDInhalt").innerHTML = h; if(!d.open) d.showModal();
+  if(g.id && location.hash !== "#" + g.id) history.replaceState(null, "", "#" + g.id); }
 kacheln(); liste(); filtern();
 document.getElementById("gkSuche").addEventListener("input", filtern);
 document.querySelectorAll(".gk-pill").forEach(p => p.addEventListener("click", () => { const f = p.dataset.f;
@@ -176,8 +196,10 @@ document.querySelectorAll(".gk-pill").forEach(p => p.addEventListener("click", (
   filtern(); }));
 document.querySelectorAll(".gk-zeile").forEach(z => { const o = () => detail(STOFFE[+z.dataset.i]); z.addEventListener("click", o); z.addEventListener("keydown", e => { if(e.key === "Enter") o(); }); });
 document.getElementById("gkZu").addEventListener("click", () => document.getElementById("gkDlg").close());
+document.getElementById("gkDlg").addEventListener("close", () => history.replaceState(null, "", location.pathname));
+const start = STOFFE.find(g => g.id && "#" + g.id === location.hash); if(start) detail(start);
 document.getElementById("gkDlg").addEventListener("click", e => { if(e.target.id === "gkDlg") e.target.close(); });
 </script>
-<script src="site.js?v=202611200610"></script>
+<script src="site.js?v=202611200621"></script>
 </body>
 </html>
