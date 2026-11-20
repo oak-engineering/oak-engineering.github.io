@@ -260,6 +260,8 @@ function asGefDialog(s, g, taetigkeitId){
   const ms = g.id ? asMassnahmenZu(g.id) : [];
   const kn = [{ t: "Speichern", fn: async d => { const w = asWerte(d); if(!w.kurz){ asMeldung("Kurztext fehlt"); return false; }
     ["w_v", "s_v", "w_n", "s_n"].forEach(k => w[k] = w[k] ? +w[k] : null); w.taetigkeit_id = w.taetigkeit_id || null;
+    // Plausibilität beim Speichern (Schritt 4): danach nie höher als heute; fehlende Fundstelle nur als Hinweis
+    if(w.art !== "ressource" && asRisiko(w.w_n, w.s_n) > asRisiko(w.w_v, w.s_v) && asRisiko(w.w_v, w.s_v)){ asMeldung("Risiko nach Maßnahmen ist höher als heute – bitte Bewertung prüfen"); return false; }
     w.vorsorge = [...d.querySelectorAll("[data-vs]:checked")].map(x => x.dataset.vs);
     w.pruefarten = [...d.querySelectorAll("[data-pa]:checked")].map(x => x.dataset.pa);
     /* Schutzmaßnahmen zeilenweise „T: Text“ (S/T/O/P) – vorhandene Zusatzangaben (Priorität, Status …) bleiben erhalten */
@@ -281,6 +283,7 @@ function asGefDialog(s, g, taetigkeitId){
       }
       await asSpeichern("as_gefaehrdung", { id: gid, fotos });
     }
+    if(w.art !== "ressource" && !String(w.rechtsquelle || "").trim()) asMeldung("Gespeichert – bitte noch die Fundstelle (Rechtsquelle) ergänzen");
     asZeige(); } }];
   if(!neu){
     kn.unshift({ t: "+ Maßnahme", klasse: "sek", fn: () => { asMassnahmeDialog(null, { gefaehrdung_id: g.id, quelle: "bda" }, s); return false; } });
