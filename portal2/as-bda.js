@@ -77,7 +77,7 @@ function asBdaSystem(main, s){
 /* BdA nach Tätigkeiten (Fahrplan Selbstbedienung Schritt 2, 20.11.2026): Kachel je Tätigkeit → Tabelle je Tätigkeit
    (Gefährdung · Wann/wo · Risiko heute · Maßnahmen · Risiko danach · Stand) → Fotos gesammelt → Matrix einmal → Unterschriften.
    „Für alle Tätigkeiten“ = Gefährdungen ohne Tätigkeit. Tätigkeiten kommen nur aus den Daten, nichts ist fest verdrahtet. */
-function asBdRk(r, titel){ const b = asBand(r); return `<span class="bd-rk bd-${b}"${titel ? ` title="${esc(titel)}"` : ""}>${r ? r + " " : ""}${asBandText(b)}</span>`; }
+function asBdRk(r, titel, kurz){ const b = asBand(r); return `<span class="bd-rk bd-${b}"${titel ? ` title="${esc(titel)}"` : ""}>${r ? r + (kurz ? "" : " " + asBandText(b)) : kurz ? "–" : asBandText(b)}</span>`; }
 function asBdaTabelle(box, s){
   const tk = asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id).sort((x, y) => (x.sort || 0) - (y.sort || 0));
   const gef = asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id).sort((x, y) => (x.sort || 0) - (y.sort || 0));
@@ -94,8 +94,8 @@ function asBdaTabelle(box, s){
     const off = gg.reduce((n, g) => n + mnOffen(g).length, 0);
     return `<a class="bd-kachel" href="#${id}" onclick="event.preventDefault();document.getElementById('${id}').scrollIntoView({behavior:'smooth'})">
       <span class="bd-k-titel" title="${esc(t.name)}">${esc(t.name)}</span><span class="bd-k-wer" title="${esc(asListe(t.rollen).join(", "))}">${esc(asListe(t.rollen).join(", ") || "–")}</span>
-      <span class="bd-k-risk"><small>höchstes Risiko</small>${asBdRk(hv)}<span class="bd-pfeil">→</span>${asBdRk(hn)}</span>
-      <span class="bd-k-zahl"><span><b>${gg.length}</b> Gefährdungen</span><span><b>${off}</b> Maßnahmen offen</span></span></a>`; }).join("");
+      <span class="bd-k-risk" title="Höchstes Risiko heute → nach den Maßnahmen: ${asBandText(asBand(hv))} → ${asBandText(asBand(hn))}">${asBdRk(hv, "", true)}<span class="bd-pfeil">→</span>${asBdRk(hn, "", true)}</span>
+      <span class="bd-k-zahl" title="${gg.length} Gefährdungen · ${off} Maßnahmen offen"><span><b>${gg.length}</b> Gef.</span><span><b>${off}</b> offen</span></span></a>`; }).join("");
   // Abschnitte
   const abschnitte = gruppen.map(t => { const gg = vonGr(t), id = "bdtk-" + (t.id || "alle");
     const zeilen = gg.map((g, i) => {
@@ -112,7 +112,7 @@ function asBdaTabelle(box, s){
         <td class="bd-gef bda-klick" data-gk="${g.id}" title="Gefährdung bearbeiten"><div class="bd-g1">${esc(g.kurz)}${g.art === "belastung" ? ` <span class="hinweis">Belastung</span>` : ""}</div><div class="bd-g2" title="${esc(g.rechtsquelle || "")}">${esc(g.rechtsquelle || g.faktor || "")}</div></td>
         <td class="bd-wann bda-klick" data-gk="${g.id}" title="${esc(wann(g))}">${esc(wann(g))}</td>
         <td class="bd-risk bda-klick" data-gk="${g.id}" data-l="heute">${asBdRk(heute(g), ws(g.w_v, g.s_v) + (heute(g) !== asRisiko(g.w_v, g.s_v) ? " · alle Maßnahmen wirksam: Restrisiko" : ""))}</td>
-        <td class="bd-mass">${mz}${asDarf("pflegen") ? `<button class="btn sek klein nodruck" data-mn="${g.id}">+ Maßnahme</button>` : ""}</td>
+        <td class="bd-mass">${mz}</td>
         <td class="bd-risk bda-klick" data-gk="${g.id}" data-l="danach">${asBdRk(danach(g), ws(g.w_n, g.s_n))}</td>
         <td class="bd-st">${st}</td></tr>`; }).join("");
     return `<section class="bd-abschnitt" id="${id}"><div class="bd-a-kopf"><h2${t.id ? ` class="bda-klick" data-tk="${t.id}" title="Tätigkeit bearbeiten"` : ""}>${esc(t.name)}</h2>
@@ -148,7 +148,7 @@ function asBdaTabelle(box, s){
       <div class="bd-box"><h3>Maßnahmen (STOP)</h3><div class="bd-stop">${["S", "T", "O", "P"].map(k => `<span>${asStopChip(k)} ${esc(AS_STOP[k])}</span>`).join("")}</div></div>
       <div class="bd-box"><h3>Grundlagen</h3><p>${quellen.map(esc).join(" · ")}</p></div></div>
     <div class="bd-unter"><div>Erstellt</div><div>Fachkraft für Arbeitssicherheit</div><div>Geschäftsführung${s.freigabe_am ? ": " + esc(s.freigabe_von || "") + ", " + asDat(s.freigabe_am) : ""}</div></div>
-    <div class="hinweis nodruck" style="margin-top:14px">Zum Bearbeiten auf Tätigkeit, Gefährdung, Risiko oder Maßnahme klicken. Bewertung nach Wahrscheinlichkeit × Schwere (je 1–4).</div></div>`;
+    <div class="hinweis nodruck" style="margin-top:14px">Zum Bearbeiten auf Tätigkeit, Gefährdung, Risiko oder Maßnahme klicken; neue Maßnahme über die Gefährdung. Bewertung nach Wahrscheinlichkeit × Schwere (je 1–4).</div></div>`;
   box.querySelectorAll("[data-tk]").forEach(el => el.onclick = () => asTaetigkeitDialog(s, asNach("as_taetigkeit", el.dataset.tk)));
   box.querySelectorAll("[data-gn]").forEach(b => b.onclick = ev => { ev.stopPropagation(); asGefDialog(s, null, b.dataset.gn || null); });
   box.querySelectorAll("[data-gk]").forEach(el => el.onclick = () => asGefDialog(s, asNach("as_gefaehrdung", el.dataset.gk)));
