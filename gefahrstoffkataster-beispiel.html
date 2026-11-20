@@ -1,0 +1,183 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Beispiel: Digitales Gefahrstoffkataster | OAK engineering</title>
+<meta name="description" content="Anonymisierter Auszug aus einem digitalen Gefahrstoffkataster im EHS-Cockpit: GHS-Einstufung, Aktualität der Sicherheitsdatenblätter, EMKG-Gefährdungsbeurteilung je Tätigkeit, Handschuhauswahl.">
+<link rel="stylesheet" href="fonts.css?v=202611200610">
+<link rel="stylesheet" href="site.css?v=202611200610">
+<style>
+  .gk-intro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 1.6rem}
+  .gk-kachel{border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px 14px;height:76px;display:flex;flex-direction:column;justify-content:center}
+  .gk-kachel b{font-size:1.5rem;line-height:1.1;color:var(--oak-deep);font-weight:600}
+  .gk-kachel span{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gk-hinweis{font-size:.92rem;color:var(--ink-2);margin:0 0 1.2rem}
+  .gk-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
+  .gk-filter input{flex:1 1 220px;min-width:0;height:36px;border:1px solid var(--border);border-radius:99px;padding:0 14px;font:inherit;font-size:.9rem}
+  .gk-pill{height:32px;border:1px solid var(--border);background:#fff;border-radius:99px;padding:0 14px;font:inherit;font-size:.85rem;cursor:pointer;white-space:nowrap;color:var(--ink-2)}
+  .gk-pill[aria-pressed="true"]{background:var(--oak);border-color:var(--oak);color:#fff}
+  .gk-zahl{font-size:.85rem;color:var(--muted);margin-left:auto;white-space:nowrap}
+  .gk-liste{border:1px solid var(--border);border-radius:10px;background:#fff;overflow:hidden}
+  .gk-zeile{display:grid;grid-template-columns:78px 132px minmax(0,1fr) 430px 14px;align-items:center;gap:14px;height:58px;padding:0 16px;border-top:1px solid #eef1f5;cursor:pointer}
+  .gk-zeile:first-child{border-top:0}
+  .gk-zeile:hover{background:var(--oak-ghost)}
+  .gk-zeile[hidden]{display:none}
+  .gk-signal{font-size:12px;font-weight:700;border-radius:99px;padding:2px 0;text-align:center;background:#f2f4f7;color:#475467;white-space:nowrap}
+  .gk-gefahr{background:#fdecea;color:#8e1b1b}.gk-achtung{background:#fff4e0;color:#7a4a00}
+  .gk-piktos{display:flex;gap:3px}.gk-piktos img{width:30px;height:30px}
+  .gk-name{min-width:0;line-height:1.3}
+  .gk-name b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gk-name span{display:block;font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gk-chips{display:flex;gap:6px;justify-content:flex-end;overflow:hidden}
+  .gk-chip{font-size:.75rem;border-radius:99px;padding:2px 10px;white-space:nowrap;background:#f2f4f7;color:#475467}
+  .gk-gut{background:var(--oak-pale);color:var(--oak-deep)}.gk-warn{background:#fff4e0;color:#7a4a00}.gk-krit{background:#fdecea;color:#8e1b1b}
+  .gk-pfeil{color:var(--muted)}
+  dialog.gk-dlg{border:0;border-radius:12px;padding:0;width:min(760px,calc(100vw - 32px));max-height:calc(100vh - 40px)}
+  dialog.gk-dlg::backdrop{background:rgba(17,26,20,.45)}
+  .gk-dkopf{display:flex;gap:12px;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border)}
+  .gk-dkopf h3{font-family:var(--serif);font-size:1.5rem;font-weight:600;line-height:1.2;flex:1;min-width:0}
+  .gk-zu{border:0;background:none;font-size:1.6rem;cursor:pointer;color:var(--muted);line-height:1}
+  .gk-dinhalt{padding:16px 20px 20px;font-size:.92rem}
+  .gk-dinhalt h4{font-family:var(--serif);font-size:1.15rem;font-weight:600;margin:14px 0 6px}
+  .gk-dinhalt h4:first-child{margin-top:0}
+  .gk-h{list-style:none;padding:0}.gk-h li{padding:2px 0}.gk-h b{display:inline-block;width:62px;font-weight:600}
+  .gk-module{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:6px 0 4px}
+  .gk-modul{border:1px solid var(--border);border-radius:8px;height:62px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .gk-modul span{font-size:.75rem;color:var(--muted);white-space:nowrap}
+  .gk-modul b{font-size:1.1rem;font-weight:600}
+  .gk-s1{background:var(--oak-pale)}.gk-s2{background:#fff4e0}.gk-s3{background:#ffe1cc}.gk-s4{background:#fdecea}
+  .gk-leise{color:var(--muted);font-size:.82rem}
+  .gk-cta{margin-top:2rem;display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+  .gk-cta a{display:inline-flex;align-items:center;height:42px;padding:0 20px;border-radius:99px;background:var(--oak);color:#fff;font-weight:500}
+  @media(max-width:900px){.gk-intro{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .gk-zeile{grid-template-columns:70px minmax(0,1fr) 14px;grid-template-rows:auto auto;height:auto;padding:10px 14px;row-gap:6px}
+    .gk-signal{grid-column:1;grid-row:1}.gk-name{grid-column:2;grid-row:1}
+    .gk-piktos{grid-column:1/3;grid-row:2}.gk-chips{grid-column:1/3;grid-row:3;justify-content:flex-start;flex-wrap:wrap}
+    .gk-pfeil{grid-column:3;grid-row:1/4}
+    .gk-module{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .gk-name b,.gk-name span,.gk-kachel span{white-space:normal;overflow:visible}}
+  @media(max-width:420px){.gk-intro{grid-template-columns:1fr}.gk-kachel{height:64px}}
+</style>
+</head>
+<body>
+<nav>
+  <a class="nav-logo" href="index.html" aria-label="OAK engineering – zur Startseite">
+    <img src="assets/oak-logo.png" alt="OAK engineering">
+    <span class="nav-wordmark">OAK engineering<small>EHS-Management &amp; Digitalisierung</small></span>
+  </a>
+  <button class="nav-burger" aria-label="Menü"><span></span><span></span><span></span></button>
+  <div class="nav-links">
+    <a href="ki-digitalisierung.html">EHS 4.0</a>
+    <a href="portal/" class="nav-login">EHS-Cockpit</a>
+    <a href="kontakt.html" class="nav-cta">Kontakt</a>
+  </div>
+</nav>
+
+<header class="sub-hero">
+  <div class="sub-overlay"></div>
+  <h1>Digitales Gefahrstoffkataster</h1>
+  <p>Beispiel aus dem EHS-Cockpit: anonymisierter Auszug aus einem Kunststoff verarbeitenden Betrieb.</p>
+</header>
+
+<main>
+  <div class="gk-intro" id="gkKacheln"></div>
+  <p class="gk-hinweis">Verzeichnis nach § 6 Abs. 12 GefStoffV, verknüpft mit Sicherheitsdatenblatt, Gefährdungsbeurteilung nach EMKG (BAuA) je Tätigkeit, Handschuhauswahl und Betriebsanweisung. Klick auf einen Stoff zeigt die Details. Auszug von 15 Stoffen, Betrieb und Bereiche anonymisiert, Stand November 2026.</p>
+  <div class="gk-filter" role="group" aria-label="Filter">
+    <input type="search" id="gkSuche" placeholder="Suchen (Name, Hersteller, H-Satz …)" autocomplete="off">
+    <button type="button" class="gk-pill" data-f="bereich" data-w="" aria-pressed="true">Alle Bereiche</button>
+    <button type="button" class="gk-pill" data-f="bereich" data-w="Werkzeugbau" aria-pressed="false">Werkzeugbau</button>
+    <button type="button" class="gk-pill" data-f="bereich" data-w="Instandhaltung" aria-pressed="false">Instandhaltung</button>
+    <button type="button" class="gk-pill" data-f="bereich" data-w="Produktion" aria-pressed="false">Produktion</button>
+    <button type="button" class="gk-pill" data-f="bereich" data-w="Druckerei" aria-pressed="false">Druckerei</button>
+    <button type="button" class="gk-pill" data-f="sdb" data-w="pruefen" aria-pressed="false">SDB prüfen</button>
+    <span class="gk-zahl" id="gkZahl"></span>
+  </div>
+  <div class="gk-liste" id="gkListe"></div>
+  <div class="gk-cta"><a href="kontakt.html">Ihr Kataster digital aufbauen</a><span class="gk-leise">Übernahme aus Excel oder bestehender Gefahrstoffsoftware möglich.</span></div>
+</main>
+
+<dialog class="gk-dlg" id="gkDlg"><div class="gk-dkopf"><span id="gkDSignal"></span><h3 id="gkDTitel"></h3><button class="gk-zu" type="button" aria-label="Schließen" id="gkZu">×</button></div><div class="gk-dinhalt" id="gkDInhalt"></div></dialog>
+
+<footer>
+  <div class="footer-brand">OAK engineering · Nikolai Krawielitzki</div>
+  <div>© 2026 OAK engineering</div>
+  <div class="footer-links">
+    <a href="portal/">EHS-Cockpit</a>
+    <a href="kontakt.html">Kontakt</a>
+    <a href="impressum.html">Impressum</a>
+    <a href="datenschutz.html">Datenschutz</a>
+    <a href="agb.html">AGB</a>
+  </div>
+</footer>
+<script>
+/* Anonymisierter Auszug (Stand 20.11.2026). Quelle: EHS-Cockpit, Betriebsname, Bereiche und betriebsspezifische Angaben entfernt.
+   Stufen EMKG: 1 = Grundmaßnahmen … 4 = Expertenrat; leer = Modul nicht relevant. */
+const STOFFE = [
+ {n:"Bremsenreiniger 500 ml", h:"Würth", b:["Instandhaltung","Produktion","Werkzeugbau"], s:"Gefahr", hs:["H222","H229","H315","H336","H411"], sdb:"2026-09-29", t:"Teile und Werkzeuge reinigen (Spraydose)", m:[1,2,2,1,3], hand:"Nitril nur als Spritzschutz – SDB fordert Nitril > 0,45 mm; nach Kontakt sofort wechseln.", ba:""},
+ {n:"Butangaskartusche 190 g", h:"Handelsware", b:["Instandhaltung","Produktion","Werkzeugbau"], s:"Gefahr", hs:["H220","H280"], sdb:"2015-12-07", t:"Gasbrenner betreiben, Kartusche wechseln", m:[null,null,null,4,3], hand:"SDB nennt „geprüfte Schutzhandschuhe“ ohne Material – beim Kartuschenwechsel.", ba:""},
+ {n:"Dielektrikum (Erodierflüssigkeit)", h:"Oelheld", b:["Werkzeugbau"], s:"Gefahr", hs:["H304","EUH066"], sdb:"2024-01-12", gepr:"2026-10-12", t:"Erodieren – Werkstücke einsetzen, Bad nachfüllen", m:[1,2,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Formentrennspray", h:"Lutz", b:["Produktion"], s:"Gefahr", hs:["H222","H229"], sdb:"2015-08-04", t:"Formentrennmittel auf Werkzeug sprühen", m:[1,1,1,1,3], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Hochleistungs-Gleitfett", h:"Jost Chemicals", b:["Werkzeugbau"], s:"", hs:[], sdb:"", t:"", m:null, hand:"", ba:"", hinweis:"Sicherheitsdatenblatt beim Lieferanten angefordert – Einstufung folgt."},
+ {n:"Kaltreiniger (Fass mit Zapfhahn)", h:"Hebro Chemie", b:["Werkzeugbau"], s:"Gefahr", hs:["H225","H304","H336","H411"], sdb:"2026-06-09", t:"Abfüllen aus dem Fass · großflächig reinigen und entfetten", m:[1,1,1,2,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Kühlschmierstoff-Konzentrat", h:"Hebro Chemie", b:["Werkzeugbau"], s:"Gefahr", hs:["H315","H317","H318","H412"], sdb:"2026-06-05", t:"Konzentrat ansetzen und nachfüllen", m:[null,1,null,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Kontaktreiniger (Spraydose)", h:"Kontakt Chemie", b:["Instandhaltung"], s:"Gefahr", hs:["H222","H229","H315","H319","H336","H412"], sdb:"2026-03-11", t:"Kontakte reinigen (Spraydose)", m:[1,1,2,1,3], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Lackspray, diverse Farben", h:"Würth", b:["Instandhaltung","Werkzeugbau"], s:"Gefahr", hs:["H222","H229","H319","H336"], sdb:"2019-11-19", t:"Anlackieren und Kennzeichnen", m:[1,1,2,1,3], hand:"Nitril nur als Spritzschutz – SDB fordert Nitril 0,7 mm; nach Kontakt sofort wechseln.", ba:""},
+ {n:"n-Butylacetat", h:"Laborchemikalie", b:["Produktion"], s:"Achtung", hs:["H226","H336"], sdb:"2019-04-02", gepr:"2026-10-13", t:"Reinigen bei der Montage (Lappen)", m:[1,1,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Siebdruckfarbe 2K-PUR", h:"Druckfarbenhersteller", b:["Druckerei"], s:"Gefahr", hs:["H226","H315","H317","H318","H335","H412","EUH430"], sdb:"2026-09-23", t:"Farbe anmischen und drucken (Sieb-/Tampondruck)", m:[1,2,2,2,null], hand:"Material laut SDB (LLDPE), SDB nennt ≥ 0,4 mm – Eignung beim Hersteller bestätigen.", ba:"Sammel-BA Siebdruckfarben"},
+ {n:"Verdünner für Siebdruckfarbe", h:"Druckfarbenhersteller", b:["Druckerei"], s:"Gefahr", hs:["H226","H304","H312","H315","H318","H332","H335","H336","H373"], sdb:"2026-10-08", t:"Farbe verdünnen", m:[3,2,2,2,null], hand:"Material laut SDB (LLDPE), SDB nennt ≥ 0,4 mm – Eignung beim Hersteller bestätigen.", ba:""},
+ {n:"Spiritus", h:"Handelsware", b:["Instandhaltung","Produktion","Werkzeugbau"], s:"Gefahr", hs:["H225","H319"], sdb:"2021-11-22", gepr:"2026-10-13", t:"Kunststoffteile reinigen (Lappen)", m:[1,1,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Sekundenkleber", h:"Würth", b:["Instandhaltung","Werkzeugbau"], s:"Achtung", hs:["H315","H319","H335","EUH202"], sdb:"2026-06-08", t:"Kleben", m:[1,1,1,1,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:""},
+ {n:"Entkalker (Pulver)", h:"Heppner", b:["Instandhaltung"], s:"Achtung", hs:["H319"], sdb:"2020-01-07", t:"Entkalkerlösung ansetzen (Pulver einwiegen)", m:[2,1,2,3,null], hand:"Durchbruchzeit beim Handschuhhersteller bestätigen lassen (TRGS 401).", ba:"", offen:true}
+];
+const HTXT = {H220:"Extrem entzündbares Gas.",H222:"Extrem entzündbares Aerosol.",H225:"Flüssigkeit und Dampf leicht entzündbar.",H226:"Flüssigkeit und Dampf entzündbar.",H229:"Behälter steht unter Druck: Kann bei Erwärmung bersten.",H280:"Enthält Gas unter Druck; kann bei Erwärmung explodieren.",H304:"Kann bei Verschlucken und Eindringen in die Atemwege tödlich sein.",H312:"Gesundheitsschädlich bei Hautkontakt.",H315:"Verursacht Hautreizungen.",H317:"Kann allergische Hautreaktionen verursachen.",H318:"Verursacht schwere Augenschäden.",H319:"Verursacht schwere Augenreizung.",H332:"Gesundheitsschädlich bei Einatmen.",H335:"Kann die Atemwege reizen.",H336:"Kann Schläfrigkeit und Benommenheit verursachen.",H373:"Kann die Organe schädigen bei längerer oder wiederholter Exposition.",H411:"Giftig für Wasserorganismen, mit langfristiger Wirkung.",H412:"Schädlich für Wasserorganismen, mit langfristiger Wirkung.",EUH066:"Wiederholter Kontakt kann zu spröder oder rissiger Haut führen.",EUH202:"Cyanacrylat. Gefahr. Klebt innerhalb von Sekunden Haut und Augenlider zusammen.",EUH430:"Kann endokrine Störungen in der Umwelt verursachen."};
+const GHS = {GHS02:["H220","H222","H225","H226"],GHS04:["H280"],GHS05:["H318"],GHS07:["H312","H315","H317","H319","H332","H335","H336"],GHS08:["H304","H373"],GHS09:["H411"]};
+const GHSN = {GHS02:"Flamme",GHS04:"Gasflasche",GHS05:"Ätzwirkung",GHS07:"Ausrufezeichen",GHS08:"Gesundheitsgefahr",GHS09:"Umwelt"};
+const MOD = ["Einatmen","Haut","Augen","Brand/Explosion","Lagern"];
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const datum = d => d ? d.split("-").reverse().join(".") : "";
+function piktos(hs){ const h = new Set(hs); const p = Object.keys(GHS).filter(k => GHS[k].some(x => h.has(x)));
+  const r = p.includes("GHS05") ? p.filter(k => k !== "GHS07" || hs.some(x => ["H312","H317","H332","H335","H336"].includes(x))) : p;
+  return r.map(k => `<img src="portal/ghs/ghs${k.slice(3)}.png" alt="${k} ${GHSN[k]}" title="${k} – ${GHSN[k]}" loading="lazy">`).join(""); }
+function sdbStand(g){ if(!g.sdb) return {k:"gk-krit", t:"SDB fehlt"};
+  const bezug = [g.sdb, g.gepr].filter(Boolean).sort().pop(); const grenze = new Date(); grenze.setFullYear(grenze.getFullYear() - 2);
+  if(bezug < grenze.toISOString().slice(0,10)) return {k:"gk-warn", t:"SDB veraltet"};
+  return {k:"gk-gut", t: g.gepr && g.gepr > g.sdb ? "SDB geprüft " + datum(g.gepr) : "SDB " + datum(g.sdb)}; }
+function kacheln(){ const n = STOFFE.length, gef = STOFFE.filter(g => g.s === "Gefahr").length, sdbOk = STOFFE.filter(g => sdbStand(g).k === "gk-gut").length, emkg = STOFFE.filter(g => g.m).length;
+  document.getElementById("gkKacheln").innerHTML = [[n,"Stoffe im Auszug"],[gef,"Signalwort Gefahr"],[sdbOk + " / " + n,"SDB aktuell (≤ 2 Jahre)"],[emkg + " / " + n,"EMKG je Tätigkeit erfasst"]]
+    .map(([z,t]) => `<div class="gk-kachel"><b>${z}</b><span>${t}</span></div>`).join(""); }
+function liste(){ document.getElementById("gkListe").innerHTML = STOFFE.map((g,i) => { const st = sdbStand(g);
+  const chips = [`<span class="gk-chip ${st.k}">${st.t}</span>`, g.m ? `<span class="gk-chip">EMKG Entwurf</span>` : "", g.ba ? `<span class="gk-chip gk-gut" title="${esc(g.ba)}">BA vorhanden</span>` : (g.m ? `<span class="gk-chip gk-warn">BA fehlt</span>` : ""), g.offen ? `<span class="gk-chip gk-warn">Verwendung klären</span>` : ""].join("");
+  return `<div class="gk-zeile" data-i="${i}" tabindex="0" data-suche="${esc([g.n,g.h,g.hs.join(" ")].join(" ").toLowerCase())}" data-b="${esc(g.b.join("|"))}" data-sdb="${st.k === "gk-gut" ? "" : "1"}">
+    <span class="gk-signal ${g.s === "Gefahr" ? "gk-gefahr" : g.s === "Achtung" ? "gk-achtung" : ""}">${esc(g.s || "–")}</span>
+    <span class="gk-piktos">${piktos(g.hs)}</span>
+    <span class="gk-name" title="${esc(g.n)}"><b>${esc(g.n)}</b><span title="${esc(g.b.join(", "))}">${esc([g.h, g.b.length > 2 ? g.b.length + " Bereiche" : g.b.join(", ")].join(" · "))}</span></span>
+    <span class="gk-chips">${chips}</span><span class="gk-pfeil" aria-hidden="true">›</span></div>`; }).join(""); }
+const F = {bereich:"", sdb:""};
+function filtern(){ const q = document.getElementById("gkSuche").value.toLowerCase().trim(); let n = 0;
+  document.querySelectorAll(".gk-zeile").forEach(z => { const ok = (!q || z.dataset.suche.includes(q)) && (!F.bereich || z.dataset.b.split("|").includes(F.bereich)) && (!F.sdb || z.dataset.sdb); z.hidden = !ok; if(ok) n++; });
+  document.getElementById("gkZahl").textContent = n + (n === 1 ? " Stoff" : " Stoffe"); }
+function detail(g){ const st = sdbStand(g), d = document.getElementById("gkDlg");
+  document.getElementById("gkDSignal").innerHTML = `<span class="gk-signal ${g.s === "Gefahr" ? "gk-gefahr" : g.s === "Achtung" ? "gk-achtung" : ""}" style="display:inline-block;width:78px">${esc(g.s || "–")}</span>`;
+  document.getElementById("gkDTitel").textContent = g.n;
+  let h = `<p class="gk-leise">${esc(g.h)} · ${esc(g.b.join(", "))} · <span class="gk-chip ${st.k}">${st.t}</span></p>`;
+  if(g.hinweis) h += `<p style="margin-top:10px">${esc(g.hinweis)}</p>`;
+  if(g.hs.length) h += `<h4>Einstufung (SDB Abschnitt 2)</h4><div class="gk-piktos" style="margin-bottom:6px">${piktos(g.hs)}</div><ul class="gk-h">${g.hs.map(x => `<li><b>${x}</b>${esc(HTXT[x] || "")}</li>`).join("")}</ul>`;
+  if(g.m) h += `<h4>Gefährdungsbeurteilung nach EMKG</h4><p>Tätigkeit: ${esc(g.t)}</p><div class="gk-module">${MOD.map((t,i) => `<div class="gk-modul ${g.m[i] ? "gk-s" + g.m[i] : ""}"><span>${t}</span><b>${g.m[i] ? "Stufe " + g.m[i] : "–"}</b></div>`).join("")}</div><p class="gk-leise">Stufe 1 = Grundmaßnahmen · 2 = technische Maßnahmen · 3 = Fachkunde/Spezialmaßnahmen · 4 = Expertenrat. Maßnahmen je Modul aus den BAuA-Schutzleitfäden. Status: Entwurf, Freigabe durch den Betrieb offen.</p>`;
+  if(g.hand) h += `<h4>Handschuhauswahl</h4><p>${esc(g.hand)}</p>`;
+  h += `<h4>Betriebsanweisung (§ 14 GefStoffV)</h4><p>${g.ba ? esc(g.ba) + " – im Cockpit direkt beim Stoff abrufbar." : "Noch nicht erstellt – entsteht aus der freigegebenen EMKG-Beurteilung."}</p>`;
+  document.getElementById("gkDInhalt").innerHTML = h; d.showModal(); }
+kacheln(); liste(); filtern();
+document.getElementById("gkSuche").addEventListener("input", filtern);
+document.querySelectorAll(".gk-pill").forEach(p => p.addEventListener("click", () => { const f = p.dataset.f;
+  if(f === "bereich"){ document.querySelectorAll('.gk-pill[data-f="bereich"]').forEach(x => x.setAttribute("aria-pressed", x === p ? "true" : "false")); F.bereich = p.dataset.w; }
+  else { const an = p.getAttribute("aria-pressed") !== "true"; p.setAttribute("aria-pressed", an ? "true" : "false"); F.sdb = an ? "1" : ""; }
+  filtern(); }));
+document.querySelectorAll(".gk-zeile").forEach(z => { const o = () => detail(STOFFE[+z.dataset.i]); z.addEventListener("click", o); z.addEventListener("keydown", e => { if(e.key === "Enter") o(); }); });
+document.getElementById("gkZu").addEventListener("click", () => document.getElementById("gkDlg").close());
+document.getElementById("gkDlg").addEventListener("click", e => { if(e.target.id === "gkDlg") e.target.close(); });
+</script>
+<script src="site.js?v=202611200610"></script>
+</body>
+</html>
