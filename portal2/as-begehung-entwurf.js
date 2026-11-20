@@ -10,9 +10,11 @@ function asBgFaktor(kat){ const k = String(kat || "").toLowerCase(), t = AS_BG_F
 async function asBgFertig(box, p){
   const typen = await apiGet("/rest/v1/as_maschinentyp?select=slug,titel,vorlage&aktiv=is.true&order=titel").catch(() => []) || [];
   const dok = asAnlagen().find(x => x.maschinen_id === p.maschinen_id), name = String((dok && dok.maschinentyp) || p.maschine).toLowerCase();
-  const tipp = p.typ_slug || (typen.find(t => name.includes(t.titel.toLowerCase().split(" ")[0])) || {}).slug || "";
+  // Vorschlag: spezifischster Typ, dessen erstes Titelwort im Namen steht; „Maschine allgemein“ nur als Rückfall (20.11.2026)
+  const passt = typen.filter(t => t.slug !== "maschine-allgemein" && name.includes(t.titel.toLowerCase().split(" ")[0])).sort((x, y) => y.titel.split(" ")[0].length - x.titel.split(" ")[0].length);
+  const tipp = p.typ_slug || (passt[0] || typen.find(t => t.slug === "maschine-allgemein") || {}).slug || "";
   const dl = asDialog({ titel: "Maschine fertig: " + p.maschine, inhalt: `<div class="form">${asAuswahl("Maschinentyp", "typ", tipp, [["", "Bitte wählen …"]].concat(typen.map(t => [t.slug, t.titel])), "voll")}</div>
-      <p class="hinweis">Fehlt der Typ, gibt es noch keine Vorlage und deshalb keinen Entwurf.</p>${AS.admin ? `<label class="btn sek klein">Vorlage hochladen (JSON)<input type="file" id="bgVorlage" accept=".json" hidden></label>` : ""}`,
+      <p class="hinweis">Fehlt der Typ, „Maschine allgemein“ wählen und den Entwurf anpassen.</p>${AS.admin ? `<label class="btn sek klein">Vorlage hochladen (JSON)<input type="file" id="bgVorlage" accept=".json" hidden></label>` : ""}`,
     knoepfe: [{ t: "Entwurf erstellen", fn: async d => { const w = asWerte(d), typ = typen.find(t => t.slug === w.typ);
       if(!typ){ asMeldung("Bitte einen Maschinentyp wählen"); return false; }
       asBgLaeuft(box, p, typ, ""); return false; } }] });
