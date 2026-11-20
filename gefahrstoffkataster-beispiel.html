@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Beispiel: Digitales Gefahrstoffkataster | OAK engineering</title>
 <meta name="description" content="Anonymisierter Auszug aus einem digitalen Gefahrstoffkataster im EHS-Cockpit: GHS-Einstufung, Aktualität der Sicherheitsdatenblätter, EMKG-Gefährdungsbeurteilung je Tätigkeit, Handschuhauswahl.">
-<link rel="stylesheet" href="fonts.css?v=202611200646">
-<link rel="stylesheet" href="site.css?v=202611200646">
+<link rel="stylesheet" href="fonts.css?v=202611200651">
+<link rel="stylesheet" href="site.css?v=202611200651">
 <style>
   .gk-intro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 1.6rem}
   .gk-kachel{border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px 14px;height:76px;display:flex;flex-direction:column;justify-content:center}
@@ -129,6 +129,7 @@
   </div>
 </footer>
 <script src="spiele/qrcode.min.js"></script>
+<script src="portal/spaltenmodell.js"></script>
 <script>
 /* Anonymisierter Auszug (Stand 20.11.2026). Quelle: EHS-Cockpit, Betriebsname, Bereiche und betriebsspezifische Angaben entfernt.
    Stufen EMKG: 1 = Grundmaßnahmen … 4 = Expertenrat; leer = Modul nicht relevant. */
@@ -230,13 +231,10 @@ h1{font-size:12pt;line-height:1.15;margin:1.5mm 0 1mm}.h{font-size:7pt;color:#55
 <button class="knopf" onclick="print()">Etikett drucken</button></body></html>`);
   w.document.close(); }
 /* Substitutionsprüfung nach TRGS 600: Spaltenmodell (Gesundheit, Umwelt, Brand/Explosion) – gleiche Zuordnung wie der OAK-Substitutions-Checker */
-const SP = {H220:{p:5},H222:{p:5},H225:{p:4},H226:{p:3},H280:{p:2},H302:{g:3},H304:{g:5},H312:{g:3},H315:{g:3},H317:{g:3},H318:{g:4},H319:{g:3},H332:{g:3},H335:{g:3},H336:{g:3},
-  H361:{g:4},H373:{g:4},H410:{u:5},H411:{u:4},H412:{u:3},EUH066:{g:2}};
-const SPN = {5:"sehr hoch",4:"hoch",3:"mittel",2:"gering",1:"vernachlässigbar"};
-function spalten(hs){ const r = {g:1,u:1,p:1}; (hs || []).forEach(h => { const e = SP[h] || {}; ["g","u","p"].forEach(k => { if(e[k] && e[k] > r[k]) r[k] = e[k]; }); }); return r; }
+const SPN = OAK_SPALTEN.NAMEN, spalten = hs => OAK_SPALTEN.bewerten(hs);
 function substitution(g){
   const d = document.getElementById("gkSub"), r = spalten(g.hs);
-  const pflicht = (g.hs || []).some(h => ["H300","H301","H310","H311","H330","H331","H340","H341","H350","H351","H360","H361","H370","H371"].includes(h));
+  const pflicht = OAK_SPALTEN.vorrangig(g.hs).length > 0;
   const zelle = (v, z) => `<td class="gk-sp gk-sp${v}">${SPN[v]}${z || ""}</td>`;
   const leer = `<th>Ersatzstoff</th><td colspan="3" class="gk-leise">H-Sätze des Ersatzstoffs eingeben</td>`;
   document.getElementById("gkSubInhalt").innerHTML = `<p class="gk-leise">${esc(g.n)} · ${esc(g.hs.join(" ") || "nicht eingestuft")}</p>
@@ -245,9 +243,9 @@ function substitution(g){
     <table class="gk-sptab"><thead><tr><th></th><th>Gesundheit</th><th>Umwelt</th><th>Brand/Explosion</th></tr></thead>
     <tbody><tr><th>Aktueller Stoff</th>${zelle(r.g)}${zelle(r.u)}${zelle(r.p)}</tr><tr id="gkAltZeile">${leer}</tr></tbody></table>
     <label class="gk-altfeld">H-Sätze des Ersatzstoffs (SDB Abschnitt 2)<input id="gkAlt" placeholder="z. B. H315 H319 H412" autocomplete="off"></label>
-    <p class="gk-leise">Vereinfachtes GHS-Spaltenmodell (IFA): je Spalte zählt die höchste Einstufung. Technische Eignung, Verfahren und Aufwand gehören ebenfalls in die Prüfung. Im Cockpit wird das Ergebnis je Tätigkeit festgehalten; ein Ersatzstoff übernimmt Bereiche und Tätigkeiten.</p>`;
+    <p class="gk-leise">GHS-Spaltenmodell (IFA): je Spalte zählt die höchste Einstufung. Technische Eignung, Verfahren und Aufwand gehören ebenfalls in die Prüfung.</p>`;
   const alt = document.getElementById("gkAlt");
-  alt.addEventListener("input", () => { const hs = alt.value.toUpperCase().match(/EUH\d{3}|H\d{3}/g) || [], a = spalten(hs);
+  alt.addEventListener("input", () => { const hs = OAK_SPALTEN.saetze(alt.value), a = spalten(hs);
     document.getElementById("gkAltZeile").innerHTML = hs.length ? `<th>Ersatzstoff</th>${["g","u","p"].map(k => zelle(a[k], a[k] < r[k] ? " ↓" : a[k] > r[k] ? " ↑" : " =")).join("")}` : leer; });
   d.showModal(); }
 kacheln(); liste(); filtern();
@@ -265,6 +263,6 @@ window.addEventListener("hashchange", () => { const g = STOFFE.find(x => x.id &&
 const start = STOFFE.find(g => g.id && "#" + g.id === location.hash); if(start) detail(start);
 document.getElementById("gkDlg").addEventListener("click", e => { if(e.target.id === "gkDlg") e.target.close(); });
 </script>
-<script src="site.js?v=202611200646"></script>
+<script src="site.js?v=202611200651"></script>
 </body>
 </html>

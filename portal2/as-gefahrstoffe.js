@@ -125,7 +125,11 @@ function asGsStil(){
 .gs-m1{background:var(--gruen2);color:#1d6b3f}.gs-m2{background:var(--gelb2);color:#8a6200}.gs-m3,.gs-m4{background:var(--rot2);color:#a32f2f}
 .gs-erg{border-top:1px solid var(--linie);margin-top:8px;padding-top:6px}.gs-erg ul{margin:4px 0 6px 18px;padding:0;font-size:13px}
 .gs-hl{margin:4px 0 0 18px;padding:0;font-size:13px}.gs-abschnitt{margin:14px 0 4px;font-weight:600;color:var(--blau)}
-.gs-zeile{display:flex;flex-wrap:wrap;gap:6px;align-items:center}`;
+.gs-zeile{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.gs-sptab{width:100%;border-collapse:collapse;table-layout:fixed;margin:8px 0}.gs-sptab th,.gs-sptab td{border:1px solid var(--linie);padding:6px 8px;text-align:left;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gs-sptab thead th{background:var(--blau);color:#fff;font-weight:600}
+.gs-sp5{background:var(--rot2)}.gs-sp4{background:#ffe1cc}.gs-sp3{background:var(--gelb2)}.gs-sp2{background:#eef7f0}.gs-sp1{background:var(--gruen2)}
+.gs-pflicht{background:var(--rot2);color:#a32f2f;padding:8px 10px;border-radius:8px}`;
   document.head.appendChild(s);
 }
 
@@ -135,6 +139,8 @@ async function asGsKataster(box){
   box.innerHTML = `<div class="karte"><div class="leer">wird geladen …</div></div>`;
   await asGsLaden();
   asGsListe(box);
+  /* Direktlink vom QR-Etikett: #gefahrstoffe/kataster/<stoff-id> */
+  { const teil = decodeURIComponent(location.hash.replace(/^#/, "")).split("/"); if(teil[0] === "gefahrstoffe" && /^[0-9a-f-]{36}$/i.test(teil[2] || "")) AS_GS.oeffnen = teil[2]; }
   if(AS_GS.oeffnen){ const g = AS_GS.rows.find(x => x.id === AS_GS.oeffnen); AS_GS.oeffnen = null; if(g) asGsStoff(g, box); }
 }
 function asGsListe(box){
@@ -206,9 +212,60 @@ function asGsDokumente(){
 }
 
 /* ---------------- Stoff ansehen ---------------- */
+/* Modul ohne Stufe: „fehlt“ (Angabe fehlt, z. B. Lagermenge, SDB 9.1) oder „entfällt“ (Modul nicht anwendbar, z. B. Gase –
+   EMKG-Leitfaden 2.2 R0.1). Grund im Tooltip statt eines Fragezeichens (Nik 20.11.2026). */
+function asGsModGrund(m){
+  const f = [...new Set(((m && m.fehlend) || []).map(x => AS_GS_FEHLT[x] || AS_GS_FEHLT[x.split(":")[0]] || x))];
+  if(f.length) return { kurz: "fehlt", text: "Angabe fehlt: " + f.join(", ") };
+  return { kurz: "entfällt", text: ((m && m.hinweise) || [])[0] || "Modul für diesen Stoff nicht anwendbar" };
+}
 function asGsModChip(t, m){
-  const s = m && Number.isInteger(m.stufe) ? m.stufe : null;
-  return `<span class="gs-mod ${s ? "gs-m" + s : ""}" title="${esc(t + ": " + (s === null ? "nicht berechenbar – Angaben fehlen" : AS_GS_STUFE[s]))}">${esc(t)} ${s === null ? "?" : s === 0 ? "–" : s}</span>`;
+  const s = m && Number.isInteger(m.stufe) ? m.stufe : null, gr = s === null ? asGsModGrund(m) : null;
+  return `<span class="gs-mod ${s ? "gs-m" + s : ""}" title="${esc(t + ": " + (gr ? gr.text : AS_GS_STUFE[s]))}">${esc(t)} ${gr ? gr.kurz : s === 0 ? "–" : s}</span>`;
+}
+/* QR-Etikett je Gefahrstoff (101 × 54 mm, wie Website-Demo): QR führt auf den Stoff im Cockpit (Login) */
+async function asGsQrEtikett(g){
+  const url = location.origin + location.pathname + "?kunde=" + encodeURIComponent(AS.kunde || "") + "#gefahrstoffe/kataster/" + g.id;
+  let svg = ""; try{ if(await asUwQrLib()){ const q = qrcode(0, "M"); q.addData(url); q.make(); svg = q.createSvgTag({ cellSize: 4, margin: 0 }); } }catch(e){ console.warn("QR", e); }
+  const basis = new URL("../portal/ghs/", location.href).href;
+  const pk = asGsPiktos(g.h_saetze).map(k => `<img src="${basis}ghs${k.slice(3)}.png" alt="${esc(k)}">`).join("");
+  const farbe = g.signalwort === "Gefahr" ? "#C0392B" : g.signalwort === "Achtung" ? "#E08E0B" : "#999";
+  const w = window.open("", "_blank"); if(!w){ asMeldung("Bitte Pop-ups für das Cockpit erlauben"); return; }
+  w.document.write(`<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QR-Etikett ${esc(g.bezeichnung)}</title>
+<style>@page{size:101mm 54mm;margin:0}body{margin:0;font-family:Jost,Arial,sans-serif;background:#eef1ee}
+.et{width:101mm;height:54mm;box-sizing:border-box;padding:4mm;display:grid;grid-template-columns:44mm 1fr;gap:4mm;background:#fff;margin:10mm auto;border:1px dashed #9ab;overflow:hidden}
+.et svg{width:44mm;height:44mm;display:block;margin-top:1mm}.r{display:flex;flex-direction:column;min-width:0}
+.sw{align-self:flex-start;font-weight:700;font-size:9pt;padding:.5mm 2.5mm;border-radius:2mm;background:${farbe};color:#fff}
+h1{font-size:12pt;line-height:1.15;margin:1.5mm 0 1mm}.h{font-size:7pt;color:#555}.pk{display:flex;gap:1mm;margin-top:auto}.pk img{width:10mm;height:10mm}
+.f{font-size:6.5pt;color:#555;margin-top:1mm}.knopf{display:block;margin:0 auto 10mm;padding:10px 22px;border:0;border-radius:99px;background:#2D6A4F;color:#fff;font:inherit;cursor:pointer}
+@media print{body{background:#fff}.et{margin:0;border:0}.knopf{display:none}}</style></head><body>
+<div class="et">${svg}<div class="r"><span class="sw">${esc(g.signalwort || "nicht eingestuft")}</span><h1>${esc(g.bezeichnung)}</h1><div class="h">${esc(g.hersteller || "")}</div>
+<div class="pk">${pk}</div><div class="f">Scannen: SDB · Gefährdungsbeurteilung · Betriebsanweisung</div></div></div>
+<button class="knopf" onclick="print()">Etikett drucken</button></body></html>`);
+  w.document.close();
+}
+/* Substitutionsprüfung (TRGS 600): Spaltenmodell aus ../portal/spaltenmodell.js (gleiche Quelle wie die Website-Demo),
+   Vergleich mit einem Ersatzstoff per H-Sätzen, dokumentierte Prüfergebnisse je Tätigkeit aus der EMKG-Beurteilung */
+function asGsSubstitution(g, box){
+  const SPM = window.OAK_SPALTEN; if(!SPM){ asMeldung("Spaltenmodell nicht geladen"); return; }
+  const r = SPM.bewerten(g.h_saetze), vr = SPM.vorrangig(g.h_saetze || []);
+  const zelle = (v, z) => `<td class="gs-sp gs-sp${v}">${esc(SPM.NAMEN[v])}${z || ""}</td>`;
+  const leer = `<th>Ersatzstoff</th><td colspan="3" class="hinweis">H-Sätze des Ersatzstoffs eingeben</td>`;
+  const SUB = { nicht_moeglich: "Ersatz nicht möglich oder nicht zumutbar", moeglich: "Ersatz möglich – Ersatzstoff festlegen" };
+  const doku = asGsGbus(g).map(x => { const e = x.eingaben || {};
+    return `<li><b>${esc(x.taetigkeit)}</b>: ${e.substitution ? esc(SUB[e.substitution] || e.substitution) + (e.substitution_text ? " – " + esc(e.substitution_text) : "") : '<span class="hinweis">noch nicht geprüft</span>'}</li>`; }).join("");
+  asDialog({ titel: "Substitutionsprüfung · " + g.bezeichnung, breit: true, knoepfe: [{ t: "Schließen", fn: () => {} }].concat(asGsPflege() && asGsVerw(g) !== "inaktiv" ? [{ t: "Durch Ersatzstoff ersetzen", fn: () => { setTimeout(() => asGsErsetzen(g, box)); } }] : []), inhalt: `
+    ${vr.length ? `<p class="gs-pflicht">Besonders gefährliche Eigenschaft (${esc(vr.join(", "))}) – Substitution vorrangig prüfen und regelmäßig dokumentieren (§ 7 Abs. 3 GefStoffV, TRGS 600).</p>`
+      : `<p class="hinweis">Substitutionsprüfung nach § 6 Abs. 1 Nr. 4 GefStoffV und TRGS 600.</p>`}
+    <table class="gs-sptab"><thead><tr><th></th>${SPM.spalten.map(s => `<th>${esc(s[1])}</th>`).join("")}</tr></thead>
+      <tbody><tr><th>Aktueller Stoff</th>${SPM.spalten.map(s => zelle(r[s[0]])).join("")}</tr><tr id="gsSubAlt">${leer}</tr></tbody></table>
+    <label>H-Sätze des Ersatzstoffs (SDB Abschnitt 2)<input type="text" id="gsSubH" placeholder="z. B. H315 H319 H412" autocomplete="off"></label>
+    <div class="gs-abschnitt">Dokumentiertes Ergebnis je Tätigkeit</div>
+    ${doku ? `<ul class="gs-hl">${doku}</ul>` : `<p class="hinweis">Noch keine Tätigkeit nach EMKG beurteilt – das Prüfergebnis wird in der Beurteilung je Tätigkeit festgehalten.</p>`}
+    <p class="hinweis">GHS-Spaltenmodell (IFA): je Spalte zählt die höchste Einstufung. Technische Eignung, Verfahren und Aufwand gehören ebenfalls in die Prüfung.</p>` });
+  const inp = document.querySelector("#dlg #gsSubH");
+  if(inp) inp.addEventListener("input", () => { const hs = SPM.saetze(inp.value), a = SPM.bewerten(hs);
+    document.querySelector("#dlg #gsSubAlt").innerHTML = hs.length ? `<th>Ersatzstoff</th>${SPM.spalten.map(s => zelle(a[s[0]], a[s[0]] < r[s[0]] ? " ↓" : a[s[0]] > r[s[0]] ? " ↑" : " =")).join("")}` : leer; });
 }
 function asGsGbuStatus(x){
   if(x.status === "freigegeben") return asChip("freigegeben" + (x.freigegeben_von ? " – " + x.freigegeben_von : "") + (x.freigegeben_am ? " " + asDat(x.freigegeben_am) : ""), "gruen");
@@ -227,7 +284,7 @@ function asGsStoff(g, box){
   asDialog({ titel: g.bezeichnung, breit: true, knoepfe: kn, inhalt: `
     <p class="hinweis">${esc([g.hersteller, g.artikelnummer ? "Art.-Nr. " + g.artikelnummer : ""].filter(Boolean).join(" · "))}</p>
     ${asGsPiktos(g.h_saetze).length ? `<div class="gs-gross">${asGsPiktos(g.h_saetze).map(k => `<figure><img class="gs-pikto-g" src="../portal/ghs/ghs${k.slice(3)}.png" alt="${esc(k)}">${esc(AS_GS_GHS_NAME[k])}</figure>`).join("")}</div>` : ""}
-    <div class="gs-zeile">${g.signalwort ? asChip("Signalwort: " + g.signalwort, g.signalwort === "Gefahr" ? "rot" : "gelb") : ""}${asChip(AS_GS_VERW[v], v === "aktiv" ? "gruen" : v === "offen" ? "gelb" : "grau")}</div>
+    <div class="gs-zeile">${g.signalwort ? asChip("Signalwort: " + g.signalwort, g.signalwort === "Gefahr" ? "rot" : "gelb") : ""}${asChip(AS_GS_VERW[v], v === "aktiv" ? "gruen" : v === "offen" ? "gelb" : "grau")}<button class="btn sek klein" id="gsQr" title="QR-Etikett 101 × 54 mm drucken – führt auf diesen Stoff">QR-Etikett</button></div>
     ${v === "offen" && g.hinweis ? `<p class="hinweis">${esc(g.hinweis)}</p>` : ""}
     <div class="form${pflege ? " bda-klick" : ""}" id="gsStamm" ${pflege ? 'title="Stammdaten bearbeiten"' : ""}>${stamm || (pflege ? `<div><span class="hinweis">Stammdaten</span><div>noch keine Angaben – antippen zum Ergänzen</div></div>` : "")}</div>
 
@@ -253,7 +310,8 @@ function asGsStoff(g, box){
         : `<p class="hinweis">Noch keiner Tätigkeit zugeordnet – in der EMKG-Beurteilung die Tätigkeit aus der BdA wählen.</p>`; })()}
     ${g.ersetzt_durch ? `<p class="hinweis">Ersetzt am ${asDat(g.ersetzt_am)} durch <button class="btn sek klein" data-stoff="${esc(g.ersetzt_durch)}">${esc((AS_GS.rows.find(x => x.id === g.ersetzt_durch) || {}).bezeichnung || "Ersatzstoff")}</button></p>` : ""}
     ${AS_GS.rows.filter(x => x.ersetzt_durch === g.id).map(x => `<p class="hinweis">Ersatz für <button class="btn sek klein" data-stoff="${esc(x.id)}">${esc(x.bezeichnung)}</button> (seit ${asDat(x.ersetzt_am)})</p>`).join("")}
-    ${pflege && asGsVerw(g) !== "inaktiv" ? `<div class="gs-zeile" style="margin-top:6px"><button class="btn sek klein" id="gsErsetzen">Durch Ersatzstoff ersetzen (Substitution)</button></div>` : ""}
+    <div class="gs-zeile" style="margin-top:6px"><button class="btn sek klein" id="gsSubPruef">Substitutionsprüfung (TRGS 600)</button>
+      ${pflege && asGsVerw(g) !== "inaktiv" ? `<button class="btn sek klein" id="gsErsetzen">Durch Ersatzstoff ersetzen</button>` : ""}</div>
 
     <div class="gs-abschnitt">Betriebsanweisung</div>
     ${paBa ? `<p class="hinweis">Überprüfung fällig bis ${asDat(paBa.faellig_am)}: ${esc((paBa.anlaesse || []).map(a => a.text).join(" · "))}</p>` : ""}
@@ -281,6 +339,8 @@ function asGsStoff(g, box){
   d.querySelectorAll("[data-bda]").forEach(el => el.onclick = () => { d.close(); AS.reiter.bda = el.dataset.bda; asGehe("bda/" + el.dataset.bda); });
   d.querySelectorAll("[data-stoff]").forEach(el => el.onclick = () => asGsStoff(AS_GS.rows.find(x => x.id === el.dataset.stoff), box));
   auf("#gsErsetzen", () => asGsErsetzen(g, box));
+  auf("#gsSubPruef", () => asGsSubstitution(g, box));
+  auf("#gsQr", () => asGsQrEtikett(g));
   auf("#gsHs", () => { d.close(); asGehe("gefahrstoffe/handschuhe"); });
   auf("#gsTzNeu", () => asGsEmkg(g, null, box));
   auf("#gsSdbNeu", () => asGsBearbeiten(g, box, true));
@@ -398,7 +458,7 @@ function asGsSpray(g){ const d = g.sdb_daten || {}; return (d.aggregat && d.aggr
 function asGsErgebnisHtml(r){
   const mod = ([k, t]) => { const m = r.module[k] || {}, s = m.stufe;
     const fehl = [...new Set((m.fehlend || []).map(f => AS_GS_FEHLT[f] || AS_GS_FEHLT[f.split(":")[0]] || f))];
-    return `<div style="margin:6px 0">${asGsModChip(t, m)} <span>${s === null || s === undefined ? "nicht berechenbar" : esc(AS_GS_STUFE[s])}${m.gruppe ? " · Gruppe " + esc(m.gruppe) : ""}</span>
+    return `<div style="margin:6px 0">${asGsModChip(t, m)} <span>${s === null || s === undefined ? esc(asGsModGrund(m).text) : esc(AS_GS_STUFE[s])}${m.gruppe ? " · Gruppe " + esc(m.gruppe) : ""}</span>
       ${fehl.length ? `<div class="hinweis">Fehlt: ${esc(fehl.join(", "))}</div>` : ""}
       ${(m.schutzleitfaeden || []).length ? `<details><summary class="hinweis">Schutzleitfäden (${m.schutzleitfaeden.length})</summary><ul>${m.schutzleitfaeden.map(x => `<li><b>${esc(x.nr)}</b> ${esc(x.titel)}</li>`).join("")}</ul></details>` : ""}
       ${(m.massnahmenHinweise || []).length ? `<ul>${m.massnahmenHinweise.map(h => `<li>${esc(h)}</li>`).join("")}</ul>` : ""}</div>`; };

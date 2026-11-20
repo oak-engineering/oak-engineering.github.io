@@ -10,6 +10,7 @@
 ==================================================================== -->
 <html lang="de">
 <head><style>body:not(.gs){visibility:hidden}</style><script>setTimeout(function(){if(document.body)document.body.style.visibility='visible'},3000)</script>
+<style>html:not(.ba-fertig) body{visibility:hidden}</style><script>setTimeout(function(){document.documentElement.classList.add('ba-fertig')},4000)</script><!-- kein Aufblitzen der Grundvorlage, bis alle Skripte gelaufen sind (Nik 20.11.2026) -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=840">
 <title>Betriebsanweisung</title>
@@ -763,6 +764,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(window.__OAK_PORTAL_ORIGIN){ document.querySelectorAll('.nur-lokal').forEach(b=>{ b.style.display='none'; }); }
 });
 </script>
+<script>document.documentElement.classList.add('ba-fertig')</script>
 <script>document.addEventListener('DOMContentLoaded',function(){setTimeout(function(){document.querySelectorAll('[contenteditable]').forEach(function(e){e.removeAttribute('contenteditable')});document.querySelectorAll('.bar button').forEach(function(b){if(/Umbruch|Datei speichern/.test(b.textContent))b.style.display='none'});},300)});</script>
 </body>
 </html>

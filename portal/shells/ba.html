@@ -10,6 +10,7 @@
 ==================================================================== -->
 <html lang="de">
 <head>
+<style>html:not(.ba-fertig) body{visibility:hidden}</style><script>setTimeout(function(){document.documentElement.classList.add('ba-fertig')},4000)</script><!-- kein Aufblitzen der Grundvorlage, bis alle Skripte gelaufen sind (Nik 20.11.2026) -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Betriebsanweisung</title>
@@ -759,5 +760,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   if(window.__OAK_PORTAL_ORIGIN){ document.querySelectorAll('.nur-lokal').forEach(b=>{ b.style.display='none'; }); }
 });
 </script>
+<script>document.documentElement.classList.add('ba-fertig')</script>
 </body>
 </html>
