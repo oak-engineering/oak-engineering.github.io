@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Beispiel: Digitales Gefahrstoffkataster | OAK engineering</title>
 <meta name="description" content="Anonymisierter Auszug aus einem digitalen Gefahrstoffkataster im EHS-Cockpit: GHS-Einstufung, Aktualität der Sicherheitsdatenblätter, EMKG-Gefährdungsbeurteilung je Tätigkeit, Handschuhauswahl.">
-<link rel="stylesheet" href="fonts.css?v=202611200701">
-<link rel="stylesheet" href="site.css?v=202611200701">
+<link rel="stylesheet" href="fonts.css?v=202611200707">
+<link rel="stylesheet" href="site.css?v=202611200707">
 <style>
   .gk-intro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 1.6rem}
   .gk-kachel{border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px 14px;height:76px;display:flex;flex-direction:column;justify-content:center}
@@ -129,7 +129,7 @@
   </div>
 </footer>
 <script src="spiele/qrcode.min.js"></script>
-<script src="portal/spaltenmodell.js"></script>
+<script src="portal/spaltenmodell.js?v=2026-11-20b"></script>
 <script>
 /* Anonymisierter Auszug (Stand 20.11.2026). Quelle: EHS-Cockpit, Betriebsname, Bereiche und betriebsspezifische Angaben entfernt.
    Stufen EMKG: 1 = Grundmaßnahmen … 4 = Expertenrat; leer = Modul nicht relevant. */
@@ -236,17 +236,17 @@ function substitution(g){
   const d = document.getElementById("gkSub"), r = spalten(g.hs);
   const pflicht = OAK_SPALTEN.vorrangig(g.hs).length > 0;
   const zelle = (v, z) => `<td class="gk-sp gk-sp${v}">${SPN[v]}${z || ""}</td>`;
-  const leer = `<th>Ersatzstoff</th><td colspan="3" class="gk-leise">H-Sätze des Ersatzstoffs eingeben</td>`;
+  const leer = `<th>Ersatzstoff</th><td colspan="4" class="gk-leise">H-Sätze des Ersatzstoffs eingeben</td>`;
   document.getElementById("gkSubInhalt").innerHTML = `<p class="gk-leise">${esc(g.n)} · ${esc(g.hs.join(" ") || "nicht eingestuft")}</p>
     ${pflicht ? `<p class="gk-pflicht">Besonders gefährliche Eigenschaft – Substitutionsprüfung vorrangig und regelmäßig dokumentieren (§ 6 Abs. 1 Nr. 4, § 7 Abs. 3 GefStoffV, TRGS 600).</p>`
               : `<p>Substitutionsprüfung nach § 6 Abs. 1 Nr. 4 GefStoffV und TRGS 600. Das Ergebnis steht in der Gefährdungsbeurteilung.</p>`}
-    <table class="gk-sptab"><thead><tr><th></th><th>Gesundheit</th><th>Umwelt</th><th>Brand/Explosion</th></tr></thead>
-    <tbody><tr><th>Aktueller Stoff</th>${zelle(r.g)}${zelle(r.u)}${zelle(r.p)}</tr><tr id="gkAltZeile">${leer}</tr></tbody></table>
+    <table class="gk-sptab"><thead><tr><th></th>${OAK_SPALTEN.spalten.map(s => `<th>${s[1]}</th>`).join("")}</tr></thead>
+    <tbody><tr><th>Aktueller Stoff</th>${OAK_SPALTEN.spalten.map(s => zelle(r[s[0]])).join("")}</tr><tr id="gkAltZeile">${leer}</tr></tbody></table>
     <label class="gk-altfeld">H-Sätze des Ersatzstoffs (SDB Abschnitt 2)<input id="gkAlt" placeholder="z. B. H315 H319 H412" autocomplete="off"></label>
-    <p class="gk-leise">GHS-Spaltenmodell (IFA): je Spalte zählt die höchste Einstufung. Technische Eignung, Verfahren und Aufwand gehören ebenfalls in die Prüfung.</p>`;
+    <p class="gk-leise">Bewertung nach GESTIS-Spaltenmodell 2025 (IFA), je Spalte zählt die höchste Einstufung. Technische Eignung, Verfahren und Aufwand gehören ebenfalls in die Prüfung.</p>`;
   const alt = document.getElementById("gkAlt");
   alt.addEventListener("input", () => { const hs = OAK_SPALTEN.saetze(alt.value), a = spalten(hs);
-    document.getElementById("gkAltZeile").innerHTML = hs.length ? `<th>Ersatzstoff</th>${["g","u","p"].map(k => zelle(a[k], a[k] < r[k] ? " ↓" : a[k] > r[k] ? " ↑" : " =")).join("")}` : leer; });
+    document.getElementById("gkAltZeile").innerHTML = hs.length ? `<th>Ersatzstoff</th>${OAK_SPALTEN.spalten.map(s => s[0]).map(k => zelle(a[k], a[k] < r[k] ? " ↓" : a[k] > r[k] ? " ↑" : " =")).join("")}` : leer; });
   d.showModal(); }
 kacheln(); liste(); filtern();
 document.getElementById("gkSuche").addEventListener("input", filtern);
@@ -263,6 +263,6 @@ window.addEventListener("hashchange", () => { const g = STOFFE.find(x => x.id &&
 const start = STOFFE.find(g => g.id && "#" + g.id === location.hash); if(start) detail(start);
 document.getElementById("gkDlg").addEventListener("click", e => { if(e.target.id === "gkDlg") e.target.close(); });
 </script>
-<script src="site.js?v=202611200701"></script>
+<script src="site.js?v=202611200707"></script>
 </body>
 </html>
