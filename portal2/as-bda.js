@@ -167,7 +167,7 @@ function asBdaTabelle(box, s){
         <td class="bd-gef bda-klick" data-gk="${g.id}" title="Gefährdung bearbeiten"><div class="bd-g1">${esc(g.kurz)}${g.art === "belastung" ? ` <span class="hinweis">Belastung</span>` : ""}</div><div class="bd-g2" title="${esc(g.rechtsquelle || "")}">${esc(g.rechtsquelle || g.faktor || "")}</div></td>
         <td class="bd-wann bda-klick" data-gk="${g.id}" title="${esc(wann(g))}">${esc(wann(g))}</td>
         <td class="bd-risk bda-klick" data-gk="${g.id}" data-l="heute">${asBdRk(heute(g), ws(g.w_v, g.s_v) + (heute(g) !== asRisiko(g.w_v, g.s_v) ? " · alle Maßnahmen wirksam: Restrisiko" : ""))}</td>
-        <td class="bd-mass">${mz}</td>
+        <td class="bd-mass">${mz}${asDarf("pflegen") ? `<button type="button" class="btn sek klein nodruck bd-plus" data-mn="${g.id}" title="Maßnahme zu dieser Gefährdung anlegen">+ Maßnahme</button>` : ""}</td>
         <td class="bd-risk bda-klick" data-gk="${g.id}" data-l="danach">${asBdRk(danach(g), ws(g.w_n, g.s_n))}</td>
         <td class="bd-st">${st}</td></tr>`; }).join("");
     return `<section class="bd-abschnitt" id="${id}"><div class="bd-a-kopf"><h2${t.id ? ` class="bda-klick" data-tk="${t.id}" title="Tätigkeit bearbeiten"` : ""}>${esc(t.name)}</h2>
@@ -192,7 +192,7 @@ function asBdaTabelle(box, s){
             : `<span class="hinweis">Freigabe durch die Geschäftsführung</span>`))}</span></h2>
     <div class="bd-stamm"><div><span>Bereich</span><b>${esc(asEinheitName(s.einheit_id) || "–")}</b></div><div><span>Anlagen</span><b title="${esc(asListe(s.anlagen).join(", "))}">${esc(asListe(s.anlagen).join(", ") || "–")}</b></div>
       <div><span>Beschäftigte</span><b title="${esc(asListe(s.rollen).join(", "))}">${esc(asListe(s.rollen).join(", ") || "–")}</b></div><div><span>Stand</span><b>${asDat(asHeute())}</b></div>
-      <div><span>Freigabe</span><b>${s.freigabe_am ? asDat(s.freigabe_am) + " · " + esc(s.freigabe_von || "") : "noch nicht freigegeben"}</b></div></div>
+      <div><span>Freigabe</span><b>${s.freigabe_am ? "freigegeben am " + asDat(s.freigabe_am) + " · " + esc(s.freigabe_von || "") : "noch nicht freigegeben"}</b></div></div>
     <p class="bd-zweck">Beurteilt nach § 5 ArbSchG und § 3 BetrSichV, getrennt nach Tätigkeiten. Je Zeile: Risiko heute → Maßnahmen → Risiko danach. Das Restrisiko gilt, sobald alle Maßnahmen einer Gefährdung wirksam sind.</p>
     ${(() => { const h = asDarf("pflegen") ? asBdaPruefung(s) : []; return h.length ? `<details class="bd-pruef nodruck"><summary>${h.length} Hinweis${h.length === 1 ? "" : "e"} zur Prüfung</summary>${h.map(([gid, was, txt]) =>
       `<div class="bd-pz${gid ? " bda-klick" : ""}"${gid ? ` data-gk="${gid}"` : ""}><b title="${esc(was)}">${esc(was)}</b><span>${esc(txt)}</span></div>`).join("")}</details>` : ""; })()}

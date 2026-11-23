@@ -613,3 +613,4 @@ body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
 .bd-pz b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:760px){.bd-pz{grid-template-columns:1fr;gap:0}}
 .bd-vorl span{color:var(--grau,#5b6472)}
+.bd-plus{margin-top:4px;padding:2px 8px;font-size:12px}
