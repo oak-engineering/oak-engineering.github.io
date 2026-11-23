@@ -783,26 +783,22 @@ async function asEinPersonenImport(plan){
 }
 
 /* ---------------- 5 Anlagen (einzeln oder Import; BdA- und PSA-Vorlage) ---------------- */
+/* Vorlagen (23.11.2026): eigene Anlagen gleicher Maschinenart, sonst die Typ-Bibliothek (as_maschinentyp, OAK + eigene Vorlagen) –
+   nicht mehr die Anlagen eines Vorlagebetriebs. Ohne passenden Typ: „Maschine allgemein“. */
 async function asEinVorlagen(){
   if(AS_EIN.vorlagen && AS_EIN.vorlagen.kunde === AS.kunde) return AS_EIN.vorlagen.liste;
-  const hole = p => apiGet(p).then(r => r || []).catch(() => []);
-  const vb = AS_EIN_VORLAGE_BETRIEB, kv = "&kunde_slug=eq." + encodeURIComponent(vb);
-  const [docs, sys, gef] = await Promise.all([
-    hole("/rest/v1/portal_dokumente?select=maschinen_id,maschine,maschinentyp,storage_path,kunde_slug&kategorie=eq.anlagen" + kv),
-    hole("/rest/v1/as_arbeitssystem?select=id,quelle_id,stillgelegt_am&art=eq.anlage" + kv),
-    hole("/rest/v1/as_gefaehrdung?select=arbeitssystem_id" + kv)]);
-  const n = {}; gef.forEach(g => { n[g.arbeitssystem_id] = (n[g.arbeitssystem_id] || 0) + 1; });
-  const fremd = docs.map(d => { const s = sys.find(x => x.quelle_id === d.maschinen_id && !x.stillgelegt_am); return Object.assign({}, d, { gef: s ? n[s.id] || 0 : 0 }); })
-    .filter(d => d.gef >= 3 && d.maschinentyp && d.storage_path && !AS_EIN_JUNK.test(d.maschine || ""))
-    .map(d => Object.assign(d, { label: d.maschinentyp + " – OAK-Vorlage (" + d.gef + " Gefährdungen)", oak: true }));
+  const typen = (typeof asTypen === "function" ? await asTypen() : []).map(t => ({ typ: t, oak: true, maschinentyp: t.titel,
+    label: "Bibliothek: " + t.titel + " (" + ((t.vorlage || {}).hazards || []).length + " Gefährdungen)" }));
   const eigen = (AS_EIN.d.anl || []).filter(d => d.storage_path).map(d => Object.assign({}, d, { label: (d.maschinentyp ? d.maschinentyp + ": " : "") + d.maschine + " (eigene Anlage)" }));
-  AS_EIN.vorlagen = { kunde: AS.kunde, liste: eigen.concat(fremd) };
+  AS_EIN.vorlagen = { kunde: AS.kunde, liste: eigen.concat(typen) };
   return AS_EIN.vorlagen.liste;
 }
-function asEinVorlageFuer(art, liste){
-  const a = asEinNorm(art); if(!a) return null;
-  return liste.find(v => !v.oak && asEinNorm(v.maschinentyp) === a) || liste.find(v => v.oak && asEinNorm(v.maschinentyp) === a)
-    || liste.find(v => asEinNorm(v.maschinentyp).startsWith(a.slice(0, 8))) || null;
+function asEinVorlageFuer(art, liste, name){
+  const a = asEinNorm(art);
+  const eigen = a ? liste.find(v => !v.typ && asEinNorm(v.maschinentyp) === a) : null;
+  if(eigen) return eigen;
+  const typen = liste.filter(v => v.typ), t = typeof asTypFuer === "function" ? asTypFuer(art || name || "", typen.map(v => v.typ)) : null;
+  return t ? typen.find(v => v.typ === t) || null : null;
 }
 async function asEinAnlagen(box){
   const d = AS_EIN.d, liste = await asEinVorlagen(), psaAn = asEinBranche() === "kunststoff-spritzguss";
@@ -828,9 +824,10 @@ async function asEinAnlagen(box){
       ${asEinImportHtml("anlagen", "einA", "Bezeichnung;Maschinenart;Hersteller;Baujahr;Bereich;Inventarnummer", "fehlende Bereiche mit anlegen")}
       <p class="hinweis">Beurteilung, PSA und Gehörschutz wie oben gewählt.</p></div></div>`;
   const form = box.querySelector("#einAForm");
-  const vorlageVon = (w, art) => w.vorlage === "auto" ? asEinVorlageFuer(art, liste) : w.vorlage === "" || w.vorlage == null ? null : liste[+w.vorlage] || null;
+  const vorlageVon = (w, art, name) => w.vorlage === "auto" ? asEinVorlageFuer(art, liste, name) : w.vorlage === "" || w.vorlage == null ? null : liste[+w.vorlage] || null;
   const anlegen = async (w, vorlage, psa, gehoer) => {
-    const erg = await asAnlageAnlegen({ name: w.name, art: w.art || "", hersteller: w.hersteller || "", typ: w.typ || "", baujahr: w.baujahr || "", seriennr: "", einheit_id: w.einheit_id || null, bereich: "" }, vorlage);
+    const erg = await asAnlageAnlegen({ name: w.name, art: w.art || "", hersteller: w.hersteller || "", typ: w.typ || "", baujahr: w.baujahr || "", seriennr: "", einheit_id: w.einheit_id || null, bereich: "" },
+      vorlage && !vorlage.typ ? vorlage : null, vorlage && vorlage.typ ? vorlage.typ : null);
     if(psa && erg.sys && /spritzg/i.test(w.art || "") && typeof asPsaVorlageAnwenden === "function")
       await asPsaVorlageAnwenden(erg.sys, "kunststoff-spritzguss").catch(e => asMeldung("PSA-Vorlage nicht übernommen: " + (e.message || e)));
     if(gehoer && erg.sys) await asEinGehoerschutz(erg.sys).catch(e => asMeldung("Gehörschutz nicht eingetragen: " + (e.message || e)));
@@ -842,7 +839,7 @@ async function asEinAnlagen(box){
     if(!w.name){ asMeldung("Bitte die Bezeichnung eintragen."); return; }
     if(d.anl.some(a => asEinNorm(a.maschine) === asEinNorm(w.name))){ asMeldung("Diese Anlage gibt es schon."); return; }
     b.disabled = true; asMeldung("Anlage wird angelegt …");
-    try{ const erg = await anlegen(w, vorlageVon(w, w.art), w.psa, w.gehoer); asMeldung("Anlage " + w.name + " (" + erg.mid + ") angelegt."); AS_EIN.vorlagen = null; asZeige(); }
+    try{ const erg = await anlegen(w, vorlageVon(w, w.art, w.name), w.psa, w.gehoer); asMeldung("Anlage " + w.name + " (" + erg.mid + ") angelegt."); AS_EIN.vorlagen = null; asZeige(); }
     catch(e){ asMeldung(e.message || String(e)); b.disabled = false; }
   };
   asEinImportBinden(box, "anlagen", "einA", (objs, bereicheAnlegen) => asEinAnlagenPlan(objs, liste, bereicheAnlegen),
@@ -853,7 +850,7 @@ async function asEinAnlagen(box){
       for(const z of zeilen){
         asMeldung("Anlage " + (n + 1) + " von " + zeilen.length + " wird angelegt …");
         const e = z.bereich ? asT("as_einheit").find(x => asEinNorm(x.name) === asEinNorm(z.bereich)) : null;
-        try{ await anlegen(Object.assign({}, z, { einheit_id: e ? e.id : null }), vorlageVon(w, z.art), w.psa, w.gehoer); n++; }
+        try{ await anlegen(Object.assign({}, z, { einheit_id: e ? e.id : null }), vorlageVon(w, z.art, z.name), w.psa, w.gehoer); n++; }
         catch(ex){ asMeldung(z.name + ": " + (ex.message || ex)); break; }
       }
       AS_EIN.vorlagen = null; asMeldung(n + " von " + zeilen.length + " Anlagen angelegt."); });
@@ -866,7 +863,7 @@ function asEinAnlagenPlan(roh, liste, bereicheAnlegen){
     const e = z.bereich ? einh.find(x => asEinNorm(x.name) === asEinNorm(z.bereich)) : null;
     if(z.bereich && !e){ if(bereicheAnlegen) h.push("Bereich wird angelegt"); else f.push("Bereich unbekannt"); }
     if(z.baujahr){ const bj = String(z.baujahr).match(/^(\d{4})(-\d\d-\d\d)?$/); if(!bj) f.push("Baujahr vierstellig"); else z.baujahr = bj[1]; }
-    const v = asEinVorlageFuer(z.art, liste);
+    const v = asEinVorlageFuer(z.art, liste, z.name);
     h.push(v ? "Vorlage: " + v.label : "Beurteilung leer");
     if(!f.length && z.bereich && !e && bereicheAnlegen) neuB.add(z.bereich.trim());
     return Object.assign({}, z, { fehler: f.join(", "), hinweis: h.join(" · ") }); });

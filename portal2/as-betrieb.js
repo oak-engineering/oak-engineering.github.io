@@ -144,39 +144,49 @@ AS_SEITEN.anlagen = { titel: "Anlagen", icon: "▦", sort: 4.2, async render(mai
 }};
 
 /* ---------------- Neue Anlage anlegen (Plan intern/portal-eigenstaendig.md, Schritt 4) ----------------
-   Die Fachkraft wählt eine vorhandene Anlage gleichen Typs als Vorlage: Gefährdungen, Maßnahmen und Betriebsanweisung
-   werden übernommen, Fotos, Mängel und Begehungsprotokoll nicht (die gehören zur alten Maschine). Ohne Vorlage startet
-   die Beurteilung leer (Gefährdungen dann im Dokument aus dem BGHM-Katalog hinzufügen). Nummer vergibt der Server. */
-function asAnlageNeuDialog(main, fertig){
+   Vorlage (23.11.2026): Standard ist die Typ-Vorlage aus der Bibliothek passend zur Maschinenart (Tätigkeiten, Gefährdungen mit
+   Fundstelle, BA; Maßnahmen bestätigt die Begehung). Alternativ eine vorhandene Anlage gleichen Typs: Gefährdungen, Maßnahmen und
+   Betriebsanweisung werden übernommen, Fotos, Mängel und Begehungsprotokoll nicht. Nummer vergibt der Server. */
+async function asAnlageNeuDialog(main, fertig){
+  const typen = typeof asTypen === "function" ? await asTypen() : [];
   const anl = asAnlagen().filter(d => d.storage_path).slice()
     .sort((a, b) => String(a.maschinentyp || "").localeCompare(String(b.maschinentyp || ""), "de") || String(a.maschine).localeCompare(String(b.maschine), "de", { numeric: true }));
-  const opt = [["", "– ohne Vorlage (leer beginnen) –"]].concat(anl.map(d => [d.maschinen_id, (d.maschinentyp ? String(d.maschinentyp).replace(/\s*\(.*\)\s*$/, "") + ": " : "") + (d.maschine || d.titel) + " (" + d.maschinen_id + ")"]));
-  asDialog({ titel: "Neue Anlage anlegen", breit: true, inhalt: `<div class="form">
+  const opt = [["auto", "Vorlage aus der Bibliothek passend zur Maschinenart"]].concat(typen.map(t => ["typ:" + t.slug, "Bibliothek: " + t.titel]),
+    anl.map(d => [d.maschinen_id, "Wie Anlage " + (d.maschine || d.titel) + " (" + d.maschinen_id + ")" + (d.maschinentyp ? " · " + String(d.maschinentyp).replace(/\s*\(.*\)\s*$/, "") : "")]),
+    [["", "– ohne Vorlage (leer beginnen) –"]]);
+  const dl = asDialog({ titel: "Neue Anlage anlegen", breit: true, inhalt: `<div class="form">
       ${asFeld("Bezeichnung (wie am Hallenplan, z. B. D250/3)", "name", "", "text", "voll")}
-      ${asAuswahl("Vorlage – eine vorhandene Anlage gleichen Typs", "vorlage", "", opt, "voll")}
-      ${asFeld("Maschinenart (z. B. Spritzgießmaschine)", "art", "")}
+      ${asFeld("Maschinenart (z. B. Drehmaschine)", "art", "")}
+      ${asAuswahl("Vorlage für Beurteilung und Betriebsanweisung", "vorlage", typen.length ? "auto" : "", typen.length ? opt : opt.filter(o => o[0] !== "auto"), "voll")}
       ${asFeld("Hersteller", "hersteller", "")}${asFeld("Typ / Modell", "typ", "")}
       ${asFeld("Baujahr", "baujahr", "")}${asFeld("Serien-Nr.", "seriennr", "")}
       ${asBereichWahl("Bereich (Organisation)", "einheit_id", null, "voll", "– noch keinem Bereich zugeordnet –")}
       ${asFeld("Standort / Raum (optional)", "bereich", "", "text", "voll")}</div>
-      <p class="hinweis">Aus der Vorlage werden Gefährdungen, Schutzmaßnahmen und Betriebsanweisung übernommen – <b>nicht</b> Fotos, Mängel und
-        Begehungsprotokoll. Prüfen und ergänzen Sie danach die Beurteilung an der neuen Anlage und geben Sie sie frei.</p>`,
+      <p class="hinweis" id="anlVorlTipp"></p>
+      <p class="hinweis">Bibliothek: Tätigkeiten, Gefährdungen mit Bewertung und Fundstelle und die Betriebsanweisung als Entwurf. Die Maßnahmen der Vorlage
+        bestätigen Sie bei der Begehung („Maschine fertig“). Wie eine vorhandene Anlage: deren Beurteilung und BA, <b>nicht</b> Fotos, Mängel und Begehungsprotokoll.</p>`,
     knoepfe: [{ t: "Anlegen", fn: async d => {
       const w = asWerte(d);
       if(!w.name){ asMeldung("Bitte die Bezeichnung eintragen."); return false; }
-      const vorlage = anl.find(x => x.maschinen_id === w.vorlage) || null;
+      const typ = w.vorlage === "auto" ? asTypFuer(w.art || w.name, typen) : String(w.vorlage || "").startsWith("typ:") ? typen.find(t => "typ:" + t.slug === w.vorlage) || null : null;
+      const vorlage = typ ? null : anl.find(x => x.maschinen_id === w.vorlage) || null;
       asMeldung("Anlage wird angelegt …");
       let erg;
-      try{ erg = await asAnlageAnlegen(w, vorlage); }
+      try{ erg = await asAnlageAnlegen(w, vorlage, typ); }
       catch(e){ asMeldung(e.message || String(e)); return false; }
       asMeldung("Anlage " + w.name + " (" + erg.mid + ") angelegt – Beurteilung jetzt prüfen und ergänzen");
       if(typeof fertig === "function") fertig(erg); else AS_SEITEN.anlagen.render(main);
     } }] });
+  // Welche Bibliotheks-Vorlage „passend zur Maschinenart“ greift, sofort zeigen
+  const tipp = () => { const w = asWerte(dl), el = dl.querySelector("#anlVorlTipp"); if(!el) return;
+    const t = w.vorlage === "auto" ? asTypFuer(w.art || w.name, typen) : null;
+    el.textContent = t ? "Passende Vorlage: " + t.titel + (t.slug === "maschine-allgemein" ? " (kein eigener Typ gefunden – allgemeine Vorlage, danach anpassen)" : "") : ""; };
+  dl.querySelectorAll('[data-f="art"], [data-f="name"], [data-f="vorlage"]').forEach(el => { el.oninput = tipp; el.onchange = tipp; });
 }
 /* Kern „Anlage anlegen“ – auch für den Einrichtungs-Assistenten und den Import (as-einrichtung.js).
    vorlage: Zeile aus portal_dokumente (kategorie anlagen) – auch aus einem anderen Betrieb (OAK-Vorlagebetrieb), dann mit kunde_slug.
    Liefert { mid, sys } (sys = neue Beurteilung der Anlage oder null). */
-async function asAnlageAnlegen(w, vorlage){
+async function asAnlageAnlegen(w, vorlage, typ){
   let vd = null;
   if(vorlage){
     try{
@@ -188,7 +198,7 @@ async function asAnlageAnlegen(w, vorlage){
   if(w.einheit_id && !w.bereich) w.bereich = asBereichName1(w.einheit_id);
   const doc = asAnlageAusVorlage(vd, vorlage, w);
   let mid;
-  try{ mid = await apiSend("POST", "/rest/v1/rpc/portal_anlage_anlegen", { p_slug: AS.kunde, p_maschine: w.name, p_maschinentyp: w.art || (vorlage && vorlage.maschinentyp) || null,
+  try{ mid = await apiSend("POST", "/rest/v1/rpc/portal_anlage_anlegen", { p_slug: AS.kunde, p_maschine: w.name, p_maschinentyp: w.art || (vorlage && vorlage.maschinentyp) || (typ && typ.slug !== "maschine-allgemein" ? typ.titel.replace(/ \(eigene Vorlage\)$/, "") : null) || null,
     p_docdata: doc, p_qr_svg: null, p_vorlage: vorlage ? ((vorlage.kunde_slug && vorlage.kunde_slug !== AS.kunde ? vorlage.kunde_slug + ":" : "") + vorlage.maschinen_id) : null }); }
   catch(e){ throw new Error("Konnte nicht angelegt werden: " + (e.message || e)); }
   /* QR-Code (Ziel: Maschinenseite) – braucht die vergebene Nummer */
@@ -199,7 +209,7 @@ async function asAnlageAnlegen(w, vorlage){
   }catch(e){ console.warn("QR", e); }
   let sys = null;
   if(typeof asAnlageBdaAnlegen === "function")
-    sys = await asAnlageBdaAnlegen(mid, w, vorlage ? vorlage.maschinen_id : null, vorlage ? vorlage.kunde_slug : null).catch(e => { asMeldung("Beurteilung nicht angelegt: " + (e.message || e)); return null; });
+    sys = await asAnlageBdaAnlegen(mid, w, vorlage ? vorlage.maschinen_id : null, vorlage ? vorlage.kunde_slug : null, vorlage ? null : typ || null).catch(e => { asMeldung("Beurteilung nicht angelegt: " + (e.message || e)); return null; });
   if(w.einheit_id) await apiSend("POST", "/rest/v1/rpc/portal_anlage_bereich_setzen", { p_slug: AS.kunde, p_mid: mid, p_einheit: w.einheit_id }).catch(e => asMeldung("Bereich nicht gesetzt: " + (e.message || e)));
   /* Prüfung vor erster Verwendung (§ 14 Abs. 1 BetrSichV) gleich als Prüfobjekt anlegen – sofort fällig */
   await apiSend("POST", "/rest/v1/as_pruefobjekt", { kunde_slug: AS.kunde, art: "maschine_gesamt", bezeichnung: "Gesamtcheck " + w.name, maschinen_id: mid,

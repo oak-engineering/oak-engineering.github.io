@@ -104,18 +104,28 @@ async function asAlsVorlageDialog(s){
       const ba = await apiGet("/rest/v1/as_ba?select=inhalt&limit=1&arbeitssystem_id=eq." + s.id).catch(() => []) || [];
       if(ba[0] && ba[0].inhalt && typeof ba[0].inhalt === "object") v.ba = ba[0].inhalt;
       await apiSend("POST", "/rest/v1/as_maschinentyp?on_conflict=slug", { slug, titel, vorlage: v, quelle: "Betrieb " + asHeute(), aktiv: true, kunde_slug: AS.kunde }, "resolution=merge-duplicates,return=minimal");
+      if(typeof AS_TYPEN !== "undefined") AS_TYPEN = null;
       asMeldung("Vorlage „" + titel + "“ gespeichert – bei der nächsten Begehung unter „Maschine fertig“ wählbar"); } }] });
+}
+/* Maßnahmen aus der Typ-Vorlage, die noch keine Begehung bestätigt hat (Anlage über „Anlage anlegen“ aus der Bibliothek, 23.11.2026) */
+const AS_VORL_MN = "Schutzmaßnahmen lt. Vorlage (bei der Begehung bestätigen) – ";
+function asVorlageMn(g){
+  if(asMassnahmenZu(g.id).length) return [];
+  const z = String(g.beschreibung || "").split("\n").find(l => l.startsWith(AS_VORL_MN));
+  return z ? z.slice(AS_VORL_MN.length).split(" · ").map(x => { const m = x.match(/^([STOP]): ([\s\S]*)$/); return m ? [m[1], m[2]] : ["T", x]; }) : [];
 }
 /* Plausibilitätsprüfung (Fahrplan Schritt 4, 20.11.2026): Hinweise je Arbeitssystem, nur Anzeige – nichts wird gesperrt */
 function asBdaPruefung(s){
   const tk = asT("as_taetigkeit").filter(t => t.arbeitssystem_id === s.id);
   const gef = asT("as_gefaehrdung").filter(g => g.arbeitssystem_id === s.id && g.art !== "ressource");
   const h = [];
+  const unbest = gef.filter(g => asVorlageMn(g).length).length;
+  if(unbest) h.push([null, "Begehung", `${unbest} Gefährdung${unbest === 1 ? "" : "en"} mit Maßnahmen aus der Vorlage, noch nicht bestätigt – bei der Begehung „Maschine fertig“ durchgehen`]);
   gef.forEach(g => { const v = asRisiko(g.w_v, g.s_v), n = asRisiko(g.w_n, g.s_n), ms = asMassnahmenZu(g.id);
     if(!v) h.push([g.id, g.kurz, "nicht bewertet (W und S fehlen)"]);
     else if(n > v) h.push([g.id, g.kurz, `Risiko danach (${n}) höher als heute (${v})`]);
     if(!String(g.rechtsquelle || "").trim()) h.push([g.id, g.kurz, "keine Fundstelle (Rechtsquelle)"]);
-    if(asGefRisiko(g) >= 9 && !ms.some(m => m.status !== "wirksam")) h.push([g.id, g.kurz, "Risiko hoch, aber keine offene Maßnahme"]);
+    if(asGefRisiko(g) >= 9 && !ms.some(m => m.status !== "wirksam") && !asVorlageMn(g).length) h.push([g.id, g.kurz, "Risiko hoch, aber keine offene Maßnahme"]);
     const ohne = ms.filter(m => m.status === "offen" && (!m.verantwortlich || !m.termin)).length;
     if(ohne && asGefRisiko(g) >= 4) h.push([g.id, g.kurz, `${ohne} offene Maßnahme${ohne === 1 ? "" : "n"} ohne Verantwortlichen oder Termin`]); });
   tk.forEach(t => { if(String(t.name || "").length > 60 || /festgestellt|begehung|notiz/i.test(t.name || "")) h.push([null, t.name, "Tätigkeitsname sieht aus wie eine Notiz – kurz benennen, Text ins Hinweisfeld"]);
@@ -149,9 +159,10 @@ function asBdaTabelle(box, s){
       const stand = e => { if(!e.alle) return asStatusChip(e.m); const w = e.alle.filter(x => x.status === "wirksam").length;
         return asChip(w + " von " + e.alle.length + " Anlagen wirksam", w === e.alle.length ? "gruen" : "gelb"); };
       const mz = ms.map(e => `<div class="bd-ms bda-klick" ${e.alle ? `data-mg="${e.m.gruppe}"` : `data-mk="${e.m.id}"`} title="Maßnahme öffnen${e.m.verantwortlich ? " · " + esc(e.m.verantwortlich) : ""}${e.m.termin ? " · bis " + asDat(e.m.termin) : ""}">${asStopChip(e.m.stop)}<span>${esc(e.m.text)}</span>${stand(e)}</div>`).join("")
+        || asVorlageMn(g).map(([k, t]) => `<div class="bd-ms bd-vorl" title="Maßnahme aus der Vorlage – bei der Begehung bestätigen oder als fehlend melden">${asStopChip(k)}<span>${esc(t)}</span>${asChip("lt. Vorlage", "grau")}</div>`).join("")
         || `<div class="hinweis">keine Maßnahme erfasst</div>`;
       const off = mnOffen(g).length, alle = asMassnahmenZu(g.id).length, ueber = mnOffen(g).some(m => m.status === "offen" && m.termin && m.termin < asHeute());
-      const st = !alle ? asChip("keine Maßnahme", "grau") : !off ? asChip("wirksam", "gruen") : asChip(off + " offen", ueber ? "rot" : "gelb");
+      const st = !alle ? (asVorlageMn(g).length ? asChip("Begehung offen", "grau") : asChip("keine Maßnahme", "grau")) : !off ? asChip("wirksam", "gruen") : asChip(off + " offen", ueber ? "rot" : "gelb");
       return `<tr><td class="bd-nr">${i + 1}</td>
         <td class="bd-gef bda-klick" data-gk="${g.id}" title="Gefährdung bearbeiten"><div class="bd-g1">${esc(g.kurz)}${g.art === "belastung" ? ` <span class="hinweis">Belastung</span>` : ""}</div><div class="bd-g2" title="${esc(g.rechtsquelle || "")}">${esc(g.rechtsquelle || g.faktor || "")}</div></td>
         <td class="bd-wann bda-klick" data-gk="${g.id}" title="${esc(wann(g))}">${esc(wann(g))}</td>

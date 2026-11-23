@@ -7,14 +7,62 @@ const AS_BG_FAKTOR = [[/psych/, "10 Psychische Belastung"], [/physische/, "9 Phy
   [/mechan|absturz|stolper|rutsch|druck/, "1 Mechanische Gefährdungen"]];
 function asBgFaktor(kat){ const k = String(kat || "").toLowerCase(), t = AS_BG_FAKTOR.find(([m]) => m.test(k)); return t ? t[1] : "11 Sonstige"; }
 
+/* ---------- Typ-Bibliothek (as_maschinentyp): Begehung, „Anlage anlegen“, Import und Einrichtungs-Assistent (23.11.2026) ----------
+   OAK-Vorlagen (kunde_slug leer) + eigene Vorlagen des Betriebs (Stufe 14). Eine Anlage ohne passenden Typ bekommt „Maschine allgemein“. */
+let AS_TYPEN = null;
+async function asTypen(){
+  if(AS_TYPEN && AS_TYPEN.kunde === AS.kunde) return AS_TYPEN.liste;
+  const r = await apiGet("/rest/v1/as_maschinentyp?select=slug,titel,vorlage,kunde_slug&aktiv=is.true&order=titel&or=(kunde_slug.is.null,kunde_slug.eq." + encodeURIComponent(AS.kunde) + ")").catch(() => null);
+  const liste = (r || []).map(t => t.kunde_slug ? Object.assign(t, { titel: t.titel + " (eigene Vorlage)" }) : t);
+  if(r) AS_TYPEN = { kunde: AS.kunde, liste };
+  return liste;
+}
+/* Passender Typ zu Maschinenart oder Name: längstes gemeinsames Wort (z. B. „Schleifmaschine“ → Doppelschleifbock / Schleifmaschine ortsfest,
+   „Stapler“ → Gabelstapler); eigene Vorlagen gehen bei Gleichstand vor; sonst „Maschine allgemein“ */
+function asTypFuer(text, typen){
+  const n = s => String(s || "").toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
+  const name = n(text), woerter = name.split(/[^a-z0-9]+/).filter(w => w.length >= 5);
+  const allg = typen.find(t => t.slug === "maschine-allgemein") || null;
+  if(!name.trim()) return allg;
+  const leer = new Set(["maschine", "ortsfest", "allgemein", "eigene", "vorlage", "entnahmeroboter"]);
+  let best = null, lang = 0;
+  for(const t of typen){ if(t.slug === "maschine-allgemein") continue;
+    for(const w of n(t.titel.replace(/\(eigene Vorlage\)$/, "")).split(/[^a-z0-9]+/).filter(x => x.length >= 5 && !leer.has(x))){
+      const l = (name.includes(w) ? w.length : Math.max(0, ...woerter.filter(x => w.includes(x)).map(x => x.length))) + (t.kunde_slug ? 0.5 : 0);
+      if(l >= 5 && l > lang){ lang = l; best = t; } } }
+  return best || allg;
+}
+/* Kurzbezeichnung einer Gefährdung aus der Vorlage – identisch mit asBgSpeichern, damit eine spätere Begehung dieselbe Zeile trifft */
+function asTypKurz(h){ return h.taetigkeit !== undefined ? h.sub : [h.kat, h.sub].filter(Boolean).join(" – "); }
+/* Typ-Vorlage auf eine neue, leere Beurteilung anwenden (ohne Begehung): Tätigkeiten mit Fundstelle, alle Gefährdungen mit Bewertung,
+   BA als Entwurf. Die Maßnahmen der Vorlage stehen nur als „lt. Vorlage, bei der Begehung bestätigen“ in der Gefährdung –
+   in die Maßnahmenliste kommen sie erst über die Begehung („Maschine fertig“), die dieselben Zeilen ergänzt. */
+async function asTypAnwenden(s, typ, w){
+  const v = typ.vorlage || {}, hz = v.hazards || [], tkId = {};
+  for(const [i, t] of (v.taetigkeiten || []).entries()){
+    if(!hz.some(h => h.taetigkeit === t.key)) continue;
+    const r = await apiSend("POST", "/rest/v1/as_taetigkeit", { kunde_slug: AS.kunde, arbeitssystem_id: s.id, name: t.name, rollen: asListe(t.rollen), rechtsquelle: t.rechtsquelle || null, sort: i }, "return=representation");
+    tkId[t.key] = r[0].id;
+  }
+  const top = h => (h.top || []).filter(t => Array.isArray(t) && t[1] && !["–", "-"].includes(t[1]));
+  const zeilen = hz.map((h, i) => { const m = top(h).map(t => t[0] + ": " + t[1]).join(" · ");
+    return { kunde_slug: AS.kunde, arbeitssystem_id: s.id, art: "gefaehrdung", faktor: asBgFaktor(h.kat), kurz: asTypKurz(h), sort: 100 + i,
+      taetigkeit_id: h.taetigkeit ? tkId[h.taetigkeit] || null : null, situation: h.situation || "", rechtsquelle: h.rq || null,
+      beschreibung: [h.bedingt === "linearroboter" ? "Gilt nur bei Anlagen mit Linearroboter – sonst diese Gefährdung löschen." : "", h.situation || "",
+        m ? AS_VORL_MN + m : "", h.rq ? "Rechtsquelle: " + h.rq : "Rechtsquelle: bitte prüfen"].filter(Boolean).join("\n"),
+      w_v: h.wV ?? null, s_v: h.sV ?? null, w_n: h.wN ?? null, s_n: h.sN ?? null }; });
+  if(zeilen.length) await apiSend("POST", "/rest/v1/as_gefaehrdung", zeilen, "return=minimal");
+  if(v.ba) await apiSend("POST", "/rest/v1/as_ba", { kunde_slug: AS.kunde, arbeitssystem_id: s.id, maschinen_id: w.mid || null, titel: "Betriebsanweisung " + w.name,
+    inhalt: v.ba, status: "entwurf", einheit_id: w.einheit_id || null, geaendert_von: AS.ich }, "return=minimal");
+  return zeilen.length;
+}
+
 async function asBgFertig(box, p){
-  // OAK-Vorlagen (kunde_slug leer) + eigene Vorlagen des Betriebs (Stufe 14, 20.11.2026)
-  const typen = (await apiGet("/rest/v1/as_maschinentyp?select=slug,titel,vorlage,kunde_slug&aktiv=is.true&order=titel&or=(kunde_slug.is.null,kunde_slug.eq." + encodeURIComponent(AS.kunde) + ")").catch(() => []) || [])
-    .map(t => t.kunde_slug ? Object.assign(t, { titel: t.titel + " (eigene Vorlage)" }) : t);
-  const dok = asAnlagen().find(x => x.maschinen_id === p.maschinen_id), name = String((dok && dok.maschinentyp) || p.maschine).toLowerCase();
-  // Vorschlag: spezifischster Typ, dessen erstes Titelwort im Namen steht; „Maschine allgemein“ nur als Rückfall (20.11.2026)
-  const passt = typen.filter(t => t.slug !== "maschine-allgemein" && name.includes(t.titel.toLowerCase().split(" ")[0])).sort((x, y) => y.titel.split(" ")[0].length - x.titel.split(" ")[0].length);
-  const tipp = p.typ_slug || (passt[0] || typen.find(t => t.slug === "maschine-allgemein") || {}).slug || "";
+  const typen = await asTypen();
+  const dok = asAnlagen().find(x => x.maschinen_id === p.maschinen_id);
+  const sys = p.maschinen_id ? asT("as_arbeitssystem").find(x => asListe(x.anlagen).includes(p.maschinen_id) && !x.stillgelegt_am) : null;
+  // Vorschlag: Typ, mit dem die Anlage angelegt wurde, sonst passend zu Maschinenart/Name; „Maschine allgemein“ nur als Rückfall
+  const tipp = p.typ_slug || (sys && sys.dok && sys.dok.meta && sys.dok.meta.typ_slug) || (asTypFuer((dok && dok.maschinentyp) || p.maschine, typen) || {}).slug || "";
   const dl = asDialog({ titel: "Maschine fertig: " + p.maschine, inhalt: `<div class="form">${asAuswahl("Maschinentyp", "typ", tipp, [["", "Bitte wählen …"]].concat(typen.map(t => [t.slug, t.titel])), "voll")}</div>
       <p class="hinweis">Fehlt der Typ, „Maschine allgemein“ wählen und den Entwurf anpassen.</p>${AS.admin ? `<label class="btn sek klein">Vorlage hochladen (JSON)<input type="file" id="bgVorlage" accept=".json" hidden></label>` : ""}`,
     knoepfe: [{ t: "Entwurf erstellen", fn: async d => { const w = asWerte(d), typ = typen.find(t => t.slug === w.typ);
@@ -25,7 +73,7 @@ async function asBgFertig(box, p){
       const titel = (v.meta && (v.meta.maschinenart || v.meta.typ)) || v._typ || up.files[0].name.replace(/\.json$/, "");
       const slug = String(titel).toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       await apiSend("POST", "/rest/v1/as_maschinentyp?on_conflict=slug", { slug, titel, vorlage: v, quelle: "Upload " + asHeute(), aktiv: true }, "resolution=merge-duplicates,return=minimal");
-      asMeldung("Vorlage gespeichert"); asBgFertig(box, p); }catch(e){ asMeldung("Vorlage nicht lesbar: " + e.message); } };
+      AS_TYPEN = null; asMeldung("Vorlage gespeichert"); asBgFertig(box, p); }catch(e){ asMeldung("Vorlage nicht lesbar: " + e.message); } };
 }
 
 async function asBgLaeuft(box, p, typ, antworten){
@@ -91,7 +139,7 @@ async function asBgSpeichern(box, p, typ, e, d, signieren){
     const alleTop = zu ? [] : (q.top || []).filter(t => Array.isArray(t) && t[1] && !["–", "-"].includes(t[1]));
     const fehlen = alleTop.filter((t, k) => w["fehlt" + k]), vorhanden = alleTop.filter((t, k) => !w["fehlt" + k]);
     const kat = q.kat, top = vorhanden.map(t => t[0] + ": " + t[1]).join(" · ");
-    neu.push({ kat, fehlen, vorhanden, tk: zu ? null : asBgTaetigkeit(typ, q), kurz: zu ? (q.kat || "Gefährdung") : (q.taetigkeit !== undefined ? q.sub : [q.kat, q.sub].filter(Boolean).join(" – ")), rq: zu ? "" : q.rq, text: [w.situation, top ? "Schutzmaßnahmen lt. BdA – " + top : "", !zu && q.rq ? "Rechtsquelle: " + q.rq : "Rechtsquelle: bitte prüfen"].filter(Boolean).join("\n"), w_v: w.wV, s_v: w.sV, w_n: w.wN, s_n: w.sN, situation: w.situation }); });
+    neu.push({ kat, fehlen, vorhanden, tk: zu ? null : asBgTaetigkeit(typ, q), kurz: zu ? (q.kat || "Gefährdung") : asTypKurz(q), rq: zu ? "" : q.rq, text: [w.situation, top ? "Schutzmaßnahmen lt. BdA – " + top : "", !zu && q.rq ? "Rechtsquelle: " + q.rq : "Rechtsquelle: bitte prüfen"].filter(Boolean).join("\n"), w_v: w.wV, s_v: w.sV, w_n: w.wN, s_n: w.sN, situation: w.situation }); });
   if(!neu.length){ asMeldung("Keine Gefährdung ausgewählt"); return false; }
   const mid = p.maschinen_id && p.maschinen_id !== "ALLG-HALLE" ? p.maschinen_id : null;
   await asLaden();

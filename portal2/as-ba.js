@@ -128,16 +128,21 @@ function asBaVorschlagAus(name, liste){
 
 /* Neue Anlage (Cockpit): Beurteilung und BA direkt in der Datenbank anlegen – aus der Vorlage einer gleichen Anlage
    kopiert (Gefährdungen, Schutzmaßnahmen, BA-Texte; ohne Fotos und Mängel), sonst leer. Plan „eine Welt“, Schritt 4. */
-async function asAnlageBdaAnlegen(mid, w, vorlageMid, vorlageSlug){
-  /* vorlageSlug: Vorlage aus einem anderen Betrieb (OAK-Vorlagebetrieb im Einrichtungs-Assistenten) – sonst der eigene */
+async function asAnlageBdaAnlegen(mid, w, vorlageMid, vorlageSlug, typ){
+  /* vorlageSlug: Vorlage aus einem anderen Betrieb – sonst der eigene. typ: Typ-Vorlage aus der Bibliothek (as_maschinentyp, 23.11.2026),
+     gilt nur ohne vorlageMid: Tätigkeiten, Gefährdungen und BA kommen dann aus der Bibliothek (asTypAnwenden, as-begehung-entwurf.js) */
   const k = "&kunde_slug=eq." + encodeURIComponent(vorlageSlug || AS.kunde);
   const vSys = vorlageMid ? ((await apiGet("/rest/v1/as_arbeitssystem?select=*&anlagen=cs." + encodeURIComponent(JSON.stringify([vorlageMid])) + "&order=art.asc,sort.asc" + k).catch(() => [])) || [])[0] : null;
   const dok = { meta: { maschine: w.name, maschinenId: mid, hersteller: w.hersteller || "", typ: w.typ || "", baujahr: w.baujahr || "", seriennr: w.seriennr || "",
     bereich: w.bereich || "", standort: w.bereich || "", maschinenart: w.art || "", datum: asHeute().split("-").reverse().join("."),
-    ersteller: AS.ich || "", entwurf: true, vorlage: vorlageMid || "" }, rechtsquellen: (vSys && vSys.dok && vSys.dok.rechtsquellen) || [], protokoll: {}, maengel: [] };
+    ersteller: AS.ich || "", entwurf: true, vorlage: vorlageMid || "", typ_slug: (!vSys && typ && typ.slug) || "" }, rechtsquellen: (vSys && vSys.dok && vSys.dok.rechtsquellen) || [], protokoll: {}, maengel: [] };
   const sys = (await apiSend("POST", "/rest/v1/as_arbeitssystem", { kunde_slug: AS.kunde, name: w.name + " (" + mid + ")", art: "anlage", anlagen: [mid],
+    beschreibung: !vSys && typ ? "Vorlage „" + typ.titel + "“ aus der Bibliothek" : null,
     rollen: vSys ? vSys.rollen : [], einheit_id: w.einheit_id || null, dok, quelle_id: mid, sort: 900 }, "return=representation"))[0];
-  if(!vSys) return sys;
+  if(!vSys){
+    if(typ && typeof asTypAnwenden === "function") await asTypAnwenden(sys, typ, Object.assign({}, w, { mid }));
+    return sys;
+  }
   const alt = String((vSys.dok && vSys.dok.meta && vSys.dok.meta.maschine) || "");
   const tausch = x => alt.length >= 3 ? JSON.parse(JSON.stringify(x).split(alt).join(w.name)) : x;
   const gef = (await apiGet("/rest/v1/as_gefaehrdung?select=*&arbeitssystem_id=eq." + vSys.id + "&order=sort.asc").catch(() => [])) || [];
