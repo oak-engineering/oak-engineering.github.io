@@ -37,7 +37,7 @@ async function ladeNachweiseStart(){
     NACHWEISE = await apiGet("/rest/v1/unterweisungsnachweise?select=" + UW_SPALTEN +
                              "&order=created_at.desc", false) || [];
   }catch(e){ NACHWEISE = []; }
-  try{ UW_P = await apiGet("/rest/v1/uw_person?select=id,name,status,kunde_slug,uw_person_rolle(rolle_id)&order=name.asc", false) || []; }catch(e){ UW_P = []; }
+  try{ UW_P = await apiGet("/rest/v1/uw_person?select=id,name,status,leiharbeit,kunde_slug,uw_person_rolle(rolle_id)&order=name.asc", false) || []; }catch(e){ UW_P = []; }
   try{ UW_TOK = await apiGet("/rest/v1/portal_terminal_token?select=token,kunde_slug,bezeichnung&aktiv=is.true", false) || []; }catch(e){ UW_TOK = []; }
   try{ UW_BELEG = await apiGet("/rest/v1/portal_belegschaft?select=*", false) || []; }catch(e){ UW_BELEG = []; }
   await uwEinarbeitungLaden();
@@ -202,7 +202,27 @@ function renderBausteine(sec){
    2. Wer ist fällig: die Beschäftigten mit Stand – hier legt der Schichtführer Mitarbeiter an.
    3. Nachweise: was am Terminal abgeschlossen wurde, als Tabelle zum Herunterladen.
    Der Stand je Person wird über den Namen ermittelt (so, wie er am Terminal eingetippt wurde). */
-function uwPersonen(){ return (AKTIV ? UW_P.filter(p => p.kunde_slug === AKTIV) : UW_P).filter(p => p.status !== "archiviert"); }
+/* Aktiv = Status „aktiv" (oder leer). „ruhend" und „archiviert" sind inaktiv: nicht fällig, nicht gezählt,
+   Nachweise bleiben erhalten und die Person ist jederzeit wieder aktivierbar (Fehler WIBO, 25.11.2026). */
+function uwPersAktiv(p){ return !p.status || p.status === "aktiv"; }
+function uwPersonenAlle(){ return AKTIV ? UW_P.filter(p => p.kunde_slug === AKTIV) : UW_P; }
+function uwPersonen(){ return uwPersonenAlle().filter(uwPersAktiv); }
+/* Personen, die NUR über Nachweise bekannt sind (am Terminal eingetippt, nie angelegt). Abgleich gegen ALLE
+   Personen des Betriebs – auch inaktive –, sonst tauchte eine deaktivierte Person über ihren Nachweis wieder
+   als „fällig" auf. */
+function uwNurNachweis(rows){
+  const alle = uwPersonenAlle(), namen = new Set(alle.map(p => uwNorm(p.name))), ids = new Set(alle.map(p => p.id));
+  return uwJeMitarbeiter(rows).filter(n => !namen.has(uwNorm(n.mitarbeiter_name)) && !(n.person_id && ids.has(n.person_id)));
+}
+/* Namen (normiert) der inaktiven Personen – deren Nachweise zählen nicht mehr in die Belegschaftszahlen. */
+function uwInaktivNamen(){ return new Set(uwPersonenAlle().filter(p => !uwPersAktiv(p)).map(p => uwNorm(p.name))); }
+/* Leiharbeit: Merkmal an der Person (uw_person.leiharbeit); fehlt es, gilt die Angabe „Beschäftigt bei"
+   aus dem jüngsten Nachweis. */
+function uwPersLeih(p){
+  if(p && typeof p.leiharbeit === "boolean") return p.leiharbeit;
+  const n = p ? uwLetzterNachweis(p.name) : null;
+  return n ? uwIstLeih(n) : false;
+}
 function uwGruppen(){ return (AKTIV ? UW_R.filter(r => r.kunde_slug === AKTIV) : UW_R).filter(r => r.status !== "archiviert" && r.typ !== "besucher"); }
 function uwNorm(s){ return String(s || "").toLowerCase().replace(/\s+/g, " ").trim().split(" ").sort().join(" "); }
 function uwLetzterNachweis(name){
@@ -249,26 +269,31 @@ function renderUnterweisungen(wrap){
   /* 2. Wer ist fällig – EINE Liste (Nikolai 16.09.: nicht doppelt unter „Nachweise"): je Person Stand und
         der letzte Nachweis als PDF mit Unterschrift. Alle Nachweise stehen im Excel-Export. */
   const pers = uwPersonen();
-  const zusatz = uwJeMitarbeiter(rows).filter(n => !pers.some(p => uwNorm(p.name) === uwNorm(n.mitarbeiter_name)));
+  const inaktiv = uwPersonenAlle().filter(p => !uwPersAktiv(p));
+  const zusatz = uwNurNachweis(rows);
   const pdfKnopf = n => (n && n.id) ? `<button class="btn-klein" data-uwpdf="${esc(n.id)}">Nachweis (PDF)</button>` : "";
-  const zeilen = pers.map(p => {
+  const persZeile = (p, aktiv) => {
     const n = uwLetzterNachweis(p.name);
-    const st = n ? uwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" };
-    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(uwGruppenName(p) || "")}" data-stand="${n ? st.klasse : "kritisch"}" data-einarb="${uwEinarbeitung(p.name) ? "ja" : "nein"}">
-      <td><b>${esc(p.name)}</b></td><td>${esc(uwGruppenName(p) || "—")}</td>
+    const st = !aktiv ? { klasse: "grau", text: p.status === "archiviert" ? "inaktiv (ausgeschieden)" : "inaktiv" }
+             : n ? uwStatus(n) : { klasse: "kritisch", text: "noch keine Unterweisung" };
+    const leih = uwPersLeih(p);
+    return { rang: aktiv ? (UW_AMPEL_RANG[st.klasse] ?? 2) : 9, aktiv, html: `<tr data-name="${esc(p.name.toLowerCase())}" data-gruppe="${esc(uwGruppenName(p) || "")}" data-stand="${aktiv ? (n ? st.klasse : "kritisch") : "inaktiv"}" data-aktiv="${aktiv ? "ja" : "nein"}" data-leih="${leih ? "ja" : "nein"}" data-einarb="${uwEinarbeitung(p.name) ? "ja" : "nein"}">
+      <td><b>${esc(p.name)}</b>${leih ? '<div class="uw-leise">Leiharbeit</div>' : ""}</td><td>${esc(uwGruppenName(p) || "—")}</td>
       <td>${n ? uwDatum(n.created_at) + (uwGeraet(n) ? `<div class="uw-leise">${esc(uwGeraet(n))}</div>` : "") : "—"}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
-      <td>${uwEinarbZelle(p.name, uwGruppenName(p))}</td>
-      <td class="uw-knoepfe">${pdfKnopf(n)}<button class="btn-klein" data-pedit="${esc(p.id)}">ändern</button></td></tr>` };
-  }).concat(zusatz.map(n => {
-    const st = uwStatus(n);
-    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}" data-einarb="${uwEinarbeitung(n.mitarbeiter_name) ? "ja" : "nein"}">
+      <td>${aktiv ? uwEinarbZelle(p.name, uwGruppenName(p)) : "—"}</td>
+      <td class="uw-knoepfe">${pdfKnopf(n)}<button class="btn-klein" data-pedit="${esc(p.id)}">${aktiv ? "ändern" : "wieder aktivieren"}</button></td></tr>` };
+  };
+  const zeilenAlle = pers.map(p => persZeile(p, true)).concat(zusatz.map(n => {
+    const st = uwStatus(n), leih = uwIstLeih(n);
+    return { rang: (UW_AMPEL_RANG[st.klasse] ?? 2), aktiv: true, html: `<tr data-name="${esc((n.mitarbeiter_name || "").toLowerCase())}" data-gruppe="${esc(n.funktion || "")}" data-stand="${st.klasse}" data-aktiv="ja" data-leih="${leih ? "ja" : "nein"}" data-einarb="${uwEinarbeitung(n.mitarbeiter_name) ? "ja" : "nein"}">
       <td><b class="uw-namelink" data-nwname="${esc(n.id)}" title="Name korrigieren" style="cursor:pointer">${esc(n.mitarbeiter_name)}</b></td>
       <td>${esc(n.funktion || "—")}${n.bereich ? `<div class="uw-leise">${esc(n.bereich)}</div>` : ""}</td><td>${uwDatum(n.created_at)}${uwGeraet(n) ? `<div class="uw-leise">${esc(uwGeraet(n))}</div>` : ""}</td>
       <td><span class="uw-badge uw-${st.klasse}">${esc(st.text)}</span></td>
       <td>${uwEinarbZelle(n.mitarbeiter_name, n.funktion)}</td>
-      <td class="uw-knoepfe">${pdfKnopf(n)}</td></tr>` };
-  })).sort((a, b) => a.rang - b.rang);
+      <td class="uw-knoepfe">${pdfKnopf(n)}<button class="btn-klein" data-nwedit="${esc(n.id)}">ändern</button></td></tr>` };
+  })).concat(inaktiv.map(p => persZeile(p, false))).sort((a, b) => a.rang - b.rang);
+  const zeilen = zeilenAlle.filter(z => z.aktiv);
   const faellig = zeilen.filter(z => z.rang <= 1).length;
   wrap.appendChild(uwBelegBlock());
   const sekPers = document.createElement("section"); sekPers.className = "sektion";
@@ -279,20 +304,27 @@ function renderUnterweisungen(wrap){
         <button class="btn sek" id="uwPersNeu">Mitarbeiter anlegen</button>
         <button class="btn sek" id="uwNachtrag">Nachweis nachtragen</button></span></div>
     <div id="uwPersForm"></div>
-    ${zeilen.length ? `<div class="mg-filter uw-filter">
+    ${zeilenAlle.length ? `<div class="mg-filter uw-filter">
         <input type="search" class="uw-suche" id="uwfName" placeholder="Name suchen" autocomplete="off">
-        <select class="uw-fassung" id="uwfGruppe"><option value="">Alle Gruppen</option>${[...new Set(pers.map(p => uwGruppenName(p)).concat(zusatz.map(n => n.funktion)).filter(Boolean).flatMap(g => g.split(", ")))].sort().map(g => `<option>${esc(g)}</option>`).join("")}</select>
-        <select class="uw-fassung" id="uwfStand"><option value="">Alle</option><option value="faellig">fällig oder überfällig</option><option value="gut">gültig</option><option value="einarb">Einarbeitung offen</option></select>
+        <select class="uw-fassung" id="uwfGruppe"><option value="">Gruppe: alle</option>${[...new Set(pers.map(p => uwGruppenName(p)).concat(zusatz.map(n => n.funktion)).filter(Boolean).flatMap(g => g.split(", ")))].sort().map(g => `<option>${esc(g)}</option>`).join("")}</select>
+        <select class="uw-fassung" id="uwfLeih" title="Stammkräfte oder Leiharbeit"><option value="">Beschäftigte: alle</option><option value="stamm">Stammkräfte</option><option value="leih">Leiharbeit</option></select>
+        <select class="uw-fassung" id="uwfStand"><option value="">Stand: alle aktiven</option><option value="faellig">fällig oder überfällig</option><option value="gut">gültig</option><option value="einarb">Einarbeitung offen</option><option value="inaktiv">inaktive Mitarbeiter${inaktiv.length ? " (" + inaktiv.length + ")" : ""}</option></select>
         <span class="uw-leise" id="uwfZahl"></span></div>` : ""}
-    ${zeilen.length ? `<div class="tabelle-wrap"><table class="uw-tab" id="uwListe">
+    ${zeilenAlle.length ? `<div class="tabelle-wrap"><table class="uw-tab" id="uwListe">
       <thead><tr><th>Name</th><th>Gruppe</th><th>zuletzt unterwiesen</th><th>Stand</th><th>Praktische Einarbeitung</th><th></th></tr></thead>
-      <tbody>${zeilen.map(z => z.html).join("")}</tbody></table></div>`
+      <tbody>${zeilenAlle.map(z => z.html).join("")}</tbody></table></div>`
     : `<div class="ck-fuss">Noch niemand eingetragen. <b>„Mitarbeiter anlegen"</b> – oder die Beschäftigten tragen sich am
         Terminal selbst ein und erscheinen dann hier.</div>`}`;
   wrap.appendChild(sekPers);
   sekPers.querySelector("#uwPersNeu").addEventListener("click", () => uwPersonForm(null));
   sekPers.querySelector("#uwNachtrag").addEventListener("click", () => uwNachtragForm());
   sekPers.querySelectorAll("[data-pedit]").forEach(b => b.addEventListener("click", () => uwPersonForm(UW_P.find(p => p.id === b.dataset.pedit))));
+  /* Person nur aus Nachweisen: „ändern" legt sie als Mitarbeiter an (Name, Gruppe, Leiharbeit vorbelegt) –
+     erst dann lässt sie sich auf inaktiv setzen. */
+  sekPers.querySelectorAll("[data-nwedit]").forEach(b => b.addEventListener("click", () => {
+    const n = NACHWEISE.find(x => x.id === b.dataset.nwedit); if(!n) return;
+    uwPersonForm(null, n.mitarbeiter_name, n.funktion, { leih: uwIstLeih(n), ausNachweis: true });
+  }));
   sekPers.querySelectorAll("[data-uwpdf]").forEach(b => b.addEventListener("click", () => uwNachweisPdf(b.dataset.uwpdf)));
   /* Name im Nachweis korrigieren (Tippfehler, fehlender Nachname) – alle Nachweise dieser Schreibweise */
   sekPers.querySelectorAll("[data-nwname]").forEach(b => b.addEventListener("click", async () => {
@@ -314,15 +346,19 @@ function renderUnterweisungen(wrap){
   /* Filter: Name, Gruppe, Stand – direkt in der Liste, ohne Neuladen */
   const filtern = () => {
     const q = (sekPers.querySelector("#uwfName") || {}).value || "", g = (sekPers.querySelector("#uwfGruppe") || {}).value || "", s = (sekPers.querySelector("#uwfStand") || {}).value || "";
-    let n = 0;
+    const l = (sekPers.querySelector("#uwfLeih") || {}).value || "";
+    let n = 0, basis = 0;
     sekPers.querySelectorAll("#uwListe tbody tr").forEach(tr => {
-      const ok = (!q || tr.dataset.name.includes(q.toLowerCase().trim())) && (!g || (", " + tr.dataset.gruppe + ",").includes(", " + g + ","))
-        && (!s || (s === "einarb" ? tr.dataset.einarb === "nein" : s === "gut" ? tr.dataset.stand === "gut" : tr.dataset.stand !== "gut"));
+      const aktivOk = s === "inaktiv" ? tr.dataset.aktiv === "nein" : tr.dataset.aktiv !== "nein";
+      if(aktivOk) basis++;
+      const ok = aktivOk && (!q || tr.dataset.name.includes(q.toLowerCase().trim())) && (!g || (", " + tr.dataset.gruppe + ",").includes(", " + g + ","))
+        && (!l || (l === "leih" ? tr.dataset.leih === "ja" : tr.dataset.leih !== "ja"))
+        && (!s || s === "inaktiv" || (s === "einarb" ? tr.dataset.einarb === "nein" : s === "gut" ? tr.dataset.stand === "gut" : tr.dataset.stand !== "gut"));
       tr.hidden = !ok; if(ok) n++;
     });
-    const z = sekPers.querySelector("#uwfZahl"); if(z) z.textContent = n + " von " + zeilen.length;
+    const z = sekPers.querySelector("#uwfZahl"); if(z) z.textContent = n + " von " + basis;
   };
-  ["#uwfName", "#uwfGruppe", "#uwfStand"].forEach(id => { const el = sekPers.querySelector(id); if(el) el.addEventListener(id === "#uwfName" ? "input" : "change", filtern); });
+  ["#uwfName", "#uwfGruppe", "#uwfLeih", "#uwfStand"].forEach(id => { const el = sekPers.querySelector(id); if(el) el.addEventListener(id === "#uwfName" ? "input" : "change", filtern); });
   filtern();
 
   /* 3. Versionsarchiv (eingeklappt, nur Admin/Fachkraft): je Thema Version 1.0 und 2.0 + Auswahl fürs Terminal */
@@ -635,18 +671,29 @@ function uwNachtragForm(){
   });
 }
 
-function uwPersonForm(p, vorName, vorGruppe){
+function uwPersonForm(p, vorName, vorGruppe, vor){
   const box = document.getElementById("uwPersForm"); if(!box) return;
+  vor = vor || {};
   const gruppen = uwGruppen();
   const gewaehlt = new Set(p ? (p.uw_person_rolle || []).map(x => x.rolle_id) : []);
-  if(!p && vorGruppe){ const g = gruppen.find(x => x.name === vorGruppe); if(g) gewaehlt.add(g.id); }
+  if(!p && vorGruppe){ vorGruppe.split(/,\s*/).forEach(n => { const g = gruppen.find(x => x.name === n); if(g) gewaehlt.add(g.id); }); }
+  const leih = p ? uwPersLeih(p) : !!vor.leih;
+  const st = p ? (p.status || "aktiv") : "aktiv";
+  const zeigeStatus = !!p || !!vor.ausNachweis;
   box.innerHTML = `<div class="uw-form">
-    <h3 class="uw-h3" style="margin-top:0">${p ? "Mitarbeiter ändern" : "Mitarbeiter anlegen"}</h3>
+    <h3 class="uw-h3" style="margin-top:0">${p ? "Mitarbeiter ändern" : vor.ausNachweis ? "Mitarbeiter übernehmen" : "Mitarbeiter anlegen"}</h3>
     <label class="uw-lab" for="uwPName">Vor- und Nachname</label>
     <input type="text" id="uwPName" value="${esc(p ? p.name : (vorName || ""))}" placeholder="z. B. Max Müller" autocomplete="off">
     <div class="uw-lab">Gruppe (mehrere möglich)</div>
     <div class="uw-chips">${gruppen.map(g => `<label class="uw-chip"><input type="checkbox" value="${esc(g.id)}"${gewaehlt.has(g.id) ? " checked" : ""}> ${esc(g.name)}</label>`).join("") || '<span class="uw-leise">Noch keine Gruppen angelegt.</span>'}</div>
-    ${p ? `<label class="uw-chip uw-chip-aus"><input type="checkbox" id="uwPAus"> ausgeschieden (nicht mehr anzeigen)</label>` : ""}
+    <div class="uw-chips"><label class="uw-chip"><input type="checkbox" id="uwPLeih"${leih ? " checked" : ""}> Leiharbeit / Zeitarbeit</label></div>
+    ${zeigeStatus ? `<label class="uw-lab" for="uwPStatus">Status</label>
+    <select id="uwPStatus" class="uw-fassung">
+      <option value="aktiv"${st === "aktiv" ? " selected" : ""}>aktiv – wird unterwiesen</option>
+      <option value="ruhend"${st === "ruhend" ? " selected" : ""}>inaktiv – vorübergehend nicht im Betrieb (z. B. Elternzeit, Leiharbeit beendet)</option>
+      <option value="archiviert"${st === "archiviert" ? " selected" : ""}>inaktiv – ausgeschieden</option>
+    </select>
+    <div class="uw-leise">Inaktive Mitarbeiter zählen nicht mehr als fällig. Ihre Nachweise bleiben erhalten; über „Stand: inaktive Mitarbeiter“ lassen sie sich wieder aktivieren.</div>` : ""}
     <div class="uw-form-knoepfe">
       <button class="btn sek" id="uwPSpeichern">${p ? "Speichern" : "Anlegen"}</button>
       <button class="btn-klein" id="uwPAbbruch">Abbrechen</button>
@@ -663,25 +710,33 @@ async function uwPersonSpeichern(p){
   const name = document.getElementById("uwPName").value.trim().replace(/\s+/g, " ");
   if(name.length < 3){ meld.textContent = "Bitte den vollständigen Namen eintragen."; return; }
   const rollen = [...document.querySelectorAll("#uwPersForm .uw-chips input:checked")].map(x => x.value);
-  const aus = document.getElementById("uwPAus");
-  const status = (aus && aus.checked) ? "archiviert" : "aktiv";
-  if(!p && !rollen.length && uwGruppen().length){ meld.textContent = "Bitte mindestens eine Gruppe wählen."; return; }
+  const stEl = document.getElementById("uwPStatus");
+  const status = stEl ? stEl.value : "aktiv";
+  const leihEl = document.getElementById("uwPLeih");
+  const leiharbeit = leihEl ? leihEl.checked : null;
+  /* Gruppe nur beim Neuanlegen von Aktiven verlangen – wer gleich inaktiv übernommen wird, braucht keine */
+  if(!p && status === "aktiv" && !rollen.length && uwGruppen().length){ meld.textContent = "Bitte mindestens eine Gruppe wählen."; return; }
+  /* Doppelt anlegen verhindern: gleicher Name im Betrieb (auch inaktiv) -> diese Person ändern */
+  if(!p){
+    const da = uwPersonenAlle().find(x => uwNorm(x.name) === uwNorm(name));
+    if(da) p = da;
+  }
   meld.textContent = "Speichere …";
   try{
     let id = p ? p.id : null;
     if(p){
       await apiSend("PATCH", "/rest/v1/uw_person?id=eq." + encodeURIComponent(p.id),
-        { name, status, geaendert_am: new Date().toISOString() }, "return=minimal");
+        { name, status, leiharbeit, geaendert_am: new Date().toISOString() }, "return=minimal");
     }else{
       const neu = await apiSend("POST", "/rest/v1/uw_person",
-        { kunde_slug: AKTIV, name, status: "aktiv", sprache: "de" }, "return=representation");
+        { kunde_slug: AKTIV, name, status, leiharbeit, sprache: "de" }, "return=representation");
       id = Array.isArray(neu) ? neu[0].id : neu.id;
     }
     await apiSend("DELETE", "/rest/v1/uw_person_rolle?person_id=eq." + encodeURIComponent(id), null, "return=minimal");
     if(rollen.length) await apiSend("POST", "/rest/v1/uw_person_rolle",
       rollen.map(r => ({ person_id: id, rolle_id: r })), "return=minimal");
-    UW_MELDUNG = p ? (status === "archiviert" ? name + " wird nicht mehr angezeigt." : name + " ist gespeichert.")
-                   : name + " ist angelegt.";
+    UW_MELDUNG = status !== "aktiv" ? name + " ist jetzt inaktiv und zählt nicht mehr als fällig."
+               : p ? name + " ist gespeichert." : name + " ist angelegt.";
     await ladeNachweise();
     renderSektionen();
   }catch(e){
@@ -931,8 +986,12 @@ function uwBelegschaft(){ return UW_BELEG.find(b => b.kunde_slug === AKTIV) || n
 function uwIstLeih(n){ return /leih|zeitarb/i.test(n.bereich || ""); }
 function uwBelegZahlen(){
   const b = uwBelegschaft(); if(!b) return null;
-  const gueltig = uwJeMitarbeiter(uwSichtbar()).filter(n => uwStatus(n).klasse !== "kritisch");
-  const leihOk = gueltig.filter(uwIstLeih).length, stammOk = gueltig.length - leihOk;
+  /* Inaktive (ruhend/ausgeschieden) zählen nicht mit; Leiharbeit nach Merkmal an der Person, sonst nach Nachweis */
+  const raus = uwInaktivNamen(), alle = uwPersonenAlle();
+  const gueltig = uwJeMitarbeiter(uwSichtbar()).filter(n => uwStatus(n).klasse !== "kritisch" && !raus.has(uwNorm(n.mitarbeiter_name)));
+  const istLeih = n => { const p = alle.find(x => uwNorm(x.name) === uwNorm(n.mitarbeiter_name));
+                         return (p && typeof p.leiharbeit === "boolean") ? p.leiharbeit : uwIstLeih(n); };
+  const leihOk = gueltig.filter(istLeih).length, stammOk = gueltig.length - leihOk;
   return { stamm: b.stamm, leih: b.leih, stammOk: Math.min(stammOk, b.stamm), leihOk: Math.min(leihOk, b.leih),
            stammFaellig: Math.max(0, b.stamm - stammOk), leihFaellig: Math.max(0, b.leih - leihOk), hinweis: b.stamm_hinweis || "" };
 }

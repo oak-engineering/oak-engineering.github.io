@@ -756,6 +756,12 @@ a.mg-link:hover{color:var(--gruen);text-decoration:underline}
 .uwt-stelle b{background:#fff3c4}
 .pw-msg.ok{color:#1e7b34}
 .uw-suche{font:inherit;font-size:14px;min-height:44px;padding:8px 12px;border:1px solid #d0d5dd;border-radius:8px;min-width:220px}
+/* Filterleiste „Wer ist fällig": runde Pills (oak-ui-regeln), auf dem Handy untereinander in voller Breite */
+.uw-filter .uw-suche,.uw-filter .uw-fassung{border-radius:22px;min-width:0;padding-left:14px}
+.uw-filter .uw-suche{flex:1 1 220px}
+.uw-filter .uw-fassung{flex:0 1 auto;max-width:100%}
+@media (max-width:600px){.uw-filter .uw-suche,.uw-filter .uw-fassung{flex:1 1 100%;width:100%}}
+#uwPStatus{width:100%;max-width:100%;white-space:normal}
 
 /* Unterweisungs-Terminal gesperrt im Vollbild (Mitarbeiter bedienen, Portal dahinter unerreichbar) */
 .terminal-sperre{position:fixed;inset:0;z-index:2147483000;background:#fff}

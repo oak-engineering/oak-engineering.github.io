@@ -760,7 +760,7 @@ function uwFaelligZahl(){
     if(z) return z.stammFaellig + z.leihFaellig;   // Belegschaft eingetragen: Beschäftigte ohne gültige Unterweisung
     const pers = uwPersonen(), rows = uwSichtbar();
     return pers.filter(p => { const n = uwLetzterNachweis(p.name); return !n || uwStatus(n).klasse !== "gut"; }).length
-         + uwJeMitarbeiter(rows).filter(n => !pers.some(p => uwNorm(p.name) === uwNorm(n.mitarbeiter_name)) && uwStatus(n).klasse !== "gut").length;
+         + uwNurNachweis(rows).filter(n => uwStatus(n).klasse !== "gut").length;   // inaktive Personen nicht wieder mitzählen
   }catch(e){ return 0; }
 }
 function renderSeitenleiste(){
