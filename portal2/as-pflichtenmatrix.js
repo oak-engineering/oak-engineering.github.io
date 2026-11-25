@@ -26,7 +26,8 @@ function asPmPerson(f){
   return q && d[q] && !/^(extern|sifa|geschäftsführung)\b/i.test(d[q]) ? String(d[q]) : "";
 }
 function asPmText(f){ if(!f) return ""; const p = asPmPerson(f); return f.name + (p ? " (" + p + ")" : ""); }
-function asPmCode(p, f){ return ((p && p.codes) || {})[f.id] || ""; }
+// Nur erlaubte Kürzel – codes kommt aus der DB und landet ungeschützt in Klassen, Zellen und Druck (XSS-Schutz 25.11.2026)
+function asPmCode(p, f){ const c = ((p && p.codes) || {})[f.id]; return AS_PM_CODES.includes(c) ? c : ""; }
 function asPmMitCode(p, codes){ return asPmFunktionen().filter(f => codes.includes(asPmCode(p, f))); }
 
 /* Plausibilitätsprüfung – Hinweis, keine Sperre */
@@ -54,7 +55,7 @@ function asOrgPflichten(box){
   const sicht = ps.filter(p => !AS_PM.gruppe || p.gruppe === AS_PM.gruppe);
   const gruppen = [...new Set(sicht.map(p => p.gruppe))];
   const zelle = (p, f) => { const c = asPmCode(p, f);
-    return `<td class="pm-c"><button type="button" class="pm-code${c ? " pm-" + c : ""}" data-z="${p.id}|${f.id}" ${darf ? "" : "disabled"} title="${esc(f.name + ": " + (c ? (asPmKat().codes[c] || c) : "nicht beteiligt"))}">${c || "·"}</button></td>`; };
+    return `<td class="pm-c"><button type="button" class="pm-code${c ? " pm-" + c : ""}" data-z="${esc(p.id)}|${esc(f.id)}" ${darf ? "" : "disabled"} title="${esc(f.name + ": " + (c ? (asPmKat().codes[c] || c) : "nicht beteiligt"))}">${c || "·"}</button></td>`; };
   box.innerHTML = `<div class="karte pm-karte"><h2>Pflichtenmatrix ${frei ? `<span class="chip c-gruen" title="${esc("freigegeben am " + asDat(m.freigegeben_am) + " durch " + (m.freigegeben_von || "–"))}">freigegeben ${asDat(m.freigegeben_am)}</span>` : asChip("Entwurf", "gelb")}
       <span>${!frei && asDarf("freigeben") ? `<button class="btn klein" id="pmFrei">Freigeben</button>` : ""}
         <button class="btn sek klein" id="pmSchreiben"><span class="pm-l">Übertragungsschreiben</span><span class="pm-k">Schreiben</span></button><button class="btn sek klein" id="pmDruck"><span class="pm-l">Matrix drucken</span><span class="pm-k">Drucken</span></button>
@@ -63,10 +64,10 @@ function asOrgPflichten(box){
       ${hw.length ? `<button type="button" class="chip c-gelb pm-hwk" id="pmHw" title="Plausibilitätsprüfung anzeigen">${hw.length} Hinweise</button>` : asChip("plausibel", "gruen")}
       <span class="pm-leg" title="${esc(asPmKat().legende || AS_PM_KURZLEG)}">${esc(AS_PM_KURZLEG)}</span><span class="pm-leg pm-leg-k" title="${esc(asPmKat().legende || AS_PM_KURZLEG)}">V verantw. · K kontrolliert · M wirkt mit · B berät · I info</span></div>
     <div class="pm-wrap"><table class="pm-tab"><thead><tr><th class="pm-p">Pflicht · Rechtsgrundlage</th>
-      ${fs.map(f => `<th class="pm-f" data-fn="${f.id}" title="${esc(asPmText(f) + " – zum Bearbeiten anklicken")}"><b>${esc(asPmKurz(f))}</b><small>${esc(asPmPerson(f) || "Person offen")}</small></th>`).join("")}</tr></thead>
+      ${fs.map(f => `<th class="pm-f" data-fn="${esc(f.id)}" title="${esc(asPmText(f) + " – zum Bearbeiten anklicken")}"><b>${esc(asPmKurz(f))}</b><small>${esc(asPmPerson(f) || "Person offen")}</small></th>`).join("")}</tr></thead>
       <tbody>${gruppen.map(g => `<tr class="pm-g"><td class="pm-p" colspan="${fs.length + 1}"><b>${esc(g)} · ${esc(asPmGruppeTitel(g))}</b></td></tr>`
         + sicht.filter(p => p.gruppe === g).map(p => { const h = asPmHinweise(p);
-          return `<tr><td class="pm-p" data-p="${p.id}" title="${esc(p.text + (p.recht ? " – " + p.recht : "") + (h.length ? "\nHinweis: " + h.join("; ") : ""))}">
+          return `<tr><td class="pm-p" data-p="${esc(p.id)}" title="${esc(p.text + (p.recht ? " – " + p.recht : "") + (h.length ? "\nHinweis: " + h.join("; ") : ""))}">
             <span class="pm-t">${h.length ? asPunkt("gelb") : ""}${esc(p.text)}</span><small>${esc(p.recht || "–")}</small></td>${fs.map(f => zelle(p, f)).join("")}</tr>`; }).join("")).join("")
         || `<tr><td class="pm-p" colspan="${fs.length + 1}"><div class="leer">Keine Pflichten in dieser Gruppe.</div></td></tr>`}</tbody></table></div></div>`;
   const wrap = box.querySelector(".pm-wrap"); wrap.scrollTop = pos[0]; wrap.scrollLeft = pos[1];
@@ -195,7 +196,7 @@ function asPmHinweisDialog(){
   const l = asPmAlleHinweise();
   asDialog({ titel: "Plausibilitätsprüfung", breit: true, inhalt: `<p class="hinweis">Hinweise, keine Sperre. Je Pflicht sollte genau eine Funktion verantwortlich sein; Fachkraft für Arbeitssicherheit,
       Betriebsarzt und Sicherheitsbeauftragte beraten nur (§§ 3, 6 ASiG, § 22 SGB VII).</p>
-    <div class="zeilen">${l.map(x => `<div class="z" data-p="${x.p.id}"><div><b>${esc(x.p.gruppe)} · ${esc(x.p.text)}</b><small>${x.h.map(esc).join(" · ")}</small></div></div>`).join("") || `<div class="leer">Keine Hinweise.</div>`}</div>` });
+    <div class="zeilen">${l.map(x => `<div class="z" data-p="${esc(x.p.id)}"><div><b>${esc(x.p.gruppe)} · ${esc(x.p.text)}</b><small>${x.h.map(esc).join(" · ")}</small></div></div>`).join("") || `<div class="leer">Keine Hinweise.</div>`}</div>` });
   document.querySelectorAll("#dlg [data-p]").forEach(z => z.onclick = () => asPmPflichtDialog(asNach("as_pflicht", z.dataset.p)));
 }
 async function asPmFreigeben(){
@@ -214,7 +215,7 @@ function asPmSchreibenListe(){
   asDialog({ titel: "Übertragungsschreiben", breit: true, inhalt: `<p class="hinweis">Je Funktion ein Schreiben nach § 13 Abs. 2 ArbSchG und § 13 DGUV Vorschrift 1 – übertragen werden die Pflichten mit V in der Spalte der Funktion.
       Unterschriebene Schreiben hier vermerken; ändert sich die Matrix oder die Person, wird das Schreiben neu fällig.</p>
     <div class="zeilen">${fs.map(f => { const s = st(f), v = ps.filter(p => asPmCode(p, f) === "V").length, mm = ps.filter(p => asPmCode(p, f) === "M").length;
-      return `<div class="z" data-fn="${f.id}"><div><b>${esc(asPmText(f))}</b><small>${v} übertragene Pflichten · ${mm} Mitwirkungen${f.bereich ? " · " + esc(f.bereich) : ""}</small></div>${asChip(s[0], s[1])}</div>`; }).join("")}</div>`,
+      return `<div class="z" data-fn="${esc(f.id)}"><div><b>${esc(asPmText(f))}</b><small>${v} übertragene Pflichten · ${mm} Mitwirkungen${f.bereich ? " · " + esc(f.bereich) : ""}</small></div>${asChip(s[0], s[1])}</div>`; }).join("")}</div>`,
     knoepfe: [{ t: "Alle drucken", klasse: "sek", fn: () => { asPmDruckSchreiben(fs.filter(f => ps.some(p => ["V", "M"].includes(asPmCode(p, f))))); return false; } }] });
   document.querySelectorAll("#dlg [data-fn]").forEach(z => z.onclick = () => asPmFunktionDialog(asNach("as_pflicht_funktion", z.dataset.fn)));
 }
@@ -257,7 +258,7 @@ function asPmWahl(label, textFeld, textWert, fid, bezug, extra){
   const fs = asPmFunktionen();
   if(!fs.length) return asFeld(label, textFeld, textWert, "text", extra || "");
   return `<label class="${extra || ""}">${esc(label)} – Funktion<select data-f="funktion_id" data-pm-bezug="${esc(bezug || "")}" data-pm-text="${esc(textFeld)}">
-      <option value="">– keine Funktion, frei eintragen –</option>${fs.map(f => `<option value="${f.id}" ${f.id === fid ? "selected" : ""}>${esc(asPmText(f))}</option>`).join("")}</select></label>
+      <option value="">– keine Funktion, frei eintragen –</option>${fs.map(f => `<option value="${esc(f.id)}" ${f.id === fid ? "selected" : ""}>${esc(asPmText(f))}</option>`).join("")}</select></label>
     <label class="${extra || ""}">${esc(label)}<input type="text" data-f="${esc(textFeld)}" value="${esc(textWert || "")}" ${fid && asNach("as_pflicht_funktion", fid) ? "readonly" : ""}></label>
     <p class="hinweis voll pm-hwz" ${fid ? "" : "hidden"}>${esc(asPmPlausibel(fid, bezug))}</p>`;
 }

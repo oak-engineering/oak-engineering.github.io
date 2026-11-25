@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Online-Termin buchen – OAK engineering</title>
 <meta name="description" content="Kostenloses Erstgespräch mit OAK engineering: freien 30-Minuten-Termin wählen und direkt online buchen – per Google Meet.">
-<link rel="stylesheet" href="fonts.css?v=202611251107">
-<link rel="stylesheet" href="site.css?v=202611251107">
+<link rel="stylesheet" href="fonts.css?v=202611251139">
+<link rel="stylesheet" href="site.css?v=202611251139">
 </head>
 <body>
 <nav>
@@ -50,10 +50,11 @@
 main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
 .tb-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem;}
 .tb-karte{background:#fff;border:1px solid var(--border);border-radius:8px;padding:1.1rem 1.2rem;
-  height:430px;display:flex;flex-direction:column;min-width:0;}
+  height:450px;display:flex;flex-direction:column;min-width:0;}
 .tb-karte h2{font-family:var(--serif);font-size:1.35rem;font-weight:600;color:var(--oak-deep);
   margin:0 0 .8rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.tb-karte h2 span{display:inline-block;width:1.6rem;color:var(--oak-mid);}
+.tb-karte h2 span{display:inline-block;width:1.6rem;color:var(--oak-mid);font-family:var(--sans);font-size:1.05rem;font-weight:500;}
+.tb-karte > *{flex-shrink:0;}
 .tb-woche{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;height:34px;}
 .tb-woche b{font-size:.86rem;font-weight:500;color:var(--ink-2);white-space:nowrap;}
 .tb-pfeil{width:34px;height:34px;border:1.5px solid var(--border);border-radius:50%;background:#fff;
@@ -61,7 +62,21 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
 .tb-pfeil:disabled{opacity:.35;cursor:default;}
 .tb-pfeil svg{width:16px;height:16px;}
 .tb-liste{display:grid;gap:.5rem;flex:1;align-content:start;}
-.tb-tage{grid-template-rows:repeat(5,1fr);align-content:stretch;}
+.tb-wt{display:grid;grid-template-columns:repeat(7,1fr);gap:.3rem;margin-bottom:.3rem;}
+.tb-wt span{text-align:center;font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);}
+.tb-monat{display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(6,1fr);gap:.3rem;flex:1;min-height:0;}
+.tb-tag{position:relative;border:1.5px solid transparent;border-radius:6px;background:none;font-family:var(--sans);font-size:.92rem;
+  color:#b9c2bc;display:grid;place-items:center;padding:0;cursor:default;min-height:0;}
+.tb-tag.frei{color:var(--oak-deep);font-weight:500;background:var(--oak-ghost);border-color:var(--oak-pale);cursor:pointer;}
+.tb-tag.frei::after{content:'';position:absolute;bottom:5px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--oak-mid);}
+.tb-tag.frei:hover{border-color:var(--oak);}
+.tb-tag.heute{text-decoration:underline;text-underline-offset:3px;}
+.tb-tag.an{background:var(--oak-deep);border-color:var(--oak-deep);color:#fff;}
+.tb-tag.an::after{background:#fff;}
+.tb-tag.leer{visibility:hidden;}
+.tb-legende{display:flex;gap:1rem;margin-top:.6rem;font-size:.74rem;color:var(--muted);white-space:nowrap;}
+.tb-legende i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:.35rem;vertical-align:-1px;background:var(--oak-ghost);border:1.5px solid var(--oak-pale);}
+.tb-legende i.an{background:var(--oak-deep);border-color:var(--oak-deep);}
 .tb-zeiten{grid-template-columns:1fr 1fr;grid-auto-rows:46px;}
 .tb-knopf{display:flex;align-items:center;justify-content:space-between;gap:.6rem;padding:0 .9rem;min-height:46px;
   border:1.5px solid var(--border);border-radius:6px;background:#fff;font-family:var(--sans);font-size:.9rem;
@@ -77,7 +92,7 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
 .tb-form .form-group{margin-bottom:.6rem;}
 .tb-form .form-group label{margin-bottom:.2rem;}
 .tb-form input,.tb-form textarea{padding:.55rem .8rem!important;}
-.tb-form textarea{height:64px;resize:none;}
+.tb-form textarea{height:58px;resize:none;}
 .tb-check{display:flex;gap:.5rem;align-items:flex-start;font-size:.76rem;color:var(--muted);line-height:1.4;margin:.2rem 0 .7rem;}
 .tb-check input{margin-top:.15rem;accent-color:var(--oak-deep);}
 .tb-check a{color:var(--oak);}
@@ -95,7 +110,7 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
 @media(max-width:900px){
   .tb-grid{grid-template-columns:1fr;}
   .tb-karte{height:auto;}
-  .tb-tage{grid-template-rows:none;}
+  .tb-monat{grid-auto-rows:44px;grid-template-rows:none;}
 }
 </style>
 
@@ -104,17 +119,19 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
     <section class="tb-karte">
       <h2><span>1</span>Tag wählen</h2>
       <div class="tb-woche">
-        <button class="tb-pfeil" id="tb-zurueck" type="button" aria-label="Vorherige Woche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button class="tb-pfeil" id="tb-zurueck" type="button" aria-label="Vorheriger Monat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
         <b id="tb-kw">Termine werden geladen …</b>
-        <button class="tb-pfeil" id="tb-vor" type="button" aria-label="Nächste Woche"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <button class="tb-pfeil" id="tb-vor" type="button" aria-label="Nächster Monat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
       </div>
-      <div class="tb-liste tb-tage" id="tb-tage"></div>
+      <div class="tb-wt"><span>Mo</span><span>Di</span><span>Mi</span><span>Do</span><span>Fr</span><span>Sa</span><span>So</span></div>
+      <div class="tb-monat" id="tb-tage"></div>
+      <div class="tb-legende"><span><i></i>Termine frei</span><span><i class="an"></i>gewählt</span></div>
     </section>
 
     <section class="tb-karte">
       <h2><span>2</span>Uhrzeit wählen</h2>
       <div class="tb-liste tb-zeiten" id="tb-zeiten"></div>
-      <p class="tb-hinweis" id="tb-zeit-hinweis">Bitte zuerst einen Tag wählen.</p>
+      <p class="tb-hinweis" id="tb-zeit-hinweis">Bitte zuerst einen Tag im Kalender wählen.</p>
     </section>
 
     <section class="tb-karte">
@@ -126,9 +143,9 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
           <div class="form-group"><label for="tb-mail">E-Mail *</label><input id="tb-mail" name="email" type="email" autocomplete="email" maxlength="120" required></div>
           <div class="form-group"><label for="tb-firma">Unternehmen</label><input id="tb-firma" name="firma" autocomplete="organization" maxlength="100"></div>
         </div>
-        <div class="form-group"><label for="tb-anliegen">Worum geht es?</label><textarea id="tb-anliegen" name="anliegen" maxlength="600" placeholder="Kurz Ihr Anliegen, z. B. Gefährdungsbeurteilung, Betreuung, Umweltschutz"></textarea></div>
+        <div class="form-group"><label for="tb-anliegen">Worum geht es?</label><textarea id="tb-anliegen" name="anliegen" maxlength="600" placeholder="z. B. Gefährdungsbeurteilung, externe Betreuung"></textarea></div>
         <div class="tb-honig" aria-hidden="true"><label>Website <input id="tb-web" tabindex="-1" autocomplete="off"></label></div>
-        <label class="tb-check"><input type="checkbox" id="tb-ok"> <span>Ich bin einverstanden, dass meine Angaben zur Terminvereinbarung verarbeitet werden (<a href="datenschutz.html#termin" target="_blank">Datenschutz</a>).</span></label>
+        <label class="tb-check"><input type="checkbox" id="tb-ok"> <span>Meine Angaben dürfen zur Terminvereinbarung verarbeitet werden (<a href="datenschutz.html#termin" target="_blank">Datenschutz</a>).</span></label>
         <button class="btn btn-primary" id="tb-senden" type="submit" disabled>Termin verbindlich buchen</button>
         <div class="tb-fehler" id="tb-fehler" role="alert"></div>
       </form>
@@ -171,28 +188,34 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
     t.setUTCDate(t.getUTCDate() + 4 - n); var j = new Date(Date.UTC(t.getUTCFullYear(), 0, 1)); return Math.ceil(((t - j) / 864e5 + 1) / 7); };
   var montag = function (d) { var m = new Date(d); m.setDate(m.getDate() - ((m.getDay() + 6) % 7)); return m; };
 
-  function wochen() {              // Tage nach Wochen (Mo-Fr) gruppieren
-    var w = {};
-    tage.forEach(function (t) { var k = montag(datum(t.datum)).getTime(); (w[k] = w[k] || []).push(t); });
-    return Object.keys(w).sort().map(function (k) { return { start: new Date(+k), tage: w[k] }; });
+  var MON = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+  var isoVon = function (d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); };
+  function monate() {              // Monate, in denen buchbare Tage liegen (Schlüssel "JJJJ-MM")
+    var m = [];
+    tage.forEach(function (t) { var k = t.datum.slice(0, 7); if (m.indexOf(k) < 0) m.push(k); });
+    return m.sort();
   }
 
   function zeigeTage() {
-    var ws = wochen(), box = $("tb-tage");
+    var ms = monate(), box = $("tb-tage");
     box.innerHTML = "";
-    if (!ws.length) { $("tb-kw").textContent = "Keine Termine verfügbar"; return; }
-    woche = Math.max(0, Math.min(woche, ws.length - 1));
-    var w = ws[woche], fr = new Date(w.start); fr.setDate(fr.getDate() + 4);
-    $("tb-kw").textContent = "KW " + kw(w.start) + " · " + kurz(w.start) + " – " + kurz(fr);
+    if (!ms.length) { $("tb-kw").textContent = "Keine Termine verfügbar"; return; }
+    woche = Math.max(0, Math.min(woche, ms.length - 1));
+    var p = ms[woche].split("-"), erster = new Date(+p[0], p[1] - 1, 1), heute = isoVon(new Date());
+    $("tb-kw").textContent = MON[erster.getMonth()] + " " + erster.getFullYear();
     $("tb-zurueck").disabled = woche === 0;
-    $("tb-vor").disabled = woche >= ws.length - 1;
-    for (var i = 0; i < 5; i++) {
-      var d = new Date(w.start); d.setDate(d.getDate() + i);
-      var iso = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
-      var t = w.tage.filter(function (x) { return x.datum === iso; })[0], n = t ? t.zeiten.length : 0;
+    $("tb-vor").disabled = woche >= ms.length - 1;
+    var start = new Date(erster); start.setDate(1 - ((erster.getDay() + 6) % 7));
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(start); d.setDate(start.getDate() + i);
+      var iso = isoVon(d), t = tage.filter(function (x) { return x.datum === iso; })[0], n = t ? t.zeiten.length : 0;
       var b = document.createElement("button");
-      b.type = "button"; b.className = "tb-knopf" + (tagWahl === iso ? " an" : ""); b.disabled = !n;
-      b.innerHTML = "<span>" + WT[d.getDay()] + " " + kurz(d) + "</span><small>" + (n ? n + (n === 1 ? " Termin frei" : " Termine frei") : (t ? "ausgebucht" : "—")) + "</small>";
+      b.type = "button";
+      b.className = "tb-tag" + (d.getMonth() !== erster.getMonth() ? " leer" : "") + (n ? " frei" : "") +
+        (tagWahl === iso ? " an" : "") + (iso === heute ? " heute" : "");
+      b.textContent = d.getDate();
+      b.disabled = !n;
+      b.title = n ? WT[d.getDay()] + " " + kurz(d) + ": " + n + (n === 1 ? " Termin frei" : " Termine frei") : (t ? "ausgebucht" : "");
       b.dataset.tag = iso;
       b.onclick = function () { tagWahl = this.dataset.tag; zeitWahl = null; zeigeTage(); zeigeZeiten(); pruefe(); };
       box.appendChild(b);
@@ -223,8 +246,8 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
       tage = j.tage || [];
       if (tagWahl && !tage.some(function (t) { return t.datum === tagWahl && t.zeiten.length; })) { tagWahl = null; zeitWahl = null; }
       if (!tagWahl) {               // erste Woche mit freien Terminen vorwählen
-        var ws = wochen();
-        for (var i = 0; i < ws.length; i++) { if (ws[i].tage.some(function (t) { return t.zeiten.length; })) { woche = i; break; } }
+        var ms = monate(), erst = tage.filter(function (t) { return t.zeiten.length; })[0];
+        woche = erst ? Math.max(0, ms.indexOf(erst.datum.slice(0, 7))) : 0;
       }
       zeigeTage(); zeigeZeiten(); pruefe(); if (danach) danach();
     }).catch(function () {
@@ -263,6 +286,6 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
   laden();
 })();
 </script>
-<script src="site.js?v=202611251107"></script>
+<script src="site.js?v=202611251139"></script>
 </body>
 </html>
