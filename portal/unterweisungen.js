@@ -709,7 +709,7 @@ async function uwPersonSpeichern(p){
   const meld = document.getElementById("uwPMeld");
   const name = document.getElementById("uwPName").value.trim().replace(/\s+/g, " ");
   if(name.length < 3){ meld.textContent = "Bitte den vollständigen Namen eintragen."; return; }
-  const rollen = [...document.querySelectorAll("#uwPersForm .uw-chips input:checked")].map(x => x.value);
+  const rollen = [...document.querySelectorAll("#uwPersForm .uw-chips input:checked:not(#uwPLeih)")].map(x => x.value);
   const stEl = document.getElementById("uwPStatus");
   const status = stEl ? stEl.value : "aktiv";
   const leihEl = document.getElementById("uwPLeih");
