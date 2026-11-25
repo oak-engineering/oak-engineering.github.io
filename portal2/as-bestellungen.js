@@ -19,8 +19,8 @@ function asBsDatum(d){ return d ? asDat(d) : ""; }
 /* Bestellungen als Liste: Sifa und Betriebsarzt aus den Grunddaten, dann alle Beauftragten */
 function asBsListe(){
   const d = asOrgDaten(), l = [];
-  l.push({ k: "sifa", name: asBsPlatzhalter(d.sifa_name) ? "" : d.sifa_name, bestellt: d.sifa_bestellt_am, quelle: "grund" });
-  l.push({ k: "ba", name: asBsPlatzhalter(d.ba_name) ? "" : d.ba_name, bestellt: d.ba_bestellt_am, quelle: "grund" });
+  l.push({ k: "sifa", name: asBsPlatzhalter(d.sifa_name) ? "" : d.sifa_name, platzhalter: !!d.sifa_name && asBsPlatzhalter(d.sifa_name), bestellt: d.sifa_bestellt_am, quelle: "grund" });
+  l.push({ k: "ba", name: asBsPlatzhalter(d.ba_name) ? "" : d.ba_name, platzhalter: !!d.ba_name && asBsPlatzhalter(d.ba_name), bestellt: d.ba_bestellt_am, quelle: "grund" });
   asT("as_beauftragter").forEach(b => l.push({ k: asBsSchluessel(b) || b.funktion, b, name: b.person, bereich: b.einheit_id ? asEinheitName(b.einheit_id) : "",
     schicht: b.schicht, bestellt: b.bestellt_am, schulung: b.schulung_am, gueltig: b.gueltig_bis }));
   const rang = k => { const i = AS_BS_REIHE.indexOf(k); return i < 0 ? 99 : i; };
@@ -63,7 +63,7 @@ function asBsSchreibenHtml(liste, entwurf){
 }
 function asBsUebersichtHtml(entwurf){
   const mk = asPmMarke(), l = asBsListe(), soll = asBeauftragteSoll(), heute = asHeute(), leer = "offen";
-  const status = x => x.gueltig && x.gueltig < heute ? "abgelaufen" : x.name && x.bestellt ? "bestellt" : x.name ? "Bestellung offen" : "nicht besetzt";
+  const status = x => x.gueltig && x.gueltig < heute ? "abgelaufen" : x.name && x.bestellt ? "bestellt" : x.name ? "Bestellung offen" : x.platzhalter ? "Name ergänzen" : "nicht besetzt";
   const da = new Set(l.map(x => x.k));
   AS_BS_REIHE.filter(k => !da.has(k)).forEach(k => l.push({ k, name: "", fehlt: true }));
   const zeilen = l.map(x => `<tr><td class="nw">${esc(asBsTitel(x.k))}</td><td class="nw">${esc(x.name || (x.fehlt ? "noch nicht erfasst" : leer))}</td><td>${esc([x.bereich, x.schicht ? "Schicht " + x.schicht : ""].filter(Boolean).join(" · ") || "Betrieb")}</td>
