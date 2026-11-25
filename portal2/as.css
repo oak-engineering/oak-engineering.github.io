@@ -651,4 +651,6 @@ body.tp-an .rumpf{min-height:calc(100dvh - var(--kopf-h) - var(--tp-h))}
 /* V2 im Kundenportal V1 eingebettet (?eingebettet=1): ohne eigenen Rahmen */
 body.as-eingebettet{--kopf-h:0px;--fuss-h:0px}
 body.as-eingebettet .kopf,body.as-eingebettet .seitenleiste,body.as-eingebettet .as-fussleiste{display:none!important}
-body.as-eingebettet main{padding:12px 14px 12px}
+body.as-eingebettet main{padding:0}
+body.as-eingebettet .tp-band,body.as-eingebettet h1.seite,body.as-eingebettet main>p.unter,body.as-eingebettet main>.reiter{display:none!important}
+body.as-eingebettet .karte{box-shadow:none;padding:12px}

@@ -82,6 +82,7 @@ async function asTpMinute(){
   asTpPruefen();
 }
 function asTpPruefen(){
+  if(document.body.classList.contains("as-eingebettet")) return;   // im Kundenportal eingebettet: kein Feedback-Fenster
   const z = AS_TP.zeile; if(!z || AS_TP.gezeigt || !asTpZaehlt()) return;
   if(z.feedback_am || (z.spaeter_bis && z.spaeter_bis > asTpHeute())) return;
   if((z.tage || 0) < 3 && (z.minuten || 0) < 30) return;
