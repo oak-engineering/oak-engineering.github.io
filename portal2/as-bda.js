@@ -393,7 +393,7 @@ function asMassnahmeDialog(m, vorgabe, sys){
       ${asAuswahl("Folge bei O (was die Maßnahme regelt)", "folge_art", m.folge_art || "", Object.entries(AS_MN_FOLGE), "mnFolge")}
       ${neu ? asAuswahl("Umsetzung", "umsetzung", m.umsetzung, [["zentral", "zentral für alle"], ["anlage", "je Anlage (Zähler „x von y“)"]]) : ""}
       ${asFeld("Maßnahme", "text", m.text, "textarea", "voll")}
-      ${asFeld("Verantwortlich", "verantwortlich", m.verantwortlich)}${asFeld("Bis wann", "termin", m.termin, "date")}
+      ${typeof asPmWahl === "function" ? asPmWahl("Verantwortlich", "verantwortlich", m.verantwortlich, m.funktion_id, m._v1 ? "mangel" : "massnahme") : asFeld("Verantwortlich", "verantwortlich", m.verantwortlich)}${asFeld("Bis wann", "termin", m.termin, "date")}
       ${m.gefaehrdung_id ? "" : asBereichWahl("Bereich", "einheit_id", neu && !("einheit_id" in m) ? null : (m.einheit_id || ""), "", "– betriebsweit –")}
       ${frei && alleAnl.length ? `<div class="voll"><b>An welchen Anlagen?</b> <span class="hinweis">optional – dann steht die Maßnahme in der Mängelliste der Anlage</span>
         <div class="filterleiste" style="margin:6px 0"><input type="search" id="mnAnlSuche" placeholder="Anlage suchen"></div>

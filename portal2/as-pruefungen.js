@@ -136,7 +136,7 @@ function asPfFormular(o, art, mid){
     ${asFeld("Standort / Ort", "ort", o ? o.ort : "")}
     ${asFeld("Inventar-/Geräte-Nr.", "inventar_nr", o ? o.inventar_nr : "")}
     ${asFeld("Prüfintervall in Monaten", "intervall_monate", o ? o.intervall_monate : a.intervall, "number")}
-    ${asFeld("Prüfer (befähigte Person / Firma)", "pruefer", o ? o.pruefer : "")}
+    ${typeof asPmWahl === "function" ? asPmWahl("Prüfer (befähigte Person / Firma)", "pruefer", o ? o.pruefer : "", o ? o.funktion_id : null, "pruefung") : asFeld("Prüfer (befähigte Person / Firma)", "pruefer", o ? o.pruefer : "")}
     ${asFeld("Rechtsgrundlage", "grundlage", o ? o.grundlage : a.grundlage, "text", "voll")}
     ${o ? "" : asFeld("Letzte Prüfung (falls bekannt)", "letzte_am", "", "date")}
     ${o ? "" : asFeld("Nächste Prüfung fällig (falls abweichend)", "naechste_am", "", "date")}

@@ -932,12 +932,14 @@ function asSvTerminDialog(t, vorlage){
   const ivOpt = AS_SV_INTERVALLE.slice(); if(intervall && !ivOpt.some(i => i[0] === intervall)) ivOpt.push([intervall, "alle " + intervall + " Monate"]);
   const kn = [{ t: "Speichern", fn: async d => {
     const w = asWerte(d);
+    if(typeof asPmUebernehmen === "function") asPmUebernehmen(w, "zustaendig");
     if(!w.titel || w.titel.length < 2){ asMeldung("Bitte eintragen, was ansteht."); return false; }
     if(!/^\d{4}-\d{2}-\d{2}$/.test(w.faellig_am || "")){ asMeldung("Bitte das Fälligkeitsdatum eintragen."); return false; }
     const wer = asSvNameLesen(w); if(!wer){ asMeldung("Bitte Ihren Namen eintragen."); return false; }
     const daten = { titel: w.titel.slice(0, 200), art: w.art || "pruefung", faellig_am: w.faellig_am, intervall_monate: parseInt(w.intervall_monate, 10) || null,
       objekt: w.objekt || null, zustaendig: w.zustaendig || null, grundlage: w.grundlage || null, notiz: w.notiz || null, einheit_id: w.einheit_id || null,
       unterlagen: [...d.querySelectorAll("[data-ul]:checked")].map(x => x.dataset.ul),
+      ...("funktion_id" in w ? { funktion_id: w.funktion_id || null } : {}),
       geaendert_von: wer, geaendert_am: new Date().toISOString() };
     try{
       if(t) await apiSend("PATCH", "/rest/v1/portal_termin?id=eq." + encodeURIComponent(t.id), daten, "return=minimal");
@@ -963,7 +965,8 @@ function asSvTerminDialog(t, vorlage){
       <label class="voll">Gerät, Maschine oder Bereich<input type="text" data-f="objekt" list="svObjekte" maxlength="200" value="${esc(wert("objekt", ""))}" placeholder="z. B. Stapler 3, Halle 14"></label>
       <datalist id="svObjekte">${masch.map(m => `<option value="${esc(m)}">`).join("")}</datalist>
       ${asBereichWahl("Bereich", "einheit_id", t ? (t.einheit_id || "") : null, "voll", "– betriebsweit –")}
-      <label class="voll">Zuständig<input type="text" data-f="zustaendig" maxlength="120" value="${esc(wert("zustaendig", ""))}" placeholder="z. B. Instandhaltung, Fa. Muster (Prüfer)"></label>
+      ${typeof asPmWahl === "function" && asPmFunktionen().length ? asPmWahl("Zuständig", "zustaendig", wert("zustaendig", ""), t ? t.funktion_id : null, "termin_" + wert("art", v[1] || "pruefung"), "voll")
+        : `<label class="voll">Zuständig<input type="text" data-f="zustaendig" maxlength="120" value="${esc(wert("zustaendig", ""))}" placeholder="z. B. Instandhaltung, Fa. Muster (Prüfer)"></label>`}
       <label class="voll">Grundlage<input type="text" data-f="grundlage" maxlength="300" value="${esc(wert("grundlage", v[3]))}"></label>
       <label class="voll">Notiz<textarea data-f="notiz" maxlength="2000">${esc(wert("notiz", ""))}</textarea></label>
       ${asSvUnterlagenWahl(t ? (t.unterlagen || []) : [])}

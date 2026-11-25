@@ -328,6 +328,8 @@ function renderEinbettung(wrap, was){
   const art = HASH_Q && HASH_Q.get("art"); HASH_Q = null;
   const url = was === "terminal" ? (tok ? "kiosk.html#t=" + encodeURIComponent(tok) : "")
             : was === "melden"   ? (mt ? "melden.html?t=" + encodeURIComponent(mt) + "&eingebettet=1" + (art ? "&art=" + encodeURIComponent(art) : "") : "")
+            /* Pflichtenmatrix: dieselbe Funktion wie im Cockpit V2 (eine Logik, gleiche Anmeldung) – eingebettet ohne V2-Rahmen */
+            : was === "pflichtenmatrix" ? "../portal2/index.html?eingebettet=1" + (AKTIV ? "&kunde=" + encodeURIComponent(AKTIV) : "") + "#organisation/pflichten"
             : "pruefen.html?eingebettet=1&k=" + encodeURIComponent(AKTIV || "");   // eigene Checkliste (T 008-2), nicht der OAK-Begehungsbogen
   const sec = document.createElement("section"); sec.className = "sektion einbettung-sektion";
   if(!url){ sec.innerHTML = `<div class="ck-fuss">Für diesen Betrieb ist noch kein Zugang eingerichtet – bitte bei OAK engineering melden.</div>`; wrap.appendChild(sec); return; }
@@ -443,7 +445,7 @@ const PORTAL_EINBETTUNG = (() => { try{ const q = new URLSearchParams(location.s
 const MEHR_LABEL = { unterweisungen: "Unterweisungen", vorfaelle: "Gemeldete Vorfälle", "vf-umwelt": "Umweltvorfälle",
                      anfragen: FRAGE_TITEL, kalender: "Kalender", todos: "To-dos", nachweise: "Nachweise & Vorsorge", "uw-katalog": "Modulkatalog", personen: "Mitarbeiter verwalten",
                      kapitel: "Unterweisungs-Inhalte", "uw-ueberblick": "Unterweisungen – Überblick",
-                     terminal: "Unterweisung starten", melden: "Vorfall melden", pruefen: "Maschine prüfen", logbuch: "Logbuch", aktuelles: "Aktuelles", datenschutz: "Datenschutz" };
+                     terminal: "Unterweisung starten", melden: "Vorfall melden", pflichtenmatrix: "Pflichten & Verantwortung", pruefen: "Maschine prüfen", logbuch: "Logbuch", aktuelles: "Aktuelles", datenschutz: "Datenschutz" };
 const UNTERLAGEN = [
   { bereich: "Arbeitssicherheit", kats: [
       ["pflichten", "Stand der Pflichten", "Was bei einer Prüfung zuerst gefragt wird"],
@@ -785,6 +787,7 @@ function renderSeitenleiste(){
       <div class="sl-kopf">Beschäftigte</div>
       ${e("mehr", "unterweisungen", "unterweisungen", "Unterweisungen")}
       ${e("mehr", "nachweise", "nachweise", "Nachweise & Vorsorge")}
+      ${START_BEREICH === "arbeitssicherheit" ? e("mehr", "pflichtenmatrix", "nachweise", "Pflichten & Verantwortung") : ""}
       <div class="sl-kopf">Melden &amp; Fragen</div>
       ${START_BEREICH === "umwelt" ? e("mehr", "vf-umwelt", "vorfaelle", "Umweltvorfälle") : e("mehr", "vorfaelle", "vorfaelle", "Vorfälle")}
       ${e("mehr", "anfragen", "anfragen", FRAGE_TITEL)}
@@ -831,7 +834,7 @@ function renderSektionen(){
   if(AKTIVE_DOM === "mehr"){
     if(AKTIVE_SUB === "vorfaelle"){ vorfallMeldenKnopf(wrap, "arbeitssicherheit"); renderVorfaelle(wrap, "arbeitssicherheit"); return; }
     if(AKTIVE_SUB === "vf-umwelt"){ vorfallMeldenKnopf(wrap, "umwelt"); renderVorfaelle(wrap, "umwelt"); return; }
-    if(["terminal", "melden", "pruefen"].includes(AKTIVE_SUB)){ renderEinbettung(wrap, AKTIVE_SUB); return; }
+    if(["terminal", "melden", "pruefen", "pflichtenmatrix"].includes(AKTIVE_SUB)){ renderEinbettung(wrap, AKTIVE_SUB); return; }
     renderSektion(wrap, AKTIVE_SUB, MEHR_LABEL[AKTIVE_SUB] || "", false); return;
   }
   if(START_BEREICH === "arbeitssicherheit" && AK_REITER.some(r => r[0] === AKTIVE_SUB)) akReiter(wrap);   // Anlagenkataster: Dokumentarten als Leiste
@@ -849,7 +852,7 @@ function renderKlassisch(wrap){
   renderTabs(); renderSubTabs();
   if(AKTIVE_DOM === "mehr"){
     seitenKopf(wrap);
-    if(["terminal", "melden", "pruefen"].includes(AKTIVE_SUB)){ renderEinbettung(wrap, AKTIVE_SUB); return; }
+    if(["terminal", "melden", "pruefen", "pflichtenmatrix"].includes(AKTIVE_SUB)){ renderEinbettung(wrap, AKTIVE_SUB); return; }
     renderSektion(wrap, AKTIVE_SUB, MEHR_LABEL[AKTIVE_SUB] || "", false); return;
   }
   const doms = verfuegbareDomaenen();

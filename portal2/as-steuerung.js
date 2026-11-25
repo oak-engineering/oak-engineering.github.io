@@ -314,7 +314,8 @@ async function asLog(box){
   const l = l2.concat(l1.map(x => ({ am: x.am, wer: x.wer, tabelle: x.bereich || "Kundenportal", aktion: x.aktion, objekt: [x.objekt, x.details].filter(Boolean).join(" – ") })))
     .sort((a, b) => String(b.am).localeCompare(String(a.am))).slice(0, 300);
   const T = { as_massnahme: "Maßnahme", as_arbeitssystem: "BdA", as_mitzeichnung: "Mitzeichnung", as_orgcheck: "Organisations-Check", as_asa: "ASA", as_ziel: "Ziel",
-    as_meldung: "Meldung", as_beauftragter: "Beauftragte", as_einheit: "Struktur", as_organisation: "Organisation", as_psyche: "Psyche", as_thema: "Thema", as_kultur: "Kultur", as_prozess: "Prozess" };
+    as_meldung: "Meldung", as_beauftragter: "Beauftragte", as_einheit: "Struktur", as_organisation: "Organisation", as_psyche: "Psyche", as_thema: "Thema", as_kultur: "Kultur", as_prozess: "Prozess",
+    as_pflicht: "Pflichtenmatrix", as_pflicht_funktion: "Pflichtenmatrix · Funktion", as_pflichtenmatrix: "Pflichtenmatrix · Freigabe" };
   box.innerHTML = `<div class="karte"><h2>Logbuch <span class="hinweis">automatisch – jede Änderung mit Name und Zeit</span></h2><div class="zeilen">
     ${l.map(x => `<div class="z"><div><b>${esc(T[x.tabelle] || x.tabelle)} · ${esc(x.aktion)}</b><small>${esc(x.objekt || "")} · ${esc(x.wer || "")} · ${new Date(x.am).toLocaleString("de-DE")}</small></div></div>`).join("") || `<div class="leer">Noch keine Einträge.</div>`}</div></div>`;
 }

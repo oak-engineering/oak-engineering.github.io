@@ -380,13 +380,18 @@ function asMangelFormular(m){
       ${asAuswahl("Thema", "thema", asMgFeld(m, "thema") || "sonstiges", Object.entries(AS_MG_THEMA))}
       ${asAuswahl("Bewertung", "bewertung_manuell", m.bewertung_manuell || "", [["", "wie berechnet (" + (AS_BAND_TEXT[m.band] || "–") + ")"], ["gefahr", "Gefahr"], ["besorgnis", "Besorgnis"], ["akzeptanz", "Akzeptanz"]])}
       ${asAuswahl("Gefährdung in der BdA", "as_gefaehrdung_id", m.as_gefaehrdung_id || "", [["", "– keine –"]].concat(gef.map(g => [g.id, g.kurz])), "voll")}
+      ${typeof asPmWahl === "function" ? asPmWahl("Verantwortlich", "verantwortlich", m.verantwortlich, m.funktion_id, "mangel") : asFeld("Verantwortlich", "verantwortlich", m.verantwortlich)}
+      ${asFeld("Bis wann", "termin", m.termin, "date")}
       ${asFeld("Ausblenden (gilt nicht mehr)", "ausgeblendet", m.ausgeblendet, "checkbox")}</div>
     <p class="hinweis">Mit der Zuordnung zu einer Gefährdung wird die Beurteilung zur Nachbewertung vorgelegt.</p>`;
 }
 async function asMangelFormSpeichern(m, d){ { const w = asWerte(d);
       const manuell = (w.label || "") !== (m.label || "") || (w.massnahme || "") !== (m.massnahme || "") || (w.thema || "") !== (m.thema || "")
         ? { label: w.label, massnahme: w.massnahme, thema: w.thema } : null;
-      await asMgAendern(m, { manuell, bewertung_manuell: w.bewertung_manuell || null, as_gefaehrdung_id: w.as_gefaehrdung_id || null, ausgeblendet: !!w.ausgeblendet },
+      if(typeof asPmUebernehmen === "function") asPmUebernehmen(w, "verantwortlich");
+      const zust = { verantwortlich: w.verantwortlich || null, termin: w.termin || null };
+      if("funktion_id" in w) zust.funktion_id = w.funktion_id || null;
+      await asMgAendern(m, Object.assign({ manuell, bewertung_manuell: w.bewertung_manuell || null, as_gefaehrdung_id: w.as_gefaehrdung_id || null, ausgeblendet: !!w.ausgeblendet }, zust),
         "bearbeitet", w.bewertung_manuell ? "Bewertung: " + w.bewertung_manuell : null); }
 }
 function asMangelNeu(){

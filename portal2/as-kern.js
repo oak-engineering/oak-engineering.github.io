@@ -22,7 +22,8 @@ async function asLoeschenBestaetigt(frage, t, id){
 }
 const AS_TABELLEN = ["as_einheit", "as_beauftragter", "as_einsatz", "as_orgcheck", "as_arbeitssystem", "as_taetigkeit",
   "as_gefaehrdung", "as_massnahme", "as_mitzeichnung", "as_asa", "as_ziel", "as_psyche", "as_meldung", "as_thema",
-  "as_kultur", "as_prozess", "as_pruefobjekt", "as_pruefung", "as_notfall", "as_fremdfirma", "as_erlaubnisschein", "as_psa_zuordnung"];
+  "as_kultur", "as_prozess", "as_pruefobjekt", "as_pruefung", "as_notfall", "as_fremdfirma", "as_erlaubnisschein", "as_psa_zuordnung",
+  "as_pflicht_funktion", "as_pflicht", "as_pflichtenmatrix"];
 const AS_SEITEN = {};            // von den Modulen befuellt: { titel, icon, sort, render(main) }
 const AS_KUNDENPROZESSE = AS_PROZESSE.prozesse;
 
@@ -92,8 +93,8 @@ const AS_QUELLEN = {
       termin: mg.termin, status: asMgStatus(mg), erledigt_am: (mg.erledigt_am || "").slice(0, 10) || null, erledigt_von: mg.erledigt_von,
       erledigt_notiz: mg.notiz, wirksam_am: mg.wirksam_am, wirksam_von: mg.wirksam_von, angelegt_am: mg.updated_at,
       foto_pfad: mg.foto_pfad, nachweis_pfad: mg.nachweis_pfad, maschinen_id: mg.maschinen_id, unterwiesen_am: mg.unterwiesen_am, folge_art: mg.folge_art,
-      einheit_id: mg.einheit_id, _v1: true, _mg: mg }),
-    zuV1: (w, alt) => { const o = asAuswahlFelder(w, ["stop", "verantwortlich", "termin", "erledigt_von", "folge_art"]);
+      einheit_id: mg.einheit_id, funktion_id: mg.funktion_id || null, _v1: true, _mg: mg }),
+    zuV1: (w, alt) => { const o = asAuswahlFelder(w, ["stop", "verantwortlich", "termin", "erledigt_von", "folge_art", "funktion_id"]);
       if("text" in w && w.text !== alt.text) o.massnahme = w.text;
       if("gefaehrdung_id" in w) o.as_gefaehrdung_id = w.gefaehrdung_id || null;
       if("erledigt_notiz" in w) o.notiz = w.erledigt_notiz;
@@ -110,7 +111,7 @@ const AS_QUELLEN = {
       return { maschinen_id: anl, maschine: dok ? (dok.maschine || dok.titel) : (s ? s.name.replace(/\s*\([^)]*\)\s*$/, "") : anl),
         schluessel: "V2-" + Math.random().toString(36).slice(2, 10), label: w.text, massnahme: w.text, thema: "sonstiges",
         schwere: { rot: "s", gelb: "g", gruen: "a" }[band] || "g", band: { rot: "gefahr", gelb: "besorgnis", gruen: "akzeptanz" }[band] || "besorgnis",
-        status: "offen", as_gefaehrdung_id: w.gefaehrdung_id, stop: w.stop || "T", verantwortlich: w.verantwortlich || null, folge_art: w.folge_art || null,
+        status: "offen", as_gefaehrdung_id: w.gefaehrdung_id, stop: w.stop || "T", verantwortlich: w.verantwortlich || null, funktion_id: w.funktion_id || null, funktion_id: w.funktion_id || null, folge_art: w.folge_art || null,
         termin: w.termin || null, gemeldet_von: AS.ich, gemeldet_am: asHeute(), kunde: AS.org ? AS.org.name : null,
         // bei der Begehung als vorhanden bestätigt (BdA-Entwurf): gleich als wirksam anlegen, mit Nachweis wer/wann
         ...(w.status === "wirksam" ? { status: "erledigt", erledigt_am: new Date().toISOString(), erledigt_von: AS.ich, wirksam_am: asHeute(), wirksam_von: AS.ich, notiz: "Bei der Begehung als vorhanden bestätigt" } : {}) }; } },
@@ -196,6 +197,8 @@ async function asV1Speichern(t, q, row, alt){
   return neu;
 }
 async function asSpeichern(t, row){
+  /* Eine Quelle (Pflichtenmatrix): gewählte Funktion bestimmt den angezeigten Text „Funktion (Person)“ */
+  if(typeof AS_PM_TEXTFELD !== "undefined" && AS_PM_TEXTFELD[t] && "funktion_id" in row && typeof asPmUebernehmen === "function") asPmUebernehmen(row, AS_PM_TEXTFELD[t]);
   const q = AS_QUELLEN[t];
   if(q){ const alt = row.id ? asNach(t, row.id) : null;
     // Neue Vorfaelle in V1 anlegen darf OAK – und der Betrieb (pflegeberechtigt), wenn er neue Meldungen selbst prueft
@@ -551,7 +554,7 @@ const AS_NAV_KUNDE = [
   ["Anlagen & Gefahrstoffe", ["anlagen", "pruefungen", "maengel", "gefahrstoffe", "psa", "hallenplan"]],
   ["Beschäftigte", ["unterweisungen", "nachweise", "fremdfirmen", "sicherheitskultur"]],
   ["Melden & Fragen", ["vorfaelle", ["vorfaelle/umwelt", "Umweltvorfälle", () => asNavUmwelt()], "vorort", "fragen"]],
-  ["Organisation", ["organisation", "notfall", "bda", "massnahmen", ["mitzeichnung", "", () => asDarf("pflegen") || asDarf("freigeben")], ["steuerung/asa", "Arbeitsschutzausschuss"]]],
+  ["Organisation", ["organisation", ["organisation/pflichten", "Pflichten & Verantwortung"], "notfall", "bda", "massnahmen", ["mitzeichnung", "", () => asDarf("pflegen") || asDarf("freigeben")], ["steuerung/asa", "Arbeitsschutzausschuss"]]],
   ["Informationen", ["aktuelles", "unterlagen", ["steuerung/log", "Logbuch"]]],
 ];
 const AS_NAV_KUNDE_FUSS = ["leistungen", "datenschutz", "hilfe"];
@@ -560,7 +563,7 @@ const AS_NAV_KUNDE_FUSS = ["leistungen", "datenschutz", "hilfe"];
 const AS_TITEL_KUNDE = {
   anlagen: "Anlagenkataster", gefahrstoffe: "Gefahrstoffkataster", bda: "Gefährdungsbeurteilungen", mitzeichnung: "Freigaben",
   organisation: "Organisation & Beauftragte", notfall: "Notfall", "steuerung/asa": "Arbeitsschutzausschuss", "steuerung/log": "Logbuch",
-  "vorfaelle/umwelt": "Umweltvorfälle",
+  "vorfaelle/umwelt": "Umweltvorfälle", "organisation/pflichten": "Pflichten & Verantwortung",
 };
 /* Bisherige Seitentitel (h1), die in der Kundensicht durch den Kundenbegriff ersetzt werden */
 const AS_TITEL_ALT = { bda: ["Beurteilung der Arbeitsbedingungen"], mitzeichnung: ["Mitzeichnung der Sifa"], gefahrstoffe: ["Gefahrstoffe"],
@@ -591,7 +594,7 @@ function asNavZaehler(){
 function asNavOffen(){ try{ return JSON.parse(localStorage.getItem("as_nav_offen") || "[]"); }catch(e){ return []; } }
 /* ein Eintrag der Seitenleiste */
 function asNavEintrag(ziel, text, aktiv, zahl){
-  const ico = { "steuerung/asa": "asa", "steuerung/log": "logbuch", "vorfaelle/umwelt": "umwelt" }[ziel] || ziel.split("/")[0];
+  const ico = { "steuerung/asa": "asa", "steuerung/log": "logbuch", "vorfaelle/umwelt": "umwelt", "organisation/pflichten": "pflichten" }[ziel] || ziel.split("/")[0];
   return `<a href="#${esc(ziel)}" class="sl-eintrag${aktiv ? " an" : ""}" title="${esc(text)}">${asIcon(ico)}<span>${esc(text)}</span>${zahl ? `<b class="sl-badge">${zahl}</b>` : ""}</a>`;
 }
 function asNavFuss(extra){
@@ -739,6 +742,8 @@ function asReiter(seite, liste, standard){
 const AS_MODUL_LINK = new URLSearchParams(location.search).get("modul") === "sicherheitskultur";
 function asModulMarke(){ return AS_MODUL_LINK || AS.nurModul; }
 async function asStart(){
+  /* im Kundenportal V1 eingebettet (Pflichtenmatrix u. a.): ohne eigenen Rahmen */
+  if(new URLSearchParams(location.search).get("eingebettet") === "1") document.body.classList.add("as-eingebettet");
   const s = getSession();
   if(AS_MODUL_LINK){
     document.title = "OAK Sicherheitskultur";

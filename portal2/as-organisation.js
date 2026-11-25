@@ -16,10 +16,10 @@ const AS_NACHWEISE = [
 /* ======================= Organisation ======================= */
 AS_SEITEN.organisation = { titel: "Organisation", icon: "▦", sort: 2, render(main){
   const r = asReiter("organisation", [["grund", "Grunddaten & Nachweise"], ["struktur", "Struktur"], ["organigramm", "Organigramm"],
-    ["beauftragte", "Beauftragte"], ["einsatz", "Einsatzzeiten"]].concat(asDarf("pflegen") ? [["zugaenge", "Zugänge & Geräte"]] : []), "grund");
+    ["beauftragte", "Beauftragte"], ["pflichten", "Pflichten"], ["einsatz", "Einsatzzeiten"]].concat(asDarf("pflegen") ? [["zugaenge", "Zugänge & Geräte"]] : []), "grund");
   main.innerHTML = `<h1 class="seite">Organisation</h1><p class="unter">Wer ist wofür zuständig – Grundlage für alles Weitere.</p>${r.html}<div id="orgInhalt"></div>`;
   const box = document.getElementById("orgInhalt");
-  ({ grund: asOrgGrund, struktur: asOrgStruktur, organigramm: asOrgOrganigramm, beauftragte: asOrgBeauftragte, einsatz: asOrgEinsatz, zugaenge: asOrgZugaenge })[r.akt](box);
+  ({ grund: asOrgGrund, struktur: asOrgStruktur, organigramm: asOrgOrganigramm, beauftragte: asOrgBeauftragte, pflichten: typeof asOrgPflichten === "function" ? asOrgPflichten : asOrgGrund, einsatz: asOrgEinsatz, zugaenge: asOrgZugaenge })[r.akt](box);
 }};
 
 function asOrgGrund(box){
@@ -48,12 +48,12 @@ function asOrgGrund(box){
       ${asFeld("Teilzeit bis 30 h", "ma_tz30", d.ma_tz30, "number")}${asFeld("Geschäftsführung", "gf_name", d.gf_name)}
       ${asFeld("Fachkraft vor Ort", "fkv_name", d.fkv_name)}${asFeld("Betriebsrat (falls vorhanden)", "br", d.br)}
       ${asFeld("Besondere Gefährdung für Leben und Gesundheit laut Gefährdungsbeurteilung (§ 22 Abs. 1 S. 3 SGB VII – Sicherheitsbeauftragte schon ab 21 Beschäftigten)", "sibe_besondere_gefaehrdung", d.sibe_besondere_gefaehrdung, "checkbox", "voll")}</div>`,
-    knoepfe: [{ t: "Speichern", fn: async dl => { await asOrgSpeichern(asWerte(dl)); asZeige(); } }] }));
+    knoepfe: [{ t: "Speichern", fn: async dl => { await asOrgSpeichern(asWerte(dl)); if(typeof asPmQuelleAbgleich === "function") await asPmQuelleAbgleich(); asZeige(); } }] }));
   box.querySelectorAll("[data-n]").forEach(z => z.onclick = () => {
     const [k, t, h, name] = AS_NACHWEISE.find(n => n[0] === z.dataset.n);
     asDialog({ titel: t, inhalt: `<p class="hinweis">${esc(h)}</p><div class="form">
         ${asFeld("Datum (leer = fehlt)", k, d[k], "date")}${name ? asFeld("Name", name, d[name]) : ""}</div>`,
-      knoepfe: [{ t: "Speichern", fn: async dl => { await asOrgSpeichern(asWerte(dl)); asZeige(); } }] });
+      knoepfe: [{ t: "Speichern", fn: async dl => { await asOrgSpeichern(asWerte(dl)); if(typeof asPmQuelleAbgleich === "function") await asPmQuelleAbgleich(); asZeige(); } }] });
   });
 }
 
@@ -112,7 +112,7 @@ function asOrgOrganigramm(box){
       ${(eh || bsh) ? `<div class="hinweis">EH ${eh} · BSH ${bsh}</div>` : ""}</div>
       ${k.length ? `<div class="ebene">${k.map(knoten).join("")}</div>` : ""}</div>`; };
   box.innerHTML = `<div class="karte"><h2>Organigramm Arbeitsschutz <button class="btn sek klein nodruck" onclick="window.print()">Drucken</button></h2>
-    <p class="hinweis nodruck">Wird automatisch aus Struktur, Bestellungen und Beauftragten erzeugt – nie von Hand pflegen.</p>
+    <p class="hinweis nodruck">Wird automatisch aus Struktur, Pflichtenmatrix, Bestellungen und Beauftragten erzeugt – nie von Hand pflegen.</p>
     <div class="org">
       <div class="box"><b>Geschäftsführung</b>${esc(d.gf_name || "–")}</div>
       <div class="ebene">
@@ -121,6 +121,7 @@ function asOrgOrganigramm(box){
         <div class="box stab"><b>Sicherheitsbeauftragte</b>${esc(namen("sibe").join(", ") || "keine")}</div>
         <div class="box stab"><b>Arbeitsschutzausschuss</b>${asT("as_asa").filter(a => a.abgeschlossen && String(a.datum).startsWith(String(new Date().getFullYear()))).length} Sitzungen ${new Date().getFullYear()}</div>
       </div>
+      ${typeof asPmFunktionen === "function" && asPmFunktionen().some(f => f.art === "linie") ? `<div class="ebene">${asPmFunktionen().filter(f => f.art === "linie").map(f => `<div class="box"><b>${esc(f.name)}</b>${esc(asPmPerson(f) || "Person offen")}</div>`).join("")}</div>` : ""}
       <div class="ebene">${asKinder(null).map(knoten).join("") || `<div class="leer">Struktur unter „Struktur“ anlegen.</div>`}</div>
     </div></div>`;
 }
