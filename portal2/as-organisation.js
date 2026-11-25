@@ -134,11 +134,13 @@ function asOrgBeauftragte(box){
         <td>${z.soll}${z.richtwert ? " *" : ""}</td><td>${z.ist}</td><td>${z.ist >= z.soll ? asChip("erfüllt", "gruen") : asChip("fehlt " + (z.soll - z.ist), "rot")}</td></tr>`).join("")}</table></div>
       <p class="hinweis">Ersthelfer: 1 bei 2–20 Anwesenden, darüber 10 % (Verwaltung 5 %) – DGUV V1 § 26. Brandschutzhelfer: in der Regel 5 % – ASR A2.2. * Sicherheitsbeauftragte: Pflicht ab 50 Beschäftigten, bei 21–49 nur bei besonderer Gefährdung (§ 22 Abs. 1 SGB VII, seit 29.05.2026). Die Anzahl legt der Unternehmer fest (DGUV Regel 100-001 Nr. 4.2.1); Soll = OAK-Empfehlung 1 je angefangene 50 Beschäftigte.</p>`
       : `<div class="leer">Unter „Struktur“ Einheiten mit Beschäftigten und Schichten anlegen – dann rechnet die App das Soll.</div>`}</div>
-    <div class="karte"><h2>Personen <button class="btn klein" id="bNeu">+ Person</button></h2><div class="zeilen">
+    <div class="karte"><h2>Personen <span>${typeof asBsDruckUebersicht === "function" ? `<button class="btn sek klein" id="bsUeb">Übersicht drucken</button><button class="btn sek klein" id="bsVorl">Bestellschreiben</button>` : ""}<button class="btn klein" id="bNeu">+ Person</button></span></h2><div class="zeilen">
       ${asT("as_beauftragter").sort((a, b) => a.funktion.localeCompare(b.funktion)).map(b => { const ab = b.gueltig_bis && b.gueltig_bis < heute;
         return `<div class="z" data-b="${b.id}"><div><b>${esc(b.person)}</b><small>${esc((AS_KAT.beauftragte[b.funktion] || {}).titel || b.funktion)} · ${esc(asEinheitName(b.einheit_id))}${b.schicht ? " · Schicht " + b.schicht : ""}${b.vertretung ? " · Vertretung: " + esc(b.vertretung) : ""}</small></div>
         ${ab ? asChip("abgelaufen " + asDat(b.gueltig_bis), "rot") : b.gueltig_bis ? asChip("bis " + asDat(b.gueltig_bis), "gruen") : asChip(b.bestellt_am ? "bestellt" : "ohne Datum", b.bestellt_am ? "gruen" : "grau")}</div>`; }).join("") || `<div class="leer">Noch niemand erfasst.</div>`}</div></div>`;
   document.getElementById("bNeu").onclick = () => asBeauftragterDialog(null);
+  const bu = document.getElementById("bsUeb"); if(bu) bu.onclick = () => asBsDruckUebersicht();
+  const bv = document.getElementById("bsVorl"); if(bv) bv.onclick = () => asBsVorlagenDialog();
   box.querySelectorAll("[data-b]").forEach(z => z.onclick = () => asBeauftragterDialog(asNach("as_beauftragter", z.dataset.b)));
 }
 function asBeauftragterDialog(b){
@@ -149,6 +151,7 @@ function asBeauftragterDialog(b){
       if(m){ const x = new Date(w.schulung_am); x.setMonth(x.getMonth() + m); w.gueltig_bis = x.toISOString().slice(0, 10); } }
     await asSpeichern("as_beauftragter", Object.assign({ id: b.id }, w)); asZeige(); } }];
   if(!neu && asDarf("loeschen")) kn.unshift({ t: "Löschen", klasse: "gefahr", fn: async () => { if(!await asLoeschenBestaetigt("Beauftragten löschen?", "as_beauftragter", b.id)) return false; asZeige(); } });
+  if(!neu && typeof asBsSchluessel === "function" && asBsSchluessel(b)) kn.unshift({ t: "Bestellschreiben drucken", klasse: "sek", fn: () => { asBsDruckPerson(b); return false; } });
   asDialog({ titel: neu ? "Person erfassen" : b.person, inhalt: `<div class="form">
       <label class="voll">Name<input type="text" data-f="person" list="asBeaPersonen" value="${esc(b.person || "")}" autocomplete="off"></label>
       <datalist id="asBeaPersonen">${(AS.personen || []).map(p => `<option value="${esc(p.name)}">`).join("")}</datalist>

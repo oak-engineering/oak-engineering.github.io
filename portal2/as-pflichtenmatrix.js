@@ -333,12 +333,13 @@ function asPmOeffnen(html){
 }
 function asPmStandText(){ const m = asPmMatrix();
   return m && m.status === "freigegeben" ? "freigegeben am " + asDat(m.freigegeben_am) + (m.freigegeben_von ? " durch " + m.freigegeben_von : "") : "Entwurf, Stand " + asDat(asHeute()); }
+function asPmEntwurfZusatz(){ const m = asPmMatrix(); return m && m.status === "freigegeben" ? "" : " · ENTWURF zur Freigabe"; }
 function asPmMatrixHtml(){
   const fs = asPmFunktionen(), ps = asPmPflichten(), kat = asPmKat(), mk = asPmMarke(), gfF = fs.find(x => x.art === "gf"), gfN = gfF ? asPmPerson(gfF) : "";
   let nr = 0;
   const tabellen = [...new Set(ps.map(p => p.gruppe))].map(g => `<table><thead><tr><th class="n">Nr.</th><th>${esc(g)} · ${esc(asPmGruppeTitel(g))}</th><th>Rechtsgrundlage</th>${fs.map(f => `<th class="c">${esc(asPmKurz(f))}</th>`).join("")}</tr></thead><tbody>
     ${ps.filter(p => p.gruppe === g).map(p => { nr++; return `<tr><td class="n">${nr}</td><td>${esc(p.text)}</td><td class="rq">${esc(p.recht || "")}</td>${fs.map(f => { const c = asPmCode(p, f); return `<td class="c${c === "V" ? " cV" : ""}">${c}</td>`; }).join("")}</tr>`; }).join("")}</tbody></table>`).join("");
-  const inhalt = `<div class="seite">${asPmKopf("Pflichtenmatrix Arbeitsschutz", "Zuordnung der Unternehmerpflichten zu den Funktionen · Grundlage der schriftlichen Pflichtenübertragungen")}
+  const inhalt = `<div class="seite">${asPmKopf("Pflichtenmatrix Arbeitsschutz", "Zuordnung der Unternehmerpflichten zu den Funktionen · Grundlage der schriftlichen Pflichtenübertragungen" + asPmEntwurfZusatz())}
     <table class="meta"><tr><td>Unternehmen</td><td>${esc(mk.firma)}</td></tr><tr><td>Stand</td><td>${esc(asPmStandText())}</td></tr>
       <tr><td>Funktionen</td><td>${fs.map(f => esc(asPmKurz(f) + " = " + asPmText(f))).join(" · ")}</td></tr></table>
     <h2>1. Matrix</h2><p class="unter">${esc(kat.legende || AS_PM_KURZLEG)}</p>${tabellen}
@@ -360,7 +361,7 @@ function asPmSchreibenSeite(f){
     ? b.replace("bis zur genannten Budgetgrenze", "bis " + budget.replace(" je Einzelfall", ""))
     : "Befugnis, Aufträge für Arbeitsschutzmaßnahmen nach Absprache mit der Geschäftsführung zu erteilen; bei Gefahr im Verzug sind die nötigen Sofortmaßnahmen zu veranlassen");
   return `<div class="seite">${asPmKopf(beratend ? "Festlegung von Aufgaben im Arbeitsschutz" : "Übertragung von Unternehmerpflichten im Arbeitsschutz",
-      beratend ? "auf Grundlage der Pflichtenmatrix Arbeitsschutz" : "nach § 13 Abs. 2 ArbSchG und § 13 DGUV Vorschrift 1")}
+      (beratend ? "auf Grundlage der Pflichtenmatrix Arbeitsschutz" : "nach § 13 Abs. 2 ArbSchG und § 13 DGUV Vorschrift 1") + asPmEntwurfZusatz())}
     <table class="meta"><tr><td>Unternehmen</td><td>${esc(mk.firma)}</td></tr>
       <tr><td>Funktion</td><td>${esc(f.name)}</td></tr><tr><td>Name</td><td>${esc(name || "____________________________")}</td></tr>
       <tr><td>Verantwortungsbereich</td><td>${esc(f.bereich || (f.einheit_id ? asEinheitName(f.einheit_id) : "gesamter Betrieb"))}</td></tr>
