@@ -26,7 +26,11 @@ function asBsListe(){
   const rang = k => { const i = AS_BS_REIHE.indexOf(k); return i < 0 ? 99 : i; };
   return l.sort((a, b) => rang(a.k) - rang(b.k) || String(a.name || "").localeCompare(String(b.name || ""), "de"));
 }
-function asBsTitel(k){ const a = asBsArt(k); return a ? a.rolle : ((AS_KAT.beauftragte[k] || {}).titel || k); }
+const AS_BS_KURZ = { sifa: "Fachkraft für Arbeitssicherheit", ba: "Betriebsarzt", sibe: "Sicherheitsbeauftragte", ersthelfer: "Ersthelfer", brandschutzhelfer: "Brandschutzhelfer",
+  stapler: "Staplerfahrer", kran: "Kranführer", anschlaeger: "Anschläger", befaehigt: "Befähigte Person (Prüfungen)", efk: "Elektrofachkraft" };
+const AS_BS_RECHT = { sifa: "§ 5 ASiG, DGUV V2", ba: "§ 2 ASiG, DGUV V2", sibe: "§ 22 SGB VII, § 20 DGUV V1", ersthelfer: "§ 10 ArbSchG, § 26 DGUV V1",
+  brandschutzhelfer: "§ 10 ArbSchG, ASR A2.2", stapler: "§ 7 DGUV V68", kran: "§ 29 DGUV V52", anschlaeger: "DGUV I 209-013", befaehigt: "§ 2 Abs. 6 BetrSichV, TRBS 1203", efk: "§ 3 DGUV V3" };
+function asBsTitel(k){ return AS_BS_KURZ[k] || (AS_KAT.beauftragte[k] || {}).titel || k; }
 
 /* ---------------- Druckseiten ---------------- */
 function asBsSeite(k, p, entwurf){
@@ -60,16 +64,17 @@ function asBsSchreibenHtml(liste, entwurf){
 function asBsUebersichtHtml(entwurf){
   const mk = asPmMarke(), l = asBsListe(), soll = asBeauftragteSoll(), heute = asHeute(), leer = "offen";
   const status = x => x.gueltig && x.gueltig < heute ? "abgelaufen" : x.name && x.bestellt ? "bestellt" : x.name ? "Bestellung offen" : "nicht besetzt";
-  const zeilen = l.map(x => { const a = asBsArt(x.k);
-    return `<tr><td>${esc(asBsTitel(x.k))}</td><td>${esc(x.name || leer)}</td><td>${esc([x.bereich, x.schicht ? "Schicht " + x.schicht : ""].filter(Boolean).join(" · ") || "Betrieb")}</td>
-      <td>${esc(asBsDatum(x.bestellt) || "–")}</td><td>${esc(asBsDatum(x.schulung) || "–")}</td><td>${esc(asBsDatum(x.gueltig) || "–")}</td>
-      <td>${esc(status(x))}</td><td class="rq">${esc(a ? a.nach.replace(/^nach /, "") : ((AS_KAT.beauftragte[x.k] || {}).recht || ""))}</td></tr>`; }).join("");
+  const da = new Set(l.map(x => x.k));
+  AS_BS_REIHE.filter(k => !da.has(k)).forEach(k => l.push({ k, name: "", fehlt: true }));
+  const zeilen = l.map(x => `<tr><td class="nw">${esc(asBsTitel(x.k))}</td><td class="nw">${esc(x.name || (x.fehlt ? "noch nicht erfasst" : leer))}</td><td>${esc([x.bereich, x.schicht ? "Schicht " + x.schicht : ""].filter(Boolean).join(" · ") || "Betrieb")}</td>
+      <td class="nw">${esc(asBsDatum(x.bestellt) || "–")}</td><td class="nw">${esc(asBsDatum(x.schulung) || "–")}</td><td class="nw">${esc(asBsDatum(x.gueltig) || "–")}</td>
+      <td class="nw">${esc(x.fehlt ? "offen" : status(x))}</td><td class="nw">${esc(AS_BS_RECHT[x.k] || (AS_KAT.beauftragte[x.k] || {}).recht || "")}</td></tr>`).join("");
   const sollZ = soll.map(z => `<tr><td>${esc((AS_KAT.beauftragte[z.funktion] || {}).titel || z.funktion)}</td><td>${esc(z.einheit)}</td><td>${z.schicht || "–"}</td>
     <td>${z.n}</td><td>${z.soll}${z.richtwert ? " *" : ""}</td><td>${z.ist}</td><td>${z.ist >= z.soll ? "erfüllt" : "fehlt " + (z.soll - z.ist)}</td></tr>`).join("");
   const inhalt = `<div class="seite">${asPmKopf("Bestellungen und Beauftragungen im Arbeitsschutz", "Übersicht · Stand " + asDat(heute) + (entwurf ? " · ENTWURF zur Freigabe" : ""))}
     <table class="meta"><tr><td>Unternehmen</td><td>${esc(mk.firma)}</td></tr>${asBsGf() ? `<tr><td>Geschäftsführung</td><td>${esc(asBsGf())}</td></tr>` : ""}</table>
     <h2>1. Bestellte und beauftragte Personen</h2>
-    <table><thead><tr><th>Funktion</th><th>Person</th><th>Bereich / Schicht</th><th>bestellt am</th><th>Schulung</th><th>gültig bis</th><th>Stand</th><th>Rechtsgrundlage</th></tr></thead><tbody>${zeilen}</tbody></table>
+    <table class="ueb"><thead><tr><th>Funktion</th><th>Person</th><th>Bereich</th><th class="nw">bestellt am</th><th>Schulung</th><th class="nw">gültig bis</th><th>Stand</th><th>Rechtsgrundlage</th></tr></thead><tbody>${zeilen}</tbody></table>
     <div class="block"><h2>2. Soll und Ist je Bereich und Schicht</h2>${sollZ ? `<table><thead><tr><th>Funktion</th><th>Bereich</th><th>Schicht</th><th>Anwesend</th><th>Soll</th><th>Ist</th><th>Stand</th></tr></thead><tbody>${sollZ}</tbody></table>
       <p class="unter">Ersthelfer: 1 bei 2 bis 20 Anwesenden, darüber 10 % (Verwaltung 5 %) – § 26 DGUV Vorschrift 1. Brandschutzhelfer: in der Regel 5 % – ASR A2.2. * Sicherheitsbeauftragte: Anzahl legt der Unternehmer fest (§ 22 SGB VII, DGUV Regel 100-001); Soll = Empfehlung.</p>`
       : `<p>Für das Soll fehlen Bereiche mit Beschäftigtenzahl und Schichten (Organisation › Struktur).</p>`}</div>

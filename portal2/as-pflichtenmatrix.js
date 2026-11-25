@@ -320,6 +320,8 @@ ul{padding-left:5mm}li{margin:1px 0}
 .unterschrift div{border-top:1px solid #1E2A3A;padding-top:3px;font-size:8.3pt;color:#5B6675}
 .leiste{position:sticky;top:0;background:#F4F6F8;padding:8px 12px;margin:-14mm -16mm 10px;display:flex;gap:10px;align-items:center;font-size:10pt}
 .leiste button{font:inherit;padding:6px 14px;border-radius:16px;border:1px solid ${mk.farbe};background:${mk.farbe};color:#fff;cursor:pointer}
+${quer ? "body{font-size:8.6pt}td{padding:2px 4px}th{font-size:7.8pt;padding:2px 4px}td.rq{width:46mm;font-size:7.8pt}td.c{width:13mm}h2{margin:6px 0 3px}" : ""}
+table.ueb{font-size:8.2pt}table.ueb td.nw,table.ueb th.nw{white-space:nowrap}
 @media screen{body{padding:14mm 16mm;max-width:${quer ? "297mm" : "210mm"};margin:0 auto}}
 @media print{.leiste{display:none}}
 </style></head><body><div class="leiste"><button onclick="window.print()">Drucken / als PDF speichern</button><span>${esc(titel)}</span></div>${inhalt}</body></html>`;
