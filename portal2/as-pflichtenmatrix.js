@@ -144,7 +144,7 @@ function asPmFunktionDialog(f){
     const t = String(am).trim().split("."); const iso = t.length === 3 ? t[2].padStart(4, "20") + "-" + t[1].padStart(2, "0") + "-" + t[0].padStart(2, "0") : asHeute();
     if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)){ asMeldung("Datum bitte als TT.MM.JJJJ"); return false; }
     await asSpeichern("as_pflicht_funktion", { id: f.id, schreiben_status: "unterschrieben", uebertragen_am: iso, person: f.person || asPmPerson(f) || null });
-    asMeldung("Übertragung vermerkt"); asZeige(); } });
+    await asPmNachladen(); asMeldung("Übertragung vermerkt" + ((AS.org && AS.org.daten && AS.org.daten.pflichten_am) ? " – Nachweis „Pflichten schriftlich übertragen“ gesetzt" : "")); asZeige(); } });
   if(darf) kn.push({ t: "Speichern", fn: async d => {
     const w = asWerte(d); if(!w.name){ asMeldung("Bezeichnung fehlt"); return false; }
     if(q === "sibe") delete w.person;
@@ -203,7 +203,7 @@ async function asPmFreigeben(){
   const m = asPmMatrix(); if(!m || !asDarf("freigeben")) return;
   const n = asPmAlleHinweise().length;
   if(!confirm("Pflichtenmatrix freigeben?" + (n ? "\n\nHinweis: " + n + " Punkte der Plausibilitätsprüfung sind offen." : "")
-    + "\n\nDamit gilt der Nachweis „Pflichten schriftlich übertragen“ als gesetzt; die jährliche Überprüfung im ASA wird als Termin angelegt.")) return;
+    + "\n\nDie jährliche Überprüfung im ASA wird als Termin angelegt. Der Nachweis „Pflichten schriftlich übertragen“ gilt, sobald alle Übertragungsschreiben unterschrieben sind.")) return;
   try{ await asSpeichern("as_pflichtenmatrix", { id: m.id, status: "freigegeben" }); }
   catch(e){ asMeldung("Nicht freigegeben: " + e.message); return; }
   AS_PM.ackFrei = false; await asPmNachladen();

@@ -6,8 +6,10 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Online-Termin buchen – OAK engineering</title>
 <meta name="description" content="Kostenloses Erstgespräch mit OAK engineering: freien 30-Minuten-Termin wählen und direkt online buchen – per Google Meet.">
-<link rel="stylesheet" href="fonts.css?v=202611251139">
-<link rel="stylesheet" href="site.css?v=202611251139">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
+<link rel="stylesheet" href="fonts.css?v=202611251207">
+<link rel="stylesheet" href="site.css?v=202611251207">
 </head>
 <body>
 <nav>
@@ -241,7 +243,10 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
   }
 
   function laden(danach) {
-    fetch(API + "?aktion=frei", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (j) {
+    // Zeitgrenze (25.11.2026, Nikolai: "Termine werden geladen ... dauert ewig"): nach 20 s ein zweiter Versuch,
+    // danach Hinweis statt endlosem Laden.
+    var ctl = window.AbortController ? new AbortController() : null, uhr = setTimeout(function () { if (ctl) ctl.abort(); }, 20000);
+    fetch(API + "?aktion=frei", { cache: "no-store", signal: ctl ? ctl.signal : undefined }).then(function (r) { clearTimeout(uhr); return r.json(); }).then(function (j) {
       if (!j || !j.ok) throw new Error(j && j.fehler || "frei");
       tage = j.tage || [];
       if (tagWahl && !tage.some(function (t) { return t.datum === tagWahl && t.zeiten.length; })) { tagWahl = null; zeitWahl = null; }
@@ -251,6 +256,8 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
       }
       zeigeTage(); zeigeZeiten(); pruefe(); if (danach) danach();
     }).catch(function () {
+      clearTimeout(uhr);
+      if (!laden.zweiter) { laden.zweiter = true; $("tb-kw").textContent = "Termine werden geladen …"; return laden(danach); }
       $("tb-kw").textContent = "Termine gerade nicht abrufbar";
       $("tb-zeit-hinweis").innerHTML = 'Bitte später erneut versuchen oder an <a href="mailto:info@oak-engineering.de?subject=Terminanfrage">info@oak-engineering.de</a> schreiben.';
     });
@@ -283,9 +290,11 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
   };
 
   pruefe();
+  (function () { var h = new Date(); tage = []; woche = 0; var t = new Date(h.getFullYear(), h.getMonth(), 1);
+    tage.push({ datum: isoVon(t), zeiten: [] }); zeigeTage(); tage = []; $("tb-kw").textContent = "Termine werden geladen …"; })();
   laden();
 })();
 </script>
-<script src="site.js?v=202611251139"></script>
+<script src="site.js?v=202611251207"></script>
 </body>
 </html>
