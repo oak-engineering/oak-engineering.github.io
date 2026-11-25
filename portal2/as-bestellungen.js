@@ -69,8 +69,8 @@ function asBsUebersichtHtml(entwurf){
   const zeilen = l.map(x => `<tr><td class="nw">${esc(asBsTitel(x.k))}</td><td class="nw">${esc(x.name || (x.fehlt ? "noch nicht erfasst" : leer))}</td><td>${esc([x.bereich, x.schicht ? "Schicht " + x.schicht : ""].filter(Boolean).join(" · ") || "Betrieb")}</td>
       <td class="nw">${esc(asBsDatum(x.bestellt) || "–")}</td><td class="nw">${esc(asBsDatum(x.schulung) || "–")}</td><td class="nw">${esc(asBsDatum(x.gueltig) || "–")}</td>
       <td class="nw">${esc(x.fehlt ? "offen" : status(x))}</td><td class="nw">${esc(AS_BS_RECHT[x.k] || (AS_KAT.beauftragte[x.k] || {}).recht || "")}</td></tr>`).join("");
-  const sollZ = soll.map(z => `<tr><td>${esc((AS_KAT.beauftragte[z.funktion] || {}).titel || z.funktion)}</td><td>${esc(z.einheit)}</td><td>${z.schicht || "–"}</td>
-    <td>${z.n}</td><td>${z.soll}${z.richtwert ? " *" : ""}</td><td>${z.ist}</td><td>${z.ist >= z.soll ? "erfüllt" : "fehlt " + (z.soll - z.ist)}</td></tr>`).join("");
+  const sollZ = soll.map(z => `<tr><td>${esc((AS_KAT.beauftragte[z.funktion] || {}).titel || z.funktion)}</td><td>${esc(z.einheit)}</td><td>${esc(z.schicht || "–")}</td>
+    <td>${esc(z.n)}</td><td>${esc(z.soll)}${z.richtwert ? " *" : ""}</td><td>${esc(z.ist)}</td><td>${z.ist >= z.soll ? "erfüllt" : "fehlt " + esc(z.soll - z.ist)}</td></tr>`).join("");
   const inhalt = `<div class="seite">${asPmKopf("Bestellungen und Beauftragungen im Arbeitsschutz", "Übersicht · Stand " + asDat(heute) + (entwurf ? " · ENTWURF zur Freigabe" : ""))}
     <table class="meta"><tr><td>Unternehmen</td><td>${esc(mk.firma)}</td></tr>${asBsGf() ? `<tr><td>Geschäftsführung</td><td>${esc(asBsGf())}</td></tr>` : ""}</table>
     <h2>1. Bestellte und beauftragte Personen</h2>

@@ -8,8 +8,8 @@
 <meta name="description" content="Kostenloses Erstgespräch mit OAK engineering: freien 30-Minuten-Termin wählen und direkt online buchen – per Google Meet.">
 <link rel="preconnect" href="https://script.google.com">
 <link rel="preconnect" href="https://script.googleusercontent.com">
-<link rel="stylesheet" href="fonts.css?v=202611251223">
-<link rel="stylesheet" href="site.css?v=202611251223">
+<link rel="stylesheet" href="fonts.css?v=202611251237">
+<link rel="stylesheet" href="site.css?v=202611251237">
 </head>
 <body>
 <nav>
@@ -279,7 +279,9 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
       firma: $("tb-firma").value.trim(), anliegen: $("tb-anliegen").value.trim(), web: $("tb-web").value }) })
       .then(function (r) { return r.json(); }).then(function (j) {
         if (j && j.ok) {
-          $("tb-fertig-text").textContent = lang(tagWahl) + " um " + zeitWahl + " Uhr, 30 Minuten online. Eine Bestätigung geht an " + mail + ".";
+          // Bestaetigungsmails im Hintergrund anstossen (laeuft auch weiter, wenn die Seite geschlossen wird)
+          if (j.id) { try { fetch(API, { method: "POST", keepalive: true, body: JSON.stringify({ aktion: "bestaetigen", id: j.id }) }); } catch (x) {} }
+          $("tb-fertig-text").textContent = lang(tagWahl) + " um " + zeitWahl + " Uhr, 30 Minuten online. Die Bestätigung mit dem Link geht an " + mail + ".";
           $("tb-form").style.display = "none"; $("tb-fertig").style.display = "flex";
           return;
         }
@@ -305,6 +307,6 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
   laden();
 })();
 </script>
-<script src="site.js?v=202611251223"></script>
+<script src="site.js?v=202611251237"></script>
 </body>
 </html>
