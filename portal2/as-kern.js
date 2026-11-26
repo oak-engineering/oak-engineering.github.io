@@ -132,6 +132,17 @@ const AS_QUELLEN = {
     neu: w => Object.assign({ domaene: "arbeitssicherheit", quelle: "portal2", kunde: AS.org ? AS.org.name : null }, AS_QUELLEN.as_meldung.zuV1(w)) },
 };
 
+/* Alle Zeilen holen: Supabase liefert je Abfrage höchstens 1000 Zeilen – ohne Seiten fehlten z. B. bei WIBO (1126 Gefährdungen,
+   26.11.2026) Einträge stillschweigend. Seitenweise nach id sortiert, bis eine Seite nicht mehr voll ist. */
+async function asGetAlle(pfad){
+  const n = 1000, ord = /[?&]order=/.test(pfad) ? "" : "&order=id"; let aus = [];
+  for(let off = 0; ; off += n){
+    let r; try{ r = await apiGet(pfad + ord + "&limit=" + n + "&offset=" + off); }catch(e){ r = null; }
+    if(!Array.isArray(r)) return off ? aus : apiGet(pfad);   // Tabelle ohne Spalte id (z. B. as_prozess): wie bisher in einem Stück
+    aus = aus.concat(r);
+    if(r.length < n) return aus;
+  }
+}
 async function asLaden(){
   if(!AS.kunde){ AS.db = {}; AS.org = null; return; }
   if(typeof asBereichVorbereiten === "function") await asBereichVorbereiten();   // Bereichsfilter (as-bereich.js)
@@ -139,8 +150,8 @@ async function asLaden(){
   const eigen = AS_TABELLEN.filter(t => !(AS_QUELLEN[t] && AS_QUELLEN[t].ganz)), quellen = Object.entries(AS_QUELLEN);
   const [org, ...rest] = await Promise.all([
     apiGet("/rest/v1/as_organisation?select=*" + k),
-    ...eigen.map(t => apiGet("/rest/v1/" + t + "?select=*" + k).catch(() => [])),
-    ...quellen.map(([, q]) => apiGet("/rest/v1/" + q.v1 + "?select=*" + k + q.filter).catch(() => []))]);
+    ...eigen.map(t => asGetAlle("/rest/v1/" + t + "?select=*" + k).catch(() => [])),
+    ...quellen.map(([, q]) => asGetAlle("/rest/v1/" + q.v1 + "?select=*" + k + q.filter).catch(() => []))]);
   AS.org = (org && org[0]) || null;
   AS.personen = ((await apiGet("/rest/v1/uw_person?select=id,name,status&status=eq.aktiv" + k).catch(() => [])) || []);   // Belegschaft (Stufe 4)
   AS.kundeV1 = ((await apiGet("/rest/v1/portal_kunde?select=slug,name,avv_abgeschlossen_am,marke&slug=eq." + encodeURIComponent(AS.kunde)).catch(() => [])) || [])[0] || null;
@@ -164,8 +175,8 @@ async function asNachladen(tabellen){
   let neu;
   try{
     neu = await Promise.all(tabellen.map(async t => { const q = AS_QUELLEN[t];
-      const [eigen, v1] = await Promise.all([q && q.ganz ? [] : apiGet("/rest/v1/" + t + "?select=*" + k),
-        q ? apiGet("/rest/v1/" + q.v1 + "?select=*" + k + q.filter) : []]);
+      const [eigen, v1] = await Promise.all([q && q.ganz ? [] : asGetAlle("/rest/v1/" + t + "?select=*" + k),
+        q ? asGetAlle("/rest/v1/" + q.v1 + "?select=*" + k + q.filter) : []]);
       if(!Array.isArray(eigen) || !Array.isArray(v1)) throw new Error("unvollständig");
       return eigen.concat(q ? v1.map(q.zuV2) : []); }));
   }catch(e){ return false; }
