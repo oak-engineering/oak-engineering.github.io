@@ -86,7 +86,7 @@
         var a = ruhig ? 0.85 : 0.65 + 0.3 * Math.sin(t * 0.0015 + i);
         licht(ctx, lx + e.x * s, ly + e.y * s, r * 3, a * 0.7, r * 0.75);
       });
-      stern(ctx, lx + 0.5 * s, ly + 0.005 * s, r * 3.2, 0.95);
+      stern(ctx, lx + 0.5 * s, ly + 0.06 * s, r * 3.2, 0.95);   // innerhalb des Rahmens (Nikolai 26.11.)
       ctx.restore();
     },
     oben: function (ctx, w, hh, t) {
