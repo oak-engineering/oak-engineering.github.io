@@ -50,8 +50,8 @@
   ]
 }
 </script>
-<link rel="stylesheet" href="fonts.css?v=202611261024">
-<link rel="stylesheet" href="nav.css?v=202611261024">
+<link rel="stylesheet" href="fonts.css?v=202611261032">
+<link rel="stylesheet" href="nav.css?v=202611261032">
 <style>
 /* ── TOKENS ─────────────────────────────────────────────────────────── */
 :root {
@@ -163,7 +163,7 @@ a { color: inherit; text-decoration: none; }
 /* Browser-Zoom 75–150 % (Nikolai 26.11.2026: „mit 150 % Zoom sieht es nicht gut aus“): Bei 150 % hat ein
    Laptop nur noch ca. 900–1280 px Breite und 450–650 px Höhe. Die fünf Kacheln bleiben dann EINE volle Reihe,
    nur ohne Unterzeile (Kurztitel); auf dem Handy zwei Spalten über die volle Breite. */
-@media (max-width: 1180px) and (min-width: 761px) { .hero-cards { gap: .8rem; grid-template-columns: repeat(5, minmax(0, 1fr)); } .hero-card b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .hero-card { padding: 1rem 1rem .9rem; } .hc-d { display: none; } }
+@media (max-width: 1180px) and (min-width: 761px) { .hero-cards { gap: .8rem; grid-template-columns: repeat(5, minmax(0, 1fr)); } .hero-cards .hero-card b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: clamp(.95rem, 1.45vw, 1.3rem); margin-bottom: 0; } .hero-card { padding: 1rem 1rem .9rem; } .hc-d { display: none; } }
 @media (max-width: 760px) { .hero-cards { grid-template-columns: repeat(2, 1fr); } .hero-card:nth-child(5) { grid-column: span 2; } .hc-d { font-size: .8rem; } }
 /* Niedrige Fensterhöhe (Zoom): Kopf enger, damit Leitsatz und Kacheln ohne Scrollen sichtbar sind */
 @media (max-height: 760px) and (min-width: 761px) { .hero-content { padding: 2.2rem 0 1.8rem; } .hero-title { margin-bottom: 1rem; } .hero-sub { margin-bottom: 1.2rem; } }
@@ -841,6 +841,6 @@ document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 // Gitter, Signet und Menue kommen aus site.js (gemeinsam fuer alle Seiten)
 </script>
 <script src="weihnachten.js"></script>
-<script src="site.js?v=202611261024"></script>
+<script src="site.js?v=202611261032"></script>
 </body>
 </html>
