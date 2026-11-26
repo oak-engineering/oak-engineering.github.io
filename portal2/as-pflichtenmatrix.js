@@ -316,7 +316,7 @@ table.meta td{border:0;padding:1px 10px 1px 0}table.meta td:first-child{color:#5
 td.n{width:8mm;color:#5B6675}td.rq{width:55mm;color:#5B6675;font-size:8.3pt}
 td.c{text-align:center;font-weight:600;width:17mm}td.cV{background:#E8EEF5}th.c{text-align:center}
 ul{padding-left:5mm}li{margin:1px 0}
-.unterschrift{display:grid;grid-template-columns:1fr 1fr;gap:16mm;margin-top:16mm;break-inside:avoid}
+.unterschrift{display:grid;grid-template-columns:1fr 1fr;gap:16mm;margin-top:14mm;break-inside:avoid;break-before:avoid}
 .unterschrift div{border-top:1px solid #1E2A3A;padding-top:3px;font-size:8.3pt;color:#5B6675}
 .leiste{position:sticky;top:0;background:#F4F6F8;padding:8px 12px;margin:-14mm -16mm 10px;display:flex;gap:10px;align-items:center;font-size:10pt}
 .leiste button{font:inherit;padding:6px 14px;border-radius:16px;border:1px solid ${mk.farbe};background:${mk.farbe};color:#fff;cursor:pointer}
@@ -385,8 +385,8 @@ function asPmSchreibenSeite(f){
       <li>Die Fachkraft für Arbeitssicherheit und der Betriebsarzt stehen beratend zur Verfügung (§§ 3, 6 ASiG).</li>
       <li>Die Übertragung gilt bis auf Widerruf oder bis zum Wechsel der Funktion. Änderungen der Pflichtenmatrix werden schriftlich nachgetragen.</li>
       <li>Die Wahrnehmung der übertragenen Pflichten wird regelmäßig, mindestens jährlich im Arbeitsschutzausschuss, überprüft.</li>
-      ${beratend ? "" : `<li>Eine Ausfertigung dieser Übertragung wird der beauftragten Person ausgehändigt (§ 13 DGUV Vorschrift 1).</li>`}</ul></div>
-    <div class="unterschrift"><div>Ort, Datum · Geschäftsführung${gfName ? " (" + esc(gfName) + ")" : ""}</div><div>Ort, Datum · ${esc(name || "Beauftragte(r)")} – Kenntnisnahme und Übernahme</div></div></div>`;
+      ${beratend ? "" : `<li>Eine Ausfertigung dieser Übertragung wird der beauftragten Person ausgehändigt (§ 13 DGUV Vorschrift 1).</li>`}</ul>
+    <div class="unterschrift"><div>Ort, Datum · Geschäftsführung${gfName ? " (" + esc(gfName) + ")" : ""}</div><div>Ort, Datum · ${esc(name || "Beauftragte(r)")} – Kenntnisnahme und Übernahme</div></div></div></div>`;
 }
 function asPmSchreibenHtml(fs){
   const mk = asPmMarke();

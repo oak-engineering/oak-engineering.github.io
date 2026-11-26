@@ -6,8 +6,8 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Beispiel: Digitales Gefahrstoffkataster | OAK engineering</title>
 <meta name="description" content="Anonymisierter Auszug aus einem digitalen Gefahrstoffkataster im EHS-Cockpit: GHS-Einstufung, Aktualität der Sicherheitsdatenblätter, EMKG-Gefährdungsbeurteilung je Tätigkeit, Handschuhauswahl.">
-<link rel="stylesheet" href="fonts.css?v=202611260822">
-<link rel="stylesheet" href="site.css?v=202611260822">
+<link rel="stylesheet" href="fonts.css?v=202611260826">
+<link rel="stylesheet" href="site.css?v=202611260826">
 <style>
   .gk-intro{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 1.6rem}
   .gk-kachel{border:1px solid var(--border);border-radius:10px;background:#fff;padding:12px 14px;height:76px;display:flex;flex-direction:column;justify-content:center}
@@ -264,6 +264,6 @@ window.addEventListener("hashchange", () => { const g = STOFFE.find(x => x.id &&
 const start = STOFFE.find(g => g.id && "#" + g.id === location.hash); if(start) detail(start);
 document.getElementById("gkDlg").addEventListener("click", e => { if(e.target.id === "gkDlg") e.target.close(); });
 </script>
-<script src="site.js?v=202611260822"></script>
+<script src="site.js?v=202611260826"></script>
 </body>
 </html>

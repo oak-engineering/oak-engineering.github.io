@@ -56,8 +56,8 @@ function asBsSeite(k, p, entwurf){
       <tr><td>gültig ab</td><td>${esc(p.bestellt ? asDat(p.bestellt) + " bis auf Widerruf" : "________ bis auf Widerruf")}</td></tr></table>
     <div class="block"><h2>1. ${esc(a.titel.split(" ")[0])}</h2><p>Hiermit wird ${name ? esc(name) : "die oben genannte Person"} mit Wirkung vom ${p.bestellt ? esc(asDat(p.bestellt)) : "oben genannten Datum"} als ${esc(a.rolle)} der ${esc(mk.firma)} ${esc(a.verb)}.</p></div>
     ${abschnitt(2, "Aufgaben", a.aufgaben)}${abschnitt(3, a.befugnisse_titel || "Befugnisse", a.befugnisse)}${abschnitt(4, "Voraussetzungen und Qualifikation", a.voraussetzungen)}${abschnitt(5, "Hinweise", hinweise)}
-    <p class="unter">Rechtsgrundlage: ${esc(a.grundlage)}</p>
-    <div class="unterschrift"><div>Ort, Datum · Geschäftsführung${gf ? " (" + esc(gf) + ")" : ""}</div><div>Ort, Datum · ${esc(name || a.rolle)} – Kenntnisnahme und Annahme</div></div></div>`;
+    <div class="block"><p class="unter">Rechtsgrundlage: ${esc(a.grundlage)}</p>
+    <div class="unterschrift"><div>Ort, Datum · Geschäftsführung${gf ? " (" + esc(gf) + ")" : ""}</div><div>Ort, Datum · ${esc(name || a.rolle)} – Kenntnisnahme und Annahme</div></div></div></div>`;
 }
 function asBsSchreibenHtml(liste, entwurf){
   const mk = asPmMarke();
