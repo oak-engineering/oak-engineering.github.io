@@ -70,9 +70,10 @@
 
   window.OAK_DEKO = {
     baum: function (ctx, lx, ly, s, t, logo, B) {
+      if (s < 40) return;                                  // Seiten ohne Signet (z. B. Adventskalender: data-logo-s="0")
       if (!lichter && logo && logo.complete && B) {
         lichter = abtasten(logo, B);
-        enden = ENDEN.map(function (e) { return { x: (e[0] - B.x) / B.w, y: (e[1] - B.y) / B.h }; });
+        enden = ENDEN.map(function (e) { return { x: (e[0] - 285) / 454, y: (e[1] - 54) / 453 }; });   // ENDEN in 1024er-Logo-Koordinaten
       }
       if (!lichter) return;
       var r = Math.max(2, s * 0.012);
@@ -85,10 +86,7 @@
         var a = ruhig ? 0.85 : 0.65 + 0.3 * Math.sin(t * 0.0015 + i);
         licht(ctx, lx + e.x * s, ly + e.y * s, r * 3, a * 0.7, r * 0.75);
       });
-      // Spitze stoesst mittig von innen an die obere Rahmenlinie (Rahmenlinie y 54 bis 57 im 1024er-Logo,
-      // Innenkante 58, Ausschnitt ab 54 -> 4/453 der Kante). Nikolai 26.11.
-      var R = r * 3.2;
-      stern(ctx, lx + 0.5 * s, ly + 0.009 * s + R, R, 0.95);
+      // kein Stern am Baum (Nikolai 26.11.2026)
       ctx.restore();
     },
     oben: function (ctx, w, hh, t) {

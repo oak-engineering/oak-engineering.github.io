@@ -19,7 +19,9 @@
      Das PNG ist dunkelgruen und waere auf dem dunklen Kopf unsichtbar -> einmalig in ein
      Offscreen-Canvas zeichnen und per 'source-in' hell einfaerben. Nur der Baum-Ausschnitt
      (bbox im 1024x559-PNG), sonst sitzt das Signet klein und ausserhalb der Mitte. */
-  const LOGO_BOX = { x: 285, y: 54, w: 454, h: 453 };
+  /* Hochaufgeloestes Signet (assets/oak-signet.png = Baum-Ausschnitt aus OAK_Logo_transparent_2048px, 908 x 906),
+     sonst wirkt der Baum auf grossen Koepfen und bei Browser-Zoom verpixelt (Nikolai 26.11.2026). */
+  const LOGO_BOX = { x: 0, y: 0, w: 908, h: 906 };
   const LOGO_MITTE = parseFloat(canvas.dataset.logoX || '0.5');   // 0..1, je Seite ueberschreibbar
   const LOGO_SKALA = parseFloat(canvas.dataset.logoS || '0.78'); // Anteil der Kopfhoehe
   let logoTint = null, logoWeiss = null;
@@ -35,7 +37,7 @@
   };
   const logo = new Image();
   logo.onload = () => { logoTint = einfaerben('#74C69D'); logoWeiss = einfaerben('#FFFFFF'); };
-  logo.src = document.querySelector('.nav-logo img')?.getAttribute('src') || 'assets/oak-logo.png';
+  logo.src = (document.querySelector('.nav-logo img')?.getAttribute('src') || 'assets/oak-logo.png').replace('oak-logo.png', 'oak-signet.png');
 
   function build(){
     const rect = canvas.getBoundingClientRect();
