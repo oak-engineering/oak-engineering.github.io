@@ -28,8 +28,8 @@
       if (px[(y * N + x) * 4 + 3] > 120) kand.push([x / N, y / N]);
     }
     for (var i = kand.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = kand[i]; kand[i] = kand[j]; kand[j] = t; }
-    var aus = [], ABST = 0.045;
-    for (var k = 0; k < kand.length && aus.length < 70; k++) {
+    var aus = [], ABST = 0.09;
+    for (var k = 0; k < kand.length && aus.length < 24; k++) {
       var p = kand[k], frei = true;
       for (var q = 0; q < aus.length && frei; q++) { var dx = aus[q].x - p[0], dy = aus[q].y - p[1]; frei = dx * dx + dy * dy > ABST * ABST; }
       if (frei) aus.push({ x: p[0], y: p[1], ph: Math.random() * 6.28, sp: 0.0012 + Math.random() * 0.0018 });
