@@ -527,7 +527,13 @@ AS_SEITEN.hallenplan = { titel: "Hallenplan", icon: "⌗", sort: 4.6, async rend
   /* Bewertungen aus dem Kataster (Schluessel maschinen_id) + offene Maengel live */
   const risiko = {};
   (AS_B.docs || []).filter(d => d.kategorie === "anlagen" && d.maschinen_id).forEach(d => { const st = d.status || {};
-    risiko[d.maschinen_id] = { aktuell: st.gesamt ? (st.maxRisiko || null) : null, maengel: st.maengel || 0, hazards: st.gesamt || 0, roboter: false, betrieb: "", betrieb_hinweis: "",
+    // Linearroboter und „außer Betrieb“ aus dem Merkmal der Anlage (Begehung/Roboter-Check), sonst aus der Kurzinfo
+    const ki = AS_B.kurz[d.maschinen_id] || {}, ab = (AS_B.status || {})[d.maschinen_id];
+    const sm = ((asT("as_arbeitssystem").find(x => asListe(x.anlagen).includes(d.maschinen_id) && !x.stillgelegt_am) || {}).dok || {}).meta || {};
+    const rob = sm.linearroboter ? sm.linearroboter === "ja" : !!ki.roboter;
+    const aus = ab ? ab.betrieb === "ausser_betrieb" : (sm.betrieb || ki.betrieb) === "ausser_betrieb";
+    risiko[d.maschinen_id] = { aktuell: st.gesamt ? (st.maxRisiko || null) : null, maengel: st.maengel || 0, hazards: st.gesamt || 0, roboter: rob,
+      betrieb: aus ? "ausser_betrieb" : "", betrieb_hinweis: aus ? ((ab && ab.grund) || ki.betrieb_hinweis || "außer Betrieb") : "",
       meta: { maschine: d.maschine || d.titel || d.maschinen_id, maschinenId: d.maschinen_id, typ: d.maschinentyp || "", ce: "siehe Anlagenakte" },
       docs: [{ typ: "bda", titel: "Zu den Dokumenten", url: "https://www.oak-engineering.de/portal/maschine.html?k=" + encodeURIComponent(AS.kunde) + "&mid=" + encodeURIComponent(d.maschinen_id) }] }; });
   const mg = await apiGet("/rest/v1/portal_maengel?select=maschinen_id,band,bewertung_manuell,status,ausgeblendet&kunde_slug=eq." + encodeURIComponent(AS.kunde)).catch(() => []);
