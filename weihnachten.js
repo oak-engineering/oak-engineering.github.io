@@ -48,7 +48,6 @@
 
   function stern(ctx, x, y, r, a) {
     ctx.save();
-    licht(ctx, x, y, r * 2.4, a * 0.5, 0);
     ctx.beginPath();
     for (var i = 0; i < 16; i++) {                                    // achtzackig, schlank
       var w = -Math.PI / 2 + i * Math.PI / 8, rr = i % 2 ? r * 0.22 : (i % 4 ? r * 0.6 : r);
@@ -86,7 +85,10 @@
         var a = ruhig ? 0.85 : 0.65 + 0.3 * Math.sin(t * 0.0015 + i);
         licht(ctx, lx + e.x * s, ly + e.y * s, r * 3, a * 0.7, r * 0.75);
       });
-      stern(ctx, lx + 0.5 * s, ly + 0.13 * s, r * 3.2, 0.95);   // samt Schein ganz im Rahmen (Nikolai 26.11.)
+      // Spitze stoesst mittig von innen an die obere Rahmenlinie (Rahmenlinie y 54 bis 57 im 1024er-Logo,
+      // Innenkante 58, Ausschnitt ab 54 -> 4/453 der Kante). Nikolai 26.11.
+      var R = r * 3.2;
+      stern(ctx, lx + 0.5 * s, ly + 0.009 * s + R, R, 0.95);
       ctx.restore();
     },
     oben: function (ctx, w, hh, t) {

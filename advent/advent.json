@@ -1,0 +1,146 @@
+[
+ {
+  "tag": 1,
+  "titel": "Lichterkette prüfen, bevor sie leuchtet",
+  "teaser": "Elektrische Deko ist ein elektrisches Betriebsmittel wie jedes andere. Die Checkliste zeigt, worauf Sie vor dem Einschalten achten.",
+  "pdf": "advent/tag-01-lichterketten-pruefen.pdf"
+ },
+ {
+  "tag": 2,
+  "titel": "Fluchtwege: frei, breit genug, gut erkennbar",
+  "teaser": "Kartons, Deko und Getränkekisten stehen im Dezember gern im Flur. Hier stehen die Mindestbreiten und was sonst für Fluchtwege gilt.",
+  "pdf": "advent/tag-02-fluchtwege.pdf"
+ },
+ {
+  "tag": 3,
+  "titel": "Verbandkasten-Check",
+  "teaser": "Wie viele Verbandkästen braucht Ihr Betrieb und wie weit darf der nächste entfernt sein? Die Tabelle zeigt es auf einen Blick.",
+  "pdf": "advent/tag-03-verbandkasten.pdf"
+ },
+ {
+  "tag": 4,
+  "titel": "Leiter-Check in 60 Sekunden",
+  "teaser": "Für den Stern auf dem Baum gilt dasselbe wie im Lager: Leiter oder Tritt, nie der Drehstuhl. Die Checkliste passt an jede Leiter.",
+  "pdf": "advent/tag-04-leiter-check.pdf"
+ },
+ {
+  "tag": 5,
+  "titel": "Feuerlöscher: wie viele, wo, wie oft",
+  "teaser": "Die Grundausstattung richtet sich nach der Fläche und wird in Löschmitteleinheiten gerechnet. Hier stehen Tabelle, Abstände und Wartung.",
+  "pdf": "advent/tag-05-feuerloescher.pdf"
+ },
+ {
+  "tag": 6,
+  "titel": "Sicher durch den Winter: Glätte und Stürze",
+  "teaser": "Stürze auf Glätte gehören im Winter zu den häufigsten Unfällen. Die Checkliste zeigt, was auf dem Betriebsgelände geregelt sein muss.",
+  "pdf": "advent/tag-06-sicher-durch-den-winter.pdf"
+ },
+ {
+  "tag": 7,
+  "titel": "Wie hell muss es sein?",
+  "teaser": "Im Winter beginnt und endet die Schicht im Dunkeln. Die Tabelle zeigt die Mindestwerte der Beleuchtung innen und außen.",
+  "pdf": "advent/tag-07-beleuchtung.pdf"
+ },
+ {
+  "tag": 8,
+  "titel": "Elektrogeräte prüfen: wer, wann, wie oft",
+  "teaser": "Wasserkocher, Heizlüfter, Verlängerungskabel: Ortsveränderliche Geräte brauchen eine festgelegte Prüffrist. Hier stehen die Richtwerte.",
+  "pdf": "advent/tag-08-pruefung-elektrogeraete.pdf"
+ },
+ {
+  "tag": 9,
+  "titel": "Wie warm muss es am Arbeitsplatz sein?",
+  "teaser": "Im Büro sind es mindestens 20 °C, bei schwerer Arbeit im Stehen darf es kühler sein. Die Tabelle zeigt alle Mindestwerte.",
+  "pdf": "advent/tag-09-raumtemperatur.pdf"
+ },
+ {
+  "tag": 10,
+  "titel": "Richtig lüften im Winter",
+  "teaser": "Stoßlüften statt Dauerkipp: kurz und kräftig spart Heizenergie und hält die Luft gut. Hier stehen die Werte der ASR.",
+  "pdf": "advent/tag-10-richtig-lueften.pdf"
+ },
+ {
+  "tag": 11,
+  "titel": "Firmenfahrzeuge fit für den Winter",
+  "teaser": "Die Winterreifenpflicht hängt am Wetter, nicht am Kalender. Die Checkliste zeigt, was Halter und Fahrer vor dem Winter prüfen.",
+  "pdf": "advent/tag-11-fahrzeuge-wintertauglich.pdf"
+ },
+ {
+  "tag": 12,
+  "titel": "Wegeunfall: was versichert ist, was zu tun ist",
+  "teaser": "Ein Sturz auf dem Weg zur Arbeit ist ein Arbeitsunfall. Das Merkblatt zeigt, welche Wege versichert sind und welche Fristen gelten.",
+  "pdf": "advent/tag-12-wegeunfall.pdf"
+ },
+ {
+  "tag": 13,
+  "titel": "Wie viele Ersthelfer braucht Ihr Betrieb?",
+  "teaser": "Über die Feiertage fehlen oft genau die Ausgebildeten. Hier steht, wie viele Ersthelfer Sie brauchen und wann sie zur Fortbildung müssen.",
+  "pdf": "advent/tag-13-ersthelfer.pdf"
+ },
+ {
+  "tag": 14,
+  "titel": "Checkliste psychische Belastung",
+  "teaser": "Termindruck vor Weihnachten ist eine psychische Belastung, und die gehört in die Gefährdungsbeurteilung. Die Checkliste führt durch die Merkmale.",
+  "pdf": "advent/tag-14-psychische-belastung.pdf"
+ },
+ {
+  "tag": 15,
+  "titel": "Checkliste Bildschirmarbeitsplatz",
+  "teaser": "Jahresendspurt am Bildschirm: Die Checkliste zeigt, was der Arbeitsplatz können muss und welche Vorsorge Sie anbieten.",
+  "pdf": "advent/tag-15-bildschirmarbeitsplatz.pdf"
+ },
+ {
+  "tag": 16,
+  "titel": "Arbeiten im Freien bei Kälte",
+  "teaser": "Wer draußen arbeitet, braucht Schutz vor Witterung und einen Ort zum Aufwärmen. Hier steht, was dazu wirklich geregelt ist.",
+  "pdf": "advent/tag-16-arbeiten-bei-kaelte.pdf"
+ },
+ {
+  "tag": 17,
+  "titel": "Betriebsfeier: wann sind Sie unfallversichert?",
+  "teaser": "Die Weihnachtsfeier kann gesetzlich unfallversichert sein. Das Merkblatt zeigt die Bedingungen aus der Rechtsprechung des Bundessozialgerichts.",
+  "pdf": "advent/tag-17-weihnachtsfeier.pdf"
+ },
+ {
+  "tag": 18,
+  "titel": "Alkohol im Betrieb: was gilt?",
+  "teaser": "Ein Glas Sekt zur Weihnachtsfeier ist kein Verbrechen, aber Arbeit unter Alkohol kann gefährlich werden. Hier steht, was die Vorschriften sagen.",
+  "pdf": "advent/tag-18-alkohol-im-betrieb.pdf"
+ },
+ {
+  "tag": 19,
+  "titel": "Gewerbeabfall richtig trennen",
+  "teaser": "Kartons, Folien und Geschenkpapier: Für Gewerbebetriebe ist Trennen Pflicht. Die Übersicht enthält die Änderung der GewAbfV vom Juli 2026.",
+  "pdf": "advent/tag-19-gewerbeabfall-trennen.pdf"
+ },
+ {
+  "tag": 20,
+  "titel": "Betriebsruhe: sicher in die Feiertage",
+  "teaser": "Bevor das Licht für die Feiertage ausgeht: Die Checkliste trennt klar zwischen Pflicht und gutem Rat.",
+  "pdf": "advent/tag-20-betriebsruhe-feiertage.pdf"
+ },
+ {
+  "tag": 21,
+  "titel": "Prüffristen 2027 auf einen Blick",
+  "teaser": "Welche Prüfungen stehen im neuen Jahr an? Der Kalender zeigt die Fristen und sagt ehrlich, wo es nur Empfehlungen gibt.",
+  "pdf": "advent/tag-21-prueffristen-2027.pdf"
+ },
+ {
+  "tag": 22,
+  "titel": "Nachweis der Unterweisung",
+  "teaser": "Unterweisungen sind mindestens einmal im Jahr fällig. Die Vorlage zum Ausdrucken enthält alle Felder, die ein Nachweis braucht.",
+  "pdf": "advent/tag-22-unterweisungsnachweis.pdf"
+ },
+ {
+  "tag": 23,
+  "titel": "Silvesterfeuerwerk: was erlaubt ist",
+  "teaser": "Feuerwerk ist nur an zwei Tagen im Jahr ohne Erlaubnis erlaubt. Hier stehen Verkaufstage, Verbote und was auf dem Betriebsgelände gilt.",
+  "pdf": "advent/tag-23-silvesterfeuerwerk.pdf"
+ },
+ {
+  "tag": 24,
+  "titel": "Pflichten-Check 2027",
+  "teaser": "Frohe Weihnachten! Zum Abschluss die wichtigsten Arbeitgeberpflichten für das neue Jahr auf einer Seite, mit dem neuen Recht zu Sicherheitsbeauftragten.",
+  "pdf": "advent/tag-24-pflichten-check-2027.pdf"
+ }
+]
