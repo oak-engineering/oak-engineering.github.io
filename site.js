@@ -79,6 +79,9 @@
         ctx.drawImage(glanz, lx, ly, s, s);
         ctx.globalAlpha = 1;
       }
+      /* Andockpunkt fuer saisonalen Schmuck (z. B. weihnachten.js): zeichnet am Signet nach dem Aufleuchten,
+         unter dem Netz. Ohne window.OAK_DEKO passiert nichts. */
+      if(window.OAK_DEKO && window.OAK_DEKO.baum) window.OAK_DEKO.baum(ctx, lx, ly, s, t, logo, LOGO_BOX);
     }
     for(const d of dots){
       const wave = Math.sin((d.bx + d.by) * 0.01 + t * 0.0006) * 1.8;
@@ -106,6 +109,7 @@
       ctx.fillStyle = 'rgba(' + Math.round(116+g*120) + ',' + Math.round(198+g*57) + ',' + Math.round(157+g*60) + ',' + (0.3 + g*0.7) + ')';
       ctx.beginPath(); ctx.arc(d.x, d.y, 1.3 + g*2.2, 0, 6.2832); ctx.fill();
     }
+    if(window.OAK_DEKO && window.OAK_DEKO.oben) window.OAK_DEKO.oben(ctx, w, h, t);   // ueber dem Netz (Schnee)
     requestAnimationFrame(draw);
   }
   window.addEventListener('pointermove', e => {
