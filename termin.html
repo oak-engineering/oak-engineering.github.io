@@ -8,8 +8,8 @@
 <meta name="description" content="Kostenloses Erstgespräch mit OAK engineering: freien 30-Minuten-Termin wählen und direkt online buchen – per Google Meet.">
 <link rel="preconnect" href="https://script.google.com">
 <link rel="preconnect" href="https://script.googleusercontent.com">
-<link rel="stylesheet" href="fonts.css?v=202611251237">
-<link rel="stylesheet" href="site.css?v=202611251237">
+<link rel="stylesheet" href="fonts.css?v=202611260758">
+<link rel="stylesheet" href="site.css?v=202611260758">
 </head>
 <body>
 <nav>
@@ -245,8 +245,8 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
   function laden(danach) {
     // Zeitgrenze (25.11.2026, Nikolai: "Termine werden geladen ... dauert ewig"): nach 20 s ein zweiter Versuch,
     // danach Hinweis statt endlosem Laden.
-    var ctl = window.AbortController ? new AbortController() : null, uhr = setTimeout(function () { if (ctl) ctl.abort(); }, 12000);
-    fetch(API + "?aktion=frei", { cache: "no-store", signal: ctl ? ctl.signal : undefined }).then(function (r) { clearTimeout(uhr); return r.json(); }).then(function (j) {
+    var ctl = window.AbortController ? new AbortController() : null, uhr = setTimeout(function () { if (ctl) ctl.abort(); }, laden.neu ? 45000 : 12000);
+    fetch(API + "?aktion=frei" + (laden.neu ? "&neu=1" : ""), { cache: "no-store", signal: ctl ? ctl.signal : undefined }).then(function (r) { clearTimeout(uhr); return r.json(); }).then(function (j) {
       if (!j || !j.ok) throw new Error(j && j.fehler || "frei");
       try { localStorage.setItem("oak_termin_frei", JSON.stringify({ t: Date.now(), tage: j.tage || [] })); } catch (x) {}
       tage = j.tage || [];
@@ -256,7 +256,9 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
         woche = erst ? Math.max(0, ms.indexOf(erst.datum.slice(0, 7))) : 0;
       }
       zeigeTage(); zeigeZeiten(); pruefe(); if (danach) danach();
+      if (j.alt && !laden.neu) { laden.neu = true; laden(); }   // Stand war gespeichert: frisch nachladen, Anzeige tauscht leise
     }).catch(function () {
+      if (laden.neu) { return; }                               // Hintergrund-Abgleich fehlgeschlagen: gespeicherter Stand bleibt
       clearTimeout(uhr);
       if (!laden.zweiter) { laden.zweiter = true; $("tb-kw").textContent = "Termine werden geladen …"; return laden(danach); }
       $("tb-kw").textContent = "Termine gerade nicht abrufbar";
@@ -307,6 +309,6 @@ main.tb{max-width:var(--seite);margin:0 auto;padding:1.6rem var(--rand) 2.4rem;}
   laden();
 })();
 </script>
-<script src="site.js?v=202611251237"></script>
+<script src="site.js?v=202611260758"></script>
 </body>
 </html>
