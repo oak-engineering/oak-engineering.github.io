@@ -25,6 +25,8 @@
   const LOGO_MITTE = parseFloat(canvas.dataset.logoX || '0.5');   // 0..1, je Seite ueberschreibbar
   const LOGO_SKALA = parseFloat(canvas.dataset.logoS || '0.78'); // Anteil der Kopfhoehe
   let logoTint = null, logoWeiss = null;
+  const zoneVon = canvas.dataset.logoVon ? document.querySelector(canvas.dataset.logoVon) : null;
+  const zoneBis = canvas.dataset.logoBis ? document.querySelector(canvas.dataset.logoBis) : null;
   const glanz = document.createElement('canvas');   // Zwischenbild fuer das Aufleuchten
   const einfaerben = (farbe) => {
     const o = document.createElement('canvas');
@@ -57,8 +59,17 @@
   function draw(t){
     ctx.clearRect(0, 0, w, h);
     if(logoTint){
-      const s = Math.min(h * LOGO_SKALA, w * 0.45);   // skaliert mit dem Kopf, bleibt aber im Bild
-      const lx = w * LOGO_MITTE - s / 2, ly = (h - s) / 2;
+      let s = Math.min(h * LOGO_SKALA, w * 0.45);   // skaliert mit dem Kopf, bleibt aber im Bild
+      let ly = (h - s) / 2;
+      /* Freiraum zwischen zwei Elementen (data-logo-von / data-logo-bis, z. B. Untertitel und Kacheln): das Signet
+         passt sich ganz in die Luecke ein, statt von den Kacheln angeschnitten zu werden (Nikolai 26.11.2026,
+         Browser-Zoom: Rahmen wirkte nicht mehr quadratisch). Ohne Luecke (Handy) bleibt die Grundeinstellung. */
+      if(zoneVon && zoneBis){
+        const cr = canvas.getBoundingClientRect(), oben = zoneVon.getBoundingClientRect().bottom - cr.top,
+              unten = zoneBis.getBoundingClientRect().top - cr.top, luecke = unten - oben;
+        if(luecke > 60){ s = Math.min(luecke * 0.9, w * 0.45); ly = oben + (luecke - s) / 2; }
+      }
+      const lx = w * LOGO_MITTE - s / 2;
       ctx.globalAlpha = 0.14;
       ctx.drawImage(logoTint, lx, ly, s, s);
       ctx.globalAlpha = 1;
