@@ -1,14 +1,16 @@
-/* OAK EHS-Cockpit – Bestellungen und Beauftragungen drucken (Organisation › Beauftragte, Stufe 18c, 25.11.2026).
+/* OAK EHS-Cockpit – Bestellungen und Beauftragungen drucken (Organisation › Beauftragte, Stufe 18c, 25.11.2026; Abgleich mit DGUV-Mustern 26.11.2026).
    Daten: as_beauftragter (= portal_nachweis in V1, AS_QUELLEN) sowie Sifa/Betriebsarzt aus den Grunddaten.
    Texte je Art: AS_KAT.bestellungen (references/prozesse/app_kataloge.json). Druckoptik wie die Übertragungsschreiben
    (asPmDokument/asPmKopf aus as-pflichtenmatrix.js). Globale Namen nur mit asBs/AS_BS. */
 "use strict";
 
-const AS_BS_REIHE = ["sifa", "ba", "sibe", "ersthelfer", "brandschutzhelfer", "stapler", "kran", "anschlaeger", "befaehigt", "efk"];
+const AS_BS_REIHE = ["sifa", "ba", "sibe", "ersthelfer", "brandschutzhelfer", "stapler", "kran", "befaehigt", "efk"];
 function asBsKat(){ return (typeof AS_KAT !== "undefined" && AS_KAT.bestellungen) || { arten: {}, allgemein: [] }; }
-function asBsArt(k){ return asBsKat().arten[k] || null; }
-/* Art des Schreibens zu einem Eintrag der Beauftragten (V1 kennt Anschläger getrennt vom Kranführer) */
-function asBsSchluessel(b){ if(!b) return null; if(b._art === "anschlaeger") return "anschlaeger"; return asBsArt(b.funktion) ? b.funktion : null; }
+/* alias: Schlüssel nutzt die Vorlage einer anderen Art (anschlaeger → kran, seit 26.11.2026 eine Beauftragung) */
+function asBsZiel(k){ const a = asBsKat().arten[k]; return a && a.alias ? a.alias : k; }
+function asBsArt(k){ return asBsKat().arten[asBsZiel(k)] || null; }
+/* Art des Schreibens zu einem Eintrag der Beauftragten (V1 führt Anschläger getrennt, das Schreiben ist das des Kranführers) */
+function asBsSchluessel(b){ if(!b) return null; const k = b._art === "anschlaeger" ? "anschlaeger" : b.funktion; return asBsArt(k) ? asBsZiel(k) : null; }
 function asBsPlatzhalter(n){ return !n || /^(extern|sifa|betriebsarzt|geschäftsführung)\b/i.test(String(n).trim()); }
 function asBsGf(){
   const f = typeof asPmFunktionen === "function" ? asPmFunktionen().find(x => x.art === "gf") : null;
@@ -27,9 +29,9 @@ function asBsListe(){
   return l.sort((a, b) => rang(a.k) - rang(b.k) || String(a.name || "").localeCompare(String(b.name || ""), "de"));
 }
 const AS_BS_KURZ = { sifa: "Fachkraft für Arbeitssicherheit", ba: "Betriebsarzt", sibe: "Sicherheitsbeauftragte", ersthelfer: "Ersthelfer", brandschutzhelfer: "Brandschutzhelfer",
-  stapler: "Staplerfahrer", kran: "Kranführer", anschlaeger: "Anschläger", befaehigt: "Befähigte Person (Prüfungen)", efk: "Elektrofachkraft" };
-const AS_BS_RECHT = { sifa: "§ 5 ASiG, DGUV V2", ba: "§ 2 ASiG, DGUV V2", sibe: "§ 22 SGB VII, § 20 DGUV V1", ersthelfer: "§ 10 ArbSchG, § 26 DGUV V1",
-  brandschutzhelfer: "§ 10 ArbSchG, ASR A2.2", stapler: "§ 7 DGUV V68", kran: "§ 29 DGUV V52", anschlaeger: "DGUV I 209-013", befaehigt: "§ 2 Abs. 6 BetrSichV, TRBS 1203", efk: "§ 3 DGUV V3" };
+  stapler: "Staplerfahrer", kran: "Kranführer und Anschläger", anschlaeger: "Kranführer und Anschläger", befaehigt: "Befähigte Person (Prüfungen)", efk: "Elektrofachkraft" };
+const AS_BS_RECHT = { sifa: "§ 5 ASiG, § 2 DGUV V2", ba: "§ 2 ASiG, § 2 DGUV V2", sibe: "§ 22 SGB VII, § 20 DGUV V1", ersthelfer: "§ 10 ArbSchG, § 26 DGUV V1",
+  brandschutzhelfer: "§ 10 ArbSchG, ASR A2.2 Nr. 7.3", stapler: "§ 7 DGUV V68", kran: "§ 29 DGUV V52, DGUV R 109-017", anschlaeger: "§ 29 DGUV V52, DGUV R 109-017", befaehigt: "§ 2 Abs. 6 BetrSichV, TRBS 1203", efk: "§§ 2, 3, 5 DGUV V3" };
 function asBsTitel(k){ return AS_BS_KURZ[k] || (AS_KAT.beauftragte[k] || {}).titel || k; }
 
 /* ---------------- Druckseiten ---------------- */
@@ -38,8 +40,9 @@ function asBsSeite(k, p, entwurf){
   p = p || {}; const mk = asPmMarke(), gf = asBsGf(), name = p.name || "";
   const leer = "____________________________";
   const bereich = [p.bereich, p.schicht ? "Schicht " + p.schicht : ""].filter(Boolean).join(" · ");
-  const felder = (a.felder || []).map(([t, v], i) => { let w = v;
-    if(i === 0 && p.schulung && /vom ________/.test(w)) w = w.replace("vom ________", "vom " + asDat(p.schulung));
+  let schulungDa = false;
+  const felder = (a.felder || []).map(([t, v]) => { let w = v;
+    if(!schulungDa && p.schulung && /vom ________/.test(w)){ w = w.replace("vom ________", "vom " + asDat(p.schulung)); schulungDa = true; }
     if(p.gueltig && /nächste bis ________/.test(w)) w = w.replace("nächste bis ________", "nächste bis " + asDat(p.gueltig));
     return `<tr><td>${esc(t)}</td><td>${esc(w)}</td></tr>`; }).join("");
   const unter = a.nach + (name ? "" : " · Vorlage") + (entwurf ? " · ENTWURF zur Freigabe" : "");
@@ -52,7 +55,7 @@ function asBsSeite(k, p, entwurf){
       ${felder}
       <tr><td>gültig ab</td><td>${esc(p.bestellt ? asDat(p.bestellt) + " bis auf Widerruf" : "________ bis auf Widerruf")}</td></tr></table>
     <div class="block"><h2>1. ${esc(a.titel.split(" ")[0])}</h2><p>Hiermit wird ${name ? esc(name) : "die oben genannte Person"} mit Wirkung vom ${p.bestellt ? esc(asDat(p.bestellt)) : "oben genannten Datum"} als ${esc(a.rolle)} der ${esc(mk.firma)} ${esc(a.verb)}.</p></div>
-    ${abschnitt(2, "Aufgaben", a.aufgaben)}${abschnitt(3, "Befugnisse", a.befugnisse)}${abschnitt(4, "Voraussetzungen und Qualifikation", a.voraussetzungen)}${abschnitt(5, "Hinweise", hinweise)}
+    ${abschnitt(2, "Aufgaben", a.aufgaben)}${abschnitt(3, a.befugnisse_titel || "Befugnisse", a.befugnisse)}${abschnitt(4, "Voraussetzungen und Qualifikation", a.voraussetzungen)}${abschnitt(5, "Hinweise", hinweise)}
     <p class="unter">Rechtsgrundlage: ${esc(a.grundlage)}</p>
     <div class="unterschrift"><div>Ort, Datum · Geschäftsführung${gf ? " (" + esc(gf) + ")" : ""}</div><div>Ort, Datum · ${esc(name || a.rolle)} – Kenntnisnahme und Annahme</div></div></div>`;
 }
@@ -88,11 +91,11 @@ function asBsDruckPerson(b){ const k = asBsSchluessel(b); if(!k){ asMeldung("Fü
 function asBsDruckUebersicht(){ asPmOeffnen(asBsUebersichtHtml(false)); }
 function asBsVorlagenDialog(){
   const d = asOrgDaten();
-  asDialog({ titel: "Bestellschreiben", breit: true, inhalt: `<p class="hinweis">Je Art eine Vorlage ohne Namen zum Ausfüllen. Für erfasste Personen druckt der Eintrag unter „Personen“ das Schreiben mit Namen.</p>
+  asDialog({ titel: "Bestellschreiben", breit: true, inhalt: `<p class="hinweis">Je Art eine Vorlage ohne Namen zum Ausfüllen. Für erfasste Personen druckt der Eintrag unter „Personen“ das Schreiben mit Namen. Ersthelfer und Brandschutzhelfer sind optional: Die Benennung über den Aushang genügt (§ 10 Abs. 2 ArbSchG, § 24 Abs. 5 DGUV Vorschrift 1); „Alle Vorlagen drucken“ lässt sie weg.</p>
     <div class="zeilen">${AS_BS_REIHE.map(k => { const a = asBsArt(k); if(!a) return "";
       const n = k === "sifa" ? (asBsPlatzhalter(d.sifa_name) ? "" : d.sifa_name) : k === "ba" ? (asBsPlatzhalter(d.ba_name) ? "" : d.ba_name) : "";
-      return `<div class="z" data-bs="${k}"><div><b>${esc(a.titel)}</b><small>${esc(a.nach)}</small></div>${n ? `<button type="button" class="btn sek klein" data-bsn="${k}">mit Namen</button>` : asChip("Vorlage", "grau")}</div>`; }).join("")}</div>`,
-    knoepfe: [{ t: "Alle Vorlagen drucken", klasse: "sek", fn: () => { asPmOeffnen(asBsSchreibenHtml(AS_BS_REIHE.filter(asBsArt).map(k => ({ k, p: {} })))); return false; } }] });
+      return `<div class="z" data-bs="${k}"><div><b>${esc(a.titel)}</b><small>${esc(a.nach)}${a.optional ? " · optional – Benennung über Aushang genügt" : ""}</small></div>${n ? `<button type="button" class="btn sek klein" data-bsn="${k}">mit Namen</button>` : asChip(a.optional ? "optional" : "Vorlage", "grau")}</div>`; }).join("")}</div>`,
+    knoepfe: [{ t: "Alle Vorlagen drucken", klasse: "sek", fn: () => { asPmOeffnen(asBsSchreibenHtml(AS_BS_REIHE.filter(k => asBsArt(k) && !asBsArt(k).optional).map(k => ({ k, p: {} })))); return false; } }] });
   document.querySelectorAll("#dlg [data-bs]").forEach(z => z.onclick = ev => { if(ev.target.closest("[data-bsn]")) return; asPmOeffnen(asBsSchreibenHtml([{ k: z.dataset.bs, p: {} }])); });
   document.querySelectorAll("#dlg [data-bsn]").forEach(b => b.onclick = () => { const k = b.dataset.bsn;
     asPmOeffnen(asBsSchreibenHtml([{ k, p: { name: k === "sifa" ? d.sifa_name : d.ba_name, bestellt: k === "sifa" ? d.sifa_bestellt_am : d.ba_bestellt_am } }])); });

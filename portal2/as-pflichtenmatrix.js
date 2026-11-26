@@ -9,7 +9,7 @@
 const AS_PM = { gruppe: "", ackFrei: false };
 const AS_PM_CODES = ["V", "K", "M", "B", "I"];
 const AS_PM_ZYKLUS = { gf: ["", "V", "K", "M", "I"], linie: ["", "V", "M", "B", "I"], beratend: ["", "B", "M", "I", "V"] };
-const AS_PM_KURZLEG = "V verantwortlich · K GF behält Gesamtverantwortung, kontrolliert · M wirkt mit · B berät · I wird informiert";
+const AS_PM_KURZLEG = "V verantwortlich · K Geschäftsführung: Auswahl, Organisation, Aufsicht und Kontrolle · M wirkt mit · B berät · I wird informiert";
 
 function asPmKat(){ return (typeof AS_KAT !== "undefined" && AS_KAT.pflichtenmatrix) || { funktionen: [], gruppen: [], codes: {}, hinweise: [], befugnisse: [], bezug: {} }; }
 function asPmFunktionen(mitArchiv){ return asT("as_pflicht_funktion").filter(f => mitArchiv || !f.archiviert).sort((a, b) => (a.sort || 0) - (b.sort || 0) || String(a.name).localeCompare(String(b.name), "de")); }
@@ -188,7 +188,7 @@ function asPmPflichtDialog(p){
       ${asFeld("Rechtsgrundlage", "recht", p.recht)}
       ${asFeld("Pflicht", "text", p.text, "textarea", "voll")}</div>
     ${neu ? `<p class="hinweis">Die Zuordnung zu den Funktionen erfolgt danach direkt in der Matrix (Feld antippen).</p>`
-      : `<div class="zeilen">${zeile("Verantwortlich", ["V"])}${zeile("Gesamtverantwortung / Kontrolle", ["K"])}${zeile("Wirkt mit", ["M"])}${zeile("Berät, wird informiert", ["B", "I"])}</div>
+      : `<div class="zeilen">${zeile("Verantwortlich", ["V"])}${zeile("Aufsicht und Kontrolle", ["K"])}${zeile("Wirkt mit", ["M"])}${zeile("Berät, wird informiert", ["B", "I"])}</div>
         ${h.length ? `<p>${h.map(x => asChip(x, "gelb")).join(" ")}</p>` : ""}`}`, knoepfe: kn });
   asPmNurLesen(dl);
 }
@@ -373,15 +373,19 @@ function asPmSchreibenSeite(f){
     <div class="block"><h2>1. ${beratend ? "Festlegung" : "Übertragung"}</h2>
       <p>${beratend
         ? `Die Geschäftsführung der ${esc(mk.firma)} legt für die Funktion „${esc(f.name)}“ die nachstehenden Aufgaben im Arbeitsschutz fest. Die Funktion berät und unterstützt; Unternehmerpflichten werden nicht übertragen (§§ 3, 6 ASiG, § 22 SGB VII).`
-        : `Die Geschäftsführung der ${esc(mk.firma)} überträgt ${name ? esc(name) : "der/dem Beauftragten"} in der Funktion „${esc(f.name)}“ für den genannten Verantwortungsbereich die nachstehenden Pflichten des Arbeitgebers im Arbeitsschutz zur Wahrnehmung in eigener Verantwortung (§ 13 Abs. 2 ArbSchG, § 13 DGUV Vorschrift 1).`}</p></div>
+        : `Die Geschäftsführung der ${esc(mk.firma)} überträgt ${name ? esc(name) : "der/dem Beauftragten"} in der Funktion „${esc(f.name)}“ für den genannten Verantwortungsbereich die nachstehenden Pflichten des Arbeitgebers im Arbeitsschutz zur Wahrnehmung in eigener Verantwortung (§ 13 Abs. 2 ArbSchG, § 13 DGUV Vorschrift 1). Die Geschäftsführung hat sich vergewissert, dass die beauftragte Person für diese Aufgaben zuverlässig und fachkundig ist.`}</p></div>
     <div class="block"><h2>2. ${beratend ? "Verantwortlich wahrzunehmende Aufgaben" : "Übertragene Pflichten"}</h2>${liste(v, "Keine Pflichten zur eigenverantwortlichen Wahrnehmung.")}</div>
     <div class="block"><h2>3. Mitwirkung</h2>${liste(mm, "Keine Mitwirkungsaufgaben festgelegt.")}</div>
     ${bef.length ? `<div class="block"><h2>4. Befugnisse</h2><ul>${bef.map(b => `<li>${esc(b)}</li>`).join("")}</ul></div>` : ""}
-    <div class="block"><h2>${bef.length ? 5 : 4}. Hinweise</h2><ul>
-      <li>Die Gesamtverantwortung für den Arbeitsschutz verbleibt bei der Geschäftsführung (§ 3 ArbSchG). Übertragen wird die Wahrnehmung der genannten Pflichten in eigener Verantwortung, nicht die Verantwortung als solche.</li>
+    ${!beratend && kat.fortbildung ? `<div class="block"><h2>${bef.length ? 5 : 4}. Fortbildung</h2><p>${esc(kat.fortbildung)}</p></div>` : ""}
+    <div class="block"><h2>${(bef.length ? 5 : 4) + (!beratend && kat.fortbildung ? 1 : 0)}. Hinweise</h2><ul>
+      ${beratend ? `<li>Die Verantwortung für den Arbeitsschutz verbleibt bei der Geschäftsführung (§ 3 ArbSchG).</li>`
+        : `<li>Im festgelegten Umfang ist die beauftragte Person selbst für die Durchführung der erforderlichen Arbeitsschutzmaßnahmen verantwortlich. Die Geschäftsführung bleibt für Auswahl, Organisation, Aufsicht und Kontrolle verantwortlich (§ 3 ArbSchG, DGUV Regel 100-001 Nr. 2.12).</li>
+      <li>Die Abgrenzung zu benachbarten Verantwortungsbereichen und die Zusammenarbeit ergeben sich aus der Pflichtenmatrix. Die Übertragung ergänzt den Arbeitsvertrag; geht sie über dessen Rahmen hinaus, ist eine Vertragsänderung erforderlich.</li>`}
       <li>Die Fachkraft für Arbeitssicherheit und der Betriebsarzt stehen beratend zur Verfügung (§§ 3, 6 ASiG).</li>
       <li>Die Übertragung gilt bis auf Widerruf oder bis zum Wechsel der Funktion. Änderungen der Pflichtenmatrix werden schriftlich nachgetragen.</li>
-      <li>Die Wahrnehmung der übertragenen Pflichten wird regelmäßig, mindestens jährlich im Arbeitsschutzausschuss, überprüft.</li></ul></div>
+      <li>Die Wahrnehmung der übertragenen Pflichten wird regelmäßig, mindestens jährlich im Arbeitsschutzausschuss, überprüft.</li>
+      ${beratend ? "" : `<li>Eine Ausfertigung dieser Übertragung wird der beauftragten Person ausgehändigt (§ 13 DGUV Vorschrift 1).</li>`}</ul></div>
     <div class="unterschrift"><div>Ort, Datum · Geschäftsführung${gfName ? " (" + esc(gfName) + ")" : ""}</div><div>Ort, Datum · ${esc(name || "Beauftragte(r)")} – Kenntnisnahme und Übernahme</div></div></div>`;
 }
 function asPmSchreibenHtml(fs){
