@@ -135,6 +135,7 @@ const AS_QUELLEN = {
 /* Alle Zeilen holen: Supabase liefert je Abfrage höchstens 1000 Zeilen – ohne Seiten fehlten z. B. bei WIBO (1126 Gefährdungen,
    26.11.2026) Einträge stillschweigend. Seitenweise nach id sortiert, bis eine Seite nicht mehr voll ist. */
 async function asGetAlle(pfad){
+  if(/\/as_prozess\?/.test(pfad)) return apiGet(pfad);   // ohne Spalte id, wenige Zeilen
   const n = 1000, ord = /[?&]order=/.test(pfad) ? "" : "&order=id"; let aus = [];
   for(let off = 0; ; off += n){
     let r; try{ r = await apiGet(pfad + ord + "&limit=" + n + "&offset=" + off); }catch(e){ r = null; }
